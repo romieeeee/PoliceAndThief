@@ -81,8 +81,8 @@ services:
   # 6. Spring Boot Application
   spring-app:
     build:
-      context: ./be                 
-      dockerfile: Dockerfile        
+      context: ./be/pnt_spring
+      dockerfile: Dockerfile
     container_name: spring-backend
     ports:
       - "8080:8080"
