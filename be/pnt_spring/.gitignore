@@ -36,5 +36,6 @@ out/
 ### VS Code ###
 .vscode/
 
-application.properties
+application.yml
 application-secret.properties
+src/main/resources/application-secret.properties
