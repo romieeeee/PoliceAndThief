@@ -36,19 +36,20 @@
 
 ### 🌿 브랜치 작명 규칙 (Branch Naming Convention)
 
-> 구조 : **`태그/기능-요약`**
+> 구조 : **`[fe/be]/태그/기능-요약`**
 > 
-> **소문자 영문**과 **하이픈(-)** 사용
+> **소문자 영문**과 **하이픈(-)** 사용 (Kebob-Case)
 > 
-> 예시: `feat/login-api`, `fix/db-connection`
+> 예시: `be/feat/login-api`, `be/fix/db-connection`, `fe/feat/login-ui`
 
 
 ### ⚠️ 작성 규칙 (Rules)
 
 1. **소문자 사용:** 모든 브랜치명은 소문자로 작성
-2. **구분자:** 단어 사이는 하이픈(`-`)을 사용
-3. **명확한 요약:** `feat/user` 보다는 `feat/user-login-validation`과 같이 구체적으로 작성
-4. **일회성 브랜치:** 기능 개발이나 버그 수정이 완료되어 `develop`에 `merge`된 브랜치는 가급적 삭제
+2. **축약어:** JWT, DB, API등 영어 축약어의 경우 예외적으로 대문자로 사용
+3. **구분자:** 단어 사이는 하이픈(`-`)을 사용
+4. **명확한 요약:** `feat/user` 보다는 `feat/user-login-validation`과 같이 구체적으로 작성
+5. **일회성 브랜치:** 기능 개발이나 버그 수정이 완료되어 `develop`에 `merge`된 브랜치는 가급적 삭제
 
 
 
@@ -56,6 +57,8 @@
 | --- | --- |
 | **main** | prod / stable 브랜치 |
 | **develop** | 다음 출시 버전을 대비해 개발을 진행하는 통합 브랜치 |
+| **backend** | 백엔드 개발 브랜치 |
+| **frontend** | 프론트엔드 개발 브랜치 |
 |**hotfix**| main 브랜치 버그 수정 시 사용 |
 | **feat** | 새로운 기능 개발 시 사용 |
 | **fix** | 버그 수정 시 사용 |
