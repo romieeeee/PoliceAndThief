@@ -30,7 +30,7 @@ fun PixelInputField(
     // 배경 컨테이너
     PixelContainer(
         modifier = modifier,
-        borderWidth = 5f,
+        borderWidth = 10f,
         cornerSize = 20f,
         backgroundColor = backgroundColor,
         borderColor = borderColor
