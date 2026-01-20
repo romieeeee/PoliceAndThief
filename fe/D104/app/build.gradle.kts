@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.d104"
+    namespace = "com.d104.pnt"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.d104"
+        applicationId = "com.d104.pnt"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -77,6 +77,7 @@ dependencies {
 
     // Gson (JSON 파싱)
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation(libs.androidx.foundation.layout)
 
     // Room (로컬 DB)
     val roomVersion = "2.6.1"
@@ -103,6 +104,7 @@ dependencies {
 
     // Coil (이미지 로딩)
     implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("io.coil-kt:coil-gif:2.5.0")
 
     // Timber (로깅)
     implementation("com.jakewharton.timber:timber:5.0.1")

@@ -1,0 +1,226 @@
+package com.d104.pnt.ui.login
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.d104.pnt.R
+import com.d104.pnt.ui.component.PixelButtonCode
+import com.d104.pnt.ui.component.PixelInputField
+import com.d104.pnt.ui.theme.AccentRed
+import com.d104.pnt.ui.theme.BorderDefault
+
+@Composable
+fun LoginScreen(
+    goToSignup: () -> Unit,
+    onLoginSuccess: (String) -> Unit
+) {
+    Surface(modifier = Modifier.fillMaxSize()) {
+
+        // 배경 이미지
+        Image(
+            modifier = Modifier.fillMaxSize(),
+            painter = painterResource(R.drawable.login_background),
+            contentDescription = null,
+            contentScale = ContentScale.Crop
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 28.dp)
+                .windowInsetsPadding(
+                    WindowInsets
+                        .statusBars
+                        .only(WindowInsetsSides.Top)
+                )
+                .windowInsetsPadding(
+                    WindowInsets
+                        .navigationBars
+                        .only(WindowInsetsSides.Bottom)
+                ),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = "게임 시작하기",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(bottom = 40.dp),
+                color = Color.White
+            )
+
+            // Login Section
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+                    .padding(bottom = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(0.7f)
+                        .fillMaxHeight(),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    PixelInputField(
+                        placeholder = "아이디",
+                        modifier = Modifier.fillMaxWidth(),
+                        borderColor = BorderDefault
+                    )
+
+                    PixelInputField(
+                        placeholder = "비밀번호",
+                        modifier = Modifier.fillMaxWidth(),
+                        borderColor = BorderDefault
+                    )
+                }
+
+                PixelButtonCode(
+                    modifier = Modifier
+                        .weight(0.3f)
+                        .fillMaxHeight(),
+                    text = "로그인",
+                    fontSize = 16,
+                    onClick = { onLoginSuccess("keroro") },
+                    mainColor = AccentRed,
+                    borderColor = BorderDefault,
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "회원가입",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White
+                    )
+                    IconButton(
+                        onClick = { goToSignup() }
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.arrow),
+                            contentDescription = null
+                        )
+                    }
+                }
+
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "비밀번호 찾기",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White
+                    )
+                    IconButton(
+                        onClick = {}
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.arrow),
+                            contentDescription = null
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+
+            // ----- Divider -----
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.divider),
+                    contentDescription = null
+                )
+
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = "OR",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White
+                )
+
+                Image(
+                    painter = painterResource(R.drawable.divider),
+                    contentDescription = null
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Social Login Section
+            Image(
+                modifier = Modifier
+                    .aspectRatio(7f)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        /* 클릭 이벤트 */
+                    },
+                painter = painterResource(R.drawable.kakao_login_btn),
+                contentDescription = "카카오 로그인",
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Image(
+                modifier = Modifier
+                    .aspectRatio(7f)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+
+                    },
+                painter = painterResource(R.drawable.google_login_btn),
+                contentDescription = "구글 로그인",
+            )
+        }
+    }
+
+}
+
