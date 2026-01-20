@@ -3,6 +3,7 @@ package com.pnt.pnt_spring.domain.utils;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
@@ -24,4 +25,7 @@ public abstract class BaseEntity {
     @LastModifiedDate
     @Column(nullable = false)
     protected OffsetDateTime updatedAt;
+
+    @Column
+    protected boolean isDeleted = false;
 }

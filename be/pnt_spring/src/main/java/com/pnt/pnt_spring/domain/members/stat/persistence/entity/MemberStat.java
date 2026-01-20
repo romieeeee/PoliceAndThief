@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.members.stat.persistence.entity;
 
 import com.pnt.pnt_spring.domain.members.member.persistence.entity.Member;
+import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "member_stat")
-public class MemberStat {
+public class MemberStat extends BaseEntity {
 
     @Id
     private Long memberId;

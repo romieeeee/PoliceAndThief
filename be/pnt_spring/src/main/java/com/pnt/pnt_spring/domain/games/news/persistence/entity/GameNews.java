@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.games.news.persistence.entity;
 
 import com.pnt.pnt_spring.domain.games.game.persistence.entity.Game;
+import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import java.time.OffsetDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "game_news")
-public class GameNews {
+public class GameNews extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,6 +25,4 @@ public class GameNews {
 
     private String title;
     private String contents;
-
-    private OffsetDateTime createdAt;
 }

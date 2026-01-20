@@ -1,6 +1,8 @@
 package com.pnt.pnt_spring.domain.auth.persistence.entity;
 
 import com.pnt.pnt_spring.domain.members.member.persistence.entity.Member;
+import com.pnt.pnt_spring.domain.utils.BaseEntity;
+
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -12,7 +14,7 @@ import java.time.OffsetDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "refresh_token")
-public class RefreshToken {
+public class RefreshToken extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,5 +31,4 @@ public class RefreshToken {
 
     private OffsetDateTime expiredAt;
     private OffsetDateTime revokedAt;
-    private OffsetDateTime createdAt;
 }
