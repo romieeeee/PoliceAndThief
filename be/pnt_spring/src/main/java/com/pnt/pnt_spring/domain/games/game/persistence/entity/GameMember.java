@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.games.game.persistence.entity;
 
 import com.pnt.pnt_spring.domain.members.member.persistence.entity.Member;
+import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -15,7 +16,7 @@ import lombok.NoArgsConstructor;
                 @UniqueConstraint(columnNames = {"game_id", "member_id"})
         }
 )
-public class GameMember {
+public class GameMember extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.auth.persistence.entity;
 
 import com.pnt.pnt_spring.domain.members.member.persistence.entity.Member;
+import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -17,7 +18,7 @@ import java.time.OffsetDateTime;
                 @UniqueConstraint(columnNames = {"provider", "provider_user_key"})
         }
 )
-public class MemberAuthProvider {
+public class MemberAuthProvider extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,6 +33,4 @@ public class MemberAuthProvider {
 
     @Column(name = "provider_user_key", nullable = false)
     private String providerUserKey;
-
-    private OffsetDateTime connectedAt;
 }

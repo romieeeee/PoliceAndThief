@@ -1,5 +1,6 @@
 package com.pnt.pnt_spring.domain.members.member.persistence.entity;
 
+import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -11,7 +12,7 @@ import java.time.OffsetDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "member_profile")
-public class MemberProfile {
+public class MemberProfile extends BaseEntity {
 
     @Id
     private Long memberId;
@@ -25,7 +26,4 @@ public class MemberProfile {
     private String nickname;
 
     private String avatarUrl;
-
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
 }

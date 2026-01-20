@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.chats.persistence.entity;
 
 import com.pnt.pnt_spring.domain.members.member.persistence.entity.Member;
+import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -17,7 +18,7 @@ import java.time.OffsetDateTime;
                 @UniqueConstraint(columnNames = {"member_id", "chat_room_id"})
         }
 )
-public class JoinChatRoom {
+public class JoinChatRoom extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,6 +31,4 @@ public class JoinChatRoom {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_room_id", nullable = false)
     private ChatRoom chatRoom;
-
-    private OffsetDateTime createdAt;
 }

@@ -2,6 +2,7 @@ package com.pnt.pnt_spring.domain.games.skill.persistence.entity;
 
 import com.pnt.pnt_spring.domain.games.game.persistence.entity.Game;
 import com.pnt.pnt_spring.domain.members.member.persistence.entity.Member;
+import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -18,7 +19,7 @@ import java.time.OffsetDateTime;
                 @UniqueConstraint(columnNames = {"game_id", "member_id"})
         }
 )
-public class GameSkill {
+public class GameSkill extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,7 +35,4 @@ public class GameSkill {
 
     private Boolean isUsed;
     private OffsetDateTime usedAt;
-
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
 }

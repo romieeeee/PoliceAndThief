@@ -1,5 +1,6 @@
 package com.pnt.pnt_spring.domain.games.game.persistence.entity;
 
+import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -13,7 +14,7 @@ import java.time.OffsetDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "game_setting")
-public class GameSetting {
+public class GameSetting extends BaseEntity {
     @Id
     private Long gameId;
 
@@ -28,6 +29,4 @@ public class GameSetting {
 
     private Geometry boundaryGeo;
     private Point prisonLocation;
-
-    private OffsetDateTime updatedAt;
 }

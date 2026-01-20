@@ -6,7 +6,7 @@ import org.springframework.http.ResponseEntity;
 
 public class CommonResponse<T> extends ResponseEntity<ApiBody<T>> {
     public CommonResponse(T data, String message, HttpStatus code, Long memberId) {
-        super(new ApiBody<>(data, message, code.value(),memberId), code);
+        super(new ApiBody<>(data, message, code.value(), memberId), code);
     }
 
     public CommonResponse(T data, String message, ErrorCode code, Long memberId) {
