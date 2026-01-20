@@ -50,7 +50,7 @@ fun SignupScreen(
         // 배경 이미지
         Image(
             modifier = Modifier.fillMaxSize(),
-            painter = painterResource(R.drawable.login_background),
+            painter = painterResource(R.drawable.img_login_bg),
             contentDescription = null,
             contentScale = ContentScale.Crop
         )
