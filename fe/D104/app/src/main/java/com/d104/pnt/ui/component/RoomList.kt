@@ -20,7 +20,7 @@ fun RoomList(
         verticalArrangement = Arrangement.spacedBy(12.dp) // 아이템 사이 간격
     ) {
         items(rooms) { room ->
-            RoomItem(
+            RoomListItem(
                 data = room,
                 onJoinClick = { onItemClick(room) }
             )

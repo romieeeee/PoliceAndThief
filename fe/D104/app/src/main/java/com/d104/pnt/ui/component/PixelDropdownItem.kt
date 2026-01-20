@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.sp
 import com.d104.pnt.ui.theme.*
 
 @Composable
-fun DropdownItem(
+fun PixelDropdownItem(
     text: String,
     isSelected: Boolean,
     onClick: () -> Unit

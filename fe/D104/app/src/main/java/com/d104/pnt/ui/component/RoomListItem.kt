@@ -22,17 +22,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.d104.pnt.domain.model.RoomData
 import com.d104.pnt.ui.theme.*
 
 // 단일 채팅방 아이템 컴포넌트
 @Composable
-fun RoomItem(
+fun RoomListItem(
     data: RoomData,
     onJoinClick: (RoomData) -> Unit = {}
 ) {

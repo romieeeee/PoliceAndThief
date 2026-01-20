@@ -112,7 +112,7 @@ fun PixelDropdown(
                         modifier = Modifier
                     ) {
                         itemsIndexed(items) { index, item ->
-                            DropdownItem(
+                            PixelDropdownItem(
                                 text = item,
                                 isSelected = item == selectedItem,
                                 onClick = {
