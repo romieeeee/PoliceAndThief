@@ -46,7 +46,7 @@ fun BottomNavBar(navController: NavHostController) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(72.dp)
+                .height(64.dp)
                 .background(DeepDark),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceAround
@@ -114,7 +114,7 @@ fun NavItem(
             painter = painterResource(id = iconRes),
             contentDescription = label,
             tint = if (isSelected) Color.White else Color.Gray,
-            modifier = Modifier.size(28.dp)
+            modifier = Modifier.size(24.dp)
         )
         Text(
             text = label,
