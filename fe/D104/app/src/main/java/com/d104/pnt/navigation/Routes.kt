@@ -6,5 +6,5 @@ object Routes {
     const val SIGNUP = "signup"
     const val HOME = "home"
     const val CHAT = "chat"
-    const val MYPAGE = "com/d104/pnt/ui/mypage"
+    const val PROFILE = "profile"
 }

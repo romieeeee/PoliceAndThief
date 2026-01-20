@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.mypage
+package com.d104.pnt.ui.profile
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -21,7 +21,7 @@ import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.R
 
 @Composable
-fun MyPageScreen() {
+fun ProfileScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.bg_night),

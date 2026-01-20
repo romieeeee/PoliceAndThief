@@ -29,7 +29,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.d104.pnt.R
 import com.d104.pnt.ui.theme.DeepDark
 
 @Composable
@@ -52,23 +51,23 @@ fun BottomNavBar(navController: NavHostController) {
             horizontalArrangement = Arrangement.SpaceAround
         ) {
             NavItem(
-                label = "CHAT",
-                iconRes = R.drawable.ic_chat,
-                isSelected = currentRoute == "chat",
+                label = BottomNavItem.Chat.label,
+                iconRes = BottomNavItem.Chat.icon,
+                isSelected = currentRoute == BottomNavItem.Chat.route,
                 modifier = Modifier.weight(1f)
             ) {
-                navController.navigate("chat") { }
+                navController.navigate(BottomNavItem.Chat.route) { }
             }
 
             Spacer(modifier = Modifier.width(40.dp))
 
             NavItem(
-                label = "PROFILE",
-                iconRes = R.drawable.ic_user, // 실제 프로필 아이콘 리소스
-                isSelected = currentRoute == "profile",
+                label = BottomNavItem.Profile.label,
+                iconRes = BottomNavItem.Profile.icon,
+                isSelected = currentRoute == BottomNavItem.Profile.route,
                 modifier = Modifier.weight(1f)
             ) {
-                navController.navigate("profile") {  }
+                navController.navigate(BottomNavItem.Profile.route) { }
             }
         }
 
@@ -80,12 +79,12 @@ fun BottomNavBar(navController: NavHostController) {
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
-                    navController.navigate("home")
+                    navController.navigate(BottomNavItem.Home.route)
                 },
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.ic_logo),
+                painter = painterResource(id = BottomNavItem.Home.icon),
                 contentDescription = "HOME",
                 modifier = Modifier.fillMaxSize()
             )
