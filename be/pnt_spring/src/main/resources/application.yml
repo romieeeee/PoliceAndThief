@@ -1,4 +1,9 @@
 spring:
+  application:
+    name: pnt_spring
+    profiles:
+      include: secret
+
   datasource:
     driver-class-name: org.postgresql.Driver
     url: ${DATABASE_URL}
