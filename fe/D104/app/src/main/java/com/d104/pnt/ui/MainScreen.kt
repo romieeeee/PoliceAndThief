@@ -20,7 +20,7 @@ import androidx.navigation.compose.rememberNavController
 import com.d104.pnt.navigation.BottomNavBar
 import com.d104.pnt.navigation.BottomNavItem
 import com.d104.pnt.navigation.Routes
-import com.d104.pnt.ui.chatroomlist.ChatRoomScreen
+import com.d104.pnt.ui.chatroomlist.ChatRoomListScreen
 import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
 
@@ -53,7 +53,7 @@ fun MainScreen(userName: String) {
             }
 
             composable(Routes.CHAT) {
-                ChatRoomScreen()
+                ChatRoomListScreen()
             }
         }
 
