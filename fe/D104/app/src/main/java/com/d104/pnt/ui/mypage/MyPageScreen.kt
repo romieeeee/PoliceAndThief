@@ -1,4 +1,4 @@
-package com.example.d104.ui.mypage
+package com.d104.pnt.ui.mypage
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -17,8 +17,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.d104.R
-import com.example.d104.ui.component.PixelContainer
+import com.d104.pnt.ui.component.PixelContainer
+import com.d104.pnt.R
 
 @Composable
 fun MyPageScreen() {
