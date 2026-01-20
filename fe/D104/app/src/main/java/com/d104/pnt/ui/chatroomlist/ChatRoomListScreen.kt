@@ -34,7 +34,7 @@ import com.d104.pnt.ui.component.RoomList
 import com.d104.pnt.ui.theme.*
 
 @Composable
-fun ChatRoomScreen() {
+fun ChatRoomListScreen() {
     // 테스트용 더미 데이터
     val roomList = List(10) {
         RoomData(
@@ -52,7 +52,7 @@ fun ChatRoomScreen() {
             .statusBarsPadding() // 상태바 겹침 방지
     ) {
         // 1. 상단 버튼 영역 (Header)
-        ChatRoomHeader()
+        ChatRoomListHeader()
 
         Spacer(modifier = Modifier.height(5.dp))
 
@@ -82,7 +82,7 @@ fun ChatRoomScreen() {
 }
 
 @Composable
-fun ChatRoomHeader() {
+fun ChatRoomListHeader() {
     val regionList = listOf("서울", "인천", "대구", "부산", "대전", "광주", "울산", "세종")
     var selectedRegion by remember { mutableStateOf(regionList[0]) }
 
@@ -119,5 +119,5 @@ fun ChatRoomHeader() {
 @Preview
 @Composable
 fun ChatRoomScreenPreview() {
-    ChatRoomScreen()
+    ChatRoomListScreen()
 }
