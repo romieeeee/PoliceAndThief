@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.d104.pnt.navigation.AppNavigation
 import com.d104.pnt.ui.component.GifImage
 import com.d104.pnt.ui.theme.D104Theme
+import com.d104.pnt.R
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
