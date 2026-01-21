@@ -1,5 +1,6 @@
 package com.pnt.pnt_spring.domain.auth.api.controller;
 
+import com.nimbusds.openid.connect.sdk.LogoutRequest;
 import com.pnt.pnt_spring.domain.auth.api.req.IdDuplicateRequest;
 import com.pnt.pnt_spring.domain.auth.api.req.LoginRequest;
 import com.pnt.pnt_spring.domain.auth.api.req.SignupRequest;
@@ -45,6 +46,13 @@ public class AuthController {
     public CommonResponse<LoginResponse> signin(@RequestBody LoginRequest request){
         LoginResponse loginResponse = authService.login(request);
         return new CommonResponse<>(loginResponse, "로그인에 성공했습니다.", HttpStatus.OK);
+    }
+
+    @PostMapping("/logout")
+    public CommonResponse<Map<String, String>> logout(){
+
+
+
     }
 
 }

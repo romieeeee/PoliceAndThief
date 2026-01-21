@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public class JwtTokenProvider {
 
     private static final String AUTHORITIES_KEY = "role";
-    private static final String ID_KEY = "memberId";
+    private static final String MEMBER_ID_KEY = "memberId";
     private static final String BEARER_TYPE = "Bearer";
     private static final long ACCESS_TOKEN_EXPIRE_TIME = 1000 * 60 * 5;            // 5분
     private static final long REFRESH_TOKEN_EXPIRE_TIME = 1000 * 60 * 60 * 24 * 7;  // 7일
@@ -39,7 +39,7 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public TokenDto generateToken(Authentication authentication) {
+    public TokenDto generateToken(Authentication authentication, Long memberId) {
         // 권한 가져오기
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -51,7 +51,8 @@ public class JwtTokenProvider {
         Date accessTokenExpiresIn = new Date(now + ACCESS_TOKEN_EXPIRE_TIME);
 
         String accessToken = Jwts.builder()
-                .claim(ID_KEY, authentication.getName()) // memberId
+                .setSubject(authentication.getName()) // loginId (인증용)
+                .claim(MEMBER_ID_KEY, memberId) // Long memberId (웹소켓 용)
                 .claim(AUTHORITIES_KEY, authorities) // Role
                 .setExpiration(accessTokenExpiresIn) // 만료 시간
                 .signWith(key, SignatureAlgorithm.HS512) // 서명
@@ -59,7 +60,7 @@ public class JwtTokenProvider {
 
         // Refresh Token 생성
         String refreshToken = Jwts.builder()
-                .claim(ID_KEY, authentication.getName())
+                .setSubject(authentication.getName())
                 .setExpiration(new Date(now + REFRESH_TOKEN_EXPIRE_TIME))
                 .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
@@ -86,10 +87,8 @@ public class JwtTokenProvider {
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
-        String userId = claims.get(ID_KEY, String.class);
-
         // UserDetails 객체를 만들어서 Authentication 리턴
-        UserDetails principal = new User(userId, "", authorities);
+        UserDetails principal = new User(claims.getSubject(), "", authorities);
         return new UsernamePasswordAuthenticationToken(principal, "", authorities);
     }
 
