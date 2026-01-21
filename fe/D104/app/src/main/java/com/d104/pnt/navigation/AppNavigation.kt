@@ -10,13 +10,16 @@ import com.d104.pnt.ui.login.LoginScreen
 import com.d104.pnt.ui.login.SignupScreen
 
 
+/**
+ * 로그인 전 화면 플로우를 관리하는 파일
+ */
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
 
     NavHost(
         navController = navController,
-        startDestination = Routes.INTRO
+        startDestination = "main/{userName}"
     ) {
         composable(Routes.INTRO) {
             IntroScreen(
@@ -38,14 +41,17 @@ fun AppNavigation() {
             )
         }
 
+        // 회원가입 화면
         composable(Routes.SIGNUP) {
             SignupScreen (
                 onSuccess = { navController.navigate(Routes.LOGIN) }
             )
         }
 
+        // 메인 화면
         composable("main/{userName}") { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("userName") ?: ""
+
             MainScreen(userName = userName)
         }
     }
