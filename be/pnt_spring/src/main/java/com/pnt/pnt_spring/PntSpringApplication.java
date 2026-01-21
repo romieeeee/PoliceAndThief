@@ -2,9 +2,14 @@ package com.pnt.pnt_spring;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.data.auditing.DateTimeProvider;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
-@EnableJpaAuditing
+import java.time.OffsetDateTime;
+import java.util.Optional;
+
+@EnableJpaAuditing(dateTimeProviderRef = "auditingDateTimeProvider")
 @SpringBootApplication
 public class PntSpringApplication {
 
@@ -12,4 +17,9 @@ public class PntSpringApplication {
         SpringApplication.run(PntSpringApplication.class, args);
     }
 
+    @Bean
+    public DateTimeProvider auditingDateTimeProvider(){
+        // 현재 시간을 OffsetDateTime으로 반환
+        return () -> Optional.of(OffsetDateTime.now());
+    }
 }

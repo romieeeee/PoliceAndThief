@@ -11,6 +11,11 @@ spring:
     password: ${PASSWORD}
   jpa:
     database: postgresql
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate :
+        format_sql: true
 
 # swagger
 springdoc:
