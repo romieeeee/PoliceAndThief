@@ -30,8 +30,10 @@ import androidx.compose.ui.unit.dp
 import com.d104.pnt.domain.model.RoomData
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelDropdown
+import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.RoomList
 import com.d104.pnt.ui.theme.*
+import kotlin.Int
 
 @Composable
 fun ChatRoomListScreen() {
@@ -41,6 +43,8 @@ fun ChatRoomListScreen() {
             id = it,
             title = "진평동 빡겜 추격전",
             description = "날이 많이 추우니 장갑 꼭 챙겨오세요~~~~~~~~~~~~~~~~",
+            maxMember = 30,
+            currentMember = 26,
         )
     }
 
@@ -61,7 +65,12 @@ fun ChatRoomListScreen() {
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.CenterEnd // 오른쪽 정렬
         ) {
-            IconButton(onClick = { /* TODO: 검색 기능 */ }) {
+            PixelIconButton (
+                modifier = Modifier.size(48.dp),
+                mainColor = ButtonPrimary,
+                borderColor = ButtonHighlight,
+                onClick = { /* TODO: 검색 기능 */ }
+            ) {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "검색",
