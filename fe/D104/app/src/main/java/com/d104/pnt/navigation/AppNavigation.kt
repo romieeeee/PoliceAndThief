@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.d104.pnt.IntroScreen
 import com.d104.pnt.ui.MainScreen
+import com.d104.pnt.ui.game.create.GameCreateScreen
 import com.d104.pnt.ui.login.LoginScreen
 import com.d104.pnt.ui.login.SignupScreen
 
@@ -53,6 +54,10 @@ fun AppNavigation() {
             val userName = backStackEntry.arguments?.getString("userName") ?: ""
 
             MainScreen(userName = userName)
+        }
+
+        composable(Routes.GAME_CREATE) {
+            GameCreateScreen()
         }
     }
 }

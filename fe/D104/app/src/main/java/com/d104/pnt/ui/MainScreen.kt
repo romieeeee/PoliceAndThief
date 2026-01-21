@@ -21,6 +21,7 @@ import com.d104.pnt.navigation.BottomNavBar
 import com.d104.pnt.navigation.BottomNavItem
 import com.d104.pnt.navigation.Routes
 import com.d104.pnt.ui.chatroomlist.ChatRoomListScreen
+import com.d104.pnt.ui.game.create.GameCreateScreen
 import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
 
@@ -45,7 +46,9 @@ fun MainScreen(userName: String) {
                 .windowInsetsPadding(WindowInsets.navigationBars)
         ) {
             composable(Routes.HOME) {
-                HomeScreen()
+                HomeScreen(
+                    goToGameCreate = { navController.navigate(Routes.GAME_CREATE) }
+                )
             }
 
             composable(Routes.PROFILE) {
@@ -55,6 +58,11 @@ fun MainScreen(userName: String) {
             composable(Routes.CHAT) {
                 ChatRoomListScreen()
             }
+
+            composable(Routes.GAME_CREATE) {
+                GameCreateScreen()
+            }
+
         }
 
         // BottomBar를 위에 띄우기
