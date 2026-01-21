@@ -15,6 +15,7 @@ import com.pnt.pnt_spring.domain.members.member.repository.MemberRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -33,6 +34,7 @@ public class AuthServiceImpl implements AuthService {
     private final MemberProfileRepository memberProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final StringRedisTemplate redisTemplate;
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
@@ -101,7 +103,7 @@ public class AuthServiceImpl implements AuthService {
         );
 
         // JWT 발급
-        TokenDto tokenDto = jwtTokenProvider.generateToken(authentication);
+        TokenDto tokenDto = jwtTokenProvider.generateToken(authentication, member.getId());
 
         // 응답 반환
         return LoginResponse.of(tokenDto, member, memberProfile);
