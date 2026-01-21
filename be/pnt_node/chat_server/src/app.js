@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import { socketServer } from "./socket/SocketServer.js";
 import router from "./rest/Router.js";
-import database from "./db/database.js";
+import { mongoDB } from "./db/database.js";
 
 const port = 8090;
 
@@ -14,7 +14,7 @@ const port = 8090;
     app.use(cors());
     app.use(express.json());
 
-    await database();
+    await mongoDB();
     await socketServer(server);
 
     app.use("/", router);

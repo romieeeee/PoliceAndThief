@@ -13,7 +13,7 @@ import lombok.*;
 public class MemberProfile extends BaseEntity {
 
     @Id
-    private Long memberId;
+    private Long id;
 
     @MapsId
     @OneToOne(fetch = FetchType.LAZY)

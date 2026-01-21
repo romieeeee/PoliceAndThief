@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 
-const secretKeyString = "123412341234123424ergfgdfgdsfgsdfg24ejgkskjvhlh233rdghjkasdhxzclkbhqop4eyt24twonlrkg48ytiodhljkashdfh";
+const secretKeyString = "fH7vQVHckJD0PaQqmZwAx+LZvlBGhU0Yf3MfzRECq+TrsbeFOq19Q0iZCsw0OAnKbI6DlxUF9LVv9lWm+HC9qg==";
 const secretKey = Buffer.from(secretKeyString, 'base64');
 const options = { algorithms: ['HS512'] };
 
@@ -13,23 +13,31 @@ export const resolveInSocket = (socket, next) => {
 
         console.log("data", data);
 
-        socket.data.memberId = data.sub;
+        socket.data.memberId = data.memberId;
 
         next();
     } catch (err) {
+        const data = {
+            message: err.name,
+        }
         // 1. 유효기간 만료
         if (err.name === 'TokenExpiredError') {
-            next(new Error('TokenExpiredError'));
+            data.code = 401;
+            next(new Error(JSON.stringify(data)));
         }
         
         // 2. 토큰 데이터나 서명이 잘못됨 (변조, 비밀키 불일치, 형식 오류 등)
         if (err.name === 'JsonWebTokenError') {
-            next(new Error('JsonWebTokenError'));
+            data.code = 400;
+            next(new Error(JSON.stringify(data)));
         }
 
         // 3. 기타 오류를 서버 내부 오류로 구분
         console.log("socket auth err", err);
-        next(new Error('InternalServerError'));
+        data.code = 500;
+        data.message = "InternalServerError";
+
+        next(new Error(JSON.stringify(data)));
     }
 };
 
