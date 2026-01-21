@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.domain.model.RoomData
 import com.d104.pnt.ui.theme.*
@@ -55,12 +56,27 @@ fun RoomListItem(
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    // 제목
-                    Text(
-                        text = data.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = BorderDefault,
-                    )
+                    Row (
+                        modifier = Modifier,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // 제목
+                        Text(
+                            modifier = Modifier.weight(1f),
+                            text = data.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = BorderDefault,
+                            maxLines = if (isExpanded) 2 else 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "${data.currentMember}/${data.maxMember}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary,
+                            maxLines = 1
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(4.dp)) // 제목과 설명 사이 간격
 
@@ -69,7 +85,7 @@ fun RoomListItem(
                         text = data.description,
                         style = MaterialTheme.typography.bodyMedium,
                         color = BorderDefault,
-                        maxLines = if (isExpanded) Int.MAX_VALUE else 1, // 확장되면 전문 표시
+                        maxLines = if (isExpanded) 5 else 1, // 확장되면 전문 표시
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -120,4 +136,17 @@ fun RoomListItem(
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun previewRoomListItem(){
+    val room =  RoomData(
+        2,
+        "강남역 상습 탈옥범 잡을 마동석 같은 강력계 형사 모집중",
+        "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+        25,
+        17
+    )
+    RoomListItem(data = room)
 }

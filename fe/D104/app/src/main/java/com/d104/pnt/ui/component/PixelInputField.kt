@@ -22,8 +22,6 @@ fun PixelInputField(
     text: String = "",
     backgroundColor: Color = Color.White,
     borderColor: Color = Color.White,
-    width: Int = 100,
-    height: Int = 50
 ) {
     var text by remember { mutableStateOf(text) }
 
