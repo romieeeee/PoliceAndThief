@@ -1,6 +1,9 @@
 import { ChatController } from "./controller/ChatController.js";
+import { resolveInSocket } from "../../auth/JwtResolver.js";
 
 const chatSocketServer = (io) => {
+    io.use(resolveInSocket);
+
     io.on("connection", (socket) => {
         console.log("websocket is connected!");
 
