@@ -107,7 +107,6 @@ public class AuthServiceImpl implements AuthService {
 
         // 응답 반환
         return LoginResponse.of(tokenDto, member, memberProfile);
-
     }
 
 }

@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import Counter from "../../../db/mongo/utils/Counter.js";
+import Counter from "../utils/Counter.js";
 
 const chatSchema = new Schema({
     _id: Number,
@@ -14,7 +14,7 @@ const chatSchema = new Schema({
 });
 
 chatSchema.pre('save', async function (next) {
-    if (!this.isNew) return; 
+    if (!this.isNew) return;
 
     const counter = await Counter.findOneAndUpdate(
         { id: "chat_id_counter" },

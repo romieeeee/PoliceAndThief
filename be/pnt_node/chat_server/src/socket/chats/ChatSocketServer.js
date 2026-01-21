@@ -18,12 +18,12 @@ const chatSocketServer = (io) => {
 
         socket.on("request leave chat room", chatController.disconnect);
 
-
         socket.on("disconnect", () => {
             if (socket.data.isIntentionalExit) {
                 console.log("socket의 연결이 정상적으로 끊어졌습니다.");
                 return;
             }
+            // 비정상적인 소켓 종료 => 채팅방 퇴장 db 처리 X
         });
     });
 }

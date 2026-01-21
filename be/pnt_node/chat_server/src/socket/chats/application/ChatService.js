@@ -1,15 +1,23 @@
-import chatEntity from "../entity/chat.js";
+import chatEntity from "../../../db/mongo/entity/chat.js";
 import moment from "moment-timezone";
 
 export class ChatService {
     async save(chat) {
         const now = moment().tz("Asia/Seoul").format('YYYY-MM-DDTHH:mm:ssZ');
         chat.createdAt = now;
+
+        /**
+         * 정책을 정해서 avatarUrl이 없을 경우 기본 이미지 설정.
+         */
+        if (!chat.avatarUrl) {
+            chat.avatarUrl = "default.png";
+        }
+
         console.log("chat", chat);
 
         const chatModel = new chatEntity(chat);
 
-        await chatModel.save();
+        return await chatModel.save();
     }
 
     // {chatRoomId, cursor, limit}
