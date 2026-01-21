@@ -39,40 +39,35 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 private fun App() {
     var currentScreen by remember { mutableStateOf(Screen.Intro) }
-
     var userName by remember { mutableStateOf("") }
     var requestPermissions by remember { mutableStateOf(false) }
     var showDeniedDialog by remember { mutableStateOf(false) }
 
-
     Box(modifier = Modifier.fillMaxSize()) {
         when (currentScreen) {
+            // 인트로 화면
             Screen.Intro -> {
                 IntroScreen(
                     onClick = {
-                        if (currentScreen == Screen.Intro) {
-                            if (!PermissionHelper.areEssentialPermissionsGranted()) {
-                                requestPermissions = true
-                            }
-
-                            currentScreen = Screen.Main
-                        } else {
-                            currentScreen = Screen.Login
-                        }
+                        currentScreen = Screen.Login
+                        Timber.d("Intro -> Login")
                     }
                 )
             }
 
+            // 로그인 화면
             Screen.Login -> {
                 LoginScreen(
                     onLoginSuccess = { userId ->
                         userName = userId
                         currentScreen = Screen.Main
 
+                        // 로그인 성공 후 권한 체크
                         if (!PermissionHelper.areEssentialPermissionsGranted()) {
                             requestPermissions = true
                         }
@@ -85,21 +80,23 @@ private fun App() {
                 )
             }
 
+            // 회원가입 화면
             Screen.Signup -> {
                 SignupScreen(
                     onSuccess = {
                         currentScreen = Screen.Login
+                        Timber.d("Signup success -> Login")
                     }
                 )
             }
 
+            // 메인 화면
             Screen.Main -> {
-                // 메인 앱 (이미 구현되어 있는 MainScreen 사용)
                 MainScreen(userName = userName)
             }
         }
 
-        // 권한 요청
+        // 권한 자동 요청 (로그인 성공 후)
         if (requestPermissions) {
             RequestEssentialPermissions(
                 onAllGranted = {
@@ -114,7 +111,7 @@ private fun App() {
             )
         }
 
-        // 권한 거부 다이얼로그
+        // 권한 거부 시 안내 다이얼로그
         if (showDeniedDialog) {
             val denied = PermissionHelper.getDeniedPermissions().firstOrNull()
             denied?.let {
@@ -126,6 +123,7 @@ private fun App() {
                     },
                     onDismiss = {
                         showDeniedDialog = false
+                        // 권한 없어도 일단 진행 (기능 제한)
                     }
                 )
             }
