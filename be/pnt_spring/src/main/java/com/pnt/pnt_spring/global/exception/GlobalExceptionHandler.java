@@ -18,19 +18,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
-    private Long resolveMemberId() {
-        // 추후 SecurityContext에서
-        return null;
-    }
-
     /**
      * 1) 비즈니스 예외
      */
     @ExceptionHandler(BusinessException.class)
     public CommonResponse<Void> handleBusinessException(BusinessException e, HttpServletRequest req) {
         ErrorCode code = e.getErrorCode();
-        Long memberId = resolveMemberId();
 
         log.warn("[BusinessException] {} {} -> {}({}) : {}",
                 req.getMethod(),
@@ -40,7 +33,7 @@ public class GlobalExceptionHandler {
                 e.getMessage()
         );
 
-        return new CommonResponse<>(null, e.getMessage(), code, memberId);
+        return new CommonResponse<>(null, e.getMessage(), code);
     }
 
     /**
@@ -49,8 +42,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public CommonResponse<Void> handleMethodArgumentNotValid(MethodArgumentNotValidException e,
                                                              HttpServletRequest req) {
-        Long memberId = resolveMemberId();
-
         String message = e.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -60,7 +51,7 @@ public class GlobalExceptionHandler {
 
         log.warn("[Validation] {} {} -> {}", req.getMethod(), req.getRequestURI(), message);
 
-        return new CommonResponse<>(null, message, ErrorCode.VALIDATION_ERROR, memberId);
+        return new CommonResponse<>(null, message, ErrorCode.VALIDATION_ERROR);
     }
 
     /**
@@ -68,8 +59,6 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(BindException.class)
     public CommonResponse<Void> handleBindException(BindException e, HttpServletRequest req) {
-        Long memberId = resolveMemberId();
-
         String message = e.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -81,8 +70,7 @@ public class GlobalExceptionHandler {
 
         return new CommonResponse<>(null,
                 message.isBlank() ? "요청 값이 올바르지 않습니다." : message,
-                ErrorCode.INVALID_REQUEST,
-                memberId);
+                ErrorCode.INVALID_REQUEST);
     }
 
     /**
@@ -91,15 +79,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public CommonResponse<Void> handleMessageNotReadable(HttpMessageNotReadableException e,
                                                          HttpServletRequest req) {
-        Long memberId = resolveMemberId();
-
         log.warn("[MessageNotReadable] {} {} -> {}",
                 req.getMethod(), req.getRequestURI(), e.getMessage());
 
         return new CommonResponse<>(null,
                 "요청 형식이 올바르지 않습니다.",
-                ErrorCode.INVALID_REQUEST,
-                memberId);
+                ErrorCode.INVALID_REQUEST);
     }
 
     /**
@@ -109,8 +94,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public CommonResponse<Void> handleTypeMismatch(MethodArgumentTypeMismatchException e,
                                                    HttpServletRequest req) {
-        Long memberId = resolveMemberId();
-
         log.warn("[TypeMismatch] {} {} -> param={}, value={}",
                 req.getMethod(),
                 req.getRequestURI(),
@@ -119,8 +102,7 @@ public class GlobalExceptionHandler {
 
         return new CommonResponse<>(null,
                 "요청 파라미터 타입이 올바르지 않습니다.",
-                ErrorCode.INVALID_REQUEST,
-                memberId);
+                ErrorCode.INVALID_REQUEST);
     }
 
     /**
@@ -129,14 +111,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public CommonResponse<Void> handleMethodNotSupported(HttpRequestMethodNotSupportedException e,
                                                          HttpServletRequest req) {
-        Long memberId = resolveMemberId();
-
         log.warn("[MethodNotSupported] {} {} -> {}", req.getMethod(), req.getRequestURI(), e.getMessage());
 
         return new CommonResponse<>(null,
                 "지원하지 않는 HTTP 메서드입니다.",
-                ErrorCode.METHOD_NOT_ALLOWED,
-                memberId);
+                ErrorCode.METHOD_NOT_ALLOWED);
     }
 
     /**
@@ -144,13 +123,10 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public CommonResponse<Void> handleUnexpected(Exception e, HttpServletRequest req) {
-        Long memberId = resolveMemberId();
-
         log.error("[Unexpected] {} {} -> {}", req.getMethod(), req.getRequestURI(), e.getMessage(), e);
 
         return new CommonResponse<>(null,
                 "서버 내부 오류가 발생했습니다.",
-                ErrorCode.INTERNAL_SERVER_ERROR,
-                memberId);
+                ErrorCode.INTERNAL_SERVER_ERROR);
     }
 }
