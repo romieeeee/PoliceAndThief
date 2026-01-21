@@ -182,6 +182,7 @@ fun RequestEssentialPermissions(
         listOf(
             PermissionHelper.PermissionType.LOCATION,
             PermissionHelper.PermissionType.CAMERA,
+            PermissionHelper.PermissionType.AUDIO,
             PermissionHelper.PermissionType.NOTIFICATION
         ).flatMap { it.permissions.toList() }
     }
