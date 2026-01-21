@@ -79,7 +79,11 @@ fun BottomNavBar(navController: NavHostController) {
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
-                    navController.navigate(BottomNavItem.Home.route)
+                    navController.navigate(BottomNavItem.Home.route){
+                        popUpTo(Routes.LOGIN) {
+                            inclusive = true
+                        }
+                    }
                 },
             contentAlignment = Alignment.Center
         ) {
