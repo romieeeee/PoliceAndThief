@@ -15,8 +15,7 @@ export const socketServer = async (httpServer) => {
     const io = new Server(httpServer, {
         adapter: createAdapter(pubClient, subClient),
         cors: {
-            origin: "*",
-            methods: ["GET", "POST"]
+            origin: "*"
         }
     });
 

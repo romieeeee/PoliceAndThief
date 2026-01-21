@@ -9,5 +9,4 @@ public class ApiBody<T> {
     private T data;
     private String message;
     private Integer code;
-    private Long memberId;
 }

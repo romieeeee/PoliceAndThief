@@ -12,6 +12,6 @@ public class APIExample {
 
     @GetMapping
     public CommonResponse<String> testApi() {
-        return new CommonResponse<>("hi", "test message", HttpStatus.OK, null);
+        return new CommonResponse<>("hi", "test message", HttpStatus.OK);
     }
 }
