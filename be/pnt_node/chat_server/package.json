@@ -10,6 +10,7 @@
     "core-js": "^3.47.0"
   },
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "cors": "^2.8.5",
     "express": "^5.2.1",
     "hat": "^0.0.3",

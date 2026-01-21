@@ -1,18 +1,26 @@
+import { createServer } from "http";
 import express from "express";
 import cors from "cors";
+import { socketServer } from "./socket/SocketServer.js";
 
 const port = 8090;
-const app = express();
 
-app.use(cors());
-app.use(express.json());
+(async () => {
+    const app = express();
+    const server = createServer(app);
 
-app.get("/", (req, res) => {
-    console.log("request in root");
-    res.status(200).json({"message" : "ok"});
-})
+    app.use(cors());
+    app.use(express.json());
+
+    await socketServer(server);
+
+    app.get("/", (req, res) => {
+        console.log("request in root");
+        res.status(200).json({ "message": "ok" });
+    })
 
 
-app.listen(port, () => {
-    console.log("Listen in port:", port);
-});
+    server.listen(port, () => {
+        console.log("Listen in port:", port);
+    });
+})();
