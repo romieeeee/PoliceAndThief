@@ -8,6 +8,8 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -33,10 +35,12 @@ public class JwtTokenProvider {
     private static final long REFRESH_TOKEN_EXPIRE_TIME = 1000 * 60 * 60 * 24 * 7;  // 7일
 
     private final Key key;
+    private final StringRedisTemplate redisTemplate;
 
-    public JwtTokenProvider(@Value("${JWT_SECRET}") String secretKey) {
+    public JwtTokenProvider(@Value("${JWT_SECRET}") String secretKey, StringRedisTemplate redisTemplate) {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
+        this.redisTemplate = redisTemplate;
     }
 
     public TokenDto generateToken(Authentication authentication, Long memberId) {
@@ -70,6 +74,7 @@ public class JwtTokenProvider {
                 .accessToken(accessToken)
                 .accessTokenExpiresIn(accessTokenExpiresIn.getTime())
                 .refreshToken(refreshToken)
+                .refreshTokenExpiresIn(REFRESH_TOKEN_EXPIRE_TIME)
                 .build();
     }
 
@@ -113,5 +118,12 @@ public class JwtTokenProvider {
         } catch (ExpiredJwtException e) {
             return e.getClaims();
         }
+    }
+
+    // 토큰 남은 유효시간 계산
+    public Long getExpiration(String accessToken) {
+        Date expiration = parseClaims(accessToken).getExpiration();
+        long now = new Date().getTime();
+        return expiration.getTime() - now;
     }
 }

@@ -16,6 +16,7 @@ import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +49,12 @@ public class AuthServiceImpl implements AuthService {
         // id 중복체크
         if(checkIdDuplicate(request.getId())){
             throw new BusinessException(ErrorCode.DUPLICATE_USER_ID, "이미 사용 중인 아이디입니다.");
+        }
+
+        // 이메일 체크
+        if(memberRepository.existsByEmail(request.getEmail())){
+            // ErrorCode에 DUPLICATE_EMAIL이 없다면 새로 만드시거나 VALIDATION_ERROR 등을 사용하세요.
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "이미 사용 중인 이메일입니다.");
         }
 
         // Member 엔터티 생성 및 저장
@@ -105,8 +113,41 @@ public class AuthServiceImpl implements AuthService {
         // JWT 발급
         TokenDto tokenDto = jwtTokenProvider.generateToken(authentication, member.getId());
 
+        // Redis
+        // RT(Key - String) : loginId(Value - String)
+        ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
+        valueOperations.set(
+                "RT:" + member.getLoginId(),
+                tokenDto.getRefreshToken(),
+                tokenDto.getRefreshTokenExpiresIn(),
+                TimeUnit.MILLISECONDS
+        );
+
         // 응답 반환
         return LoginResponse.of(tokenDto, member, memberProfile);
+    }
+
+    @Transactional
+    public void logout(String accessToken){
+        // Access Token 검증
+        if(!jwtTokenProvider.validateToken(accessToken)){
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "유효하지 않는 토큰입니다");
+        }
+
+        // Access Token 에서 유저 정보
+        Authentication authentication = jwtTokenProvider.getAuthentication(accessToken);
+        String loginId = authentication.getName();
+
+        // redis 에서 해당 유저 refresh token 삭제
+        if(redisTemplate.opsForValue().get("RT:" + loginId) != null){
+            redisTemplate.delete("RT:" + loginId);
+        }
+
+        // 해당 Access Token 로그아웃(블랙리스트 처리)
+        Long expiration = jwtTokenProvider.getExpiration(accessToken);
+        if (expiration > 0){
+            redisTemplate.opsForValue().set("BL:" + accessToken, "logout", expiration, TimeUnit.SECONDS);
+        }
     }
 
 }
