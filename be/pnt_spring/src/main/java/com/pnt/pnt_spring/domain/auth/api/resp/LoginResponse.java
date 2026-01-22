@@ -17,6 +17,7 @@ public class LoginResponse {
     @Getter
     @Builder
     public static class LoginMemberInfo {
+        private Long memberId;
         private String id; // 로그인 아이디
         private String nickname;
         private String avatarUrl;
@@ -29,6 +30,7 @@ public class LoginResponse {
                 .accessToken(tokenDto.getAccessToken())
                 .refreshToken(tokenDto.getRefreshToken())
                 .member(LoginMemberInfo.builder()
+                        .memberId(member.getId())
                         .id(member.getLoginId())
                         .nickname(profile.getNickname())
                         .avatarUrl(profile.getAvatarUrl())

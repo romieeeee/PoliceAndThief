@@ -1,9 +1,9 @@
 package com.pnt.pnt_spring.domain.auth.api.controller;
 
 import com.pnt.pnt_spring.domain.auth.api.req.TokenDto;
+import com.pnt.pnt_spring.domain.auth.jwt.CustomUserDetails;
 import com.pnt.pnt_spring.domain.auth.jwt.JwtTokenProvider;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.security.Principal;
 import java.util.Collections;
 
 @RestController
@@ -41,9 +40,12 @@ public class DevAuthController {
     }
 
     @GetMapping("/test")
-    public CommonResponse<?> testApi(@AuthenticationPrincipal UserDetails details) {
+    public CommonResponse<?> testApi(@AuthenticationPrincipal CustomUserDetails details) {
 
-        log.info("test={}", details.getUsername());
+        Long memberId = details.getMemberId();
+
+        log.info("test loginId={}", details.getUsername());
+        log.info("test memberId={}", memberId);
 
         return new CommonResponse<>(details, "테스트 api", HttpStatus.OK);
     }

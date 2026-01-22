@@ -21,9 +21,11 @@ public class MemberStatPolice extends BaseEntity {
     @JoinColumn(name = "member_id")
     private Member member;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "grade_police_id")
+    private GradePolice gradePolice;
+
     private Integer totalArrestCount;
     private Integer mostArrestsInGame;
 
-    @Column(length = 10)
-    private String gradePolice;
 }
