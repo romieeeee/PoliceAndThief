@@ -1,13 +1,16 @@
 import mongoose from "mongoose";
+import dotenv from "dotenv";
 
-const DB_URL = "mongodb://localhost:27017";
+dotenv.config();
+
+const DB_URL = process.env.MONGO_URL;
 
 class MongoDB {
     async create() {
         mongoose.set('debug', true);
 
         await mongoose.connect(DB_URL, {
-            dbName: "pnt"
+            dbName: process.env.MONGO_DB_NAME
         }).then(() => {
             console.log("MongoDB is connected!!");
         }).catch((err) => {

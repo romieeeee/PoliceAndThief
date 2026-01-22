@@ -23,6 +23,12 @@ export default class MemberChatRoom extends Model {
           allowNull: false, 
         },
 
+        isConnected: {
+          type: DataTypes.BOOLEAN,
+          allowNull: false,
+          defaultValue: false,
+        },
+
         isDeleted: {
           type: DataTypes.BOOLEAN,
           allowNull: false,

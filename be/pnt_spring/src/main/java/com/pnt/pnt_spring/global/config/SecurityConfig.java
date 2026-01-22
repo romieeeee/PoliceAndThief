@@ -4,6 +4,7 @@ import com.pnt.pnt_spring.domain.auth.exception.JwtAuthenticationEntryPoint;
 import com.pnt.pnt_spring.domain.auth.filter.JwtAuthenticationFilter;
 import com.pnt.pnt_spring.domain.auth.filter.JwtExceptionFilter;
 import com.pnt.pnt_spring.domain.auth.jwt.JwtTokenProvider;
+import com.pnt.pnt_spring.domain.members.member.entity.MemberRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -56,6 +57,7 @@ public class SecurityConfig {
 
         http
                 .authorizeHttpRequests((req) -> req
+                        .requestMatchers("/auth/dev/test").hasAuthority(MemberRole.USER.getKey())
                         .requestMatchers(
                                 "/api-docs/**",
                                 "/swagger-ui.html",
