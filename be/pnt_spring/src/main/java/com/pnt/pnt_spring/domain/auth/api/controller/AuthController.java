@@ -1,6 +1,5 @@
 package com.pnt.pnt_spring.domain.auth.api.controller;
 
-import com.nimbusds.openid.connect.sdk.LogoutRequest;
 import com.pnt.pnt_spring.domain.auth.api.req.IdDuplicateRequest;
 import com.pnt.pnt_spring.domain.auth.api.req.LoginRequest;
 import com.pnt.pnt_spring.domain.auth.api.req.SignupRequest;
@@ -8,6 +7,7 @@ import com.pnt.pnt_spring.domain.auth.api.resp.LoginResponse;
 import com.pnt.pnt_spring.domain.auth.api.resp.SignupResponse;
 import com.pnt.pnt_spring.domain.auth.application.AuthService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,6 +31,24 @@ public class AuthController {
         return new CommonResponse<>(signupResponse, "회원가입에 성공했습니다.", HttpStatus.OK);
     }
 
+    // 로그인
+    @PostMapping("/login")
+    public CommonResponse<LoginResponse> signin(@RequestBody LoginRequest request){
+        LoginResponse loginResponse = authService.login(request);
+        return new CommonResponse<>(loginResponse, "로그인에 성공했습니다.", HttpStatus.OK);
+    }
+
+    // 로그아웃
+    @PostMapping("/logout")
+    public CommonResponse<String> logout(HttpServletRequest request){
+
+        String accessToken = resolveToken(request);
+
+        authService.logout(accessToken);
+
+        return new CommonResponse<>("로그아웃 되었습니다.", "로그아웃 성공", HttpStatus.OK);
+    }
+
     // 아이디 중복 체크
     @PostMapping("/duplicate")
     public CommonResponse<Map<String, Boolean>> checkDuplicate(@RequestBody IdDuplicateRequest request) {
@@ -42,17 +60,11 @@ public class AuthController {
         return new CommonResponse<>(responseData, "아이디 중복 확인 완료", HttpStatus.OK);
     }
 
-    @PostMapping("/login")
-    public CommonResponse<LoginResponse> signin(@RequestBody LoginRequest request){
-        LoginResponse loginResponse = authService.login(request);
-        return new CommonResponse<>(loginResponse, "로그인에 성공했습니다.", HttpStatus.OK);
+    private String resolveToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null; // 혹은 예외 처리
     }
-
-    @PostMapping("/logout")
-    public CommonResponse<Map<String, String>> logout(){
-
-
-        return null;
-    }
-
 }

@@ -1,10 +1,13 @@
 package com.pnt.pnt_spring.global.config;
 
+import com.pnt.pnt_spring.domain.auth.exception.JwtAuthenticationEntryPoint;
 import com.pnt.pnt_spring.domain.auth.filter.JwtAuthenticationFilter;
+import com.pnt.pnt_spring.domain.auth.filter.JwtExceptionFilter;
 import com.pnt.pnt_spring.domain.auth.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -25,6 +28,10 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final JwtExceptionFilter jwtExceptionFilter;
+
+    private final StringRedisTemplate redisTemplate;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Bean
     public PasswordEncoder passwordEncoder(){
@@ -41,7 +48,11 @@ public class SecurityConfig {
 
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                .cors((cors) -> cors.configurationSource(corsConfigurationSource));
+                .cors((cors) -> cors.configurationSource(corsConfigurationSource))
+
+                .exceptionHandling(exception -> exception
+                                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                );
 
         http
                 .authorizeHttpRequests((req) -> req
@@ -53,7 +64,8 @@ public class SecurityConfig {
                                 "/auth/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtExceptionFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 
@@ -61,7 +73,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOriginPatterns(List.of("*")); // 모든 Origin 허용
+        configuration.setAllowedOriginPatterns(List.of("*"));// 모든 Origin 허용
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")); // 모든 HTTP 메서드 허용
         configuration.setAllowedHeaders(List.of("*")); // 모든 헤더 허용
         configuration.setAllowCredentials(true); // 쿠키/인증 정보 포함 허용
