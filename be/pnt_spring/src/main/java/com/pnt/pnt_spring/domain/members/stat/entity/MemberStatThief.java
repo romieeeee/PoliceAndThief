@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 public class MemberStatThief extends BaseEntity {
 
     @Id
-    private Long memberId;
+    private Long id;
 
     @MapsId
     @OneToOne(fetch = FetchType.LAZY)

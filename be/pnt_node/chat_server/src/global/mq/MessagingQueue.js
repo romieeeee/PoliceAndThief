@@ -13,6 +13,11 @@ class MessagingQueue {
     exchangeName = MQConfig.EXCHANGE_NAME;
 
     create = async () => {
+        if (this.connection) {
+            console.log("MQ is already connected.");
+            return this;
+        }
+
         this.connection = await amqplib.connect(MQ_URL);
         this.channel = await this.connection.createChannel();
         await this.createQueue();
@@ -38,6 +43,6 @@ class MessagingQueue {
     }
 }
 
-const mq = new MessagingQueue().create();
+const mq = new MessagingQueue();
 
 export default mq;

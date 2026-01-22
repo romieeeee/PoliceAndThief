@@ -1,7 +1,8 @@
 import { Sequelize } from "sequelize";
-import Member from "./entity/member.js";
+import Member from "./entity/Member.js";
 import ChatRoom from "./entity/ChatRoom.js";
 import MemberChatRoom from "./entity/MemberChatRoom.js";
+import FcmToken from "./entity/FcmToken.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -16,14 +17,14 @@ class SequelizeDB {
         Member.initiate(sequelize);
         ChatRoom.initiate(sequelize);
         MemberChatRoom.initiate(sequelize);
+        FcmToken.initiate(sequelize);
 
         Member.associate(sequelize.models);
         ChatRoom.associate(sequelize.models);
         MemberChatRoom.associate(sequelize.models);
+        FcmToken.associate(sequelize.models);
 
         await this.sync(sequelize);
-
-        return sequelize;
     }
 
     sync = async (sequelize) => {

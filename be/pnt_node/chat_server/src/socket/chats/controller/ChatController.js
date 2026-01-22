@@ -3,6 +3,8 @@ import { ChatRoomService } from "../application/ChatRoomService.js";
 import mq from "../../../global/mq/MessagingQueue.js";
 import { MQConfig } from "../../../global/mq/MQConfig.js";
 
+const handleErrors = [404, 400];
+
 export class ChatController {
 
     constructor(io, socket) {
@@ -10,7 +12,6 @@ export class ChatController {
         this.socket = socket;
         this.chatService = new ChatService();
         this.chatRoomService = new ChatRoomService();
-        this.mq = mq;
     }
 
     joinRoom = async (payload) => {
@@ -23,6 +24,9 @@ export class ChatController {
 
         // 채팅방 접속 db 처리 => is_connected = true로 처리
         try {
+            await this.chatRoomService.findChatRoom(chatRoomId);
+            await this.chatRoomService.findMemberChatRoom(chatRoomId, this.socket.data.memberId);
+
             await this.chatRoomService.connectChatRoom(chatRoomId, this.socket.data.memberId);
 
             const data = {
@@ -33,10 +37,10 @@ export class ChatController {
             this.io.to(chatRoomId).emit("get join room", data);
         } catch (error) {
             console.error("joinRoom error", error);
-            if (error.message === "BadRequestException") {
-                this.socket.emit("error", { message: error.message, code: error.code });
+            if (handleErrors.includes(error.code)) {
+                this.socket.emit("error", { ex: error.message, message: error.text, code: error.code });
             } else {
-                this.socket.emit("error", { message: "Internal Server Error", code: 500 });
+                this.socket.emit("error", { ex: "InternalServeError", message: "서버에 문제가 있습니다.", code: 500 });
             }
         }
     }
@@ -45,12 +49,10 @@ export class ChatController {
         payload.memberId = this.socket.data.memberId;
         const chatRoomId = this.socket.data.chatRoomId;
 
-        console.log("send message", payload);
-
         const resData = await this.chatService.save({ chatRoomId, ...payload });
 
         // 푸시 알림 => 컨슈머에서 채팅방에 접속해 있지 않은 멤버를 확인후 푸시알림
-        this.mq.sendMessage({ chatRoomId, ...payload }, MQConfig.MQ_ALARM);
+        mq.sendMessage({ chatRoomId, ...payload }, MQConfig.MQ_ALARM);
 
         this.io.to(chatRoomId).emit("get message", resData);
     }
@@ -97,10 +99,10 @@ export class ChatController {
             this.socket.disconnect();
         } catch (error) {
             console.error("disconnect error", error);
-            if (error.message === "BadRequestException") {
-                this.socket.emit("error", { message: error.message, code: error.code });
+            if (handleErrors.includes(error.code)) {
+                this.socket.emit("error", { ex: error.message, text: error.text, code: error.code });
             } else {
-                this.socket.emit("error", { message: "Internal Server Error", code: 500 });
+                this.socket.emit("error", { ex: "InternalServeError", text: "서버에 문제가 있습니다.", code: 500 });
             }
         }
     }
