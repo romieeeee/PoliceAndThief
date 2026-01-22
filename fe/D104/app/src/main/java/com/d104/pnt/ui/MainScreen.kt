@@ -22,7 +22,6 @@ import com.d104.pnt.navigation.BottomNavItem
 import com.d104.pnt.navigation.Routes
 import com.d104.pnt.ui.chatroomlist.ChatRoomListScreen
 import com.d104.pnt.ui.game.create.GameCreateScreen
-import com.d104.pnt.ui.game.result.AiNewsLoadingScreen
 import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
 
@@ -53,8 +52,7 @@ fun MainScreen(userName: String) {
             }
 
             composable(Routes.PROFILE) {
-//                ProfileScreen()
-                AiNewsLoadingScreen()
+                ProfileScreen()
             }
 
             composable(Routes.CHAT) {
