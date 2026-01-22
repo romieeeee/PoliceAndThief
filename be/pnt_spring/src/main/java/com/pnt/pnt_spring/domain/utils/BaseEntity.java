@@ -28,4 +28,8 @@ public abstract class BaseEntity {
 
     @Column
     protected boolean isDeleted = false;
+
+
+
+
 }

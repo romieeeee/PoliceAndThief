@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -16,10 +15,70 @@ public class ChatRoom extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, length = 255)
     private String title;
 
-    @Column(length = 20)
-    private String sido;
+    @Column(name = "region_code", nullable = false)
+    private Integer regionCode;
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Column(name = "max_members", nullable = false)
+    private int maxMembers;
+
+    @Column(name = "current_members", nullable = false)
+    private int currentMembers;
+
+    @Column(name = "owner_id", nullable = false)
+    private Long ownerId;   // ✅ 방장 ID
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted;
+
+    // ===== 생성 =====
+    public static ChatRoom create(Long ownerId, String title, Integer regionCode, String description, int maxMembers) {
+        ChatRoom room = new ChatRoom();
+        room.ownerId = ownerId;
+        room.title = title;
+        room.regionCode = regionCode;
+        room.description = description;
+        room.maxMembers = maxMembers;
+        room.currentMembers = 0;
+        room.isDeleted = false;
+        return room;
+    }
+
+    // ===== 수정 =====
+    public void update(String title, Integer regionCode, String description, Integer maxMembers) {
+        if (title != null) this.title = title;
+        if (regionCode != null) this.regionCode = regionCode;
+        if (description != null) this.description = description;
+        if (maxMembers != null) this.maxMembers = maxMembers;
+    }
+
+    // ===== 삭제(soft delete) =====
+    public void delete() {
+        this.isDeleted = true;
+    }
+
+    // ===== 현재 인원 증감 =====
+    public void increaseMembers() {
+        if (this.currentMembers >= this.maxMembers) {
+            throw new IllegalStateException("채팅방 정원이 가득 찼습니다.");
+        }
+        this.currentMembers++;
+    }
+
+    public void decreaseMembers() {
+        if (this.currentMembers > 0) {
+            this.currentMembers--;
+        }
+    }
+
+    // ===== 권한 체크용 도메인 메서드  =====
+    public boolean isOwner(Long memberId) {
+        return this.ownerId.equals(memberId);
+    }
 }

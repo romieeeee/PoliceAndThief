@@ -35,7 +35,7 @@ public class JwtTokenProvider {
     private final Key key;
     private final StringRedisTemplate redisTemplate;
 
-    public JwtTokenProvider(@Value("${JWT_SECRET}") String secretKey, StringRedisTemplate redisTemplate) {
+    public JwtTokenProvider(@Value("${jwt.secret}") String secretKey, StringRedisTemplate redisTemplate) {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         this.key = Keys.hmacShaKeyFor(keyBytes);
         this.redisTemplate = redisTemplate;
