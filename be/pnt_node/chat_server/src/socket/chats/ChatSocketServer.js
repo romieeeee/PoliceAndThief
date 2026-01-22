@@ -4,7 +4,7 @@ import { resolveInSocket } from "../../global/auth/JwtResolver.js";
 const chatSocketServer = (io) => {
     io.use(resolveInSocket);
 
-    io.on("connection", (socket) => {
+    io.on("connection", async (socket) => {
         console.log("websocket is connected!");
 
         socket.data.isIntentionalExit = false; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수

@@ -66,7 +66,9 @@ public class MemberServiceImpl implements MemberService {
         // 데이터 수정
         member.getMemberProfile().updateProfile(request.getNickname(), request.getAvatarUrl());
 
+
         // TODO: MongoDB에 최신화 시켜야 할 필요성
+        // TODO: s3 연결
 
         // 변경된 정보 반환
         return MemberProfileUpdateResponse.from(member.getMemberProfile());
