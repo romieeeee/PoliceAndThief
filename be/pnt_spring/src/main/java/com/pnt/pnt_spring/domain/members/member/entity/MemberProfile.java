@@ -24,4 +24,14 @@ public class MemberProfile extends BaseEntity {
     private String nickname;
 
     private String avatarUrl;
+
+
+    public void updateProfile(String nickname, String avatarUrl){
+        if(nickname != null){
+            this.nickname = nickname;
+        }
+        if(avatarUrl != null){
+            this.avatarUrl=avatarUrl;
+        }
+    }
 }

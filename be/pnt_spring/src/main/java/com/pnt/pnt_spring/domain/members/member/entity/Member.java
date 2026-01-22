@@ -1,5 +1,8 @@
 package com.pnt.pnt_spring.domain.members.member.entity;
 
+import com.pnt.pnt_spring.domain.members.stat.entity.MemberStat;
+import com.pnt.pnt_spring.domain.members.stat.entity.MemberStatPolice;
+import com.pnt.pnt_spring.domain.members.stat.entity.MemberStatThief;
 import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -31,5 +34,18 @@ public class Member extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private MemberRole role;
+
+    // 연관관계 설정(과다 조회 방지)
+    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    private MemberProfile memberProfile;
+
+    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    private MemberStat memberStat;
+
+    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    private MemberStatPolice memberStatPolice;
+
+    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    private MemberStatThief memberStatThief;
 
 }

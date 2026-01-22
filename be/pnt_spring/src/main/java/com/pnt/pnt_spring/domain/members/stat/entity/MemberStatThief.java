@@ -21,11 +21,13 @@ public class MemberStatThief extends BaseEntity {
     @JoinColumn(name = "member_id")
     private Member member;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "grade_thief_id")
+    private GradeThief gradeThief;
+
     private Integer escapeCount;
     private Integer totalMissionCount;
     private Integer longestSurvivalSec;
     private Integer averageSurvivalSec;
 
-    @Column(length = 10)
-    private String gradeThief;
 }
