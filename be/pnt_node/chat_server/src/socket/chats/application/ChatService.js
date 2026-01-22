@@ -1,4 +1,4 @@
-import chatEntity from "../../../db/mongo/entity/chat.js";
+import chatEntity from "../../../global/db/mongo/entity/chat.js";
 import moment from "moment-timezone";
 
 export class ChatService {

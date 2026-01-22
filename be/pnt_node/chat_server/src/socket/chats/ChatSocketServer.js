@@ -1,5 +1,5 @@
 import { ChatController } from "./controller/ChatController.js";
-import { resolveInSocket } from "../../auth/JwtResolver.js";
+import { resolveInSocket } from "../../global/auth/JwtResolver.js";
 
 const chatSocketServer = (io) => {
     io.use(resolveInSocket);
@@ -27,4 +27,5 @@ const chatSocketServer = (io) => {
         });
     });
 }
+
 export default chatSocketServer;

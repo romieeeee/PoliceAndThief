@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import { socketServer } from "./socket/SocketServer.js";
 import router from "./rest/Router.js";
-import { mongoDB } from "./db/database.js";
+import { mongoDB } from "./global/db/database.js";
 
 const port = 8090;
 

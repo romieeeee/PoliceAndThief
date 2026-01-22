@@ -1,6 +1,9 @@
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 
-const secretKeyString = "fH7vQVHckJD0PaQqmZwAx+LZvlBGhU0Yf3MfzRECq+TrsbeFOq19Q0iZCsw0OAnKbI6DlxUF9LVv9lWm+HC9qg==";
+dotenv.config();
+
+const secretKeyString = process.env.JWT_SECRET;
 const secretKey = Buffer.from(secretKeyString, 'base64');
 const options = { algorithms: ['HS512'] };
 

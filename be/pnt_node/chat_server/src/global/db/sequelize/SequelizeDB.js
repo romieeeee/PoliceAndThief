@@ -2,13 +2,16 @@ import { Sequelize } from "sequelize";
 import Member from "./entity/member.js";
 import ChatRoom from "./entity/ChatRoom.js";
 import MemberChatRoom from "./entity/MemberChatRoom.js";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 class SequelizeDB {
     create = async () => {
-        const sequelize = new Sequelize("pnt", "root", "1234", {
-            host: "localhost",
+        const sequelize = new Sequelize(process.env.POSTGRES_DB_NAME, process.env.POSTGRES_USER, process.env.POSTGRES_PASSWORD, {
+            host: process.env.POSTGRES_HOST,
             dialect: "postgres",
-            port: 5432,
+            port: process.env.POSTGRES_PORT,
         });
         Member.initiate(sequelize);
         ChatRoom.initiate(sequelize);

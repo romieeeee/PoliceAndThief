@@ -1,5 +1,7 @@
 import { ChatService } from "../application/ChatService.js";
 import { ChatRoomService } from "../application/ChatRoomService.js";
+import mq from "../../../global/mq/MessagingQueue.js";
+import { MQConfig } from "../../../global/mq/MQConfig.js";
 
 export class ChatController {
 
@@ -8,6 +10,7 @@ export class ChatController {
         this.socket = socket;
         this.chatService = new ChatService();
         this.chatRoomService = new ChatRoomService();
+        this.mq = mq;
     }
 
     joinRoom = async (payload) => {
@@ -31,9 +34,9 @@ export class ChatController {
         } catch (error) {
             console.error("joinRoom error", error);
             if (error.message === "BadRequestException") {
-                this.socket.emit("error", error.message);
+                this.socket.emit("error", { message: error.message, code: error.code });
             } else {
-                this.socket.emit("error", "Internal Server Error");
+                this.socket.emit("error", { message: "Internal Server Error", code: 500 });
             }
         }
     }
@@ -47,6 +50,7 @@ export class ChatController {
         const resData = await this.chatService.save({ chatRoomId, ...payload });
 
         // 푸시 알림 => 컨슈머에서 채팅방에 접속해 있지 않은 멤버를 확인후 푸시알림
+        this.mq.sendMessage({ chatRoomId, ...payload }, MQConfig.MQ_ALARM);
 
         this.io.to(chatRoomId).emit("get message", resData);
     }
@@ -94,9 +98,9 @@ export class ChatController {
         } catch (error) {
             console.error("disconnect error", error);
             if (error.message === "BadRequestException") {
-                this.socket.emit("error", error.message);
+                this.socket.emit("error", { message: error.message, code: error.code });
             } else {
-                this.socket.emit("error", "Internal Server Error");
+                this.socket.emit("error", { message: "Internal Server Error", code: 500 });
             }
         }
     }

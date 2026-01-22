@@ -1,4 +1,4 @@
-import MemberChatRoom from "../../../db/sequelize/entity/MemberChatRoom.js";
+import MemberChatRoom from "../../../global/db/sequelize/entity/MemberChatRoom.js";
 
 export class ChatRoomService {
     connectChatRoom = async (chatRoomId, memberId) => {
@@ -12,7 +12,7 @@ export class ChatRoomService {
         });
 
         if (affectedCount === 0) {
-            throw new Error("BadRequestException");
+            this.makeError("BadRequestException", 400);
         }
     }
 
@@ -27,7 +27,13 @@ export class ChatRoomService {
         });
 
         if (affectedCount === 0) {
-            throw new Error("BadRequestException");
+            this.makeError("BadRequestException", 400);
         }
+    }
+
+    makeError = (message, code) => {
+        const error = new Error(message);
+        error.code = code;
+        throw error;
     }
 }
