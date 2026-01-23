@@ -5,6 +5,8 @@ import com.pnt.pnt_spring.domain.members.member.api.resp.MemberProfileResponse;
 import com.pnt.pnt_spring.domain.members.member.api.resp.MemberProfileUpdateResponse;
 import com.pnt.pnt_spring.domain.members.member.application.MemberService;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
+import com.pnt.pnt_spring.domain.members.member.entity.document.MemberDoc;
+import com.pnt.pnt_spring.domain.members.member.repository.MemberMongoRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.MemberRepository;
 import com.pnt.pnt_spring.domain.members.stat.api.resp.MemberPoliceResponse;
 import com.pnt.pnt_spring.domain.members.stat.api.resp.MemberThiefResponse;
@@ -24,6 +26,7 @@ public class MemberServiceImpl implements MemberService {
     private final MemberRepository memberRepository;
     private final MemberStatPoliceRepository memberStatPoliceRepository;
     private final MemberStatThiefRepository memberStatThiefRepository;
+    private final MemberMongoRepository memberMongoRepository;
 
     // 멤버 프로필 조회
     @Override
@@ -63,12 +66,20 @@ public class MemberServiceImpl implements MemberService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND)); // 혹은 PROFILE_NOT_FOUND
 
+        // TODO: s3 연결
+
+        // 데이터 수정
+
+        // TODO: s3 연결
+
         // 데이터 수정
         member.getMemberProfile().updateProfile(request.getNickname(), request.getAvatarUrl());
 
 
         // TODO: MongoDB에 최신화 시켜야 할 필요성
-        // TODO: s3 연결
+        MemberDoc memberDoc = memberMongoRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+        memberDoc.update(request.getNickname(), request.getAvatarUrl());
 
         // 변경된 정보 반환
         return MemberProfileUpdateResponse.from(member.getMemberProfile());

@@ -23,7 +23,8 @@ public class MemberProfile extends BaseEntity {
     @Column(length = 20)
     private String nickname;
 
-    private String avatarUrl;
+    @Builder.Default
+    private String avatarUrl = "default.png";
 
 
     public void updateProfile(String nickname, String avatarUrl){

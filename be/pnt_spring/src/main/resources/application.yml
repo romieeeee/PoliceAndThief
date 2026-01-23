@@ -18,6 +18,11 @@ spring:
       hibernate :
         format_sql: true
 
+  data:
+    mongodb:
+      auto-index-creation: true # 인덱스 생성 설정
+      uri: ${MONGODB_URL}
+
 # swagger
 springdoc:
   api-docs:
