@@ -2,14 +2,18 @@ package com.pnt.pnt_spring.domain.auth.application.impl;
 
 import com.pnt.pnt_spring.domain.auth.api.req.LoginRequest;
 import com.pnt.pnt_spring.domain.auth.api.req.SignupRequest;
+import com.pnt.pnt_spring.domain.auth.api.req.SocialLoginRequest;
 import com.pnt.pnt_spring.domain.auth.api.req.TokenDto;
 import com.pnt.pnt_spring.domain.auth.api.resp.LoginResponse;
 import com.pnt.pnt_spring.domain.auth.api.resp.SignupResponse;
 import com.pnt.pnt_spring.domain.auth.application.AuthService;
+import com.pnt.pnt_spring.domain.auth.application.SocialTokenValidator;
 import com.pnt.pnt_spring.domain.auth.jwt.JwtTokenProvider;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
+import com.pnt.pnt_spring.domain.members.member.entity.MemberAuthProvider;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberProfile;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberRole;
+import com.pnt.pnt_spring.domain.members.member.repository.MemberAuthProviderRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.MemberProfileRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.MemberRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
@@ -25,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -37,6 +42,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate redisTemplate;
+    private final MemberAuthProviderRepository memberAuthProviderRepository;
+    private final SocialTokenValidator socialTokenValidator;
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
@@ -57,6 +64,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "이미 사용 중인 이메일입니다.");
         }
 
+
         // Member 엔터티 생성 및 저장
         Member member = Member.builder()
                 .loginId(request.getId())
@@ -72,7 +80,7 @@ public class AuthServiceImpl implements AuthService {
         MemberProfile memberProfile = MemberProfile.builder()
                 .member(member)
                 .nickname(request.getNickname())
-                .avatarUrl(request.getAvatarUrl())
+                .avatarUrl(request.getAvatarUrl() == null ? "default" : request.getAvatarUrl())
                 .build();
 
         memberProfileRepository.save(memberProfile);
@@ -148,6 +156,79 @@ public class AuthServiceImpl implements AuthService {
         if (expiration > 0){
             redisTemplate.opsForValue().set("BL:" + accessToken, "logout", expiration, TimeUnit.SECONDS);
         }
+    }
+
+    @Override
+    @Transactional
+    public LoginResponse socialLogin(SocialLoginRequest request) {
+
+        // Validator를 통해 소셜 ID 가져오기 (코드가 훨씬 깔끔해짐)
+        String providerId = socialTokenValidator.validateAndGetId(request.getProvider(), request.getToken());
+
+        String provider = request.getProvider().toUpperCase();
+
+        // 기존 가입 여부 확인
+        MemberAuthProvider authProvider = memberAuthProviderRepository
+                .findByProviderAndProviderUserKey(provider, providerId)
+                .orElse(null);
+
+        Member member;
+
+        if (authProvider == null) {
+            // 3. 신규 회원가입 (자동 가입)
+            String socialLoginId = provider + "_" + providerId; // 예: KAKAO_12345
+
+            // Member 생성 (빌더 패턴 활용)
+            member = Member.builder()
+                    .loginId(socialLoginId)
+                    .password(UUID.randomUUID().toString()) // 비밀번호는 랜덤 처리
+                    .email(socialLoginId + "@social.user") // 이메일 없을 경우 임시 처리
+                    .role(MemberRole.USER)
+                    .build();
+            memberRepository.save(member);
+
+            // MemberProfile 생성
+            MemberProfile memberProfile = MemberProfile.builder()
+                    .member(member)
+                    .nickname("User_" + providerId.substring(0, 5))
+                    .avatarUrl("default")
+                    .build();
+            memberProfileRepository.save(memberProfile);
+
+            authProvider = MemberAuthProvider.builder()
+                    .member(member)
+                    .provider(provider)
+                    .providerUserKey(providerId)
+                    .build();
+            memberAuthProviderRepository.save(authProvider);
+
+        } else {
+            // 기존 회원이면 정보 로드
+            member = authProvider.getMember();
+        }
+
+        // JWT 발급 및 로그인
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                member.getLoginId(),
+                null,
+                List.of(new SimpleGrantedAuthority(member.getRole().getKey()))
+        );
+
+        TokenDto tokenDto = jwtTokenProvider.generateToken(authentication, member.getId());
+
+        // Redis에 Refresh Token 저장
+        redisTemplate.opsForValue().set(
+                "RT:" + member.getLoginId(),
+                tokenDto.getRefreshToken(),
+                tokenDto.getRefreshTokenExpiresIn(),
+                TimeUnit.MILLISECONDS
+        );
+
+        // 프로필 조회 (Lazy Loading 이슈 방지용 조회)
+        MemberProfile memberProfile = memberProfileRepository.findByMember(member)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PROFILE_NOT_FOUND));
+
+        return LoginResponse.of(tokenDto, member, memberProfile);
     }
 
 }

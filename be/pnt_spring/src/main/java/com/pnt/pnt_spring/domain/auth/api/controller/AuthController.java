@@ -3,6 +3,7 @@ package com.pnt.pnt_spring.domain.auth.api.controller;
 import com.pnt.pnt_spring.domain.auth.api.req.IdDuplicateRequest;
 import com.pnt.pnt_spring.domain.auth.api.req.LoginRequest;
 import com.pnt.pnt_spring.domain.auth.api.req.SignupRequest;
+import com.pnt.pnt_spring.domain.auth.api.req.SocialLoginRequest;
 import com.pnt.pnt_spring.domain.auth.api.resp.LoginResponse;
 import com.pnt.pnt_spring.domain.auth.api.resp.SignupResponse;
 import com.pnt.pnt_spring.domain.auth.application.AuthService;
@@ -58,6 +59,12 @@ public class AuthController {
         Map<String, Boolean> responseData = Map.of("duplicated", isDuplicate);
 
         return new CommonResponse<>(responseData, "아이디 중복 확인 완료", HttpStatus.OK);
+    }
+
+    @PostMapping("/social-login")
+    public CommonResponse<LoginResponse> socialLogin(@RequestBody SocialLoginRequest request) {
+        LoginResponse loginResponse = authService.socialLogin(request);
+        return new CommonResponse<>(loginResponse, "소셜 로그인 성공", HttpStatus.OK);
     }
 
     private String resolveToken(HttpServletRequest request) {
