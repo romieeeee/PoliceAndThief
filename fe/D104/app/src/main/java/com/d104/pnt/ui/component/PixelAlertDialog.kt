@@ -11,12 +11,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.d104.pnt.ui.theme.*
+import androidx.compose.ui.unit.Dp
 
 // 경고창
 @Composable
 fun PixelAlertDialog(
     title: String,
     message: String,
+    spacerHeight: Dp = 16.dp,
     buttonContent: @Composable ColumnScope.() -> Unit
 ) {
     PixelContainer(
@@ -38,7 +40,7 @@ fun PixelAlertDialog(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(spacerHeight))
 
             Text(
                 text = message,
