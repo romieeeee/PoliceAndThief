@@ -3,6 +3,7 @@ package com.pnt.pnt_spring.domain.auth.application;
 
 import com.pnt.pnt_spring.domain.auth.api.req.LoginRequest;
 import com.pnt.pnt_spring.domain.auth.api.req.SignupRequest;
+import com.pnt.pnt_spring.domain.auth.api.req.SocialLoginRequest;
 import com.pnt.pnt_spring.domain.auth.api.resp.LoginResponse;
 import com.pnt.pnt_spring.domain.auth.api.resp.SignupResponse;
 
@@ -19,4 +20,7 @@ public interface AuthService {
 
     // 로그아웃
     void logout(String accessToken);
+
+    // 소셜로그인(OAuth)
+    LoginResponse socialLogin(SocialLoginRequest request);
 }

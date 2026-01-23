@@ -1,15 +1,14 @@
-package com.pnt.pnt_spring.domain.auth.entity;
+package com.pnt.pnt_spring.domain.members.member.entity;
 
-import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 @Table(
         name = "member_auth_providers",
         uniqueConstraints = {
