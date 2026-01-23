@@ -13,12 +13,15 @@ import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberAuthProvider;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberProfile;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberRole;
+import com.pnt.pnt_spring.domain.members.member.entity.document.MemberDoc;
+import com.pnt.pnt_spring.domain.members.member.repository.MemberMongoRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.MemberAuthProviderRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.MemberProfileRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.MemberRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -42,8 +45,9 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final StringRedisTemplate redisTemplate;
-    private final MemberAuthProviderRepository memberAuthProviderRepository;
+    private final MemberMongoRepository memberMongoRepository;
     private final SocialTokenValidator socialTokenValidator;
+    private final MemberAuthProviderRepository memberAuthProviderRepository;
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
@@ -59,11 +63,10 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 이메일 체크
-        if(memberRepository.existsByEmail(request.getEmail())){
+        if(StringUtils.isNotBlank(request.getEmail()) && memberRepository.existsByEmail(request.getEmail())){
             // ErrorCode에 DUPLICATE_EMAIL이 없다면 새로 만드시거나 VALIDATION_ERROR 등을 사용하세요.
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "이미 사용 중인 이메일입니다.");
         }
-
 
         // Member 엔터티 생성 및 저장
         Member member = Member.builder()
@@ -80,10 +83,19 @@ public class AuthServiceImpl implements AuthService {
         MemberProfile memberProfile = MemberProfile.builder()
                 .member(member)
                 .nickname(request.getNickname())
-                .avatarUrl(request.getAvatarUrl() == null ? "default" : request.getAvatarUrl())
+                .avatarUrl(request.getAvatarUrl())
                 .build();
 
         memberProfileRepository.save(memberProfile);
+
+        // mongodb에 member 정보 저장.
+        MemberDoc memberDoc = MemberDoc.builder()
+                .memberId(member.getId())
+                .nickname(memberProfile.getNickname())
+                .avatarUrl(memberProfile.getAvatarUrl())
+                .build();
+
+        memberMongoRepository.save(memberDoc);
 
         return SignupResponse.from(member, memberProfile);
     }
@@ -201,6 +213,13 @@ public class AuthServiceImpl implements AuthService {
                     .providerUserKey(providerId)
                     .build();
             memberAuthProviderRepository.save(authProvider);
+
+            MemberDoc memberDoc = MemberDoc.builder()
+                    .memberId(member.getId())
+                    .nickname(memberProfile.getNickname())
+                    .avatarUrl(memberProfile.getAvatarUrl())
+                    .build();
+            memberMongoRepository.save(memberDoc);
 
         } else {
             // 기존 회원이면 정보 로드
