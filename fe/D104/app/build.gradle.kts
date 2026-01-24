@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -19,6 +21,30 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val localProperties = Properties().apply{
+            project.rootProject.file("local.properties").inputStream().use { load(it) }
+        }
+
+        manifestPlaceholders["GOOGLE_MAP_API_KEY"] = localProperties.getProperty("GOOGLE_MAP_API_KEY") ?: ""
+        manifestPlaceholders["INGAME_MAPS_ID"] = localProperties.getProperty("INGAME_MAPS_ID") ?: ""
+        manifestPlaceholders["SETTING_MAPS_ID"] = localProperties.getProperty("SETTING_MAPS_ID") ?: ""
+
+        buildConfigField(
+            "String",
+            "GOOGLE_MAP_API_KEY",
+            "\"${localProperties["GOOGLE_MAP_API_KEY"]}\""
+        )
+        buildConfigField(
+            "String",
+            "INGAME_MAP_ID",
+            "\"${localProperties["INGAME_MAP_ID"]}\""
+        )
+        buildConfigField(
+            "String",
+            "SETTING_MAP_ID",
+            "\"${localProperties["SETTING_MAP_ID"]}\""
+        )
     }
 
     buildTypes {
@@ -39,6 +65,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -91,6 +118,7 @@ dependencies {
 
     // Google Maps & Location
     implementation("com.google.maps.android:maps-compose:4.3.3")
+    implementation("com.google.maps.android:android-maps-utils:3.8.2")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.1.0")
 
@@ -124,6 +152,12 @@ dependencies {
     // Firebase (Push 알림)
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
     implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // Google Maps for Compose
+    val mapsComposeVersion = "4.4.1"
+    implementation("com.google.maps.android:maps-compose:${mapsComposeVersion}")
+    implementation("com.google.maps.android:maps-compose-utils:${mapsComposeVersion}")
+    implementation("com.google.maps.android:maps-compose-widgets:${mapsComposeVersion}")
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.56.2")
