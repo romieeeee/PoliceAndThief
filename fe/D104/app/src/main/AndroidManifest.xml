@@ -43,6 +43,13 @@
         android:roundIcon="@drawable/ic_logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.D104">
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${GOOGLE_MAP_API_KEY}"/>
+        <service
+            android:name=".service.location.LocationService"
+            android:foregroundServiceType="location"
+            android:exported="false"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"
