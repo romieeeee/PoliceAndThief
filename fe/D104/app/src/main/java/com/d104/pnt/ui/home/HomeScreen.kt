@@ -3,11 +3,25 @@ package com.d104.pnt.ui.home
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,73 +38,73 @@ import com.d104.pnt.ui.theme.TextPrimary
 
 @Composable
 fun HomeScreen(
-    goToGameCreate: () -> Unit
+    goToGameCreate: () -> Unit,
+    navigateToGameRoom: (Long) -> Unit,
 ) {
     var showJoinDialog by remember { mutableStateOf(false) }
 
     Surface(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxSize()) {
 
-            Image(
-                modifier = Modifier.fillMaxSize(),
-                painter = painterResource(R.drawable.img_main_bg),
-                contentDescription = null,
-                contentScale = ContentScale.Crop
-            )
+        Image(
+            modifier = Modifier.fillMaxSize(),
+            painter = painterResource(R.drawable.img_main_bg),
+            contentDescription = null,
+            contentScale = ContentScale.Crop
+        )
 
-            Column(
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 50.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+
+            PixelIconButton(
+                onClick = { navigateToGameRoom(1) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 50.dp)
-                    .align(Alignment.Center),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .height(52.dp)
             ) {
-                PixelIconButton(
-                    onClick = { showJoinDialog = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                ) {
-                    Text(
-                        text = "게임 입장하기",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.Black
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(30.dp))
-
-                PixelIconButton(
-                    onClick = { goToGameCreate() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                ) {
-                    Text(
-                        text = "게임 생성하기",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.Black
-                    )
-                }
+                Text(
+                    modifier = Modifier.padding(vertical = 2.dp),
+                    text = "게임 입장하기",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black
+                )
             }
 
-            if (showJoinDialog) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.6f))
-                        .clickable { showJoinDialog = false },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(modifier = Modifier.clickable(enabled = false) {}) {
-                        JoinGameDialog(
-                            onDismiss = { showJoinDialog = false },
-                            onConfirm = {
-                                showJoinDialog = false
-                            }
-                        )
-                    }
+            Spacer(modifier = Modifier.height(30.dp))
+
+            PixelIconButton(
+                onClick = { goToGameCreate() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+            ) {
+                Text(
+                    text = "게임 생성하기",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black
+                )
+            }
+        }
+
+        if (showJoinDialog) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .clickable { showJoinDialog = false },
+                contentAlignment = Alignment.Center
+            ) {
+                Box(modifier = Modifier.clickable(enabled = false) {}) {
+                    JoinGameDialog(
+                        onDismiss = { showJoinDialog = false },
+                        onConfirm = {
+                            showJoinDialog = false
+                        }
+                    )
                 }
             }
         }
@@ -164,3 +178,4 @@ fun JoinGameDialog(
         }
     }
 }
+

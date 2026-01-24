@@ -39,6 +39,15 @@ val Typography = Typography(
         letterSpacing = 0.sp
     ),
 
+    bodySmall = TextStyle(
+        fontFamily = PixelFont,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 18.sp,
+        letterSpacing = 0.sp
+    ),
+
+
     // 버튼, 짧은 텍스트
     labelLarge = TextStyle(
         fontFamily = PixelFont,

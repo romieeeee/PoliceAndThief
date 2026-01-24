@@ -2,7 +2,15 @@ package com.d104.pnt.ui.game.create
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
@@ -11,25 +19,30 @@ import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.R
-import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelInputField
-import com.d104.pnt.ui.theme.D104Theme
+import com.d104.pnt.ui.component.RoundedButton
 import com.d104.pnt.ui.theme.DarkSurface
+import com.d104.pnt.ui.theme.DialogBorderColor
 
-private val DialogBorderColor = Color(0xFF81B0FF)
 
 @Composable
-fun GameCreateScreen() {
+fun GameCreateScreen(
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit
+) {
     var gameName by remember { mutableStateOf("") }
     var totalPlayers by remember { mutableStateOf(25) }
     var gameTime by remember { mutableStateOf(20) }
@@ -49,19 +62,18 @@ fun GameCreateScreen() {
         )
 
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp),
+                    .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // 게임 생성 컨테이너
                 PixelContainer(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(650.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     backgroundColor = DarkSurface,
                     borderColor = DialogBorderColor,
                     borderWidth = 8f,
@@ -69,13 +81,12 @@ fun GameCreateScreen() {
                 ) {
                     Column(
                         modifier = Modifier
-                            .padding(horizontal = 30.dp, vertical = 20.dp)
-                            .fillMaxSize(),
-                        horizontalAlignment = Alignment.Start
+                            .fillMaxWidth()
+                            .padding(10.dp)
                     ) {
                         Text(
                             text = "게임 생성하기",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.titleMedium,
                             color = Color.White,
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
@@ -99,7 +110,8 @@ fun GameCreateScreen() {
                             contentDescription = "맵 프리뷰",
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(140.dp)
+                                .padding(horizontal = 20.dp)
+                                .height(120.dp)
                                 .background(Color.Gray),
                             contentScale = ContentScale.Crop
                         )
@@ -179,55 +191,29 @@ fun GameCreateScreen() {
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(20.dp)
+                        ) {
+                            RoundedButton(
+                                text = "취소",
+                                onClick = { onCancel() },
+                                containerColor = Color.White,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            RoundedButton(
+                                text = "확인",
+                                onClick = { onConfirm() },
+                                containerColor = Color.White,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
-                    PixelButtonCode(
-                        text = "취소",
-                        onClick = {},
-                        modifier = Modifier.weight(1f),
-                        mainColor = Color.White,
-                        borderColor = Color.Black,
-                        textColor = Color.Black,
-                        fontSize = 16,
-                        blockHeight = 13
-                    )
-
-                    PixelButtonCode(
-                        text = "확인",
-                        onClick = {},
-                        modifier = Modifier.weight(1f),
-                        mainColor = Color.White,
-                        borderColor = Color.Black,
-                        textColor = Color.Black,
-                        fontSize = 16,
-                        blockHeight = 13
-                    )
                 }
             }
         }
     }
 }
 
-//@Preview(showBackground = true)
-//@Composable
-//fun CreateGameDialogPreview() {
-//    D104Theme {
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .background(Color.Gray),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            GameCreateScreen()
-//        }
-//    }
-//}
