@@ -40,5 +40,21 @@ val NeutralColor = Color(0xFF989898)
 // Border / Divider
 val BorderDefault = Color(0xFF000000)
 val DividerColor = Color(0xFF293D36)
+val DialogBorderColor = Color(0xFF81B0FF)
 
 val CheckGreen = Color(0xFF8EE334)
+
+val PoliceBlue =  Color (0xFF24BAF3)
+val ThiefRed = Color (0xFFF32424)
+
+val PastelBlue = Color (0xFF5E7BB4)
+// Area
+val InArea = Color(0x5500FF00)
+val AreaBoundary = Color(0xFF00FF00)
+val PrisonArea = Color(0x59FF3030)
+val PrisonBoundary = Color(0xBFFF3030)
+
+// == Thief State ==
+val WantedRed = Color(0xFFB72222)
+
+val MissionYellow = Color(0xFFFFF344)

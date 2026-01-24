@@ -2,6 +2,7 @@ package com.d104.pnt.ui.game.create
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
@@ -16,20 +17,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
-import com.d104.pnt.ui.component.PixelButtonCode
+import com.d104.pnt.data.repository.LocationRepository
+import com.d104.pnt.domain.model.DraggableLatLng
+import com.d104.pnt.ui.component.GoogleMaps
+//import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelInputField
-import com.d104.pnt.ui.theme.D104Theme
+import com.d104.pnt.ui.component.RoundedButton
 import com.d104.pnt.ui.theme.DarkSurface
+import com.d104.pnt.ui.theme.DialogBorderColor
+import com.google.android.gms.maps.model.LatLng
 
-private val DialogBorderColor = Color(0xFF81B0FF)
 
 @Composable
-fun GameCreateScreen() {
+fun GameCreateScreen(
+    onCancel: () -> Unit,
+    onConfirm: () -> Unit,
+    viewModel: GameCreateViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
     var gameName by remember { mutableStateOf("") }
     var totalPlayers by remember { mutableStateOf(25) }
     var gameTime by remember { mutableStateOf(20) }
@@ -38,6 +48,28 @@ fun GameCreateScreen() {
     var policeCount by remember { mutableStateOf(9) }
 
     val thiefCount = totalPlayers - policeCount
+
+    val context = LocalContext.current
+
+    val userLocation by LocationRepository.currentLocation.collectAsStateWithLifecycle()
+    val polygonPoints by LocationRepository.polygonPoints.collectAsStateWithLifecycle()
+    val prisonLocation by LocationRepository.prisonLocation.collectAsStateWithLifecycle()
+    var showMapPopup by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        // ViewModel에게 Context를 줘서 위치를 가져오고 저장하게 시킴
+        viewModel.getCurrentLocation(context)
+    }
+    LaunchedEffect(userLocation) {
+        if (userLocation != null) {
+            LocationRepository.createDefaultPolygon(userLocation!!)
+            LocationRepository.setPrisonLocation(
+                LatLng(
+                    userLocation!!.latitude,
+                    userLocation!!.longitude
+                )
+            )
+        }
+    }
 
     Surface(modifier = Modifier.fillMaxSize()) {
 
@@ -49,19 +81,18 @@ fun GameCreateScreen() {
         )
 
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp),
+                    .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // 게임 생성 컨테이너
                 PixelContainer(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(650.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     backgroundColor = DarkSurface,
                     borderColor = DialogBorderColor,
                     borderWidth = 8f,
@@ -69,13 +100,12 @@ fun GameCreateScreen() {
                 ) {
                     Column(
                         modifier = Modifier
-                            .padding(horizontal = 30.dp, vertical = 20.dp)
-                            .fillMaxSize(),
-                        horizontalAlignment = Alignment.Start
+                            .fillMaxWidth()
+                            .padding(10.dp)
                     ) {
                         Text(
                             text = "게임 생성하기",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.titleMedium,
                             color = Color.White,
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
@@ -94,15 +124,28 @@ fun GameCreateScreen() {
 
                         SectionTitle(text = "맵 설정 & 감옥 설정")
                         Spacer(modifier = Modifier.height(8.dp))
-                        Image(
-                            painter = painterResource(id = R.drawable.img_map_example),
-                            contentDescription = "맵 프리뷰",
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(140.dp)
-                                .background(Color.Gray),
-                            contentScale = ContentScale.Crop
-                        )
+                        ) {
+                            userLocation?.let { loc ->
+                                GoogleMaps(
+                                    modifier = Modifier.fillMaxSize(),
+                                    startLat = loc.latitude,
+                                    startLng = loc.longitude,
+                                    inGameMinimap = false,
+                                    isPreview = true,
+                                    polygonPoints = polygonPoints.map { DraggableLatLng(position = it) },
+                                    prisonLocation = prisonLocation,
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable { showMapPopup = true }
+                            )// 여기서 클릭 감지 -> 팝업 띄우기
+                        }
 
                         Spacer(modifier = Modifier.height(24.dp))
 
@@ -179,55 +222,36 @@ fun GameCreateScreen() {
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(20.dp)
+                        ) {
+                            RoundedButton(
+                                text = "취소",
+                                onClick = { onCancel() },
+                                containerColor = Color.White,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            RoundedButton(
+                                text = "확인",
+                                onClick = { onConfirm() },
+                                containerColor = Color.White,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
-                    PixelButtonCode(
-                        text = "취소",
-                        onClick = {},
-                        modifier = Modifier.weight(1f),
-                        mainColor = Color.White,
-                        borderColor = Color.Black,
-                        textColor = Color.Black,
-                        fontSize = 16,
-                        blockHeight = 13
-                    )
-
-                    PixelButtonCode(
-                        text = "확인",
-                        onClick = {},
-                        modifier = Modifier.weight(1f),
-                        mainColor = Color.White,
-                        borderColor = Color.Black,
-                        textColor = Color.Black,
-                        fontSize = 16,
-                        blockHeight = 13
-                    )
                 }
             }
         }
     }
+    if (showMapPopup) {
+        MapSettingDialog (
+            modifier = Modifier,
+            onDismiss = { showMapPopup = false }, // 닫기 버튼이나 뒤로가기 시 닫힘
+            onConfirm = { showMapPopup = false }
+        )
+    }
 }
 
-//@Preview(showBackground = true)
-//@Composable
-//fun CreateGameDialogPreview() {
-//    D104Theme {
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .background(Color.Gray),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            GameCreateScreen()
-//        }
-//    }
-//}
