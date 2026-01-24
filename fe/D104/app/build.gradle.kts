@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt")
     id("kotlin-parcelize")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -123,6 +124,15 @@ dependencies {
     // Firebase (Push 알림)
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
     implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // Hilt
+    implementation("com.google.dagger:hilt-android:2.56.2")
+    kapt("com.google.dagger:hilt-android-compiler:2.56.2")
+
+    // Compose → Hilt ViewModel 통합
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    // Hilt Navigation 컴파일러
+    kapt("androidx.hilt:hilt-compiler:1.2.0")
 
     // Test
     testImplementation(libs.junit)

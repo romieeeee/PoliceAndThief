@@ -1,6 +1,5 @@
 package com.d104.pnt.ui
 
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,8 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,11 +23,9 @@ import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.navigation.Routes
 import com.d104.pnt.ui.chatroomlist.ChatRoomListScreen
 import com.d104.pnt.ui.game.create.GameCreateScreen
-import com.d104.pnt.ui.game.load.GameLoadingScreen
-import com.d104.pnt.ui.game.load.GameLoadingViewModel
-import com.d104.pnt.ui.game.load.GameLoadingViewModelFactory
-import com.d104.pnt.ui.game.play.GamePlayScreen
 import com.d104.pnt.ui.game.end.GameResultScreen
+import com.d104.pnt.ui.game.load.GameLoadingScreen
+import com.d104.pnt.ui.game.play.GamePlayScreen
 import com.d104.pnt.ui.game.play.GameRoleScreen
 import com.d104.pnt.ui.game.wait.GameWaitingScreen
 import com.d104.pnt.ui.game.wait.RoleSelectScreen
@@ -39,9 +34,7 @@ import com.d104.pnt.ui.profile.ProfileScreen
 
 @Composable
 fun MainScreen(userName: String) {
-    val context = LocalContext.current
     val navController = rememberNavController()
-    val mainViewModel: MainViewModel = viewModel(viewModelStoreOwner = context as ComponentActivity)
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -58,7 +51,6 @@ fun MainScreen(userName: String) {
                 .windowInsetsPadding(WindowInsets.navigationBars)
         ) {
             // ===== BottomNav 탭 =====
-
             composable(Routes.HOME) {
                 HomeScreen(
                     goToGameCreate = {
@@ -83,7 +75,6 @@ fun MainScreen(userName: String) {
             }
 
             // ===== 채팅방 =====
-
             composable(
                 route = "${Routes.CHAT_ROOM}/{${NavArgs.CHAT_ID}}",
                 arguments = listOf(
@@ -156,12 +147,8 @@ fun MainScreen(userName: String) {
                 val roleName = backStackEntry.arguments?.getString(NavArgs.ROLE) ?: "THIEF"
                 val role = GameRole.fromName(roleName)
 
-                val viewModel: GameLoadingViewModel = viewModel(
-                    factory = GameLoadingViewModelFactory(role)
-                )
-
+                // (SavedStateHandle로 role 자동 주입)
                 GameLoadingScreen(
-                    viewModel = viewModel,
                     onLoadingComplete = { gameId ->
                         navController.navigate(Routes.buildGamePlay(gameId, role.name)) {
                             popUpTo(Routes.HOME)
@@ -185,7 +172,6 @@ fun MainScreen(userName: String) {
                     }
                 )
             }
-
 
 
             // 게임 플레이
@@ -253,7 +239,6 @@ fun MainScreen(userName: String) {
 
 
             // ===== 신고 =====
-
             composable(
                 route = "${Routes.REPORT}/{${NavArgs.NICKNAME}}",
                 arguments = listOf(
