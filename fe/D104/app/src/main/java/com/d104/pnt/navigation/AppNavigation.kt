@@ -12,9 +12,8 @@ import com.d104.pnt.IntroScreen
 import com.d104.pnt.permission.PermissionDeniedDialog
 import com.d104.pnt.permission.RequestEssentialPermissions
 import com.d104.pnt.ui.MainScreen
-import com.d104.pnt.ui.game.create.GameCreateScreen
-import com.d104.pnt.ui.login.LoginScreen
-import com.d104.pnt.ui.login.SignupScreen
+import com.d104.pnt.ui.auth.LoginScreen
+import com.d104.pnt.ui.auth.SignupScreen
 import com.example.d104.utils.helper.PermissionHelper
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import timber.log.Timber

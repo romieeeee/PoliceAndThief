@@ -1,34 +1,51 @@
 package com.d104.pnt.ui.game.load
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.domain.model.GameRole
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
+import javax.inject.Inject
 
 /**
- * 게임 로딩 화면 ViewModel
  * 역할별 카운트다운 및 게임 시작 준비
+ *
+ * SavedStateHandle을 사용하여 Navigation argument로 role을 받음
+ *
+ * Navigation route: "game_loading/{role}"
+ * 예: navController.navigate("game_loading/POLICE")
  */
-class GameLoadingViewModel(
-    private val totalSeconds: Int = 5,
-    val role: GameRole
+@HiltViewModel
+class GameLoadingViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _remainingTime = MutableStateFlow(totalSeconds)
+    companion object {
+        private const val KEY_ROLE = "role" // Navigation argument 키 (NavArgs.ROLE과 동일해야 함)
+        private const val TOTAL_SECONDS = 5
+    }
+
+    // Navigation argument에서 role 가져오기
+    val role: GameRole = savedStateHandle.get<String>(KEY_ROLE)?.let {
+        GameRole.fromName(it)
+    } ?: GameRole.THIEF // 기본값
+
+    private val _remainingTime = MutableStateFlow(TOTAL_SECONDS)
     val remainingTime: StateFlow<Int> = _remainingTime
 
     private val _isFinished = MutableStateFlow(false)
     val isFinished: StateFlow<Boolean> = _isFinished
 
-    // 역할별 메시지
     private val _message = MutableStateFlow(getInitialMessage())
     val message: StateFlow<String> = _message
 
     init {
+        Timber.d("GameLoadingViewModel initialized with role: $role")
         startCountdown()
     }
 
@@ -40,6 +57,7 @@ class GameLoadingViewModel(
                 updateMessage()
             }
             _isFinished.value = true
+            Timber.d("Countdown finished")
         }
     }
 
@@ -57,31 +75,11 @@ class GameLoadingViewModel(
                 GameRole.POLICE -> "도둑들의 위치를 파악하세요"
                 GameRole.THIEF -> "은신 장소를 찾으세요"
             }
-
             _remainingTime.value > 10 -> when (role) {
                 GameRole.POLICE -> "팀원들과 협력하세요"
                 GameRole.THIEF -> "경찰의 포위망을 조심하세요"
             }
-
             else -> "곧 게임이 시작됩니다!"
         }
-    }
-
-
-}
-
-/**
- * ViewModel Factory
- */
-class GameLoadingViewModelFactory(
-    private val role: GameRole
-) : ViewModelProvider.Factory {
-
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(GameLoadingViewModel::class.java)) {
-            return GameLoadingViewModel(role = role) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }

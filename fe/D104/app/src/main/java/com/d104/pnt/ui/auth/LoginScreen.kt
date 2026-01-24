@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.login
+package com.d104.pnt.ui.auth
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.d104.pnt.R
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelInputField
@@ -40,6 +41,7 @@ import com.d104.pnt.ui.theme.BorderDefault
 
 @Composable
 fun LoginScreen(
+    viewModel: AuthViewModel = hiltViewModel(),
     goToSignup: () -> Unit,
     onLoginSuccess: (String) -> Unit
 ) {
@@ -112,7 +114,9 @@ fun LoginScreen(
                         .fillMaxHeight(),
                     text = "로그인",
                     fontSize = 16,
-                    onClick = { onLoginSuccess("keroro") },
+                    onClick = {
+                        viewModel.login("user", "pass")
+                        onLoginSuccess("keroro") },
                     mainColor = AccentRed,
                     borderColor = BorderDefault,
                 )

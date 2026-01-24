@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.login
+package com.d104.pnt.ui.auth
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement

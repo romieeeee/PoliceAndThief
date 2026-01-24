@@ -1,8 +1,10 @@
 package com.d104.pnt.base
 
+import android.content.SharedPreferences
 import okhttp3.Interceptor
 import okhttp3.Response
 import timber.log.Timber
+import javax.inject.Inject
 
 /**
  * 서버로부터 받은 쿠키를 SharedPreferences에 저장하는 Interceptor
@@ -11,10 +13,10 @@ import timber.log.Timber
  * 1. 응답 헤더에서 "Set-Cookie" 추출
  * 2. SharedPreferences에 쿠키 저장
  * 3. 이후 요청에서 자동으로 쿠키 사용
- *
- * 참고: Interceptor는 동기적으로 동작하므로 SharedPreferences 사용
  */
-class ReceivedCookiesInterceptor : Interceptor {
+class ReceivedCookiesInterceptor @Inject constructor(
+    private val cookiePreferences: SharedPreferences
+) : Interceptor {
 
     companion object {
         private const val COOKIE_KEY = "cookies"
@@ -34,8 +36,8 @@ class ReceivedCookiesInterceptor : Interceptor {
         if (setCookieHeaders.isNotEmpty()) {
             val cookies = setCookieHeaders.toSet()
 
-            // SharedPreferences에 쿠키 저장 (동기 처리)
-            BaseApplication.cookiePreferences
+            // SharedPreferences에 쿠키 저장
+            cookiePreferences
                 .edit()
                 .putStringSet(COOKIE_KEY, cookies)
                 .apply()
