@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.ui.theme.*
-import com.d104.pnt.utils.helper.generateQrCode
+import com.d104.pnt.util.generateQrCode
 
 @Composable
 fun QRcodeContainer(

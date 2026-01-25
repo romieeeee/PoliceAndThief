@@ -92,7 +92,6 @@ dependencies {
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
-
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
@@ -142,7 +141,6 @@ dependencies {
 
     // livekit
     implementation("io.livekit:livekit-android:2.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // Accompanist (권한, 시스템 UI)
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
@@ -164,11 +162,12 @@ dependencies {
     // Hilt
     implementation("com.google.dagger:hilt-android:2.56.2")
     kapt("com.google.dagger:hilt-android-compiler:2.56.2")
-
-    // Compose → Hilt ViewModel 통합
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-    // Hilt Navigation 컴파일러
     kapt("androidx.hilt:hilt-compiler:1.2.0")
+
+    // Gif 지원
+    implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation("io.coil-kt:coil-gif:2.4.0")
 
     // Test
     testImplementation(libs.junit)
@@ -178,8 +177,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
-    // Gif 지원
-    implementation("io.coil-kt:coil-compose:2.4.0")
-    implementation("io.coil-kt:coil-gif:2.4.0")
 }

@@ -27,6 +27,10 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
+    <!-- Android 12+ 블루투스 권한 (헤드셋용) -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
     <!-- 알림 권한 (Android 13 이상) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
