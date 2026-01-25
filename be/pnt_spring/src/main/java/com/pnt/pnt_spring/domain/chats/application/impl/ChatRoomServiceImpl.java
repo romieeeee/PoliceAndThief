@@ -53,11 +53,11 @@ public class ChatRoomServiceImpl implements ChatRoomService {
                 );
 
         // 기존 row가 있었던 경우(soft delete 됐던 경우 포함) 복구 + 연결상태 정리
-        if (mcr.isDeleted()) {
-            mcr.rejoin();     // isDeleted=false, isConnected=true
-        } else {
-            mcr.connect();    // isConnected=true, isDeleted=false
-        }
+//        if (mcr.isDeleted()) {
+//            mcr.rejoin();     // isDeleted=false, isConnected=true
+//        } else {
+//            mcr.connect();    // isConnected=true, isDeleted=false
+//        }
 
         memberChatRoomRepository.save(mcr);
 
