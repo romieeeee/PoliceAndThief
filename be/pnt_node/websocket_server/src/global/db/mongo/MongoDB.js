@@ -3,15 +3,18 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const DB_URL = process.env.MONGO_URL;
+const HOST = process.env.MONGO_HOST;
+const PASSWORD = process.env.MONGO_PASSWORD;
+const DB_NAME = process.env.MONGO_DB_NAME;
+const USER = process.env.MONGO_USER;
+const PORT = process.env.MONGO_PORT;
 
+const DB_URL = `mongodb://${USER}:${PASSWORD}@${HOST}:${PORT}/${DB_NAME}?authSource=admin`;
 class MongoDB {
     async create() {
         mongoose.set('debug', true);
 
-        await mongoose.connect(DB_URL, {
-            dbName: process.env.MONGO_DB_NAME
-        }).then(() => {
+        await mongoose.connect(DB_URL).then(() => {
             console.log("MongoDB is connected!!");
         }).catch((err) => {
             console.error("MongoDB connection failed", err);
