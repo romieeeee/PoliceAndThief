@@ -29,7 +29,7 @@ export class ChatRoomService {
 
     connectChatRoom = async (chatRoomId, memberId) => {
         const [affectedCount] = await MemberChatRoom.update({
-            is_connected: true
+            isConnected: true
         }, {
             where: {
                 chatRoomId: chatRoomId,
@@ -44,7 +44,7 @@ export class ChatRoomService {
 
     disconnectChatRoom = async (chatRoomId, memberId) => {
         const [affectedCount] = await MemberChatRoom.update({
-            is_connected: false
+            isConnected: false
         }, {
             where: {
                 chatRoomId: chatRoomId,

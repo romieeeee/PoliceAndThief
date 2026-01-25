@@ -9,6 +9,9 @@ spring:
     url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB_NAME}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB_NAME}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
   jpa:
     database: postgresql
     hibernate:
@@ -22,6 +25,9 @@ spring:
     mongodb:
       auto-index-creation: true # 인덱스 생성 설정
       uri: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}/${MONGO_DB_NAME}?authSource=admin
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
 
 # swagger
 springdoc:
@@ -55,3 +61,5 @@ jwt:
 oauth2:
   kakao:
     app-id:
+  google:
+      client-id:
