@@ -19,18 +19,49 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SocialTokenValidator {
 
-    @Value("${oauth2.kakao.app-id}") // 검증
+    @Value("${oauth2.kakao.app-id}")
     private String kakaoAppId;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    @Value("${oauth2.google.client-id}")
+    private String googleClientId;
+
+    RestTemplate restTemplate = new RestTemplate();
 
     public String validateAndGetId(String provider, String token) {
+
+
         if ("KAKAO".equalsIgnoreCase(provider)) {
             return validateKakao(token);
+        }
+        else if("GOOGLE".equalsIgnoreCase(provider)) {
+            return validateGoogle(token);
         }
         throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
     }
 
+    // google 토큰 검증
+    private String validateGoogle(String token){
+        try {
+            String url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + token;
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            Map body = response.getBody();
+            String aud = (String) body.get("aud");
+
+            // 앱/웹 클라이언트 ID가 여러 개라면 리스트로 관리해서 contains로 체크해도 됨
+            if (!googleClientId.equals(aud)) {
+                log.error("Google Client ID Mismatch! req: {}, my: {}", aud, googleClientId);
+                throw new BusinessException(ErrorCode.INVALID_TOKEN);
+            }
+
+            // 구글의 고유 사용자 ID는 sub 필드
+            return (String) body.get("sub");
+        } catch (Exception e) {
+            log.error("Google Token Validation Failed", e);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "구글 로그인 실패: 토큰이 유효하지 않습니다.");
+        }
+    }
+
+    // kakao 토큰 검증
     private String validateKakao(String token) {
         try {
             HttpHeaders headers = new HttpHeaders();
