@@ -1,5 +1,6 @@
 package com.d104.pnt.ui.game.play
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.R
 import com.d104.pnt.ui.component.PixelContainer
+import com.d104.pnt.ui.component.QRcodeScanner
 import com.d104.pnt.ui.game.play.PhoneScreen.CAMERA
 import com.d104.pnt.ui.game.play.PhoneScreen.MAP
 import com.d104.pnt.ui.game.play.PhoneScreen.NO_SIGNAL
@@ -37,6 +39,7 @@ import com.d104.pnt.ui.theme.WantedRed
 @Composable
 fun PhoneFrame(
     screen: PhoneScreen,
+    onScanSuccess: (String) -> Unit
 ) {
     Box(
         modifier = Modifier,
@@ -63,7 +66,7 @@ fun PhoneFrame(
             when (screen) {
                 NO_SIGNAL -> ThiefListScreen()
                 MAP -> MiniMapScreen()
-                CAMERA -> CameraScanScreen()
+                CAMERA -> CameraScanScreen(onScanSuccess)
                 THIEF_LIST -> ThiefListScreen()
             }
         }
@@ -101,12 +104,20 @@ fun MiniMapScreen() {
 }
 
 @Composable
-fun CameraScanScreen() {
+fun CameraScanScreen(
+    onScanSuccess: (String) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize(),
     ) {
-
+        QRcodeScanner(
+            modifier = Modifier.fillMaxSize(),
+            onScan = { result ->
+                onScanSuccess(result)
+                Log.d("QRcodeScanner", "Scanned: $result")
+            }
+        )
     }
 }
 

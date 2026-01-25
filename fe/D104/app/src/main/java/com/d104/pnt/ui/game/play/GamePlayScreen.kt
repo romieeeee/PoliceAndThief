@@ -241,7 +241,13 @@ fun GamePlayScreen(
                 .padding(horizontal = 12.dp),
             contentAlignment = Alignment.Center
         ) {
-            PhoneFrame(phoneScreen)
+            PhoneFrame(
+                phoneScreen,
+                onScanSuccess = { result ->
+                    phoneScreen = PhoneScreen.THIEF_LIST
+//                    clicked = !clicked
+                }
+            )
         }
     }
 }
