@@ -174,7 +174,6 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public LoginResponse socialLogin(SocialLoginRequest request) {
 
-        // Validator를 통해 소셜 ID 가져오기 (코드가 훨씬 깔끔해짐)
         String providerId = socialTokenValidator.validateAndGetId(request.getProvider(), request.getToken());
 
         String provider = request.getProvider().toUpperCase();
@@ -187,7 +186,7 @@ public class AuthServiceImpl implements AuthService {
         Member member;
 
         if (authProvider == null) {
-            // 3. 신규 회원가입 (자동 가입)
+            // 신규 회원가입 (자동 가입)
             String socialLoginId = provider + "_" + providerId; // 예: KAKAO_12345
 
             // Member 생성 (빌더 패턴 활용)
