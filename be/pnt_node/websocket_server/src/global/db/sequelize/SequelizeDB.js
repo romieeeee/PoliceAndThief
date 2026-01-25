@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize";
-import Member from "./entity/member.js";
+import Member from "./entity/Member.js";
 import ChatRoom from "./entity/ChatRoom.js";
 import MemberChatRoom from "./entity/MemberChatRoom.js";
 import dotenv from "dotenv";

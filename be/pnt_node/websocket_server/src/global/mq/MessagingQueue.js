@@ -4,7 +4,7 @@ import { MQConfig } from "./MQConfig.js";
 
 dotenv.config();
 
-const MQ_URL = process.env.MQ_URL;
+const MQ_URL = MQConfig.URL;
 
 class MessagingQueue {
     connection = null;

@@ -6,9 +6,9 @@ spring:
 
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${DATABASE_URL}
-    username: ${USER_NAME}
-    password: ${PASSWORD}
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB_NAME}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
   jpa:
     database: postgresql
     hibernate:
@@ -21,7 +21,7 @@ spring:
   data:
     mongodb:
       auto-index-creation: true # 인덱스 생성 설정
-      uri: ${MONGODB_URL}
+      uri: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}/${MONGO_DB_NAME}?authSource=admin
 
 # swagger
 springdoc:
@@ -48,3 +48,10 @@ springdoc:
   servers:
     - url: http://localhost:8080  # 기본 서버 URL 설정
       description: "Local 개발 환경"
+
+jwt:
+  secret: ${JWT_SECRET}
+
+oauth2:
+  kakao:
+    app-id:
