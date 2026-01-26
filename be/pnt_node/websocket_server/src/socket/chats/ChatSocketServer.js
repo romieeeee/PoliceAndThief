@@ -32,7 +32,7 @@ const chatSocketServer = (io, pubClient) => {
         socket.on("post prev chat", chatController.getPrevChat);
         socket.on("post sync chat", chatController.syncChat);
 
-        socket.on("request leave chat room", chatController.disconnect);
+        socket.on("post disconnect", chatController.disconnect);
 
         socket.on("disconnect", async () => {
             if (socket.data.isIntentionalExit) {
