@@ -75,6 +75,9 @@ public enum ErrorCode {
     INVALID_GAME_STATE(HttpStatus.CONFLICT, 4, "현재 게임 상태에서는 불가능한 요청입니다."),
     TARGET_NOT_FOUND(HttpStatus.NOT_FOUND, 4, "대상 플레이어를 찾을 수 없습니다."),
 
+    // 미션
+    MISSION_NOT_FOUND(HttpStatus.NOT_FOUND, 4, "대상 미션을 찾을 수 없습니다."),
+
     // =========================
     // CHAT (5xxx)
     // =========================

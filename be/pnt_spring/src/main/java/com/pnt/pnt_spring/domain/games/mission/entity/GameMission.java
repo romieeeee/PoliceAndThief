@@ -32,8 +32,10 @@ public class GameMission extends BaseEntity {
     @JoinColumn(name = "completed_by")
     private Member completedBy;
 
+    @Column(name = "completed_at")
     private OffsetDateTime completedAt;
 
-    @Column(length = 10)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private MissionStatus status; // Enum: IN_PROGRESS, DONE 등
 }
