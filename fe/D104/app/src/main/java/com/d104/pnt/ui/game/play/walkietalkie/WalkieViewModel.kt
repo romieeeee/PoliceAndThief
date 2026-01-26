@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.game
+package com.d104.pnt.ui.game.play.walkietalkie
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

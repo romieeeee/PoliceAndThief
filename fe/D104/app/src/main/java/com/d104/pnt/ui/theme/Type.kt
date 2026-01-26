@@ -76,6 +76,13 @@ val Typography = Typography(
         fontSize = 14.sp,
     ),
 
+    labelMedium = TextStyle(
+        fontFamily = PixelFont,
+        fontWeight = FontWeight.Bold,
+        fontSize = 12.sp,
+        lineHeight = 20.sp
+    ),
+
     labelSmall = TextStyle(
         fontFamily = PixelFont,
         fontWeight = FontWeight.Bold,

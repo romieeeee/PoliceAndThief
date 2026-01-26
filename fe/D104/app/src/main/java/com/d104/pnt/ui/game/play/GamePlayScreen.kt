@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +37,9 @@ import com.d104.pnt.ui.component.ExpandableCard
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.game.play.PhoneScreen.THIEF_LIST
+import com.d104.pnt.ui.game.play.mission.MissionBottomSheet
+import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
+import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieScreen
 import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
 
@@ -45,7 +47,8 @@ import com.d104.pnt.ui.theme.MissionYellow
 fun GamePlayScreen(
     gameId: Long,
     role: GameRole,
-    onGameEnd: () -> Unit
+    onGameEnd: () -> Unit,
+    goToCamera: () -> Unit
 ) {
     var clicked by remember { mutableStateOf(false) }
     var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
@@ -203,7 +206,7 @@ fun GamePlayScreen(
                                 PixelContainer(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable(onClick = {}),
+                                        .clickable(onClick = { goToCamera() }),
                                     backgroundColor = Color.Transparent,
                                     borderColor = MissionYellow,
                                     borderWidth = 8f

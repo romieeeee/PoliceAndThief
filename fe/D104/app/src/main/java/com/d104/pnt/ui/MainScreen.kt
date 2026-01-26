@@ -27,6 +27,7 @@ import com.d104.pnt.ui.game.end.GameResultScreen
 import com.d104.pnt.ui.game.load.GameLoadingScreen
 import com.d104.pnt.ui.game.play.GamePlayScreen
 import com.d104.pnt.ui.game.play.GameRoleScreen
+import com.d104.pnt.ui.game.play.mission.CameraScreen
 import com.d104.pnt.ui.game.wait.GameWaitingScreen
 import com.d104.pnt.ui.game.wait.RoleSelectScreen
 import com.d104.pnt.ui.home.HomeScreen
@@ -173,6 +174,32 @@ fun MainScreen(userName: String) {
                 )
             }
 
+//            composable(Routes.MISSION_CAMERA) {
+//                var detectedObjects by remember { mutableStateOf<List<DetectedObject>>(emptyList()) }
+//
+//                CameraScreen(
+//                    detectedObjects = detectedObjects,
+//                    onObjectsDetected = { objects ->
+//                        detectedObjects = objects
+//                    }
+//                )
+//            }
+
+            composable(Routes.MISSION_CAMERA) {
+                CameraScreen(
+                    onPhotoConfirmed = { compressedPhotoFile ->
+                        // 이미 압축된 파일이 전달됨
+//                        viewModel.submitMissionPhoto(compressedPhotoFile)
+
+                        // 또는 다음 화면으로 이동
+                         navController.popBackStack()
+                    },
+                    compressionQuality = 80, // 압축 품질 (0-100) - 기본값 80
+                    maxWidth = 1280,         // 최대 가로 해상도 - 기본값 1280px
+                    maxHeight = 720          // 최대 세로 해상도 - 기본값 720px
+                )
+            }
+
 
             // 게임 플레이
             composable(
@@ -195,7 +222,8 @@ fun MainScreen(userName: String) {
                         navController.navigate(Routes.buildGameResult(gameId)) {
                             popUpTo(Routes.HOME)
                         }
-                    }
+                    },
+                    goToCamera = { navController.navigate(Routes.MISSION_CAMERA) }
                 )
             }
 
@@ -206,7 +234,7 @@ fun MainScreen(userName: String) {
                     navArgument(NavArgs.GAME_ID) { type = NavType.LongType }
                 )
             ) { backStackEntry ->
-                val gameId = backStackEntry.arguments?.getLong(NavArgs.GAME_ID) ?: 0L
+                val    gameId = backStackEntry.arguments?.getLong(NavArgs.GAME_ID) ?: 0L
                 GameResultScreen(
 //                    gameId = gameId,
 //                    onViewNews = { newsId ->
