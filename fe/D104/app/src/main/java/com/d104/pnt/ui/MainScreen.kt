@@ -174,17 +174,6 @@ fun MainScreen(userName: String) {
                 )
             }
 
-//            composable(Routes.MISSION_CAMERA) {
-//                var detectedObjects by remember { mutableStateOf<List<DetectedObject>>(emptyList()) }
-//
-//                CameraScreen(
-//                    detectedObjects = detectedObjects,
-//                    onObjectsDetected = { objects ->
-//                        detectedObjects = objects
-//                    }
-//                )
-//            }
-
             composable(Routes.MISSION_CAMERA) {
                 CameraScreen(
                     onPhotoConfirmed = { compressedPhotoFile ->
@@ -234,7 +223,7 @@ fun MainScreen(userName: String) {
                     navArgument(NavArgs.GAME_ID) { type = NavType.LongType }
                 )
             ) { backStackEntry ->
-                val    gameId = backStackEntry.arguments?.getLong(NavArgs.GAME_ID) ?: 0L
+                val gameId = backStackEntry.arguments?.getLong(NavArgs.GAME_ID) ?: 0L
                 GameResultScreen(
 //                    gameId = gameId,
 //                    onViewNews = { newsId ->

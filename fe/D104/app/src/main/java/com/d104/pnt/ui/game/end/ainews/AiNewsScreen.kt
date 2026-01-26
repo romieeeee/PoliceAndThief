@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.game.ainews
+package com.d104.pnt.ui.game.end.ainews
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -15,7 +15,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.d104.pnt.R
-import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
