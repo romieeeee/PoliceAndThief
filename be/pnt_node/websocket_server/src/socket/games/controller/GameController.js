@@ -1,6 +1,7 @@
 import { GameService } from "../application/GameService.js";
 import { GameMemberService } from "../application/GameMemberService.js";
 import { sendError } from "../../../global/util/SocketError.js";
+import { GameSettingService } from "../application/GameSettingService.js";
 
 export class GameController {
     constructor(io, socket, pubClient) {
@@ -9,6 +10,7 @@ export class GameController {
         this.pubClient = pubClient;
         this.gameService = new GameService();
         this.gameMemberService = new GameMemberService();
+        this.gameSettingService = new GameSettingService();
     }
 
     joinRoom = async (payload) => {
@@ -45,13 +47,14 @@ export class GameController {
 
             const { lat, lng, position, status } = payload;
             const gameId = this.socket.data.gameId;
+            const integerGameId = parseInt(gameId.split(":")[1]);
             const memberId = this.socket.data.memberId; // 미들웨어에서 가져온 ID
 
             const locationData = JSON.stringify({
                 lat,
                 lng,
                 memberId, // 클라이언트 편의를 위해 포함
-                gameId,
+                gameId: integerGameId,
                 position,
                 status,
                 timestamp: Date.now() // 중요: 갱신 시간 기록
@@ -59,6 +62,17 @@ export class GameController {
 
             // Hash에 저장 (이미 있으면 덮어쓰기됨 -> 자동 최신화)
             await this.pubClient.hset(`room:${gameId}:locations`, memberId, locationData);
+
+            const gameSetting = await this.gameSettingService.findGameSettingByLocation(lat, lng);
+
+            if (gameSetting.length <= 0) {
+                this.socket.emit("alarm", {
+                    gameId: integerGameId,
+                    message: "out of boundary",
+                    type: "outOfBoundary",
+                    createdAt: Date.now(),
+                });
+            }
         } catch (error) {
             console.error("postGps error", error);
             sendError(this.socket, error, "GameError");
