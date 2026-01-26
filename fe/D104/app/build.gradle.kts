@@ -92,7 +92,6 @@ dependencies {
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
-
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
@@ -130,6 +129,8 @@ dependencies {
 
     // QR Code & ML Kit
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation("com.google.zxing:core:3.5.2")
 
     // Coil (이미지 로딩)
     implementation("io.coil-kt:coil-compose:2.5.0")
@@ -140,7 +141,6 @@ dependencies {
 
     // livekit
     implementation("io.livekit:livekit-android:2.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // Accompanist (권한, 시스템 UI)
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
@@ -162,11 +162,27 @@ dependencies {
     // Hilt
     implementation("com.google.dagger:hilt-android:2.56.2")
     kapt("com.google.dagger:hilt-android-compiler:2.56.2")
-
-    // Compose → Hilt ViewModel 통합
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-    // Hilt Navigation 컴파일러
     kapt("androidx.hilt:hilt-compiler:1.2.0")
+
+    // Gif 지원
+    implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation("io.coil-kt:coil-gif:2.4.0")
+
+    // CameraX - 카메라 기능을 위한 라이브러리들
+    implementation ("androidx.camera:camera-core:1.4.2")        // 핵심 기능
+    implementation ("androidx.camera:camera-camera2:1.4.2")     // Camera2 API 연결
+    implementation ("androidx.camera:camera-lifecycle:1.4.2")   // 생명주기 관리
+    implementation ("androidx.camera:camera-view:1.4.2")       // 프리뷰 화면
+
+    // ML Kit - 머신러닝 기능
+    implementation ("com.google.mlkit:object-detection:17.0.2") // 객체 인식
+
+    // Compose에서 권한 처리를 쉽게 해주는 라이브러리
+    implementation ("com.google.accompanist:accompanist-permissions:0.37.3")
+
+    // EXIF 정보 처리 (이미지 회전 문제 해결용) - 필수 추가!
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
 
     // Test
     testImplementation(libs.junit)
@@ -176,8 +192,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
-    // Gif 지원
-    implementation("io.coil-kt:coil-compose:2.4.0")
-    implementation("io.coil-kt:coil-gif:2.4.0")
 }

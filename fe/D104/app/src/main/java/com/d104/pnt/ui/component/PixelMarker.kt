@@ -20,22 +20,48 @@ import com.google.maps.android.compose.MarkerState
 @Composable
 fun PixelMarker(
     position: LatLng,
+    status: String,
 ){
     MarkerComposable(
-        state = MarkerState(position = position)
+        state = MarkerState(position = position),
+        onClick = { true }
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.map_marker_blue),
-            contentDescription = "픽셀 커스텀 마커",
-            modifier = Modifier.size(20.dp)
-        )
+        when(status){
+            "ME" -> Image(
+                painter = painterResource(id = R.drawable.map_marker_green),
+                contentDescription = "픽셀 커스텀 마커",
+                modifier = Modifier.size(20.dp)
+            )
+            "POLICE" -> Image(
+                painter = painterResource(id = R.drawable.map_marker_blue),
+                contentDescription = "픽셀 커스텀 마커",
+                modifier = Modifier.size(20.dp)
+            )
+            "THIEF" -> Image(
+                painter = painterResource(id = R.drawable.map_marker_red),
+                contentDescription = "픽셀 커스텀 마커",
+                modifier = Modifier.size(20.dp)
+            )
+            "ARRESTED" -> Image(
+                painter = painterResource(id = R.drawable.map_marker_gray),
+                contentDescription = "픽셀 커스텀 마커",
+                modifier = Modifier.size(20.dp)
+            )
+            "PRISONER" -> Image(
+                painter = painterResource(id = R.drawable.map_marker_gray),
+                contentDescription = "픽셀 커스텀 마커",
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }
 
 @Preview(widthDp = 50, heightDp = 50)
 @Composable
 fun PreviewPixelMarker(){
-    PixelMarker(
-        position = LatLng(37.566535, 126.977969)
+    Image(
+        painter = painterResource(id = R.drawable.map_marker_blue),
+        contentDescription = "픽셀 커스텀 마커",
+        modifier = Modifier.size(20.dp)
     )
 }

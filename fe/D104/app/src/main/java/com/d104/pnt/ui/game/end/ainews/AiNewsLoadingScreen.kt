@@ -1,9 +1,8 @@
-package com.d104.pnt.ui.game.result
+package com.d104.pnt.ui.game.end.ainews
 
 import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -83,7 +82,9 @@ fun AiNewsLoadingScreen() {
         Box(
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
-            NewsTickerBar()
+            NewsTickerBar(
+                text = "속보: 도심 추격 상황 종료... 경찰청, 검거 현황 브리핑 준비 중... 현장 CCTV 정밀 분석 영상 입수... 잠시 후 단독 보도!      "
+            )
         }
     }
 }
@@ -116,39 +117,6 @@ fun TypewriterText(texts: List<String>) {
     )
 }
 
-@Composable
-fun NewsTickerBar() {
-    Column {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .background(Color(0xFFFFD700))
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .background(Color(0xFF000080).copy(alpha = 0.9f)),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Text(
-                text = "속보: 도심 추격 상황 종료... 경찰청, 검거 현황 브리핑 준비 중... 현장 CCTV 정밀 분석 영상 입수... 잠시 후 단독 보도!      ",
-                color = Color.White,
-                fontFamily = PixelFont,
-                fontSize = 20.sp,
-                maxLines = 1,
-                modifier = Modifier
-                    .basicMarquee(
-                        iterations = Int.MAX_VALUE,
-                        velocity = 50.dp // 클수록 스크롤속도 빠름
-                    )
-                    .padding(horizontal = 4.dp)
-            )
-        }
-    }
-}
 
 @Preview
 @Composable

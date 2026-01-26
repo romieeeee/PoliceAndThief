@@ -17,7 +17,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         setContent {
             D104Theme {
                 Surface(modifier = Modifier.fillMaxSize()) {

@@ -229,7 +229,10 @@ fun GameCreateScreen(
                         ) {
                             RoundedButton(
                                 text = "취소",
-                                onClick = { onCancel() },
+                                onClick = { // 디버그 때문에 잠깐 주석 처리
+//                                    LocationRepository.DismissCreateGame()
+                                    onCancel()
+                                },
                                 containerColor = Color.White,
                                 modifier = Modifier.weight(1f)
                             )

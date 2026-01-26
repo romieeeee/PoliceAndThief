@@ -23,11 +23,8 @@ class LocationService : Service() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 for (location in locationResult.locations) {
-                    // 여기서 위치 정보를 서버로 보내거나 DB에 저장하면 됩니다.
-                    // 예: Log.d("LocationService", "위도: ${location.latitude}, 경도: ${location.longitude}")
-                    // 디버그용
-                    Log.d("LocationService", "위도: ${location.latitude}, 경도: ${location.longitude}")
                     LocationRepository.updateCurrentLocation(location)
+                    Log.d("LocationService", "Location updated: $location")
                 }
             }
         }
@@ -70,12 +67,12 @@ class LocationService : Service() {
         return START_STICKY // 서비스가 강제 종료되어도 다시 시작하도록 설정
     }
 
-    private fun startLocationUpdates(interval: Boolean) {
-        val intervalMillis = if (interval) 1000L else 30000L
+    private fun startLocationUpdates(shortInterval: Boolean) {
+        val intervalMillis = if (shortInterval) 1000L else 30000L
 
         val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMillis).apply {
             setMinUpdateIntervalMillis(intervalMillis) // 최소 업데이트 간격
-            setMinUpdateDistanceMeters(if (interval) 1.0f else 10.0f) // 최소 갱신 거리
+            setMinUpdateDistanceMeters(if (shortInterval) 1.0f else 10.0f) // 최소 갱신 거리
             setWaitForAccurateLocation(false) // 정확한 위치 기다리지 않음 (빠른 갱신 위해)
         }.build()
 
