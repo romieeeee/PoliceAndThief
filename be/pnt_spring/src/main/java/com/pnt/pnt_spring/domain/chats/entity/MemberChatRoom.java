@@ -27,8 +27,6 @@ public class MemberChatRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ERD상 int 이지만, 보통 JPA에서는 Long 많이 씁니다.
-    // DB가 int여도 Long 매핑은 문제 없이 동작합니다(범위 여유).
     @Column(name = "member_id", nullable = false)
     private Long memberId;
 
@@ -85,4 +83,11 @@ public class MemberChatRoom {
         this.isDeleted = false;
         this.isConnected = true;
     }
+
+    public void kickOut() {
+        this.isConnected = false;
+        this.isDeleted = true;
+        this.updatedAt = java.time.OffsetDateTime.now();
+    }
+
 }

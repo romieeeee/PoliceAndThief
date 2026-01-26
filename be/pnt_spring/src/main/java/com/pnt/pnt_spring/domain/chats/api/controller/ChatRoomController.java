@@ -44,14 +44,14 @@ public class ChatRoomController {
         return ChatRoomListResponse.from(rooms);
     }
 
-//    @PatchMapping("/{id}")
-//    public ChatRoomResponse update(
-//            @PathVariable Long id,
-//            @RequestBody @Valid ChatRoomUpdateRequest req
-//    ) {
-//        Long memberId = SecurityUtils.currentMemberId();
-//        return chatRoomService.update(memberId, id, req);
-//    }
+    @PatchMapping("/{id}")
+    public ChatRoomResponse update(
+            @PathVariable Long id,
+            @RequestBody @Valid ChatRoomUpdateRequest req
+    ) {
+        Long memberId = SecurityUtils.currentMemberId();
+        return chatRoomService.update(memberId, id, req);
+    }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

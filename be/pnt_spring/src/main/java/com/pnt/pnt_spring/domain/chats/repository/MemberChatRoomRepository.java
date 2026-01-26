@@ -39,5 +39,4 @@ public interface MemberChatRoomRepository extends JpaRepository<MemberChatRoom, 
      */
 //    long countByChatRoomIdAndIsDeletedFalse(Long chatRoomId);
 
-
 }

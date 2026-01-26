@@ -12,4 +12,6 @@ public interface ChatRoomMemberService {
     void connect(Long memberId, Long chatRoomId);
 
     void disconnect(Long memberId, Long chatRoomId);
+
+
 }

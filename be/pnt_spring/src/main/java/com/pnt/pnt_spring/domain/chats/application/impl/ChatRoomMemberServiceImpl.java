@@ -5,11 +5,16 @@ import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomMemberResponse;
 import com.pnt.pnt_spring.domain.chats.application.ChatRoomMemberService;
 import com.pnt.pnt_spring.domain.chats.entity.ChatRoom;
 import com.pnt.pnt_spring.domain.chats.entity.MemberChatRoom;
+import com.pnt.pnt_spring.domain.chats.repository.ChatRoomBanRepository;
 import com.pnt.pnt_spring.domain.chats.repository.ChatRoomRepository;
 import com.pnt.pnt_spring.domain.chats.repository.MemberChatRoomRepository;
+import com.pnt.pnt_spring.global.api.code.ErrorCode;
+import com.pnt.pnt_spring.global.exception.BusinessException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.time.OffsetDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -17,10 +22,18 @@ public class ChatRoomMemberServiceImpl implements ChatRoomMemberService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final MemberChatRoomRepository memberChatRoomRepository;
+    private final ChatRoomBanRepository chatRoomBanRepository;
 
     @Override
     @Transactional
     public ChatRoomMemberResponse join(Long memberId, Long chatRoomId) {
+        // 0) 밴(재입장 금지) 체크: 락 잡기 전에 먼저
+        OffsetDateTime now = OffsetDateTime.now();
+        if (chatRoomBanRepository.existsActiveBan(chatRoomId, memberId, now)) {
+            throw new BusinessException(ErrorCode.CHAT_ROOM_BANNED);
+            // 또는 IllegalArgumentException/커스텀 예외로
+        }
+
         // 1) 채팅방 row 락 조회 (정원/현재인원 안전)
         ChatRoom room = chatRoomRepository.findByIdForUpdate(chatRoomId)
                 .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
