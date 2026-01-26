@@ -12,7 +12,7 @@ const PORT = process.env.MONGO_PORT;
 const DB_URL = `mongodb://${USER}:${PASSWORD}@${HOST}:${PORT}/${DB_NAME}?authSource=admin`;
 class MongoDB {
     async create() {
-        mongoose.set('debug', true);
+        mongoose.set('debug', false);
 
         await mongoose.connect(DB_URL).then(() => {
             console.log("MongoDB is connected!!");
