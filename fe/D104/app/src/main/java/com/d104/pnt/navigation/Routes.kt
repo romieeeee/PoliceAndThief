@@ -46,6 +46,8 @@ object Routes {
         return "$GAME_PLAY/$gameId/$role"
     }
 
+    const val MISSION_CAMERA = "mission_camera"
+
     const val GAME_RESULT = "game_result"                // 게임 결과
     fun buildGameResult(gameId: Long) = "$GAME_RESULT/$gameId"
 

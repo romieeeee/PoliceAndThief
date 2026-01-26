@@ -1,5 +1,7 @@
 package com.d104.pnt.ui.game.play
 
+import android.content.Intent
+import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,13 +15,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,27 +31,66 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.R
+import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.service.location.LocationService
 import com.d104.pnt.ui.component.ContDownUI
 import com.d104.pnt.ui.component.ExpandableCard
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.game.play.PhoneScreen.THIEF_LIST
+import com.d104.pnt.ui.game.play.mission.MissionBottomSheet
+import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
+import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieScreen
 import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
+import com.d104.pnt.util.getSingleLocation
+import com.google.android.gms.maps.model.LatLng
 
 @Composable
 fun GamePlayScreen(
     gameId: Long,
     role: GameRole,
-    onGameEnd: () -> Unit
+    onGameEnd: () -> Unit,
+    goToCamera: () -> Unit
 ) {
     var clicked by remember { mutableStateOf(false) }
     var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
+    val context = LocalContext.current
+
+    // TODO: 나중에 서비스 시작 부분을 게임 시작에 진입하는 시점으로 바꿔야함
+    DisposableEffect(Unit) {
+        val serviceIntent = Intent(context, LocationService::class.java).apply{
+            putExtra(LocationService.EXTRA_GAME_MODE, true)
+        }
+
+        // 2. 서비스 시작 (안드로이드 버전에 따른 분기 처리)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // 포그라운드 서비스는 반드시 startForegroundService로 시작해야 함
+            context.startForegroundService(serviceIntent)
+        } else {
+            context.startService(serviceIntent)
+        }
+
+        // 2. [이탈 시] 서비스 종료
+        onDispose {
+            context.stopService(serviceIntent)
+        }
+    }
+    // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
+    LaunchedEffect(Unit) {
+        val location = context.getSingleLocation()
+        if (location != null) {
+            LocationRepository.updateCurrentLocation(location)
+            LocationRepository.createDefaultPolygon(location)
+            LocationRepository.setPrisonLocation(LatLng(location.latitude, location.longitude))
+        }
+    }
 
     Surface(modifier = Modifier.fillMaxSize()) {
         // 배경
@@ -203,7 +245,7 @@ fun GamePlayScreen(
                                 PixelContainer(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable(onClick = {}),
+                                        .clickable(onClick = { goToCamera() }),
                                     backgroundColor = Color.Transparent,
                                     borderColor = MissionYellow,
                                     borderWidth = 8f
@@ -254,7 +296,8 @@ fun GamePlayScreen(
                 onScanSuccess = { result ->
                     phoneScreen = PhoneScreen.THIEF_LIST
 //                    clicked = !clicked
-                }
+                },
+                role = role
             )
         }
     }

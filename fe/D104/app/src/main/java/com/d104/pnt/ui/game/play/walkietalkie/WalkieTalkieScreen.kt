@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.game.play
+package com.d104.pnt.ui.game.play.walkietalkie
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d104.pnt.ui.game.WalkieViewModel
 
 object WalkieColor {
     val Panel = Color(0xFF2A2A2A)

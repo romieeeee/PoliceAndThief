@@ -1,241 +1,198 @@
 package com.d104.pnt.permission
 
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.d104.utils.helper.PermissionHelper
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import com.d104.pnt.util.PermissionHelper.PermissionType
+import com.d104.pnt.util.PermissionHelper.PermissionType.*
 
 /**
- * 권한 설명 다이얼로그
+ * 필수 권한 설명 다이얼로그
+ * 시스템 권한 요청 전에 사용자에게 이유를 설명
  */
-@RequiresApi(Build.VERSION_CODES.P)
 @Composable
 fun PermissionDialog(
-    permissionType: PermissionHelper.PermissionType,
+    permissionTypes: List<PermissionType>,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = getPermissionIcon(permissionType),
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-        },
-        title = {
-            Text(
-                text = "${permissionType.title} 필요",
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },
-        text = {
-            Text(
-                text = permissionType.rationale,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("권한 허용")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("취소")
-            }
-        }
-    )
-}
-
-/**
- * 권한 거부 시 설정 안내 다이얼로그
- */
-@Composable
-fun PermissionDeniedDialog(
-    permissionType: PermissionHelper.PermissionType,
-    onOpenSettings: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Default.Warning,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.error
-            )
-        },
-        title = {
-            Text(
-                text = "${permissionType.title} 거부됨",
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },
-        text = {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(vertical = 30.dp, horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // 제목
                 Text(
-                    text = permissionType.rationale,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
+                    text = "🎮 게임 시작 준비",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(30.dp))
 
-                Text(
-                    text = "설정에서 권한을 허용해주세요.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = onOpenSettings) {
-                Text("설정으로 이동")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("나중에")
+                // 권한 목록
+                permissionTypes.forEach { permissionType ->
+                    PermissionItem(permissionType = permissionType)
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 필수 안내
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "⚠️ 모든 권한은 필수입니다\n게임 진행을 위해 반드시 허용해주세요!",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 20.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 버튼들
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("나중에", fontSize = 14.sp)
+                    }
+
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            "허용하기",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
-    )
+    }
 }
 
-/**
- * 필수 권한 전체 요청 다이얼로그
- */
-@Composable
-fun EssentialPermissionsDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Default.Info,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-        },
-        title = {
-            Text(
-                text = "권한 허용 필요",
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "게임 플레이를 위해 다음 권한이 필요합니다:",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                PermissionItem(
-                    icon = Icons.Default.LocationOn,
-                    title = "위치",
-                    description = "실시간 위치 추적"
-                )
-
-                PermissionItem(
-                    icon = Icons.Default.CameraAlt,
-                    title = "카메라",
-                    description = "미션 수행 및 QR 스캔"
-                )
-
-                PermissionItem(
-                    icon = Icons.Default.Mic,
-                    title = "마이크",
-                    description = "무전기 기능"
-                )
-
-                PermissionItem(
-                    icon = Icons.Default.Notifications,
-                    title = "알림",
-                    description = "게임 이벤트 알림"
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = onConfirm) {
-                Text("권한 허용")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("취소")
-            }
-        }
-    )
-}
-
-/**
- * 권한 항목 표시 컴포넌트
- */
 @Composable
 private fun PermissionItem(
-    icon: ImageVector,
-    title: String,
-    description: String
+    permissionType: PermissionType
 ) {
+    val (icon, iconColor) = getPermissionInfo(permissionType)
+
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp)
-        )
-
-        Column {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+        // 아이콘 배경
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .background(
+                    color = iconColor.copy(alpha = 0.15f),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = permissionType.title,
+                tint = iconColor,
+                modifier = Modifier.size(24.dp)
             )
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // 설명
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = permissionType.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = description,
+                text = permissionType.description,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.Gray,
             )
         }
     }
 }
 
 /**
- * 권한 타입에 맞는 아이콘 반환
+ * 권한 타입에 따른 아이콘, 색상, 이모지 반환
  */
-@RequiresApi(Build.VERSION_CODES.P)
-private fun getPermissionIcon(permissionType: PermissionHelper.PermissionType): ImageVector {
+private fun getPermissionInfo(permissionType: PermissionType): Pair<ImageVector, Color> {
     return when (permissionType) {
-        PermissionHelper.PermissionType.LOCATION -> Icons.Default.LocationOn
-        PermissionHelper.PermissionType.CAMERA -> Icons.Default.CameraAlt
-        PermissionHelper.PermissionType.AUDIO -> Icons.Default.Mic
-        PermissionHelper.PermissionType.NOTIFICATION -> Icons.Default.Notifications
-        PermissionHelper.PermissionType.FOREGROUND_SERVICE -> Icons.Default.MyLocation
+        CAMERA ->
+            Pair(Icons.Default.CameraAlt, Color(0xFF4CAF50))
+        LOCATION ->
+            Pair(Icons.Default.LocationOn, Color(0xFF2196F3))
+        AUDIO ->
+            Pair(Icons.Default.Mic, Color(0xFFFF9800))
+        NOTIFICATION ->
+            Pair(Icons.Default.Notifications, Color(0xFF9C27B0))
+        else ->
+            Pair(Icons.Default.Notifications, Color.Gray)
     }
 }
