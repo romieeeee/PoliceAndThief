@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -180,11 +181,9 @@ fun GamePlayScreen(
 
                 Spacer(Modifier.height(20.dp))
 
-                // LazyColumn이 자체적으로 스크롤됨
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
-                    // 스크롤이 끝까지 가능하도록
                     userScrollEnabled = true
                 ) {
                     items(6) { index ->
@@ -230,6 +229,15 @@ fun GamePlayScreen(
                 }
             }
 
+        } else{
+            WalkieBottomSheet {
+                WalkieTalkieScreen(
+                    gameId = "1f",
+                    teamType = "police"
+                )
+
+            }
+
         }
 
     }
@@ -241,7 +249,13 @@ fun GamePlayScreen(
                 .padding(horizontal = 12.dp),
             contentAlignment = Alignment.Center
         ) {
-            PhoneFrame(phoneScreen)
+            PhoneFrame(
+                phoneScreen,
+                onScanSuccess = { result ->
+                    phoneScreen = PhoneScreen.THIEF_LIST
+//                    clicked = !clicked
+                }
+            )
         }
     }
 }

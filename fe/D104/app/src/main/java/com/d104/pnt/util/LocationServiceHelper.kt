@@ -1,12 +1,10 @@
-package com.d104.pnt.utils.helper
+package com.d104.pnt.util
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.location.Location
 import android.os.Build
-import androidx.annotation.RequiresPermission
 import com.d104.pnt.service.location.LocationService
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority

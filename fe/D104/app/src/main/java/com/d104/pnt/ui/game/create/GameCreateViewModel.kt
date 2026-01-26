@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.repository.LocationRepository
-import com.d104.pnt.utils.helper.getSingleLocation
+import com.d104.pnt.util.getSingleLocation
 import kotlinx.coroutines.launch
 
 
