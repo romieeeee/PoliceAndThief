@@ -7,10 +7,8 @@ export class GpsTimerChannel {
     start = () => {
         setInterval(async () => {
             const rooms = this.gameIo.adapter.rooms;
-            console.log(rooms);
 
             for (const [roomId, sockets] of rooms) {
-                console.log(`${roomId}: ${sockets}`);
                 if (!roomId.startsWith("game:")) continue;
 
                 const locations = await this.redisClient.hgetall(`room:${roomId}:locations`);
@@ -27,7 +25,6 @@ export class GpsTimerChannel {
                 }
                 // volatile: 클라이언트가 연결을 유지하지 않는 경우에도 데이터를 전송
                 // local: redis를 거치지 않고, 현재 연결되어있는 소켓에만 데이터를 전송
-                console.log(`${roomId}: ${data}`);
                 this.gameIo.to(roomId).volatile.local.emit("get gps", data);
             }
         }, 1000);

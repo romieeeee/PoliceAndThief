@@ -1,28 +1,33 @@
+import { GameService } from "../application/GameService.js";
+import { GameMemberService } from "../application/GameMemberService.js";
+
+const handleErrors = [404, 400];
+
 export class GameController {
     constructor(io, socket, pubClient) {
         this.io = io;
         this.socket = socket;
         this.pubClient = pubClient;
+        this.gameService = new GameService();
+        this.gameMemberService = new GameMemberService();
     }
 
     joinRoom = async (payload) => {
-        const gameId = `game:${payload.gameId}`;
-
-        this.socket.join(gameId);
-        this.socket.data.gameId = gameId;
-
-        console.log(gameId, this.socket.data.memberId);
-
-        console.log("rooms", this.io.sockets.rooms);
 
         // 채팅방 접속 db 처리 => is_connected = true로 처리
         try {
-            // await this.chatRoomService.findGame(gameId);
-            // await this.chatRoomService.findMemberGame(gameId, this.socket.data.memberId);
+            const gameId = `game:${payload.gameId}`;
+
+            const game = await this.gameService.findGame(payload.gameId);
+            const memberGame = await this.gameMemberService.findMemberGame(payload.gameId, this.socket.data.memberId);
+
+            this.socket.join(gameId);
+            this.socket.data.gameId = gameId;
 
             const data = {
-                "message": "joined room",
-                "gameId": gameId
+                message: "joined room",
+                gameId: payload.gameId,
+                memberId: this.socket.data.memberId,
             }
 
             this.io.to(gameId).emit("get join room", data);
@@ -68,14 +73,17 @@ export class GameController {
         console.log("postMissionImage", payload);
     }
 
+    // custom disconnect
     disconnect = async () => {
         console.log("disconnect");
 
         this.socket.data.isIntentionalExit = true;
 
-        this.socket.disconnect();
-
         // redis gps 삭제
         await this.pubClient.hdel(`room:${this.socket.data.gameId}:locations`, this.socket.data.memberId);
+
+        // have to spring 요청 -> in_game_connected =
+
+        this.socket.disconnect();
     }
 }

@@ -15,19 +15,16 @@ export class ChatController {
     }
 
     joinRoom = async (payload) => {
-        const { chatRoomId } = payload;
-
-        this.socket.join(chatRoomId);
-        this.socket.data.chatRoomId = chatRoomId;
-
-        console.log(chatRoomId, this.socket.data.memberId);
-        
-        console.log("rooms", this.io.sockets.adapter.rooms);
-
         // 채팅방 접속 db 처리 => is_connected = true로 처리
         try {
+            const { chatRoomId } = payload;
+
+
             await this.chatRoomService.findChatRoom(chatRoomId);
             await this.chatRoomService.findMemberChatRoom(chatRoomId, this.socket.data.memberId);
+
+            this.socket.join(chatRoomId);
+            this.socket.data.chatRoomId = chatRoomId;
 
             const data = {
                 "message": "joined room",
