@@ -122,12 +122,7 @@ fun MapSettingDialog(
                                 }
                             },
                             onPointDelete = { index ->
-                                if (polygonPoints.size > 3 && index in polygonPoints.indices) {
-                                    polygonPoints.removeAt(index)
-                                    true // 삭제 성공
-                                } else {
-                                    false // 삭제 실패
-                                }
+                                LocationRepository.deletePolygonPoint(polygonPoints, index)
                             },
                             onAddPoint = { newPoint ->
                                 LocationRepository.addPointToList(polygonPoints, newPoint)

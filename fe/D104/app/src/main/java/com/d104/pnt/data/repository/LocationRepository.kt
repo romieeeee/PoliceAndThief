@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import android.location.Location
 import com.d104.pnt.domain.model.DraggableLatLng
+import com.d104.pnt.domain.model.PlayerLocation
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.PolyUtil
 
@@ -11,20 +12,21 @@ object LocationRepository {
     private val _currentLocation = MutableStateFlow<Location?>(null)
     private val _polygonPoints = MutableStateFlow<List<LatLng>>(emptyList())
     private val _prisonLocation = MutableStateFlow<LatLng?>(null)
-
-
+    private val _playerLocations = MutableStateFlow<List<PlayerLocation>>(emptyList())
 
     // 외부(UI)에서는 읽기만 가능하도록 공개
     val currentLocation = _currentLocation.asStateFlow()
     val polygonPoints = _polygonPoints.asStateFlow()
     val prisonLocation = _prisonLocation.asStateFlow()
+    val playerLocations = _playerLocations.asStateFlow()
 
-
-
-
-    // 서비스가 호출해서 위치를 업데이트하는 함수
+    // 업데이트하는 함수
     fun updateCurrentLocation(location: Location) {
         _currentLocation.value = location
+    }
+
+    fun updatePlayerLocation(locations: List<PlayerLocation>) {
+        _playerLocations.value = locations
     }
 
     // 바뀐 포인트 저장
@@ -32,42 +34,15 @@ object LocationRepository {
         _polygonPoints.value = points
     }
 
-    // 2-2. 특정 인덱스의 점만 업데이트 (드래그 할 때 실시간 호출)
-    fun updatePolygonPoint(index: Int, newPoint: LatLng) {
-        val currentList = _polygonPoints.value.toMutableList() // 복사본 생성
-        if (index in currentList.indices) {
-            currentList[index] = newPoint
-            _polygonPoints.value = currentList // 새 리스트로 교체하여 UI 갱신 유도
-        }
-    }
-
-    fun deletePolygonPoint(index: Int): Boolean {
-        val currentList = _polygonPoints.value.toMutableList()
+    fun deletePolygonPoint(targetList: MutableList<DraggableLatLng>, index: Int): Boolean {
 
         // 1. 점이 3개보다 많고, 인덱스가 유효한지 확인
-        if (currentList.size > 3 && index in currentList.indices) {
-            currentList.removeAt(index)
-            _polygonPoints.value = currentList // 리스트 갱신 -> UI 자동 반영
+        if (targetList.size > 3 && index in targetList.indices) {
+            targetList.removeAt(index)
             return true // 삭제 성공
         }
 
         return false // 삭제 실패 (3개 이하 등)
-    }
-
-    fun addPointNaturally(newPoint: LatLng) {
-        val currentList = _polygonPoints.value.toMutableList()
-
-        // 1. 점이 3개 미만이면 그냥 뒤에 추가
-        if (currentList.size < 3) {
-            currentList.add(newPoint)
-        } else {
-            // 2. 작성해주신 로직을 활용하여 끼워넣을 위치 찾기
-            val insertIndex = getInsertionIndex(newPoint, currentList)
-            currentList.add(insertIndex, newPoint)
-        }
-
-        // 3. 갱신
-        _polygonPoints.value = currentList
     }
 
     fun addPointToList(targetList: MutableList<DraggableLatLng>, newPoint: LatLng) {
@@ -118,5 +93,22 @@ object LocationRepository {
     fun DismissCreateGame() {
         _polygonPoints.value = emptyList()
         _prisonLocation.value = null
+    }
+
+    // TODO: 더미 데이터 셋팅 지울것
+    fun DummyPlayer() {
+        _playerLocations.value = listOf(
+            PlayerLocation(1, 101, 36.106996199409316, 128.41636536008272, 0, 1),
+            PlayerLocation(1, 102, 36.10663643418624, 128.4164977111253, 0, 1),
+            PlayerLocation(1, 100, 36.106996199409316, 128.41636536008272, 0, 1),
+            PlayerLocation(1, 103, 36.106218602970124, 128.4160154777275, 0, 1),
+            PlayerLocation(1, 104, 36.1069317248971, 128.41591167747148, 0, 2),
+            PlayerLocation(1, 105, 36.106888405240205, 128.4159553194928, 3, 2),
+            PlayerLocation(1, 106, 36.10686966460729, 128.41601606002928, 3, 2),
+            PlayerLocation(1, 107, 36.10662012389394, 128.41578115461553, 2, 2),
+            PlayerLocation(1, 108, 36.106996199409316, 128.41636536008272, 0, 2),
+            PlayerLocation(1, 109, 36.10629276353168, 128.4166025880095, 1, 2),
+            PlayerLocation(1, 110, 36.106996199409316, 128.41636536008272, 0, 2),
+        )
     }
 }

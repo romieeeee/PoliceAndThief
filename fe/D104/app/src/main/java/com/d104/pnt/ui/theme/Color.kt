@@ -53,6 +53,7 @@ val InArea = Color(0x5500FF00)
 val AreaBoundary = Color(0xFF00FF00)
 val PrisonArea = Color(0x59FF3030)
 val PrisonBoundary = Color(0xBFFF3030)
+val OutOfArea = Color(0x99000000)
 
 // == Thief State ==
 val WantedRed = Color(0xFFB72222)
