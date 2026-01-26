@@ -5,7 +5,8 @@ export class ChatRoomService {
     findChatRoom = async (chatRoomId) => {
         const chatRoom = await ChatRoom.findOne({
             where: {
-                id: chatRoomId
+                id: chatRoomId,
+                isDeleted: false
             }
         });
 
