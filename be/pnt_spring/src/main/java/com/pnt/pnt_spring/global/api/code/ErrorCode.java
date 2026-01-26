@@ -80,7 +80,11 @@ public enum ErrorCode {
     // =========================
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, 5, "채팅방을 찾을 수 없습니다."),
     CHAT_FORBIDDEN(HttpStatus.FORBIDDEN, 5, "채팅 권한이 없습니다."),
-    MESSAGE_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 5, "메시지 전송에 실패했습니다.");
+    MESSAGE_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 5, "메시지 전송에 실패했습니다."),
+
+    CHAT_ROOM_FORBIDDEN(HttpStatus.FORBIDDEN, 5, "채팅방 권한이 없습니다."),
+    CHAT_ROOM_BANNED(HttpStatus.FORBIDDEN, 5,"강퇴(밴) 상태로 재입장할 수 없습니다."),
+    CHAT_ROOM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, 5, "채팅방 멤버가 아닙니다.");
 
     private final HttpStatus statusCode;
     private final int customCode;

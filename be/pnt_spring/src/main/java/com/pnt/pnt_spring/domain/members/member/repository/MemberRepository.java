@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
@@ -21,4 +22,12 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             "LEFT JOIN FETCH m.memberStatThief " +
             "WHERE m.id = :id")
     Optional<Member> findMemberWithAllStats(@Param("id") Long id);
+
+    @Query("""
+        select m
+        from Member m
+        left join fetch m.memberProfile mp
+        where m.id in :ids
+    """)
+    List<Member> findAllWithProfileByIdIn(List<Long> ids);
 }

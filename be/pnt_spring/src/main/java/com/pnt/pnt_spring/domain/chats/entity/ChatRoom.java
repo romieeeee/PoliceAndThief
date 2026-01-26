@@ -81,4 +81,12 @@ public class ChatRoom extends BaseEntity {
     public boolean isOwner(Long memberId) {
         return this.ownerId.equals(memberId);
     }
+
+    public void decreaseCurrentMembersSafely() {
+        if (this.currentMembers > 0) {
+            this.currentMembers -= 1;
+        }
+        this.updatedAt = java.time.OffsetDateTime.now();
+    }
+
 }
