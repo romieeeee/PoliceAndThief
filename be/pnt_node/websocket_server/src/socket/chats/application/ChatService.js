@@ -1,4 +1,5 @@
 import chatEntity from "../../../global/db/mongo/entity/chat.js";
+import members from "../../../global/db/mongo/entity/member.js";
 import moment from "moment-timezone";
 
 export class ChatService {
@@ -17,7 +18,46 @@ export class ChatService {
 
         const chatModel = new chatEntity(chat);
 
-        return await chatModel.save();
+        const data = await chatModel.save();
+
+        const member = await members.findOne({ memberId: chat.memberId }).exec();
+        
+        data.member = member;
+
+        return this.parseChat(data);
+    }
+
+    getAggregationPipeline(matchStage, sortVariable, limit) {
+        return [
+            { $match: matchStage },
+            { $sort: { _id: sortVariable } },
+            { $limit: limit },
+            {
+                $lookup: {
+                    from: "members",
+                    localField: "memberId",
+                    foreignField: "memberId",
+                    as: "memberInfo"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$memberInfo",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    content: 1,
+                    memberId: 1,
+                    chatRoomId: 1,
+                    avatarUrl: 1,
+                    createdAt: 1,
+                    member: "$memberInfo"
+                }
+            }
+        ];
     }
 
     // {chatRoomId, cursor, limit}
@@ -26,19 +66,18 @@ export class ChatService {
      * 이전의 메시지들을 가져오기 위한 로직
      */
     async getPrevChat(payload) {
-        const query = {
+        const matchStage = {
             chatRoomId: payload.chatRoomId
         };
 
         if (payload.cursor) {
-            query._id = { $lt: payload.cursor };
+            matchStage._id = { $lt: payload.cursor };
         }
 
-        const chats = await chatEntity.find(query)
-            .sort({ _id: -1 })
-            .limit(payload.limit);
+        const pipeline = this.getAggregationPipeline(matchStage, -1, payload.limit);
+        const chats = await chatEntity.aggregate(pipeline);
 
-        return { items: chats, count: chats.length };
+        return { items: this.parseChats(chats), count: chats.length };
     }
 
     // {chatRoomId, cursor, limit}
@@ -48,15 +87,30 @@ export class ChatService {
      * 이후의 메시지들을 가져오기 위한 로직
      */
     async syncChat(payload) {
-        const query = {
+        const matchStage = {
             chatRoomId: payload.chatRoomId,
             _id: { $gt: payload.cursor }
         };
 
-        const chats = await chatEntity.find(query)
-            .sort({ _id: 1 })
-            .limit(payload.limit);
+        const pipeline = this.getAggregationPipeline(matchStage, 1, payload.limit);
+        const chats = await chatEntity.aggregate(pipeline);
 
-        return { items: chats, count: chats.length };
+        return { items: this.parseChats(chats), count: chats.length };
+    }
+
+    parseChat = (chat) => {
+        return {
+            id: chat._id,
+            memberId: chat.memberId,
+            avatarUrl: chat.member.avatarUrl,
+            senderNickname: chat.member.nickname,
+            chatRoomId: chat.chatRoomId,
+            content: chat.content,
+            createdAt: chat.createdAt,
+        }
+    }
+
+    parseChats = (chats) => {
+        return chats.map(this.parseChat);
     }
 }

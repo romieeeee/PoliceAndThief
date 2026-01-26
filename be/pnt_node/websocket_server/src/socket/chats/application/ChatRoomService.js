@@ -27,36 +27,6 @@ export class ChatRoomService {
         }
     }
 
-    connectChatRoom = async (chatRoomId, memberId) => {
-        const [affectedCount] = await MemberChatRoom.update({
-            isConnected: true
-        }, {
-            where: {
-                chatRoomId: chatRoomId,
-                memberId: memberId
-            }
-        });
-
-        if (affectedCount === 0) {
-            this.makeError("BadRequestException", "채팅방 접속에 실패했습니다.", 400);
-        }
-    }
-
-    disconnectChatRoom = async (chatRoomId, memberId) => {
-        const [affectedCount] = await MemberChatRoom.update({
-            isConnected: false
-        }, {
-            where: {
-                chatRoomId: chatRoomId,
-                memberId: memberId
-            }
-        });
-
-        if (affectedCount === 0) {
-            this.makeError("BadRequestException", "채팅방 접속 해제에 실패했습니다.", 400);
-        }
-    }
-
     makeError = (message, text, code) => {
         const error = new Error(message);
         error.code = code;
