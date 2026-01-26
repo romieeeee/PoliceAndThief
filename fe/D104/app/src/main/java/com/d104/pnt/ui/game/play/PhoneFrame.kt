@@ -18,6 +18,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,7 +28,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
+import com.d104.pnt.data.repository.LocationRepository
+import com.d104.pnt.domain.model.DraggableLatLng
+import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.ui.component.GoogleMaps
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.QRcodeScanner
 import com.d104.pnt.ui.game.play.PhoneScreen.CAMERA
@@ -39,7 +47,8 @@ import com.d104.pnt.ui.theme.WantedRed
 @Composable
 fun PhoneFrame(
     screen: PhoneScreen,
-    onScanSuccess: (String) -> Unit
+    onScanSuccess: (String) -> Unit,
+    role: GameRole = GameRole.POLICE
 ) {
     Box(
         modifier = Modifier,
@@ -65,7 +74,7 @@ fun PhoneFrame(
         ) {
             when (screen) {
                 NO_SIGNAL -> ThiefListScreen()
-                MAP -> MiniMapScreen()
+                MAP -> MiniMapScreen(role)
                 CAMERA -> CameraScanScreen(onScanSuccess)
                 THIEF_LIST -> ThiefListScreen()
             }
@@ -94,12 +103,22 @@ fun ThiefListScreen() {
 
 
 @Composable
-fun MiniMapScreen() {
+fun MiniMapScreen(role: GameRole) {
     Column(
         modifier = Modifier
             .fillMaxSize(),
     ) {
-
+        val originPoints by LocationRepository.polygonPoints.collectAsStateWithLifecycle()
+        GoogleMaps(
+            modifier = Modifier,
+            polygonPoints = originPoints.map {
+                DraggableLatLng(position = it)
+            }.toMutableStateList(),
+            inGameMinimap = true,
+            isPreview = true,
+            prisonLocation = LocationRepository.prisonLocation.collectAsStateWithLifecycle().value,
+            role = role
+        )
     }
 }
 
