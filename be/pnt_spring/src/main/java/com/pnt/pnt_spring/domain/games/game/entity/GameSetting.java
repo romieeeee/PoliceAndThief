@@ -13,6 +13,7 @@ import org.locationtech.jts.geom.Point;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "game_setting")
 public class GameSetting extends BaseEntity {
+
     @Id
     private Long gameId;
 
@@ -27,4 +28,32 @@ public class GameSetting extends BaseEntity {
 
     private Geometry boundaryGeo;
     private Point prisonLocation;
+
+    /* =========================
+       생성/변경 메서드
+       ========================= */
+
+    public static GameSetting createDefault(Game game) {
+        GameSetting s = new GameSetting();
+        s.game = game;
+        // 기본값 원하는 대로
+        s.timeLimitSec = 300;
+        s.policeCount = 1;
+        s.thiefCount = 3;
+        return s;
+    }
+
+    public void updateCounts(Integer policeCount, Integer thiefCount) {
+        if (policeCount != null) this.policeCount = policeCount;
+        if (thiefCount != null) this.thiefCount = thiefCount;
+    }
+
+    public void updateTimeLimit(Integer timeLimitSec) {
+        if (timeLimitSec != null) this.timeLimitSec = timeLimitSec;
+    }
+
+    public void updateMap(Geometry boundaryGeo, Point prisonLocation) {
+        if (boundaryGeo != null) this.boundaryGeo = boundaryGeo;
+        if (prisonLocation != null) this.prisonLocation = prisonLocation;
+    }
 }
