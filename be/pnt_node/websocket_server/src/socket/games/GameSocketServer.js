@@ -16,19 +16,20 @@ const gameSocketServer = (io, pubClient) => {
             socket.data.gameId = storedGameId;
 
             // Delete keys to cancel expiration event
-            const timerKey = `websocket:reconnect:timer:game:${storedChatRoomId}:${socket.data.memberId}`;
+            const timerKey = `websocket:reconnect:timer:game:${storedGameId}:${socket.data.memberId}`;
             await pubClient.del(infoKey);
             await pubClient.del(timerKey);
 
-            socket.emit("reconnect", { chatRoomId: storedChatRoomId });
+            socket.emit("reconnect", { gameId: storedGameId });
         }
 
         console.log("websocket is connected!");
 
         socket.data.isIntentionalExit = false; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
-        const gameController = new GameController(io, socket);
+        const gameController = new GameController(io, socket, pubClient);
 
         // 게임 관련 이벤트
+        socket.on("post join room", gameController.joinRoom);
         socket.on("post gps", gameController.postGps);
         socket.on("post arrest", gameController.postArrest);
         socket.on("post skill use", gameController.postSkillUse);

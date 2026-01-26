@@ -27,6 +27,7 @@ class SequelizeDB {
             host: process.env.POSTGRES_HOST,
             dialect: "postgres",
             port: process.env.POSTGRES_PORT,
+            logging: false,
         });
 
         // Initialize Models

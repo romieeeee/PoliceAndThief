@@ -1,8 +1,10 @@
 import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 import chatSocketServer from "./chats/ChatSocketServer.js";
+import gameSocketServer from "./games/GameSocketServer.js";
+
 import redisDB from "../global/db/redis/RedisDB.js";
-import { WebSocketReconnect } from "./utils/RedisExpiredEvent.js";
+import { RedisEvent } from "./utils/RedisEvent.js";
 export const socketServer = async (httpServer) => {
 
     const pubClient = redisDB.getPubClient();
@@ -19,8 +21,9 @@ export const socketServer = async (httpServer) => {
     const readyRoomIo = io.of("/readyRoom");
     const gameIo = io.of("/game");
 
-    const webSocketReconnect = new WebSocketReconnect(chatIo, readyRoomIo, gameIo);
-    await webSocketReconnect.listen();
+    const redisEvent = new RedisEvent(chatIo, readyRoomIo, gameIo);
+    await redisEvent.listen();
 
     chatSocketServer(chatIo, pubClient);
+    gameSocketServer(gameIo, pubClient);
 } 

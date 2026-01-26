@@ -91,18 +91,8 @@ export class ChatController {
         const chatRoomId = this.socket.data.chatRoomId;
         console.log(`${memberId} 님이 소켓 연결을 종료하였습니다.`);
 
-        // 채팅방 퇴장 db 처리 => is_connected = false로 처리
-        try {
-            this.socket.data.isIntentionalExit = true;
+        this.socket.data.isIntentionalExit = true;
 
-            this.socket.disconnect();
-        } catch (error) {
-            console.error("disconnect error", error);
-            if (handleErrors.includes(error.code)) {
-                this.socket.emit("error", { ex: error.message, text: error.text, code: error.code });
-            } else {
-                this.socket.emit("error", { ex: "InternalServeError", text: "서버에 문제가 있습니다.", code: 500 });
-            }
-        }
+        this.socket.disconnect();
     }
 }
