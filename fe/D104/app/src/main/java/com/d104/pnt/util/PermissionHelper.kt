@@ -1,6 +1,7 @@
-package com.example.d104.utils.helper
+package com.d104.pnt.util
 
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -25,7 +26,6 @@ object PermissionHelper {
         val permissions: Array<String>,
         val title: String,
         val description: String,
-        val rationale: String
     ) {
         LOCATION(
             permissions = arrayOf(
@@ -34,16 +34,12 @@ object PermissionHelper {
             ),
             title = "위치 권한",
             description = "게임 진행을 위해 위치 권한이 필요합니다.",
-            rationale = "게임 플레이를 위해서는 GPS 위치 정보가 필수입니다.\n" +
-                    "이 권한 없이는 게임을 진행할 수 없습니다."
         ),
 
         CAMERA(
             permissions = arrayOf(Manifest.permission.CAMERA),
             title = "카메라 권한",
             description = "미션 수행 및 QR 코드 스캔을 위해 카메라 권한이 필요합니다.",
-            rationale = "도둑의 미션 수행과 경찰의 QR 체포를 위해\n" +
-                    "카메라 권한이 필요합니다."
         ),
 
         AUDIO(
@@ -53,8 +49,6 @@ object PermissionHelper {
             ),
             title = "오디오 권한",
             description = "무전기 기능 사용을 위해 오디오 권한이 필요합니다.",
-            rationale = "경찰 팀원들과 실시간 무전 통신을 위해\n" +
-                    "마이크 권한이 필요합니다."
         ),
 
         NOTIFICATION(
@@ -65,8 +59,6 @@ object PermissionHelper {
             },
             title = "알림 권한",
             description = "게임 중요 이벤트 알림을 위해 알림 권한이 필요합니다.",
-            rationale = "체포, 이탈 경고 등 중요한 게임 알림을 받기 위해\n" +
-                    "알림 권한이 필요합니다."
         ),
 
         @RequiresApi(Build.VERSION_CODES.P)
@@ -77,8 +69,6 @@ object PermissionHelper {
             ),
             title = "백그라운드 위치 추적",
             description = "게임 중 지속적인 위치 추적을 위해 필요합니다.",
-            rationale = "앱이 백그라운드에 있을 때도 위치를 추적하여\n" +
-                    "게임을 계속 진행할 수 있습니다."
         );
 
         /**
@@ -125,7 +115,7 @@ object PermissionHelper {
      * 참고: Activity에서만 확인 가능 (shouldShowRequestPermissionRationale)
      */
     fun shouldShowRationale(
-        activity: android.app.Activity,
+        activity: Activity,
         permissionType: PermissionType
     ): Boolean {
         return permissionType.permissions.any { permission ->
@@ -167,7 +157,9 @@ object PermissionHelper {
         return arePermissionsGranted(
             context,
             PermissionType.LOCATION,
-            PermissionType.CAMERA
+            PermissionType.CAMERA,
+            PermissionType.AUDIO,
+            PermissionType.NOTIFICATION
         )
     }
 

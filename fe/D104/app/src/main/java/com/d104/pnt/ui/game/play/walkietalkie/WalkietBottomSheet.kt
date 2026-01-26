@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.game.play
+package com.d104.pnt.ui.game.play.walkietalkie
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -34,16 +34,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.R
+import com.d104.pnt.ui.game.play.mission.BottomSheetState
 import kotlin.math.roundToInt
 
-
-enum class BottomSheetState {
-    COLLAPSED,  // 윗부분만 보임
-    EXPANDED    // 전체 보임
-}
-
 @Composable
-fun MissionBottomSheet(
+fun WalkieBottomSheet(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -57,7 +52,7 @@ fun MissionBottomSheet(
 
     // Bottom sheet가 접혔을 때와 펼쳤을 때의 위치
     val collapsedOffset = screenHeight - 500f // 윗부분만 보이는 높이
-    val expandedOffset = screenHeight * 0.15f // 전체가 보이는 높이
+    val expandedOffset = screenHeight * 0.28f // 전체가 보이는 높이
 
     val targetOffset = when (sheetState) {
         BottomSheetState.COLLAPSED -> collapsedOffset
@@ -70,9 +65,10 @@ fun MissionBottomSheet(
     )
 
     Box(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 10.dp)
     ) {
-        // Bottom Sheet
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -114,13 +110,14 @@ fun MissionBottomSheet(
                 ) {
                     sheetState = when (sheetState) {
                         BottomSheetState.COLLAPSED -> BottomSheetState.EXPANDED
-                        BottomSheetState.EXPANDED -> BottomSheetState.COLLAPSED
+                        BottomSheetState.EXPANDED -> BottomSheetState.EXPANDED
+//                        BottomSheetState.EXPANDED -> BottomSheetState.COLLAPSED // PTT라서 말할 때... 가끔씩 닫힘..
                     }
                 }
         ) {
             // 배경 이미지 (클립보드)
             Image(
-                painter = painterResource(id = R.drawable.mission_clipboard),
+                painter = painterResource(id = R.drawable.walkie_talkie),
                 contentDescription = "Mission Board",
                 modifier = Modifier
                     .fillMaxWidth()
@@ -131,7 +128,6 @@ fun MissionBottomSheet(
                 contentScale = ContentScale.FillBounds
             )
 
-            // 미션 컨텐츠 - 이미지 크기 기준으로 비율 배치
             if (imageHeight > 0) {
                 Box(
                     modifier = Modifier
@@ -148,8 +144,7 @@ fun MissionBottomSheet(
                                 end = 60.dp,
                                 bottom = 32.dp
                             )
-                            .systemBarsPadding()
-                        ,
+                            .systemBarsPadding(),
                         verticalArrangement = Arrangement.Top,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {

@@ -169,6 +169,21 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("io.coil-kt:coil-gif:2.4.0")
 
+    // CameraX - 카메라 기능을 위한 라이브러리들
+    implementation ("androidx.camera:camera-core:1.4.2")        // 핵심 기능
+    implementation ("androidx.camera:camera-camera2:1.4.2")     // Camera2 API 연결
+    implementation ("androidx.camera:camera-lifecycle:1.4.2")   // 생명주기 관리
+    implementation ("androidx.camera:camera-view:1.4.2")       // 프리뷰 화면
+
+    // ML Kit - 머신러닝 기능
+    implementation ("com.google.mlkit:object-detection:17.0.2") // 객체 인식
+
+    // Compose에서 권한 처리를 쉽게 해주는 라이브러리
+    implementation ("com.google.accompanist:accompanist-permissions:0.37.3")
+
+    // EXIF 정보 처리 (이미지 회전 문제 해결용) - 필수 추가!
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
+
     // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
