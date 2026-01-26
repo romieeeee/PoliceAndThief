@@ -88,7 +88,8 @@ export class ChatController {
 
     disconnect = async () => {
         const memberId = this.socket.data.memberId;
-        console.log(`${memberId} 님이 방퇴장을 요청하였습니다.`);
+        const chatRoomId = this.socket.data.chatRoomId;
+        console.log(`${memberId} 님이 소켓 연결을 종료하였습니다.`);
 
         // 채팅방 퇴장 db 처리 => is_connected = false로 처리
         try {
