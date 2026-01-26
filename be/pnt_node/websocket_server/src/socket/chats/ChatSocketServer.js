@@ -6,7 +6,7 @@ const chatSocketServer = (io, pubClient) => {
 
     io.on("connection", async (socket) => {
         const infoKey = `websocket:reconnect:info:chat:${socket.data.memberId}`;
-        const storedChatRoomId = await pubClient.get(infoKey);
+        const storedChatRoomId = parseInt(await pubClient.get(infoKey));
 
         if (storedChatRoomId) {
             console.log(`[Reconnect] Restoring user ${socket.data.memberId} to room ${storedChatRoomId}`);

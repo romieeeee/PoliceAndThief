@@ -33,10 +33,15 @@ public class GameMember extends BaseEntity {
     private String serialCode;
 
     @Column(length = 10)
-    private String givenPosition;
+    private GameMemberPosition givenPosition;
+
+    @Column(length = 10)
+    private GameMemberPosition preferPosition;
 
     private Boolean ready;
 
     @Column(length = 10)
-    private String status;
+    private GameMemberStatus status;
+
+    private Boolean inGameConnected;
 }
