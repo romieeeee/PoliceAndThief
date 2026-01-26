@@ -1,11 +1,9 @@
 package com.pnt.pnt_spring.domain.chats.api.controller;
 
-import com.pnt.pnt_spring.domain.chats.api.req.ChatRoomDisconnectRequest;
-import com.pnt.pnt_spring.domain.chats.api.req.ChatRoomJoinRequest;
 import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomMemberResponse;
 import com.pnt.pnt_spring.domain.chats.application.ChatRoomMemberService;
 import com.pnt.pnt_spring.domain.chats.utils.SecurityUtils;
-import jakarta.validation.Valid;
+import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -19,32 +17,35 @@ public class ChatRoomMemberController {
 
     // 채팅방 참여
     @PostMapping("/{id}/join")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ChatRoomMemberResponse join(@PathVariable("id") Long chatRoomId) {
+    public CommonResponse<ChatRoomMemberResponse> join(@PathVariable("id") Long chatRoomId) {
         Long memberId = SecurityUtils.currentMemberId();
-        return chatRoomMemberService.join(memberId, chatRoomId);
+        ChatRoomMemberResponse data = chatRoomMemberService.join(memberId, chatRoomId);
+        return new CommonResponse<>(data, "채팅방 참여 성공", HttpStatus.CREATED);
     }
 
+    // 채팅방 나가기
     @PostMapping("/{id}/leave")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void leave(@PathVariable("id") Long chatRoomId) {
+    public CommonResponse<Void> leave(@PathVariable("id") Long chatRoomId) {
         Long memberId = SecurityUtils.currentMemberId();
         chatRoomMemberService.leave(memberId, chatRoomId);
+        return new CommonResponse<>(null, "채팅방 나가기 성공", HttpStatus.OK);
+        // NO_CONTENT로 하고 싶으면 HttpStatus.NO_CONTENT로 바꿔도 되는데,
+        // CommonResponse는 body가 생기니 보통 OK로 통일합니다.
     }
 
+    // 채팅방 연결(접속 상태 업데이트)
     @PostMapping("/{id}/connect")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void connect(@PathVariable("id") Long chatRoomId) {
+    public CommonResponse<Void> connect(@PathVariable("id") Long chatRoomId) {
         Long memberId = SecurityUtils.currentMemberId();
         chatRoomMemberService.connect(memberId, chatRoomId);
+        return new CommonResponse<>(null, "채팅방 연결 성공", HttpStatus.OK);
     }
 
+    // 채팅방 연결 해제(접속 해제 상태 업데이트)
     @PostMapping("/{id}/disconnect")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void disconnect(@PathVariable("id") Long chatRoomId) {
+    public CommonResponse<Void> disconnect(@PathVariable("id") Long chatRoomId) {
         Long memberId = SecurityUtils.currentMemberId();
         chatRoomMemberService.disconnect(memberId, chatRoomId);
+        return new CommonResponse<>(null, "채팅방 연결 해제 성공", HttpStatus.OK);
     }
-
-
 }

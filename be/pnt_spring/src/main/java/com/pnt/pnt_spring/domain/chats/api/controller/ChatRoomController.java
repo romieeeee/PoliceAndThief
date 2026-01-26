@@ -6,6 +6,7 @@ import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomListResponse;
 import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomResponse;
 import com.pnt.pnt_spring.domain.chats.application.ChatRoomService;
 import com.pnt.pnt_spring.domain.chats.utils.SecurityUtils;
+import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,43 +21,51 @@ public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
 
+    // 채팅방 생성
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ChatRoomResponse create(@RequestBody @Valid ChatRoomCreateRequest req) {
+    public CommonResponse<ChatRoomResponse> create(@RequestBody @Valid ChatRoomCreateRequest req) {
         Long memberId = SecurityUtils.currentMemberId();
-        return chatRoomService.create(memberId, req);
+        ChatRoomResponse data = chatRoomService.create(memberId, req);
+        return new CommonResponse<>(data, "채팅방 생성 성공", HttpStatus.CREATED);
     }
 
+    // 채팅방 단건 조회
     @GetMapping("/{id}")
-    public ChatRoomResponse get(@PathVariable Long id){
+    public CommonResponse<ChatRoomResponse> get(@PathVariable Long id) {
         Long memberId = SecurityUtils.currentMemberId();
-        return chatRoomService.get(memberId, id);
+        ChatRoomResponse data = chatRoomService.get(memberId, id);
+        return new CommonResponse<>(data, "채팅방 조회 성공", HttpStatus.OK);
     }
 
     // 채팅방 목록 조회
     @GetMapping
-    public ChatRoomListResponse list(
+    public CommonResponse<ChatRoomListResponse> list(
             @RequestParam(required = false) Integer regionCode,
             @RequestParam(required = false) String title
     ) {
         Long memberId = SecurityUtils.currentMemberId();
         List<ChatRoomResponse> rooms = chatRoomService.list(memberId, regionCode, title);
-        return ChatRoomListResponse.from(rooms);
+        ChatRoomListResponse data = ChatRoomListResponse.from(rooms);
+        return new CommonResponse<>(data, "채팅방 목록 조회 성공", HttpStatus.OK);
     }
 
+    // 채팅방 수정
     @PatchMapping("/{id}")
-    public ChatRoomResponse update(
+    public CommonResponse<ChatRoomResponse> update(
             @PathVariable Long id,
             @RequestBody @Valid ChatRoomUpdateRequest req
     ) {
         Long memberId = SecurityUtils.currentMemberId();
-        return chatRoomService.update(memberId, id, req);
+        ChatRoomResponse data = chatRoomService.update(memberId, id, req);
+        return new CommonResponse<>(data, "채팅방 수정 성공", HttpStatus.OK);
     }
 
+    // 채팅방 삭제
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id){
+    public CommonResponse<Void> delete(@PathVariable Long id) {
         Long memberId = SecurityUtils.currentMemberId();
         chatRoomService.delete(memberId, id);
+
+        return new CommonResponse<>(null, "채팅방 삭제 성공", HttpStatus.NO_CONTENT);
     }
 }
