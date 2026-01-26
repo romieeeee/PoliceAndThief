@@ -8,6 +8,8 @@ const gameSocketServer = (io, pubClient) => {
         const infoKey = `websocket:reconnect:info:game:${socket.data.memberId}`;
         const storedGameId = await pubClient.get(infoKey);
 
+        // game 방이 유효한지 검사 로직 필요.
+
         if (storedGameId) {
             console.log(`[Reconnect] Restoring user ${socket.data.memberId} to room ${storedGameId}`);
             socket.join(storedGameId);
@@ -58,4 +60,4 @@ const gameSocketServer = (io, pubClient) => {
     });
 }
 
-export default chatSocketServer;
+export default gameSocketServer;

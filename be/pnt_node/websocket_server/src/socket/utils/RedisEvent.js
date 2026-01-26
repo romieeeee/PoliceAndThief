@@ -25,7 +25,7 @@ export class WebSocketReconnect {
             if (channel === "__keyevent@0__:expired") {
                 expiredChannel(message, this.pubClient, this.chatIo, this.readyRoomIo, this.gameIo);
             } else if (channel === "global:gps:tick") {
-                
+                gpsTimerChannel(message, this.pubClient, this.chatIo, this.readyRoomIo, this.gameIo);
             }
         });
     }

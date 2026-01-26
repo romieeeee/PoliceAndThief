@@ -21,6 +21,8 @@ export class ChatController {
         this.socket.data.chatRoomId = chatRoomId;
 
         console.log(chatRoomId, this.socket.data.memberId);
+        
+        console.log("rooms", this.io.sockets.adapter.rooms);
 
         // 채팅방 접속 db 처리 => is_connected = true로 처리
         try {
