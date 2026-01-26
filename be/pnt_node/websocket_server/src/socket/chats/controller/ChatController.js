@@ -27,8 +27,6 @@ export class ChatController {
             await this.chatRoomService.findChatRoom(chatRoomId);
             await this.chatRoomService.findMemberChatRoom(chatRoomId, this.socket.data.memberId);
 
-            await this.chatRoomService.connectChatRoom(chatRoomId, this.socket.data.memberId);
-
             const data = {
                 "message": "joined room",
                 "chatRoomId": chatRoomId
@@ -93,8 +91,6 @@ export class ChatController {
 
         // 채팅방 퇴장 db 처리 => is_connected = false로 처리
         try {
-            await this.chatRoomService.disconnectChatRoom(chatRoomId, memberId);
-
             this.socket.data.isIntentionalExit = true;
 
             this.socket.disconnect();

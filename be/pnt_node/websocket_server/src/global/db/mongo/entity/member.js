@@ -1,28 +1,14 @@
 import mongoose, { Schema } from "mongoose";
-import Counter from "../utils/Counter.js";
 
-const chatSchema = new Schema({
-    _id: Number,
-    content: String,
-    memberId: String,
-    chatRoomId: String,
-    avatarUrl: String,
-    createdAt: String
+const memberSchema = new Schema({
+    memberId: { type: Number, unique: true, index: true },
+    nickname: { type: String, maxlength: 20 },
+    avatarUrl: { type: String, default: "default.png" },
+    isDeleted: { type: Boolean, default: false },
+    createdAt: { type: Date },
+    updatedAt: { type: Date }
 }, {
-    _id: false,
     versionKey: false
 });
 
-chatSchema.pre('save', async function (next) {
-    if (!this.isNew) return;
-
-    const counter = await Counter.findOneAndUpdate(
-        { id: "chat_id_counter" },
-        { $inc: { seq: 1 } },
-        { new: true, upsert: true }
-    );
-
-    this._id = counter.seq;
-});
-
-export default mongoose.model("Chat", chatSchema);
+export default mongoose.model("Member", memberSchema);
