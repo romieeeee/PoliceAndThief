@@ -1,9 +1,8 @@
-package com.d104.pnt.ui.game.ainews
+package com.d104.pnt.ui.game.end.ainews
 
 import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
