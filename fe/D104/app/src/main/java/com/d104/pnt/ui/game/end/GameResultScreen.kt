@@ -54,6 +54,9 @@ import com.d104.pnt.ui.theme.PixelFont
 import com.d104.pnt.ui.theme.TextPrimary
 import com.d104.pnt.ui.theme.TextSecondary
 import com.d104.pnt.ui.theme.WinColor
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 // MVP 데이터 모델
 data class MvpData(
@@ -64,6 +67,8 @@ data class MvpData(
     val statValue: String,
     @DrawableRes val iconRes: Int
 )
+
+enum class ReportStep { NONE, INPUT, CONFIRM, SUCCESS }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -113,6 +118,9 @@ fun GameResultScreen(
     val titleText = if (isWin) "WIN!" else "LOSE"
     val statsLabel = if (isPolice) "검거한 도둑 수" else "최장 생존 시간"
     val mvpBoxBgColor = Color(0xFF35384F)
+    val participantNames = remember(mvpList) {
+        mvpList.map { it.nickname } + listOf("치와와", "이래롬") // 게임 참여자 임시 목록
+    }
 
     val characterImageRes = when {
         isPolice && isWin -> R.drawable.img_police_win
@@ -120,6 +128,9 @@ fun GameResultScreen(
         !isPolice && isWin -> R.drawable.img_thief_win
         else -> R.drawable.img_thief_win
     }
+
+    var reportStep by remember { mutableStateOf(ReportStep.NONE) }
+    var tempReportData by remember { mutableStateOf(Triple("", "", "")) }
 
     Box(
         modifier = Modifier
@@ -153,7 +164,8 @@ fun GameResultScreen(
                 horizontalArrangement = Arrangement.End
             ) {
                 Box(
-                    modifier = Modifier,
+                    modifier = Modifier
+                        .clickable { reportStep = ReportStep.INPUT },
                     contentAlignment = Alignment.Center,
                 ) {
                     Image(
@@ -169,7 +181,7 @@ fun GameResultScreen(
                     )
                 }
             }
-            // === Header ===
+
             Text(
                 text = "결과 리포트",
                 fontSize = 24.sp,
@@ -200,7 +212,7 @@ fun GameResultScreen(
                         .zIndex(1f)
                 )
 
-                // 캐릭터 이미지 (앞)
+                // 캐릭터 이미지
                 Image(
                     painter = painterResource(id = characterImageRes),
                     contentDescription = "Character",
@@ -257,7 +269,7 @@ fun GameResultScreen(
                         )
                     }
 
-                    // Stat Section
+                    // Stat
                     Column(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -338,9 +350,49 @@ fun GameResultScreen(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+
+        when (reportStep) {
+            ReportStep.INPUT -> {
+                ReportDialog(
+                    initialTargetUser = tempReportData.first,
+                    initialReason = tempReportData.second,
+                    initialDescription = tempReportData.third,
+                    validNicknames = participantNames, // 참여자 명단
+                    // 입력창을 닫으면 데이터 비우기
+                    onDismissRequest = {
+                        tempReportData = Triple("", "", "")
+                        reportStep = ReportStep.NONE
+                    },
+
+                    onReport = { user, reason, desc ->
+                        tempReportData = Triple(user, reason, desc)
+                        reportStep = ReportStep.CONFIRM
+                    }
+                )
+            }
+            ReportStep.CONFIRM -> {
+                ConfirmReportDialog(
+                    onDismissRequest = { reportStep = ReportStep.INPUT },
+                    onConfirm = {
+                        println("신고 전송: $tempReportData") // 실제 서버 전송 로직이 들어갈 곳
+
+                        tempReportData = Triple("", "", "") // 신고 후 데이터 비우기
+
+                        reportStep = ReportStep.SUCCESS
+                    }
+                )
+            }
+            ReportStep.SUCCESS -> {
+                SuccessReportDialog(
+                    onDismissRequest = { reportStep = ReportStep.NONE }
+                )
+            }
+            else -> {}
+        }
     }
 }
 
+// MVP 카드
 @Composable
 fun MvpCard(
     mvpData: MvpData,
