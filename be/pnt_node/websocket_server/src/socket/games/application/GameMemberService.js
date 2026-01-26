@@ -6,7 +6,8 @@ export class GameMemberService {
             where: {
                 gameId: gameId,
                 memberId: memberId,
-                ready: true
+                ready: true,
+                isDeleted: false
             }
         });
 

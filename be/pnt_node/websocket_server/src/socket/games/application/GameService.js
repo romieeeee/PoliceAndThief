@@ -3,7 +3,13 @@ import Game from "../../../global/db/sequelize/entity/Game"
 export class GameService {
 
     findGame = async (gameId) => {
-        const res = await Game.findByPk(gameId);
+        const res = await Game.findOne({
+            where: {
+                id: gameId,
+                isDeleted: false,
+                isFinished: false
+            }
+        });
 
         if (!res) {
             this.makeError("NotFoundException", "게임을 찾을 수 없습니다.", 404);
