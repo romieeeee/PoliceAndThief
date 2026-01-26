@@ -24,4 +24,11 @@ public class SignupRequest {
     private String email;
     private LocalDate birth;
     private String avatarUrl;
+
+    public String getAvatarUrl() {
+        if (avatarUrl == null) {
+            return "default.png";
+        }
+        return avatarUrl;
+    }
 }
