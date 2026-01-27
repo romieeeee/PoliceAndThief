@@ -8,6 +8,11 @@ import kotlinx.coroutines.flow.Flow
 interface AuthRepository {
 
     /**
+     * api test
+     */
+    suspend fun test(): BaseResult<Unit>
+
+    /**
      * 로그인
      */
     suspend fun login(id: String, password: String): BaseResult<LoginResponse>

@@ -4,9 +4,14 @@ import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.data.remote.model.response.LoginResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface AuthApiService {
+
+    @GET("api/test")
+    suspend fun test(): Response<BaseResponse<Unit>>
+
 
     @POST("api/auth/login")
     suspend fun login(

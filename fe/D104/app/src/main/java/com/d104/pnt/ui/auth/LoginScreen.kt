@@ -115,7 +115,8 @@ fun LoginScreen(
                     text = "로그인",
                     fontSize = 16,
                     onClick = {
-                        viewModel.login("user", "pass")
+                        viewModel.test()
+//                        viewModel.login("user", "pass")
                         onLoginSuccess("keroro") },
                     mainColor = AccentRed,
                     borderColor = BorderDefault,
