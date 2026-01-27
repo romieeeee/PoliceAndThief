@@ -22,7 +22,7 @@ export default class GameSetting extends Model {
                     allowNull: true,
                 },
                 boundaryGeo: {
-                    type: DataTypes.GEOMETRY,
+                    type: DataTypes.GEOMETRY('POLYGON'),
                     allowNull: true,
                 },
                 prisonLocation: {
