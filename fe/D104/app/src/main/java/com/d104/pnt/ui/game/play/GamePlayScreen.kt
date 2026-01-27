@@ -35,8 +35,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.d104.pnt.R
-import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.service.location.LocationService
 import com.d104.pnt.ui.component.ContDownUI
@@ -51,17 +51,24 @@ import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
 import com.d104.pnt.util.getSingleLocation
 import com.google.android.gms.maps.model.LatLng
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun GamePlayScreen(
     gameId: Long,
     role: GameRole,
     onGameEnd: () -> Unit,
-    goToCamera: () -> Unit
+    goToCamera: () -> Unit,
+    viewModel: GamePlayViewModel = hiltViewModel()
 ) {
     var clicked by remember { mutableStateOf(false) }
     var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
     val context = LocalContext.current
+
+    val currentLocation = viewModel.userLocation.collectAsState().value
+    val areaPoints = viewModel.polygonPoints.collectAsStateWithLifecycle().value
+    val prisonLocation = viewModel.prisonLocation.collectAsState().value
 
     // TODO: 나중에 서비스 시작 부분을 게임 시작에 진입하는 시점으로 바꿔야함
     DisposableEffect(Unit) {
@@ -84,12 +91,7 @@ fun GamePlayScreen(
     }
     // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
     LaunchedEffect(Unit) {
-        val location = context.getSingleLocation()
-        if (location != null) {
-            LocationRepository.updateCurrentLocation(location)
-            LocationRepository.createDefaultPolygon(location)
-            LocationRepository.setPrisonLocation(LatLng(location.latitude, location.longitude))
-        }
+        viewModel.setDefaultArea(context)
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -120,6 +122,7 @@ fun GamePlayScreen(
                     onClick = {
                         phoneScreen = PhoneScreen.MAP
                         clicked = !clicked
+
                     }
                 ) {
                     Icon(
@@ -295,9 +298,17 @@ fun GamePlayScreen(
                 phoneScreen,
                 onScanSuccess = { result ->
                     phoneScreen = PhoneScreen.THIEF_LIST
-//                    clicked = !clicked
                 },
-                role = role
+                role = role,
+                currentLocation = LatLng(
+                    currentLocation!!.latitude,
+                    currentLocation!!.longitude
+                ),
+                areaPoints = areaPoints,
+                prisonLocation = LatLng(
+                    prisonLocation!!.latitude,
+                    prisonLocation!!.longitude
+                )
             )
         }
     }

@@ -1,6 +1,5 @@
 package com.d104.pnt.ui.game.create
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,7 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.DraggableLatLng
@@ -34,11 +33,12 @@ fun MapSettingDialog(
     modifier: Modifier,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
+    viewModel: MapSettingViewModel = hiltViewModel()
 ) {
-    val userLocation by LocationRepository.currentLocation.collectAsStateWithLifecycle()
-    val originPoints by LocationRepository.polygonPoints.collectAsStateWithLifecycle()
-    val originPrisonLocation by LocationRepository.prisonLocation.collectAsStateWithLifecycle()
-    val polygonPoints = remember(originPoints) {
+    val userLocation by viewModel.userLocation.collectAsStateWithLifecycle()
+    val originPoints by viewModel.polygonPoints.collectAsStateWithLifecycle()
+    val originPrisonLocation by viewModel.prisonLocation.collectAsStateWithLifecycle()
+    val tempPolygonPoints = remember(originPoints) {
         originPoints.map {
             DraggableLatLng(position = it)
         }.toMutableStateList()
@@ -88,8 +88,8 @@ fun MapSettingDialog(
                         PixelButtonCode(
                             text = "확인",
                             onClick = {
-                                LocationRepository.setPolygonPoints(polygonPoints.map { it.position })
-                                LocationRepository.setPrisonLocation(prisonLocation)
+                                viewModel.setPolygonPoints(tempPolygonPoints.map { it.position })
+                                viewModel.setPrisonLocation(prisonLocation)
                                 onConfirm()
                             },
                             modifier = Modifier.weight(1f),
@@ -111,21 +111,22 @@ fun MapSettingDialog(
                     userLocation?.let { loc ->
                         GoogleMaps(
                             modifier = Modifier.weight(1f),
+                            currentLocation = LatLng(
+                                userLocation!!.latitude,
+                                userLocation!!.longitude),
                             inGameMinimap = false,
                             isPreview = false,
-                            startLat = loc.latitude,
-                            startLng = loc.longitude,
-                            polygonPoints = polygonPoints,
+                            polygonPoints = tempPolygonPoints,
                             onPointChange = { index, newPos ->
-                                if (index in polygonPoints.indices) {
-                                    polygonPoints[index] = polygonPoints[index].copy(position = newPos)
+                                if (index in tempPolygonPoints.indices) {
+                                    tempPolygonPoints[index] = tempPolygonPoints[index].copy(position = newPos)
                                 }
                             },
                             onPointDelete = { index ->
-                                LocationRepository.deletePolygonPoint(polygonPoints, index)
+                                viewModel.deletePolygonPoint(tempPolygonPoints, index)
                             },
                             onAddPoint = { newPoint ->
-                                LocationRepository.addPointToList(polygonPoints, newPoint)
+                                viewModel.addPointToList(tempPolygonPoints, newPoint)
                             },
                             prisonLocation = prisonLocation,
                             onPrisonChange = { newLoc ->

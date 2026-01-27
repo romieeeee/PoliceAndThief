@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
@@ -40,8 +42,11 @@ import com.d104.pnt.ui.theme.TextPrimary
 fun HomeScreen(
     goToGameCreate: () -> Unit,
     navigateToGameRoom: (Long) -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
 ) {
     var showJoinDialog by remember { mutableStateOf(false) }
+
+    val joinCode by viewModel.joinCode.collectAsStateWithLifecycle()
 
     Surface(modifier = Modifier.fillMaxSize()) {
 
@@ -103,6 +108,10 @@ fun HomeScreen(
                         onDismiss = { showJoinDialog = false },
                         onConfirm = {
                             showJoinDialog = false
+                        },
+                        joinCode = joinCode,
+                        onUpdateCode = {
+                            viewModel.updateJoinCode(it)
                         }
                     )
                 }
@@ -114,7 +123,9 @@ fun HomeScreen(
 @Composable
 fun JoinGameDialog(
     onDismiss: () -> Unit,
-    onConfirm: () -> Unit
+    onConfirm: () -> Unit,
+    joinCode: String,
+    onUpdateCode: (String) -> Unit
 ) {
     var code by remember { mutableStateOf("") }
 
@@ -145,8 +156,8 @@ fun JoinGameDialog(
                     .wrapContentHeight(Alignment.CenterVertically),
                 placeholder = "참여코드를 입력해주세요",
                 borderColor = BorderDefault,
-                value = code,
-                onValueChange = { code = it }
+                value = joinCode,
+                onValueChange = { onUpdateCode(it) }
             )
 
             Spacer(modifier = Modifier.height(30.dp))
