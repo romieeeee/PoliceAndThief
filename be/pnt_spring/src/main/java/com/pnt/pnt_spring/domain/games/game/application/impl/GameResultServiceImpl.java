@@ -1,5 +1,6 @@
 package com.pnt.pnt_spring.domain.games.game.application.impl;
 
+import com.pnt.pnt_spring.domain.games.game.api.req.GameResultRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameResultResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameResultService;
 import com.pnt.pnt_spring.domain.games.game.entity.*;
@@ -10,6 +11,7 @@ import com.pnt.pnt_spring.domain.games.news.api.req.AiNewsRequest;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class GameResultServiceImpl implements GameResultService {
 
     private final GameRepository gameRepository;
@@ -28,91 +31,123 @@ public class GameResultServiceImpl implements GameResultService {
     private final GameMemberStatRepository gameMemberStatRepository;
     private final RabbitTemplate rabbitTemplate;
 
+    /**
+     * 1. 게임 결과 저장 및 AI 뉴스 요청 (Command)
+     */
     @Override
-    @Transactional
-    public GameResultResponse processGameEnd(Long gameId, String winner) {
-        Game game = gameRepository.findById(gameId)
+    public void saveGameResult(GameResultRequest request) {
+        log.info("게임 결과 저장 시작: GameId={}", request.getGameId());
+
+        Game game = gameRepository.findById(request.getGameId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
         if (game.getStatus() == GameStatus.FINISHED) {
-            throw new BusinessException(ErrorCode.GAME_ALREADY_ENDED);
+            log.warn("이미 종료된 게임입니다.");
+            return;
         }
 
-        // 게임 종료 상태 반영
-        game.finish(winner);
+        // 1-1. 게임 상태 업데이트 (종료 시간, 승리 팀)
+        game.finish(request.getWinTeam().name());
 
-        // 결과 데이터 생성
-        GameResultResponse response = assembleGameResult(game);
+        // 1-2. 멤버별 통계 저장 (walk, survived 등)
+        for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
+            GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(statReq.getGameMemberId())
+                    .orElseGet(() -> {
+                        // 없으면 생성 (방어 코드)
+                        GameMember gm = gameMemberRepository.findById(statReq.getGameMemberId())
+                                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+                        return gameMemberStatRepository.save(GameMemberStat.createInitialStat(gm));
+                    });
 
-        // AI 뉴스 생성을 위한 비동기 메시지 전송 --> to MQ
-        sendAiNewsRequest(game, response);
+            // 기존 arrestCount는 유지하고, 새로 들어온 데이터만 업데이트
+            stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived());
+        }
 
-        return response;
+        // 1-3. AI 뉴스 생성 요청 (저장 시점에 바로 트리거)
+        triggerAiNewsGeneration(game);
     }
 
     /**
-     * 게임 결과를 바탕으로 응답 DTO를 조립하는 함수
+     * 2. 게임 결과 조회 및 MVP 산정 (Query)
      */
-    private GameResultResponse assembleGameResult(Game game) {
-        Long gameId = game.getId();
-        String winner = game.getWinTeam();
+    @Override
+    @Transactional(readOnly = true)
+    public GameResultResponse getGameResult(Long gameId) {
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
-        // MVP 선정
-        GameMemberStat mvpStat = "POLICE".equals(winner)
-                ? gameMemberStatRepository.findPoliceMvp(gameId).orElse(null)
-                : gameMemberStatRepository.findThiefMvp(gameId).orElse(null);
+        // 2-1. MVP 선정 (조회 시점에 계산)
+        GameMemberStat mvpStat = calculateMvp(game);
+        String mvpNickname = (mvpStat != null)
+                ? mvpStat.getGameMember().getMember().getMemberProfile().getNickname()
+                : "없음";
 
-        // 통계 집계 (Arrests)
+        // 2-2. 통계 집계
         List<GameMember> participants = gameMemberRepository.findAllByGameId(gameId);
-        int totalArrests = participants.stream()
-                .map(p -> gameMemberStatRepository.findByGameMemberId(p.getId()).orElse(null))
-                .filter(s -> s != null && s.getArrestCount() != null)
-                .mapToInt(GameMemberStat::getArrestCount)
-                .sum();
+        int totalArrests = 0;
+
+        for (GameMember p : participants) {
+            GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(p.getId()).orElse(null);
+            if (stat != null && stat.getArrestCount() != null) {
+                totalArrests += stat.getArrestCount();
+            }
+        }
 
         int durationSec = (int) Duration.between(game.getStartTime(), game.getEndTime()).toSeconds();
 
+        // 2-3. 응답 반환
         return GameResultResponse.builder()
-                .gameId(gameId)
-                .winner(winner)
+                .gameId(game.getId())
+                .winner(game.getWinTeam())
                 .endedAt(game.getEndTime())
                 .mvp(mvpStat != null ? GameResultResponse.MvpResponse.builder()
                         .memberId(mvpStat.getGameMember().getMember().getId())
-                        .nickname(mvpStat.getGameMember().getMember().getMemberProfile().getNickname())
+                        .nickname(mvpNickname)
                         .role(mvpStat.getGameMember().getGivenPosition().name())
                         .build() : null)
                 .stats(GameResultResponse.TotalStats.builder()
                         .arrests(totalArrests)
                         .durationSec(durationSec)
-                        .missionsCleared(0)
+                        .missionsCleared(0) // 미션 로직 연결 시 수정
                         .build())
                 .build();
     }
 
-    /**
-     * MQ 전송 로직
-     */
-    private void sendAiNewsRequest(Game game, GameResultResponse response) {
+    private void triggerAiNewsGeneration(Game game) {
+        // MVP 및 통계 계산 (뉴스 생성을 위해 임시 계산)
+        GameMemberStat mvpStat = calculateMvp(game);
+        String mvpNickname = (mvpStat != null)
+                ? mvpStat.getGameMember().getMember().getMemberProfile().getNickname()
+                : "없음";
+
         List<GameMember> members = gameMemberRepository.findAllByGameId(game.getId());
         int policeCount = (int) members.stream().filter(m -> m.getGivenPosition() == GameMemberPosition.POLICE).count();
         int thiefCount = (int) members.stream().filter(m -> m.getGivenPosition() == GameMemberPosition.THIEF).count();
+        int durationSec = (int) Duration.between(game.getStartTime(), game.getEndTime()).toSeconds();
 
-        String mvpName = response.getMvp() != null ? response.getMvp().getNickname() : "없음";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
         AiNewsRequest aiRequest = AiNewsRequest.builder()
-                .start_time(game.getStartTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")))
-                .winning_team("POLICE".equals(game.getWinTeam()) ? "경찰" : "도둑")
-                .play_time(response.getStats().getDurationSec())
-                .location("SSAFY 구미캠퍼스")
-                .police_count(policeCount)
-                .thief_count(thiefCount)
-                .mvp(mvpName)
-                .winner_top_member(mvpName)
-                .loser_top_member("상대팀 플레이어")
+                .gameId(game.getId())
+                .startTime(game.getStartTime().format(formatter))
+                .winningTeam("POLICE".equals(game.getWinTeam()) ? "경찰" : "도둑")
+                .playTime(durationSec)
+                .location("SSAFY 구미캠퍼스 운동장")
+                .policeCount(policeCount)
+                .thiefCount(thiefCount)
+                .mvp(mvpNickname)
+                .winnerTopMember(mvpNickname)
+                .loserTopMember("도망왕") // 필요시 별도 로직 구현
                 .build();
 
-        // config에서 설정한 exchange와 routingKey 이름을 사용하세요.
         rabbitTemplate.convertAndSend("game.news.exchange", "game.news.request", aiRequest);
+    }
+
+    private GameMemberStat calculateMvp(Game game) {
+        // 승리 팀에 따라 MVP 선정 쿼리 호출
+        return "POLICE".equals(game.getWinTeam())
+                ? gameMemberStatRepository.findPoliceMvp(game.getId()).orElse(null)
+                : gameMemberStatRepository.findThiefMvp(game.getId()).orElse(null);
     }
 
     @Override

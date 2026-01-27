@@ -23,6 +23,7 @@ public class GameNews extends BaseEntity {
 
     private String title;
 
+    @Lob
     @Column(columnDefinition = "TEXT")
     private String contents;
 
