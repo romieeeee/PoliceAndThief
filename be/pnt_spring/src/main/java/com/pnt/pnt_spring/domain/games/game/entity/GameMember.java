@@ -60,17 +60,26 @@ public class GameMember extends BaseEntity {
         GameMember gm = new GameMember();
         gm.game = game;
         gm.member = member;
-
         gm.ready = false;
         gm.preferPosition = PreferPosition.ANY; // 기본값: 상관없음
         gm.givenPosition = null;                // 배정은 게임 시작 때
-
-        gm.status = "JOINED"; // TODO: enum으로 변경 추천
+        gm.status = "JOINED"; // TODO: enum으로 변경
         return gm;
+    }
+
+    public void rejoin() {
+        // isDeleted 같은 소프트딜리트 쓰면 여기서 복구
+        // this.isDeleted = false;
+        this.ready = false;        // 재입장 시 준비 풀지 여부는 정책(보통 false)
+        this.givenPosition = null; // 재입장 시 배정 초기화할지 여부는 정책
     }
 
     public void toggleReady(boolean ready) {
         this.ready = ready;
+    }
+
+    public void toggleReady() {
+        this.ready = !this.ready;
     }
 
     // “픽” prefer를 변경
@@ -88,4 +97,6 @@ public class GameMember extends BaseEntity {
         }
         this.givenPosition = position;
     }
+
+
 }

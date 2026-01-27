@@ -1,8 +1,6 @@
 package com.pnt.pnt_spring.domain.games.game.application.impl;
 
-import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomCreateRequest;
-import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomPositionRequest;
-import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomReadyRequest;
+import com.pnt.pnt_spring.domain.games.game.api.req.*;
 import com.pnt.pnt_spring.domain.games.game.api.resp.*;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomCodeGenerator;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomService;
@@ -16,7 +14,6 @@ import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.members.member.repository.MemberRepository;
-import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomSettingUpdateRequest;
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.*;
 import org.springframework.stereotype.Service;
@@ -91,6 +88,55 @@ public class GameRoomServiceImpl implements GameRoomService {
     }
 
     @Override
+    public GameRoomJoinResponse joinRoom(Long memberId, GameRoomJoinRequest req) {
+        if (req == null || req.getRoomCode() == null || req.getRoomCode().isBlank()) {
+            throw new IllegalArgumentException("roomCode가 필요합니다.");
+        }
+
+        String roomCode = req.getRoomCode().trim();
+
+        // 1) 방 락 + 존재 확인 (동시 join에서 인원수 체크 안정성)
+        Game game = gameRepository.findByRoomCodeForUpdate(roomCode)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 방 코드입니다."));
+
+        // 2) 상태 체크 (WAITING에서만 입장 허용 권장)
+        if (game.getStatus() != GameStatus.WAITING) {
+            throw new IllegalStateException("이미 시작된 게임방에는 참여할 수 없습니다.");
+        }
+
+        // 3) 정원 체크 (GameSetting.playerCount 기준)
+        GameSetting setting = gameSettingRepository.findById(game.getId())
+                .orElseThrow(() -> new IllegalArgumentException("게임 설정이 존재하지 않습니다."));
+
+        long current = gameMemberRepository.countByGameId(game.getId());
+        if (current >= setting.getPlayerCount()) {
+            throw new IllegalStateException("게임방 정원이 가득 찼습니다.");
+        }
+
+        // 4) 멤버 row upsert(있으면 복구/없으면 생성)
+        Member memberRef = memberRepository.getReferenceById(memberId);
+
+        GameMember gm = gameMemberRepository.findByGameIdAndMemberIdForUpdate(game.getId(), memberId)
+                .orElse(null);
+
+        if (gm == null) {
+            gm = GameMember.join(game, memberRef);
+            gameMemberRepository.save(gm);
+        } else {
+            gm.rejoin();
+        }
+
+        return new GameRoomJoinResponse(
+                game.getId(),
+                game.getRoomCode(),
+                memberId,
+                gm.getPreferPosition(),
+                gm.getGivenPosition(),
+                gm.getReady()
+        );
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public GameRoomMemberListResponse getRoomMembers(Long roomId) {
         gameRepository.findById(roomId)
@@ -116,7 +162,7 @@ public class GameRoomServiceImpl implements GameRoomService {
         GameMember gm = gameMemberRepository.findByGameIdAndMemberIdForUpdate(roomId, memberId)
                 .orElseThrow(() -> new IllegalArgumentException("방에 참가한 멤버가 아닙니다."));
 
-        gm.toggleReady(req.isReady());
+        gm.toggleReady();
 
         return new GameRoomReadyResponse(roomId, memberId, gm.getReady());
     }

@@ -23,7 +23,7 @@ public interface GameRepository extends JpaRepository<Game, Long> {
     @Query("select g from Game g where g.id = :gameId")
     Optional<Game> findByIdForUpdate(@Param("gameId") Long gameId);
 
-    // roomCode로도 락 걸고 싶으면
+    // roomCode로도 락 (선택)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select g from Game g where g.roomCode = :roomCode")
     Optional<Game> findByRoomCodeForUpdate(@Param("roomCode") String roomCode);
