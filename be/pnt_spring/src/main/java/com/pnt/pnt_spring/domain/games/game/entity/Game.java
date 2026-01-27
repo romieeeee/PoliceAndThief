@@ -27,6 +27,7 @@ public class Game extends BaseEntity {
     private OffsetDateTime endTime;
 
     @Column(length = 20)
+    @Enumerated(value = EnumType.STRING)
     private GameStatus status;
 
     @Column(length = 20)
