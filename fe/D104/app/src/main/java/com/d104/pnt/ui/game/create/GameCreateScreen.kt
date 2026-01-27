@@ -114,11 +114,11 @@ fun GameCreateScreen(
 
                         SectionTitle(text = "게임 이름 설정")
                         Spacer(modifier = Modifier.height(8.dp))
-                        PixelInputField(
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = "방 이름을 입력하세요",
-                            borderColor = DialogBorderColor
-                        )
+//                        PixelInputField(
+//                            modifier = Modifier.fillMaxWidth(),
+//                            placeholder = "방 이름을 입력하세요",
+//                            borderColor = DialogBorderColor
+//                        )
 
                         Spacer(modifier = Modifier.height(24.dp))
 

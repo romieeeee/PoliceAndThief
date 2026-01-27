@@ -41,13 +41,13 @@ fun ChatRoomFooter(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                PixelInputField(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 5.dp),
-                    placeholder = "채팅을 입력하세요",
-                    backgroundColor = TextPrimary,
-                )
+//                PixelInputField(
+//                    modifier = Modifier
+//                        .weight(1f)
+//                        .padding(end = 5.dp),
+//                    placeholder = "채팅을 입력하세요",
+//                    backgroundColor = TextPrimary,
+//                )
                 PixelButtonCode(
                     modifier = Modifier,
                     text = "전송",
