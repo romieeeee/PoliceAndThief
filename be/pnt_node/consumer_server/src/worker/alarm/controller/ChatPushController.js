@@ -9,9 +9,11 @@ class ChatPushMq {
 
     create = async () => {
         this.channel = await mq.createChannel(MQConfig.MQ_ALARM);
+        // 안전 장치 추가: 큐가 없으면 생성하고, 있으면 넘어감
+        await this.channel.assertQueue(MQConfig.MQ_ALARM, { durable: true });
         this.chatPushService = new ChatPushService();
         return this;
-    }       
+    }
 
     consume = async () => {
         this.channel.consume(MQConfig.MQ_ALARM, async (msg) => {

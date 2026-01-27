@@ -32,15 +32,18 @@ public class GameMember extends BaseEntity {
 
     private String serialCode;
 
+    @Enumerated(value = EnumType.STRING)
     @Column(length = 10)
     private GameMemberPosition givenPosition;
 
     @Column(length = 10)
+    @Enumerated(value = EnumType.STRING)
     private GameMemberPosition preferPosition;
 
     private Boolean ready;
 
     @Column(length = 10)
+    @Enumerated(value = EnumType.STRING)
     private GameMemberStatus status;
 
     private Boolean inGameConnected;
