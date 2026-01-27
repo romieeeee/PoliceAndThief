@@ -11,7 +11,7 @@ export class RedisEvent {
         this.readyRoomIo = readyRoomIo;
         this.gameIo = gameIo;
         this.chatRoomService = new ChatRoomService();
-        this.gpsTimerChannel = new GpsTimerChannel(this.pubClient, this.gameIo);
+        this.gpsTimerChannel = new GpsTimerChannel(this.gameIo);
     }
 
     listen = async () => {
