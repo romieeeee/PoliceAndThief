@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import com.d104.pnt.base.AuthTokenInterceptor
 import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.api.AuthApiService
+import com.d104.pnt.data.remote.api.ProfileApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -77,5 +78,11 @@ object NetworkModule {
     @Singleton
     fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
         return retrofit.create(AuthApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideProfileApiService(retrofit: Retrofit): ProfileApiService {
+        return retrofit.create(ProfileApiService::class.java)
     }
 }
