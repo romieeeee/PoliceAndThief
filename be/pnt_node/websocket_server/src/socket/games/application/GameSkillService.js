@@ -6,8 +6,7 @@ export class GameSkillService {
             where: {
                 gameId: gameId,
                 memberId: memberId,
-                isDeleted: false,
-                isUsed: false
+                isDeleted: false
             }
         });
 

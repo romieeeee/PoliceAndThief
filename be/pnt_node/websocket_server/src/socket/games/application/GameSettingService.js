@@ -3,6 +3,13 @@ import { Op, fn, col, where } from "sequelize";
 
 export class GameSettingService {
 
+    findGameSetting = async (gameId) => {
+        return await GameSetting.findOne({
+            attributes: ["gameId", "boundaryGeo", "prisonLocation", "timeLimit", "policeCount", "thiefCount"],
+            where: { gameId: gameId, isDeleted: false }
+        });
+    }
+
     checkUserInBoundary = async (gameId, longitude, latitude) => {
         // 1. 입력받은 좌표를 POINT 객체로 생성
         const userLocation = fn('ST_GeomFromText', `POINT(${longitude} ${latitude})`, 4326);

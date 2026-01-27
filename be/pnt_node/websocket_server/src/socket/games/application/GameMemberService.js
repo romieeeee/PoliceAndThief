@@ -33,6 +33,65 @@ export class GameMemberService {
         return res;
     }
 
+    findAllByGameId = async (gameId) => {
+        const res = await GameMember.findAll({
+            where: {
+                gameId: gameId,
+                isDeleted: false
+            }
+        });
+
+        if (!res) {
+            this.makeError("NotFoundException", "게임 멤버 정보를 찾을 수 없습니다.", 404);
+        }
+        return res;
+    }
+
+    updateInGameConnected = async (gameId, memberId, isConnected) => {
+        const res = await GameMember.update({ isConnected }, {
+            where: {
+                gameId: gameId,
+                memberId: memberId,
+                isDeleted: false
+            }
+        });
+
+        if (!res) {
+            this.makeError("NotFoundException", "유저의 게임 접속 정보를 찾을 수 없습니다.", 404);
+        }
+        return res;
+    }
+
+    updateThiefStats = async (gameId, memberId, walk, longestSurvived) => {
+        const res = await GameMember.update({ walk, longestSurvived }, {
+            where: {
+                gameId: gameId,
+                memberId: memberId,
+                isDeleted: false
+            }
+        });
+
+        if (!res) {
+            this.makeError("NotFoundException", "유저의 게임 접속 정보를 찾을 수 없습니다.", 404);
+        }
+        return res;
+    }
+
+    updatePoliceStats = async (gameId, memberId, arrestCount, walk) => {
+        const res = await GameMember.update({ arrestCount, walk }, {
+            where: {
+                gameId: gameId,
+                memberId: memberId,
+                isDeleted: false
+            }
+        });
+
+        if (!res) {
+            this.makeError("NotFoundException", "유저의 게임 접속 정보를 찾을 수 없습니다.", 404);
+        }
+        return res;
+    }
+
     makeError = (message, text, code) => {
         const error = new Error(message);
         error.code = code;

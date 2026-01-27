@@ -1,6 +1,9 @@
 import { RedisClient } from "../client/RedisClient.js";
+import { GameController } from "../../games/controller/GameController.js";
+import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemberPosition.js";
 
 const redisClient = new RedisClient();
+const gameController = new GameController();
 
 const expiredChannel = async (message, pubClient, chatIo, readyRoomIo, gameIo) => {
 
@@ -33,6 +36,16 @@ const expiredChannel = async (message, pubClient, chatIo, readyRoomIo, gameIo) =
             // console.log(`[Process ${process.pid}] User ${memberId} expired, but handled by another process.`);
         }
     }
+
+    // Key format: websocket:game:timer:<gameId>
+    // Example: websocket:game:timer:game-123
+    else if (key.startsWith(redisClient.GAME_TIMER_PREFIX)) {
+        const parts = key.split(":");
+        const gameId = parts[3];
+
+        // 게임 종료 처리 => 컨트롤러에서 처리
+        gameController.gameEnd(gameIo, redisClient, gameId, GameMemberPosition.THIEF);
+    }
 }
 
 const chatDisconnect = async (memberId, roomId, chatIo) => {
@@ -50,6 +63,10 @@ const readyRoomDisconnect = async (memberId, roomId, readyRoomIo) => {
 }
 
 const gameDisconnect = async (memberId, roomId, gameIo) => {
+    // 게임 접속 정보 업데이트
+    const integerRoomId = parseInt(roomId.split("-")[1]);
+    await gameController.gameMemberService.updateInGameConnected(integerRoomId, memberId, false);
+
     await redisClient.deleteKeys("game", roomId, memberId);
 
     // RedisClient를 사용하여 위치 정보 및 패널티 정보 삭제

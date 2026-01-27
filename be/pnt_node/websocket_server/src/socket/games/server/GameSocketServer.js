@@ -10,18 +10,21 @@ const gameSocketServer = (io) => {
     io.on("connection", async (socket) => {
         const storedGameId = await redisClient.getStoredRoomId(socket, "game");
 
-        // game 방이 유효한지 검사 로직 필요.
+        socket.data.isIntentionalExit = false; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
+        const gameController = new GameController(io, socket);
 
-        if (storedGameId) {
+        const isActiveRoom = await gameController.isActiveRoom(storedGameId);
+
+        // game 방이 유효한지 검사 로직 필요.
+        if (isActiveRoom) {
             await redisClient.deleteByCompletedReconnect(socket, "game", storedGameId);
+            const integerGameId = parseInt(storedGameId.split("-")[1]);
+            await gameController.gameMemberService.updateInGameConnected(integerGameId, socket.data.memberId, true);
 
             socket.emit("reconnect", { gameId: storedGameId });
         }
 
         console.log("websocket is connected!");
-
-        socket.data.isIntentionalExit = false; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
-        const gameController = new GameController(io, socket, pubClient);
 
         // 게임 관련 이벤트
         socket.on("post join room", gameController.joinRoom);
@@ -29,6 +32,7 @@ const gameSocketServer = (io) => {
         socket.on("post arrest", gameController.postArrest);
         socket.on("post skill use", gameController.postSkillUse);
         socket.on("post mission image", gameController.postMissionImage);
+        // socket.on("post after game end", gameController.postGameEndAfter);
 
         socket.on("post disconnect", gameController.disconnect);
 

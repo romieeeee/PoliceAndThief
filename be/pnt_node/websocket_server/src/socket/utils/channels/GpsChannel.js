@@ -1,6 +1,6 @@
 import { RedisClient } from "../client/RedisClient.js";
 
-export class GpsTimerChannel {
+export class GpsChannel {
     constructor(gameIo) {
         this.gameIo = gameIo;
         this.redisClient = new RedisClient();
@@ -11,14 +11,15 @@ export class GpsTimerChannel {
             const rooms = this.gameIo.adapter.rooms;
 
             for (const [roomId, sockets] of rooms) {
-                if (!roomId.startsWith("game:")) continue;
+                if (!roomId.startsWith("game-")) continue;
 
-                const locations = await this.redisClient.getAllLocations(roomId);
+                const gameId = parseInt(roomId.split("-")[1]);
+                const locations = await this.redisClient.getAllLocations(gameId);
 
-                if (Object.keys(locations).length === 0) continue;
+                if (locations.length === 0) continue;
 
                 const data = {
-                    gameId: parseInt(roomId.split(":")[1]),
+                    gameId: gameId,
                     locations: locations
                 }
                 // volatile: 클라이언트가 연결을 유지하지 않는 경우에도 데이터를 전송 -> tcp 보장 X

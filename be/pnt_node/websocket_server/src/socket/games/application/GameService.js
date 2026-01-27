@@ -3,6 +3,8 @@ import db from "../../../global/db/sequelize/SequelizeDB.js";
 import { GameMemberService } from "./GameMemberService.js";
 import { GameMemberStatService } from "./GameMemberStatService.js";
 import { GameMemberStatus } from "../../../global/db/sequelize/status/GameMemberStatus.js";
+import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemberPosition.js";
+import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
 
 export class GameService {
     constructor() {
@@ -10,19 +12,24 @@ export class GameService {
         this.gameMemberStatService = new GameMemberStatService();
     }
 
-    findGame = async (gameId) => {
+    findGame = async (gameId, status) => {
+        const whereCondition = {
+            id: gameId,
+            isDeleted: false
+        };
+
+        if (status !== undefined && status !== null) {
+            whereCondition.status = status;
+        }
+
         const res = await Game.findOne({
-            where: {
-                id: gameId,
-                isDeleted: false,
-                isFinished: false
-            }
+            where: whereCondition
         });
 
         if (!res) {
             this.makeError("NotFoundException", "게임을 찾을 수 없습니다.", 404);
         }
-        return res;
+
         return res;
     }
 
@@ -42,6 +49,60 @@ export class GameService {
         } catch (error) {
             await t.rollback();
             console.error("processArrest Transaction Error", error);
+            throw error;
+        }
+    }
+
+    // 게임 종료 조건 확인 => 모든 도둑이 잡혔을때 종료.
+    // 게임 승리팀 상태를 비관적 락으로 처리해야할 수도 있음.
+    checkGameHaveToFinish = async (gameId) => {
+        const game = await this.findGame(gameId, GameStatus.PLAYING);
+
+        if (!game || game.status === GameStatus.END) {
+            return false;
+        }
+
+        const gameMembers = await this.gameMemberService.findAllByGameId(gameId);
+
+        const thiefMembers = gameMembers
+            .filter(member => member.givenPosition === GameMemberPosition.THIEF && member.status !== GameMemberStatus.FREE);
+
+        const isGameEnd = thiefMembers.length === 0;
+
+        return isGameEnd;
+    }
+
+    updateGame = async (payload) => {
+        try {
+            await Game.update(payload, {
+                where: {
+                    id: payload.gameId,
+                    isDeleted: false,
+                },
+            });
+        } catch (error) {
+            console.error("updateGame Error", error);
+            throw error;
+        }
+    }
+
+    // 게임 종료 처리
+    endGame = async (gameId, winnerPosition) => {
+        try {
+            // 게임 상태 변경 (END)
+            await Game.update({
+                status: GameStatus.END,
+                winnerPosition: winnerPosition,
+                endedAt: new Date().toISOString(),
+            }, {
+                where: {
+                    id: gameId,
+                },
+            });
+
+            return true;
+        } catch (error) {
+            console.error("endGame Error", error);
             throw error;
         }
     }
