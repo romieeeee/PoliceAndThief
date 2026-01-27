@@ -1,8 +1,8 @@
 package com.d104.pnt.domain.model
 
-import java.time.Instant
+import androidx.room.Entity
 
-data class RoomData(
+data class ChatsData(
     val id: Int,
     val title: String,
     val description: String,
