@@ -1,9 +1,6 @@
 package com.pnt.pnt_spring.domain.auth.api.controller;
 
-import com.pnt.pnt_spring.domain.auth.api.req.IdDuplicateRequest;
-import com.pnt.pnt_spring.domain.auth.api.req.LoginRequest;
-import com.pnt.pnt_spring.domain.auth.api.req.SignupRequest;
-import com.pnt.pnt_spring.domain.auth.api.req.SocialLoginRequest;
+import com.pnt.pnt_spring.domain.auth.api.req.*;
 import com.pnt.pnt_spring.domain.auth.api.resp.LoginResponse;
 import com.pnt.pnt_spring.domain.auth.api.resp.SignupResponse;
 import com.pnt.pnt_spring.domain.auth.application.AuthService;
@@ -73,5 +70,11 @@ public class AuthController {
             return bearerToken.substring(7);
         }
         return null; // 혹은 예외 처리
+    }
+
+    @PostMapping("/reissue")
+    public CommonResponse<TokenDto> reissue(@RequestBody TokenDto tokenDto) {
+        TokenDto newToken = authService.reissue(tokenDto);
+        return new CommonResponse<>(newToken, "토큰이 성공적으로 재발급되었습니다.", HttpStatus.OK);
     }
 }
