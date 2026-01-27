@@ -34,6 +34,20 @@ class AuthViewModel @Inject constructor(
     // 로그인 여부 (Repository에서 Flow로 제공)
     val isLoggedIn = authRepository.isLoggedIn()
 
+    fun test() {
+        viewModelScope.launch {
+            when (val result = authRepository.test()) {
+                is BaseResult.Success -> {
+                    Timber.d("Test: ${result.isSuccess}")
+                }
+
+                is BaseResult.Error -> {
+                    Timber.e("Test failed: ${result.error.message}")
+                }
+            }
+        }
+    }
+
     // ===== 사용자 액션 =====
 
     /**
@@ -48,6 +62,7 @@ class AuthViewModel @Inject constructor(
                     _loginState.value = UiState.Success(result.data)
                     Timber.d("Login successful: ${result.data.member.nickname}")
                 }
+
                 is BaseResult.Error -> {
                     _loginState.value = UiState.Error(result.error.message)
                     Timber.e("Login failed: ${result.error.message}")
@@ -68,6 +83,7 @@ class AuthViewModel @Inject constructor(
                     _signupState.value = UiState.Success(result.data)
                     Timber.d("Signup successful: ${result.data.member.nickname}")
                 }
+
                 is BaseResult.Error -> {
                     _signupState.value = UiState.Error(result.error.message)
                     Timber.e("Signup failed: ${result.error.message}")
@@ -88,6 +104,7 @@ class AuthViewModel @Inject constructor(
                     _logoutState.value = UiState.Success(Unit)
                     Timber.d("Logout successful")
                 }
+
                 is BaseResult.Error -> {
                     _logoutState.value = UiState.Error(result.error.message)
                     Timber.e("Logout failed: ${result.error.message}")

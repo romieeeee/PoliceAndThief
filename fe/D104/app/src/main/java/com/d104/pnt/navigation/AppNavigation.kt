@@ -124,11 +124,11 @@ fun AppNavigation() {
                     onLoginSuccess = { userId ->
                         userName = userId
                         Timber.d("Login success: $userId")
+                        currentScreen = AppScreen.Main
 
                         // 이미 권한이 있는 상태로 로그인
                         if (PermissionHelper.areEssentialPermissionsGranted(context)) {
                             Timber.d("Permissions already granted, navigating to Main")
-                            currentScreen = AppScreen.Main
                         } else {
                             // 권한이 없으면 설명 다이얼로그 표시
                             Timber.d("Permissions needed, showing dialog")
