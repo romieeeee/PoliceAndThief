@@ -3,6 +3,7 @@ package com.pnt.pnt_spring.domain.games.news.application.Impl;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
 import com.pnt.pnt_spring.domain.games.news.api.resp.AiNewsResponse;
+import com.pnt.pnt_spring.domain.games.news.api.resp.GameNewsResponse;
 import com.pnt.pnt_spring.domain.games.news.application.GameNewsService;
 import com.pnt.pnt_spring.domain.games.news.entity.GameNews;
 import com.pnt.pnt_spring.domain.games.news.repository.GameNewsRepository;
@@ -16,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
-@Slf4j
 public class GameNewsServiceImpl implements GameNewsService {
 
     private final GameNewsRepository gameNewsRepository;
@@ -29,7 +29,7 @@ public class GameNewsServiceImpl implements GameNewsService {
         Game game = gameRepository.findById(response.getGameId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
-        // 뉴스 엔티티 빌드 (gameNews 엔티티에 Builder가 있어야 합니다)
+        // 뉴스 엔티티 빌드
         GameNews gameNews = GameNews.builder()
                 .game(game)
                 .title(response.getHeadline())
@@ -38,6 +38,14 @@ public class GameNewsServiceImpl implements GameNewsService {
 
         // 저장
         gameNewsRepository.save(gameNews);
-        log.info("Successfully saved news to database.");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GameNewsResponse getNewsByGameId(Long gameId) {
+        GameNews news = gameNewsRepository.findByGameId(gameId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NEWS_NOT_FOUND));
+
+        return GameNewsResponse.from(news);
     }
 }

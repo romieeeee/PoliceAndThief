@@ -32,7 +32,7 @@ public class GameResultServiceImpl implements GameResultService {
     private final RabbitTemplate rabbitTemplate;
 
     /**
-     * 1. 게임 결과 저장 및 AI 뉴스 요청 (Command)
+     * 게임 결과 저장 및 AI 뉴스 요청 (Command)
      */
     @Override
     public void saveGameResult(GameResultRequest request) {
@@ -46,10 +46,10 @@ public class GameResultServiceImpl implements GameResultService {
             return;
         }
 
-        // 1-1. 게임 상태 업데이트 (종료 시간, 승리 팀)
+        // 게임 상태 업데이트 (종료 시간, 승리 팀)
         game.finish(request.getWinTeam().name());
 
-        // 1-2. 멤버별 통계 저장 (walk, survived 등)
+        // 멤버별 통계 저장 (walk, survived 등)
         for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
             GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(statReq.getGameMemberId())
                     .orElseGet(() -> {
@@ -63,12 +63,12 @@ public class GameResultServiceImpl implements GameResultService {
             stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived());
         }
 
-        // 1-3. AI 뉴스 생성 요청 (저장 시점에 바로 트리거)
+        // AI 뉴스 생성 요청 (저장 시점에 바로 트리거)
         triggerAiNewsGeneration(game);
     }
 
     /**
-     * 2. 게임 결과 조회 및 MVP 산정 (Query)
+     * 게임 결과 조회 및 MVP 산정 (Query)
      */
     @Override
     @Transactional(readOnly = true)
@@ -76,13 +76,13 @@ public class GameResultServiceImpl implements GameResultService {
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
-        // 2-1. MVP 선정 (조회 시점에 계산)
+        // MVP 선정 (조회 시점에 계산)
         GameMemberStat mvpStat = calculateMvp(game);
         String mvpNickname = (mvpStat != null)
                 ? mvpStat.getGameMember().getMember().getMemberProfile().getNickname()
                 : "없음";
 
-        // 2-2. 통계 집계
+        // 통계 집계
         List<GameMember> participants = gameMemberRepository.findAllByGameId(gameId);
         int totalArrests = 0;
 
@@ -95,7 +95,7 @@ public class GameResultServiceImpl implements GameResultService {
 
         int durationSec = (int) Duration.between(game.getStartTime(), game.getEndTime()).toSeconds();
 
-        // 2-3. 응답 반환
+        // 응답 반환
         return GameResultResponse.builder()
                 .gameId(game.getId())
                 .winner(game.getWinTeam())
