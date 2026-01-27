@@ -20,11 +20,15 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +38,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.d104.pnt.R
+import com.d104.pnt.data.remote.model.response.LoginResponse
+import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.theme.AccentRed
@@ -41,10 +47,23 @@ import com.d104.pnt.ui.theme.BorderDefault
 
 @Composable
 fun LoginScreen(
-    viewModel: AuthViewModel = hiltViewModel(),
+    viewModel: LoginViewModel = hiltViewModel(),
     goToSignup: () -> Unit,
     onLoginSuccess: (String) -> Unit
 ) {
+
+    val id by viewModel.id.collectAsState()
+    val password by viewModel.password.collectAsState()
+    val loginState by viewModel.loginState.collectAsState()
+
+    // 로그인 성공 처리
+    LaunchedEffect(loginState) {
+        if (loginState is UiState.Success) {
+            val response = (loginState as UiState.Success<LoginResponse>).data
+            onLoginSuccess(response.member.id)
+        }
+    }
+
     Surface(modifier = Modifier.fillMaxSize()) {
 
         // 배경 이미지
@@ -96,15 +115,19 @@ fun LoginScreen(
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     PixelInputField(
+                        value = id,
+                        onValueChange = { viewModel.updateId(it) },
                         placeholder = "아이디",
                         modifier = Modifier.fillMaxWidth(),
                         borderColor = BorderDefault
                     )
 
                     PixelInputField(
+                        value = password,
+                        onValueChange = { viewModel.updatePassword(it) },
                         placeholder = "비밀번호",
                         modifier = Modifier.fillMaxWidth(),
-                        borderColor = BorderDefault
+                        borderColor = BorderDefault,
                     )
                 }
 
@@ -114,12 +137,28 @@ fun LoginScreen(
                         .fillMaxHeight(),
                     text = "로그인",
                     fontSize = 16,
-                    onClick = {
-                        viewModel.test()
-//                        viewModel.login("user", "pass")
-                        onLoginSuccess("keroro") },
+                    onClick = { viewModel.login() },
                     mainColor = AccentRed,
                     borderColor = BorderDefault,
+                )
+            }
+
+            // 에러 메시지 표시
+            if (loginState is UiState.Error) {
+                Text(
+                    text = (loginState as UiState.Error).message,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                )
+            }
+
+            // 로딩 표시
+            if (loginState is UiState.Loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(8.dp)
                 )
             }
 

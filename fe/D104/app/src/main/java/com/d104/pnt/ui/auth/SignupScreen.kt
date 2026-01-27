@@ -45,6 +45,12 @@ fun SignupScreen(
 ) {
     var clicked by remember { mutableStateOf(false) }
 
+    var id by remember { mutableStateOf("") }
+    var pw by remember { mutableStateOf("") }
+    var pwCheck by remember { mutableStateOf("") }
+    var nickname by remember { mutableStateOf("") }
+    var bDay by remember { mutableStateOf("") }
+
     Surface(modifier = Modifier.fillMaxSize()) {
 
         // 배경 이미지
@@ -104,6 +110,8 @@ fun SignupScreen(
                             .fillMaxHeight()
                             .padding(end = 4.dp)
                             .weight(1f),
+                        value = id,
+                        onValueChange = { },
                         placeholder = "아이디 (8~16자 이내)",
                         borderColor = BorderDefault
                     )
@@ -137,7 +145,10 @@ fun SignupScreen(
                         .fillMaxWidth(),
                     color = Color.White
                 )
+
                 PixelInputField(
+                    value = pw,
+                    onValueChange = { },
                     placeholder = "비밀번호",
                     borderColor = BorderDefault
                 )
@@ -156,7 +167,10 @@ fun SignupScreen(
                         .fillMaxWidth(),
                     color = Color.White
                 )
+
                 PixelInputField(
+                    value = pwCheck,
+                    onValueChange = { },
                     placeholder = "비밀번호 확인",
                     borderColor = BorderDefault
                 )
@@ -176,7 +190,10 @@ fun SignupScreen(
                         .fillMaxWidth(),
                     color = Color.White
                 )
+
                 PixelInputField(
+                    value = bDay,
+                    onValueChange = { },
                     placeholder = "생년월일",
                     borderColor = BorderDefault
                 )

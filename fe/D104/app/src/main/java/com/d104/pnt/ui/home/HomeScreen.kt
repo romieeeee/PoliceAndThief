@@ -116,6 +116,8 @@ fun JoinGameDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    var code by remember { mutableStateOf("") }
+
     PixelContainer(
         modifier = Modifier.width(320.dp),
         backgroundColor = TextPrimary,
@@ -142,7 +144,9 @@ fun JoinGameDialog(
                     .fillMaxWidth()
                     .wrapContentHeight(Alignment.CenterVertically),
                 placeholder = "참여코드를 입력해주세요",
-                borderColor = BorderDefault
+                borderColor = BorderDefault,
+                value = code,
+                onValueChange = { code = it }
             )
 
             Spacer(modifier = Modifier.height(30.dp))

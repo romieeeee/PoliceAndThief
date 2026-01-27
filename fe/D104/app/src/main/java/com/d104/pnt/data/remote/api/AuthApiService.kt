@@ -13,7 +13,7 @@ interface AuthApiService {
     suspend fun test(): Response<BaseResponse<Unit>>
 
 
-    @POST("api/auth/login")
+    @POST("auth/login")
     suspend fun login(
         @Body request: LoginRequest
     ): Response<BaseResponse<LoginResponse>>
@@ -21,7 +21,7 @@ interface AuthApiService {
     /**
      * 회원가입 API
      */
-    @POST("api/auth/signup")
+    @POST("auth/signup")
     suspend fun signup(
         @Body request: SignupRequest
     ): Response<BaseResponse<LoginResponse>>
@@ -29,7 +29,7 @@ interface AuthApiService {
     /**
      * 로그아웃 API
      */
-    @POST("api/auth/logout")
+    @POST("auth/logout")
     suspend fun logout(): Response<BaseResponse<Unit>>
 }
 
