@@ -33,7 +33,7 @@ public class GameNewsServiceImpl implements GameNewsService {
         GameNews gameNews = GameNews.builder()
                 .game(game)
                 .title(response.getHeadline())
-                .contents(response.getContent())
+                .content(response.getContent())
                 .build();
 
         // 저장

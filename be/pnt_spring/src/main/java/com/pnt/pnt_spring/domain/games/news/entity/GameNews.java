@@ -25,11 +25,11 @@ public class GameNews extends BaseEntity {
 
     @Lob
     @Column(columnDefinition = "TEXT")
-    private String contents;
+    private String content;
 
     public GameNews(Game game, String title, String contents) {
         this.game = game;
         this.title = title;
-        this.contents = contents;
+        this.content = contents;
     }
 }
