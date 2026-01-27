@@ -20,7 +20,9 @@ import com.d104.pnt.ui.theme.TextSecondary
 @Composable
 fun ChatRoomFooter(
     modifier: Modifier,
+    message: String,
     onSendMessage: (String) -> Unit,
+    onValueChange: (String) -> Unit
 ){
     Box(
         modifier = Modifier
@@ -47,6 +49,8 @@ fun ChatRoomFooter(
                         .padding(end = 5.dp),
                     placeholder = "채팅을 입력하세요",
                     backgroundColor = TextPrimary,
+                    onValueChange = { onValueChange(it) },
+                    value = message
                 )
                 PixelButtonCode(
                     modifier = Modifier,
@@ -62,13 +66,4 @@ fun ChatRoomFooter(
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun PreviewChatRoomFooter(){
-    ChatRoomFooter(
-        modifier = Modifier,
-        onSendMessage = {}
-    )
 }

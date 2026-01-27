@@ -42,13 +42,17 @@ import com.d104.pnt.ui.game.play.PhoneScreen.NO_SIGNAL
 import com.d104.pnt.ui.game.play.PhoneScreen.THIEF_LIST
 import com.d104.pnt.ui.theme.PastelBlue
 import com.d104.pnt.ui.theme.WantedRed
+import com.google.android.gms.maps.model.LatLng
 
 
 @Composable
 fun PhoneFrame(
     screen: PhoneScreen,
     onScanSuccess: (String) -> Unit,
-    role: GameRole = GameRole.POLICE
+    role: GameRole = GameRole.POLICE,
+    currentLocation: LatLng,
+    areaPoints: List<LatLng> = emptyList(),
+    prisonLocation: LatLng
 ) {
     Box(
         modifier = Modifier,
@@ -74,7 +78,12 @@ fun PhoneFrame(
         ) {
             when (screen) {
                 NO_SIGNAL -> ThiefListScreen()
-                MAP -> MiniMapScreen(role)
+                MAP -> MiniMapScreen(
+                    role,
+                    currentLocation = currentLocation,
+                    areaPoints = areaPoints,
+                    prisonLocation = prisonLocation
+                )
                 CAMERA -> CameraScanScreen(onScanSuccess)
                 THIEF_LIST -> ThiefListScreen()
             }
@@ -103,20 +112,25 @@ fun ThiefListScreen() {
 
 
 @Composable
-fun MiniMapScreen(role: GameRole) {
+fun MiniMapScreen(
+    role: GameRole,
+    currentLocation: LatLng,
+    areaPoints: List<LatLng>,
+    prisonLocation: LatLng
+) {
     Column(
         modifier = Modifier
             .fillMaxSize(),
     ) {
-        val originPoints by LocationRepository.polygonPoints.collectAsStateWithLifecycle()
         GoogleMaps(
             modifier = Modifier,
-            polygonPoints = originPoints.map {
+            currentLocation = currentLocation,
+            polygonPoints = areaPoints.map {
                 DraggableLatLng(position = it)
             }.toMutableStateList(),
             inGameMinimap = true,
             isPreview = true,
-            prisonLocation = LocationRepository.prisonLocation.collectAsStateWithLifecycle().value,
+            prisonLocation = prisonLocation,
             role = role
         )
     }

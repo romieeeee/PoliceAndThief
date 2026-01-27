@@ -20,6 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.data.repository.LocationRepository
@@ -38,37 +39,26 @@ import com.google.android.gms.maps.model.LatLng
 fun GameCreateScreen(
     onCancel: () -> Unit,
     onConfirm: () -> Unit,
-    viewModel: GameCreateViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: GameCreateViewModel = hiltViewModel()
 ) {
-    var gameName by remember { mutableStateOf("") }
-    var totalPlayers by remember { mutableStateOf(25) }
-    var gameTime by remember { mutableStateOf(20) }
-    var missionCount by remember { mutableStateOf(5) }
-    var cctvCycle by remember { mutableStateOf(10) }
-    var policeCount by remember { mutableStateOf(9) }
-
-    val thiefCount = totalPlayers - policeCount
+    val gameName by viewModel.gameName.collectAsStateWithLifecycle()
+    val totalPlayers by viewModel.totalPlayers.collectAsStateWithLifecycle()
+    val gameTime by viewModel.gameTime.collectAsStateWithLifecycle()
+    val missionCount by viewModel.missionCount.collectAsStateWithLifecycle()
+    val cctvCycle by viewModel.cctvCycle.collectAsStateWithLifecycle()
+    val policeCount by viewModel.policeCount.collectAsStateWithLifecycle()
+    val thiefCount by viewModel.thiefCount.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
 
-    val userLocation by LocationRepository.currentLocation.collectAsStateWithLifecycle()
-    val polygonPoints by LocationRepository.polygonPoints.collectAsStateWithLifecycle()
-    val prisonLocation by LocationRepository.prisonLocation.collectAsStateWithLifecycle()
+    val userLocation by viewModel.userLocation.collectAsStateWithLifecycle()
+    val polygonPoints by viewModel.polygonPoints.collectAsStateWithLifecycle()
+    val prisonLocation by viewModel.prisonLocation.collectAsStateWithLifecycle()
+
     var showMapPopup by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         // ViewModel에게 Context를 줘서 위치를 가져오고 저장하게 시킴
-        viewModel.getCurrentLocation(context)
-    }
-    LaunchedEffect(userLocation) {
-        if (userLocation != null) {
-            LocationRepository.createDefaultPolygon(userLocation!!)
-            LocationRepository.setPrisonLocation(
-                LatLng(
-                    userLocation!!.latitude,
-                    userLocation!!.longitude
-                )
-            )
-        }
+        viewModel.setDefaultSettings(context)
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -117,7 +107,9 @@ fun GameCreateScreen(
                         PixelInputField(
                             modifier = Modifier.fillMaxWidth(),
                             placeholder = "방 이름을 입력하세요",
-                            borderColor = DialogBorderColor
+                            borderColor = DialogBorderColor,
+                            value = gameName,
+                            onValueChange = { viewModel.updateGameName(it) }
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -132,11 +124,13 @@ fun GameCreateScreen(
                             userLocation?.let { loc ->
                                 GoogleMaps(
                                     modifier = Modifier.fillMaxSize(),
-                                    startLat = loc.latitude,
-                                    startLng = loc.longitude,
                                     inGameMinimap = false,
                                     isPreview = true,
                                     polygonPoints = polygonPoints.map { DraggableLatLng(position = it) },
+                                    currentLocation = LatLng(
+                                        viewModel.userLocation.value!!.latitude,
+                                        viewModel.userLocation.value!!.longitude
+                                    ),
                                     prisonLocation = prisonLocation,
                                 )
                             }
@@ -160,26 +154,19 @@ fun GameCreateScreen(
                                 modifier = Modifier.weight(1f),
                                 label = "플레이어",
                                 icon = Icons.Default.Person,
-                                value = "$totalPlayers",
+                                value = totalPlayers.toString(),
                                 unit = "명",
-                                onDecrease = {
-                                    if (totalPlayers > 5) {
-                                        totalPlayers--
-                                        if (policeCount >= totalPlayers) {
-                                            policeCount = totalPlayers - 1
-                                        }
-                                    }
-                                },
-                                onIncrease = { if (totalPlayers < 30) totalPlayers++ }
+                                onDecrease = { viewModel.updateTotalPlayers(false) },
+                                onIncrease = { viewModel.updateTotalPlayers(true) }
                             )
                             CounterControl(
                                 modifier = Modifier.weight(1f),
                                 label = "게임 시간",
                                 icon = Icons.Default.Schedule,
-                                value = "$gameTime",
+                                value = gameTime.toString(),
                                 unit = "분",
-                                onDecrease = { if (gameTime > 10) gameTime -= 5 },
-                                onIncrease = { if (gameTime < 60) gameTime += 5 }
+                                onDecrease = { viewModel.updateGameTime(false) },
+                                onIncrease = { viewModel.updateGameTime(true) }
                             )
                         }
 
@@ -193,19 +180,19 @@ fun GameCreateScreen(
                                 modifier = Modifier.weight(1f),
                                 label = "미션 갯수",
                                 icon = Icons.Default.List,
-                                value = "$missionCount",
+                                value = missionCount.toString(),
                                 unit = "개",
-                                onDecrease = { if (missionCount > 1) missionCount-- },
-                                onIncrease = { if (missionCount < 20) missionCount++ }
+                                onDecrease = { viewModel.updateMissionCount(false) },
+                                onIncrease = { viewModel.updateMissionCount(true) }
                             )
                             CounterControl(
                                 modifier = Modifier.weight(1f),
                                 label = "CCTV 주기",
                                 icon = Icons.Default.Videocam,
-                                value = "$cctvCycle",
+                                value = cctvCycle.toString(),
                                 unit = "분",
-                                onDecrease = { if (cctvCycle > 1) cctvCycle-- },
-                                onIncrease = { if (cctvCycle < 30) cctvCycle++ }
+                                onDecrease = { viewModel.updateCctvCycle(false) },
+                                onIncrease = { viewModel.updateCctvCycle(true) }
                             )
                         }
 
@@ -218,7 +205,7 @@ fun GameCreateScreen(
                             totalCount = totalPlayers,
                             policeCount = policeCount,
                             thiefCount = thiefCount,
-                            onPoliceCountChange = { newCount -> policeCount = newCount }
+                            onPoliceCountChange = { newCount -> viewModel.updatePoliceCount(newCount) }
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))

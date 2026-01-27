@@ -26,6 +26,16 @@ class AuthRepositoryImpl @Inject constructor(
     private val KEY_USER_ID = stringPreferencesKey(Constants.KEY_USER_ID)
     private val KEY_IS_LOGGED_IN = booleanPreferencesKey(Constants.KEY_IS_LOGGED_IN)
 
+    override suspend fun test(): BaseResult<Unit> {
+        return safeApiCall(
+            onSuccess = { loginResponse ->
+                Timber.d("Test Success : $loginResponse")
+            }
+        ) {
+            apiService.test()
+        }
+    }
+
     override suspend fun login(id: String, password: String): BaseResult<LoginResponse> {
         return safeApiCall(
             onSuccess = { loginResponse ->

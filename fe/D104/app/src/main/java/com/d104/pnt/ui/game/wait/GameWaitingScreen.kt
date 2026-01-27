@@ -14,13 +14,10 @@ fun GameWaitingScreen(
     onStartGame: (Long, GameRole) -> Unit,
     onBackPressed: () -> Boolean
 ) {
-
-
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center
     ) {
-        Text("GameWaiting")
-    }
 
+    }
 }
