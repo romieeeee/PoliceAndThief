@@ -10,8 +10,15 @@ import android.util.Log // 디버그
 import androidx.core.app.NotificationCompat
 import com.d104.pnt.data.repository.LocationRepository
 import com.google.android.gms.location.*
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class LocationService : Service() {
+
+    @Inject
+    lateinit var LocationRepository: LocationRepository
+
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
 

@@ -14,6 +14,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.domain.model.ChatMessage
 import com.d104.pnt.domain.model.RoomData
 import com.d104.pnt.ui.component.ChatList
@@ -27,8 +29,11 @@ fun ChatRoomScreen(
     chatRoomData: RoomData,
     chatMessages: List<ChatMessage>,
     onSendMessage: (String) -> Unit,
-    onScrollToBottom: () -> Unit
+    onScrollToBottom: () -> Unit,
+    viewModel: ChatRoomViewModel = hiltViewModel()
 ) {
+    val message = viewModel.message.collectAsStateWithLifecycle()
+
     Scaffold (
         modifier = Modifier
             .fillMaxSize()
@@ -48,7 +53,9 @@ fun ChatRoomScreen(
             ChatRoomFooter(
                 modifier = Modifier
                     .fillMaxWidth(),
-                onSendMessage = onSendMessage
+                onSendMessage = onSendMessage,
+                onValueChange = { viewModel.writeMessage(it) },
+                message = message.value
             )
         }
     ) { innerPadding ->

@@ -14,19 +14,20 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
-/**
- * 인증 관련 ViewModel
- */
 @HiltViewModel
-class AuthViewModel @Inject constructor(
+class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
+    private val _id = MutableStateFlow("")
+    val id: StateFlow<String> = _id.asStateFlow()
+
+    private val _password = MutableStateFlow("")
+    val password: StateFlow<String> = _password.asStateFlow()
+
+    // 로그인 상태
     private val _loginState = MutableStateFlow<UiState<LoginResponse>>(UiState.Idle)
     val loginState: StateFlow<UiState<LoginResponse>> = _loginState.asStateFlow()
-
-    private val _signupState = MutableStateFlow<UiState<LoginResponse>>(UiState.Idle)
-    val signupState: StateFlow<UiState<LoginResponse>> = _signupState.asStateFlow()
 
     private val _logoutState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val logoutState: StateFlow<UiState<Unit>> = _logoutState.asStateFlow()
@@ -34,63 +35,32 @@ class AuthViewModel @Inject constructor(
     // 로그인 여부 (Repository에서 Flow로 제공)
     val isLoggedIn = authRepository.isLoggedIn()
 
-    fun test() {
-        viewModelScope.launch {
-            when (val result = authRepository.test()) {
-                is BaseResult.Success -> {
-                    Timber.d("Test: ${result.isSuccess}")
-                }
+    // 입력값 업데이트
+    fun updateId(newId: String) { _id.value = newId }
 
-                is BaseResult.Error -> {
-                    Timber.e("Test failed: ${result.error.message}")
-                }
-            }
-        }
+    fun updatePassword(newPassword: String) { _password.value = newPassword }
+
+    // 입력 유효성 검사
+    fun isLoginEnabled(): Boolean {
+        return id.value.isNotBlank() && password.value.length >= 4
     }
 
-    // ===== 사용자 액션 =====
-
-    /**
-     * 로그인
-     */
-    fun login(id: String, password: String) {
+    // 로그인
+    fun login() {
         viewModelScope.launch {
             _loginState.value = UiState.Loading
 
-            when (val result = authRepository.login(id, password)) {
+            when (val result = authRepository.login(id.value, password.value)) {
                 is BaseResult.Success -> {
                     _loginState.value = UiState.Success(result.data)
-                    Timber.d("Login successful: ${result.data.member.nickname}")
                 }
-
                 is BaseResult.Error -> {
                     _loginState.value = UiState.Error(result.error.message)
-                    Timber.e("Login failed: ${result.error.message}")
                 }
             }
         }
     }
 
-    /**
-     * 회원가입
-     */
-    fun signup(id: String, password: String, nickname: String, avatarUrl: String? = null) {
-        viewModelScope.launch {
-            _signupState.value = UiState.Loading
-
-            when (val result = authRepository.signup(id, password, nickname, avatarUrl)) {
-                is BaseResult.Success -> {
-                    _signupState.value = UiState.Success(result.data)
-                    Timber.d("Signup successful: ${result.data.member.nickname}")
-                }
-
-                is BaseResult.Error -> {
-                    _signupState.value = UiState.Error(result.error.message)
-                    Timber.e("Signup failed: ${result.error.message}")
-                }
-            }
-        }
-    }
 
     /**
      * 로그아웃
@@ -118,10 +88,6 @@ class AuthViewModel @Inject constructor(
      */
     fun resetLoginState() {
         _loginState.value = UiState.Idle
-    }
-
-    fun resetSignupState() {
-        _signupState.value = UiState.Idle
     }
 
     fun resetLogoutState() {

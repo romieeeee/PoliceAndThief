@@ -128,7 +128,7 @@ dependencies {
     implementation("androidx.camera:camera-view:$cameraxVersion")
 
     // QR Code & ML Kit
-    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     implementation("com.google.zxing:core:3.5.2")
 
