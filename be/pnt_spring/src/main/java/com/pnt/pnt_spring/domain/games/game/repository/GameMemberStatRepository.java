@@ -18,8 +18,8 @@ public interface GameMemberStatRepository extends JpaRepository<GameMemberStat, 
         JOIN FETCH s.gameMember gm
         JOIN FETCH gm.member m
         JOIN FETCH m.memberProfile
-        WHERE s.game.id = :gameId
-          AND gm.role = 'POLICE'
+        WHERE gm.game.id = :gameId
+          AND gm.givenPosition = com.pnt.pnt_spring.domain.games.game.entity.GameMemberPosition.POLICE
         ORDER BY s.arrestCount DESC
         LIMIT 1
     """)
@@ -32,12 +32,12 @@ public interface GameMemberStatRepository extends JpaRepository<GameMemberStat, 
         JOIN FETCH s.gameMember gm
         JOIN FETCH gm.member m
         JOIN FETCH m.memberProfile
-        WHERE s.game.id = :gameId
-          AND gm.role = 'THIEF'
-        ORDER BY s.survivalTime DESC
+        WHERE gm.game.id = :gameId
+          AND gm.givenPosition = com.pnt.pnt_spring.domain.games.game.entity.GameMemberPosition.THIEF
+        ORDER BY s.longestSurvived DESC
         LIMIT 1
     """)
-
     Optional<GameMemberStat> findThiefMvp(@Param("gameId") Long gameId);
+
     Optional<GameMemberStat> findByGameMemberId(Long gameMemberId);
 }
