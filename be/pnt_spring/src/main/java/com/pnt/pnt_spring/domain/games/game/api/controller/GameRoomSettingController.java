@@ -2,7 +2,7 @@ package com.pnt.pnt_spring.domain.games.game.api.controller;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomSettingUpdateRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomSettingUpdateResponse;
-import com.pnt.pnt_spring.domain.games.game.application.GameRoomService;
+import com.pnt.pnt_spring.domain.games.game.application.GameRoomSettingService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import com.pnt.pnt_spring.global.utils.SecurityUtils;
 import jakarta.validation.Valid;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/rooms")
 public class GameRoomSettingController {
 
-    private final GameRoomService gameRoomService;
+    private final GameRoomSettingService gameRoomSettingService;
 
     @PatchMapping("/{roomId}/settings")
     public CommonResponse<GameRoomSettingUpdateResponse> updateSettings(
@@ -24,7 +24,7 @@ public class GameRoomSettingController {
     ) {
         Long actorMemberId = SecurityUtils.currentMemberId();
         GameRoomSettingUpdateResponse data =
-                gameRoomService.updateSettings(actorMemberId, roomId, req);
+                gameRoomSettingService.updateSettings(actorMemberId, roomId, req);
 
         return new CommonResponse<>(
                 data,

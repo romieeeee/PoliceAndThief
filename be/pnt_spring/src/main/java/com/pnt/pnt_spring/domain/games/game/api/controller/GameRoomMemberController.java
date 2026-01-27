@@ -1,11 +1,13 @@
 package com.pnt.pnt_spring.domain.games.game.api.controller;
 
+import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomJoinRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomPositionRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomReadyRequest;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomJoinResponse;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomMemberListResponse;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomPositionResponse;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomReadyResponse;
-import com.pnt.pnt_spring.domain.games.game.application.GameRoomService;
+import com.pnt.pnt_spring.domain.games.game.application.GameRoomMemberService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import com.pnt.pnt_spring.global.utils.SecurityUtils;
 import jakarta.validation.Valid;
@@ -18,14 +20,31 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/rooms")
 public class GameRoomMemberController {
 
-    private final GameRoomService gameRoomService;
+    private final GameRoomMemberService gameRoomMemberService;
+
+    /**
+     * 게임방 참여 (roomCode로 입장)
+     */
+    @PostMapping("/join")
+    public CommonResponse<GameRoomJoinResponse> join(
+            @Valid @RequestBody GameRoomJoinRequest req
+    ) {
+        Long memberId = SecurityUtils.currentMemberId();
+        GameRoomJoinResponse data = gameRoomMemberService.joinRoom(memberId, req);
+
+        return new CommonResponse<>(
+                data,
+                "게임방 참여 성공",
+                HttpStatus.OK
+        );
+    }
 
     /**
      * 게임방 멤버 목록 조회
      */
     @GetMapping("/{roomId}/members")
     public CommonResponse<GameRoomMemberListResponse> getMembers(@PathVariable Long roomId) {
-        GameRoomMemberListResponse data = gameRoomService.getRoomMembers(roomId);
+        GameRoomMemberListResponse data = gameRoomMemberService.getRoomMembers(roomId);
 
         return new CommonResponse<>(
                 data,
@@ -35,7 +54,7 @@ public class GameRoomMemberController {
     }
 
     /**
-     * 준비 상태 변경
+     * 준비 상태 변경 (토글)
      */
     @PatchMapping("/{roomId}/ready")
     public CommonResponse<GameRoomReadyResponse> ready(
@@ -43,7 +62,7 @@ public class GameRoomMemberController {
             @Valid @RequestBody GameRoomReadyRequest req
     ) {
         Long memberId = SecurityUtils.currentMemberId();
-        GameRoomReadyResponse data = gameRoomService.updateReady(roomId, memberId, req);
+        GameRoomReadyResponse data = gameRoomMemberService.updateReady(roomId, memberId, req);
 
         return new CommonResponse<>(
                 data,
@@ -61,7 +80,7 @@ public class GameRoomMemberController {
             @Valid @RequestBody GameRoomPositionRequest req
     ) {
         Long memberId = SecurityUtils.currentMemberId();
-        GameRoomPositionResponse data = gameRoomService.pickPosition(memberId, roomId, req);
+        GameRoomPositionResponse data = gameRoomMemberService.pickPosition(memberId, roomId, req);
 
         return new CommonResponse<>(
                 data,
