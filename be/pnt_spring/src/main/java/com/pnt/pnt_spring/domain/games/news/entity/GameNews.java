@@ -9,6 +9,8 @@ import lombok.*;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "game_news")
+@Builder
+@AllArgsConstructor
 public class GameNews extends BaseEntity {
 
     @Id
