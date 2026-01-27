@@ -26,6 +26,7 @@ import com.d104.pnt.R
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.domain.model.PlayerLocation
 import com.d104.pnt.ui.theme.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMapOptions
@@ -46,12 +47,12 @@ import com.google.maps.android.compose.rememberMarkerState
 @Composable //
 fun GoogleMaps(
     modifier: Modifier,
-    startLat: Double = 37.566535,
-    startLng: Double = 126.977969,
+    currentLocation: LatLng = LatLng(37.56681969564895, 126.97864094105321 ),
+    playerLocations: List<PlayerLocation> = emptyList(),
+    prisonLocation: LatLng? = null,
     inGameMinimap: Boolean = false,
     isPreview: Boolean = true,
     polygonPoints: List<DraggableLatLng>,
-    prisonLocation: LatLng? = null,
     role: GameRole = GameRole.POLICE,
     onPointChange: (Int, LatLng) -> Unit = { _, _ -> },
     onPointDelete: (Int) -> Boolean = { false },
@@ -64,9 +65,8 @@ fun GoogleMaps(
     val context = LocalContext.current
 
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(startLat, startLng), 17f)
+        position = CameraPosition.fromLatLngZoom(currentLocation, 17f)
     }
-    val userLocation = LatLng(startLat, startLng)
     var draggingIndex by remember { mutableIntStateOf(-1) }
     val hapticFeedback = LocalHapticFeedback.current
 
@@ -114,10 +114,8 @@ fun GoogleMaps(
         }
     ) {
         if (inGameMinimap && isPreview) { // 인게임 뷰
-            val currentLocation by LocationRepository.currentLocation.collectAsStateWithLifecycle()
-            val playerLocations by LocationRepository.playerLocations.collectAsStateWithLifecycle()
             PixelMarker(
-                position = LatLng(currentLocation!!.latitude, currentLocation!!.longitude),
+                position = LatLng(currentLocation.latitude, currentLocation.longitude),
                 status = "ME"
             )
             Polygon( // 구역 밖을 표시하기 위한 폴리곤
@@ -144,7 +142,6 @@ fun GoogleMaps(
             if (role == GameRole.POLICE) {
                 // 여러 마커 테스트용 더미 멤버아이디, 더미 플레이어
                 val MY_MEMBER_ID = 100
-                LocationRepository.DummyPlayer()
                 playerLocations.toList().forEach {
                     if (it.member_id != MY_MEMBER_ID) {
                         val playerStatus = when (it.position) { // position 1은 경찰, 2는 도둑 가정
