@@ -15,6 +15,7 @@ object Constants {
     const val KEY_ACCESS_TOKEN = "access_token"
     const val KEY_REFRESH_TOKEN = "refresh_token"
     const val KEY_USER_ID = "user_id"
+    const val KEY_MEMBER_ID = "member_id"
     const val KEY_IS_LOGGED_IN = "is_logged_in"
 
     // Location

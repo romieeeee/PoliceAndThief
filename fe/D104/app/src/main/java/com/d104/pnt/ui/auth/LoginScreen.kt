@@ -137,13 +137,18 @@ fun LoginScreen(
                         .fillMaxHeight(),
                     text = "로그인",
                     fontSize = 16,
-                    onClick = { viewModel.login() },
+                    onClick = {
+                        if (!viewModel.isLoginEnabled()) {
+                            return@PixelButtonCode
+                        }
+
+                        viewModel.login()
+                    },
                     mainColor = AccentRed,
                     borderColor = BorderDefault,
                 )
             }
 
-            // 에러 메시지 표시
             if (loginState is UiState.Error) {
                 Text(
                     text = (loginState as UiState.Error).message,
