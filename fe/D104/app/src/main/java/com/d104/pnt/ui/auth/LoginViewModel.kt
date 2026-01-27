@@ -36,9 +36,13 @@ class LoginViewModel @Inject constructor(
     val isLoggedIn = authRepository.isLoggedIn()
 
     // 입력값 업데이트
-    fun updateId(newId: String) { _id.value = newId }
+    fun updateId(newId: String) {
+        _id.value = newId
+    }
 
-    fun updatePassword(newPassword: String) { _password.value = newPassword }
+    fun updatePassword(newPassword: String) {
+        _password.value = newPassword
+    }
 
     // 입력 유효성 검사
     fun isLoginEnabled(): Boolean {
@@ -52,9 +56,12 @@ class LoginViewModel @Inject constructor(
 
             when (val result = authRepository.login(id.value, password.value)) {
                 is BaseResult.Success -> {
+                    Timber.d("${result.data.member}")
                     _loginState.value = UiState.Success(result.data)
                 }
+
                 is BaseResult.Error -> {
+                    Timber.e("code: ${result.error.code} msg: ${result.error.message}")
                     _loginState.value = UiState.Error(result.error.message)
                 }
             }

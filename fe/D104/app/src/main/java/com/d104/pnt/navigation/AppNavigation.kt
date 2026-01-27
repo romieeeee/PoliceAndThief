@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -12,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.d104.pnt.IntroScreen
@@ -19,6 +21,7 @@ import com.d104.pnt.permission.PermissionDeniedDialog
 import com.d104.pnt.permission.PermissionDialog
 import com.d104.pnt.permission.exitApp
 import com.d104.pnt.ui.MainScreen
+import com.d104.pnt.ui.MainViewModel
 import com.d104.pnt.ui.auth.LoginScreen
 import com.d104.pnt.ui.auth.SignupScreen
 import com.d104.pnt.util.PermissionHelper
@@ -32,7 +35,9 @@ import timber.log.Timber
  */
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    viewModel: MainViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
     val activity = context as? Activity
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -77,7 +82,7 @@ fun AppNavigation() {
         }
     )
 
-    // ⭐ 핵심: 설정에서 돌아왔을 때 재확인 (onResume)
+    // 핵심: 설정에서 돌아왔을 때 재확인 (onResume)
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -106,14 +111,22 @@ fun AppNavigation() {
         }
     }
 
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+
     Box(modifier = Modifier.fillMaxSize()) {
         when (currentScreen) {
             // 인트로 화면
             AppScreen.Intro -> {
                 IntroScreen(
                     onClick = {
-                        currentScreen = AppScreen.Login
-                        Timber.d("Navigation: Intro -> Login")
+                        if (isLoggedIn) {
+                            Timber.d("Navigation: Intro -> Main")
+                            currentScreen = AppScreen.Main
+                        } else {
+                            Timber.d("Navigation: Intro -> Login")
+                            currentScreen = AppScreen.Login
+                        }
+
                     }
                 )
             }
