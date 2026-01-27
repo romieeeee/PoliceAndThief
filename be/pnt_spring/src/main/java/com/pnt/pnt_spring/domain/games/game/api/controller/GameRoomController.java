@@ -1,6 +1,6 @@
 package com.pnt.pnt_spring.domain.games.game.api.controller;
 
-import com.pnt.pnt_spring.domain.chats.utils.SecurityUtils;
+import com.pnt.pnt_spring.global.utils.SecurityUtils;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomCreateRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomReadyRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomCreateResponse;
@@ -8,6 +8,7 @@ import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomMemberListResponse;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomReadyResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class GameRoomController {
 
     @PostMapping
     public CommonResponse<GameRoomCreateResponse> createRoom(
-            @RequestBody(required = false) GameRoomCreateRequest req
+            @Valid @RequestBody GameRoomCreateRequest req
     ) {
         Long hostMemberId = SecurityUtils.currentMemberId();
         GameRoomCreateResponse data = gameRoomService.createRoom(hostMemberId, req);
@@ -33,9 +34,9 @@ public class GameRoomController {
         );
     }
 
-    @GetMapping("/{id}/members")
-    public CommonResponse<GameRoomMemberListResponse> getMembers(@PathVariable Long id) {
-        GameRoomMemberListResponse data = gameRoomService.getRoomMembers(id);
+    @GetMapping("/{roomId}/members")
+    public CommonResponse<GameRoomMemberListResponse> getMembers(@PathVariable Long roomId) {
+        GameRoomMemberListResponse data = gameRoomService.getRoomMembers(roomId);
 
         return new CommonResponse<>(
                 data,
@@ -44,14 +45,14 @@ public class GameRoomController {
         );
     }
 
-    @PatchMapping("/{id}/ready")
+    @PatchMapping("/{roomId}/ready")
     public CommonResponse<GameRoomReadyResponse> ready(
-            @PathVariable Long id,
-            @RequestBody GameRoomReadyRequest req
+            @PathVariable Long roomId,
+            @Valid @RequestBody GameRoomReadyRequest req
     ) {
         Long memberId = SecurityUtils.currentMemberId();
 
-        GameRoomReadyResponse data = gameRoomService.updateReady(id, memberId, req);
+        GameRoomReadyResponse data = gameRoomService.updateReady(roomId, memberId, req);
 
         return new CommonResponse<>(
                 data,
@@ -59,5 +60,4 @@ public class GameRoomController {
                 HttpStatus.OK
         );
     }
-
 }

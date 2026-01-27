@@ -9,7 +9,7 @@ import lombok.Getter;
 import java.util.List;
 
 @Getter
-public class GameRoomCreateRequest {
+public class GameRoomSettingUpdateRequest {
 
     @NotNull @Min(1)
     private Integer playerCount;
@@ -36,7 +36,6 @@ public class GameRoomCreateRequest {
     public static class Prison {
         @NotNull
         private Double lat;
-
         @NotNull
         private Double lng;
     }
@@ -45,7 +44,6 @@ public class GameRoomCreateRequest {
     public static class LatLng {
         @NotNull
         private Double lat;
-
         @NotNull
         private Double lng;
     }

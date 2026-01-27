@@ -1,4 +1,4 @@
-package com.pnt.pnt_spring.domain.chats.utils;
+package com.pnt.pnt_spring.global.utils;
 
 import com.pnt.pnt_spring.domain.auth.jwt.CustomUserDetails;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;

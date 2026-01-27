@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.games.game.entity;
 
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
+import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
@@ -31,12 +32,19 @@ public class GameMember extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    // 지금 너 코드에 있던 serialCode는 목적이 불명확해서 일단 유지
+    // 목적 불명확이라 유지 (나중에 제거/rename 추천)
+    @Column(name = "serial_code")
     private String serialCode;
 
+    // === 선호 포지션 (픽) ===
     @Enumerated(EnumType.STRING)
-    @Column(length = 10)
-    private Position givenPosition;
+    @Column(name = "prefer_position", length = 10, nullable = false)
+    private PreferPosition preferPosition;
+
+    // === 배정 포지션 (게임 시작 시 확정) ===
+    @Enumerated(EnumType.STRING)
+    @Column(name = "given_position", length = 10)
+    private Position givenPosition; // 시작 전 null 가능
 
     @Column(nullable = false)
     private Boolean ready;
@@ -52,9 +60,12 @@ public class GameMember extends BaseEntity {
         GameMember gm = new GameMember();
         gm.game = game;
         gm.member = member;
-        gm.ready = false;          // 기본은 미준비
-        gm.givenPosition = null;   // 포지션은 나중에 배정
-        gm.status = "JOINED";      // 이건 다음 단계에서 enum으로 바꿔도 됨
+
+        gm.ready = false;
+        gm.preferPosition = PreferPosition.ANY; // 기본값: 상관없음
+        gm.givenPosition = null;                // 배정은 게임 시작 때
+
+        gm.status = "JOINED"; // TODO: enum으로 변경 추천
         return gm;
     }
 
@@ -62,7 +73,19 @@ public class GameMember extends BaseEntity {
         this.ready = ready;
     }
 
+    // “픽” prefer를 변경
+    public void pickPreferPosition(PreferPosition preferPosition) {
+        if (preferPosition == null) {
+            throw new IllegalArgumentException("preferPosition은 null일 수 없습니다.");
+        }
+        this.preferPosition = preferPosition;
+    }
+
+    // 배정은 게임 시작 단계에서
     public void assignPosition(Position position) {
+        if (position == null) {
+            throw new IllegalArgumentException("givenPosition은 null일 수 없습니다.");
+        }
         this.givenPosition = position;
     }
 }

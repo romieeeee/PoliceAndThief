@@ -2,7 +2,6 @@ package com.pnt.pnt_spring.domain.games.game.entity;
 
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.WinTeam;
-import com.pnt.pnt_spring.domain.games.game.enums.WinTeam;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
@@ -22,7 +21,7 @@ public class Game extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "host_member_id", nullable = false)
     private Member host;
 
@@ -39,10 +38,6 @@ public class Game extends BaseEntity {
 
     @Column(length = 10, nullable = false, unique = true)
     private String roomCode;
-
-    /* =========================
-       생성/상태 변경 메서드
-       ========================= */
 
     public static Game createWaitingRoom(Member host, String roomCode) {
         Game game = new Game();
