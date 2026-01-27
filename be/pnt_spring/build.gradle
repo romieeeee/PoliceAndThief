@@ -66,6 +66,9 @@ dependencies {
 
     // mongo
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
+    // RabbitMQ
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
 }
 
 tasks.named('test') {

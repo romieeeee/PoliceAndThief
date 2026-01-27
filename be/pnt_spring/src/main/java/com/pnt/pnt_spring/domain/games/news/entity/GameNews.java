@@ -3,9 +3,7 @@ package com.pnt.pnt_spring.domain.games.news.entity;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Getter
@@ -22,5 +20,13 @@ public class GameNews extends BaseEntity {
     private Game game;
 
     private String title;
+
+    @Column(columnDefinition = "TEXT")
     private String contents;
+
+    public GameNews(Game game, String title, String contents) {
+        this.game = game;
+        this.title = title;
+        this.contents = contents;
+    }
 }

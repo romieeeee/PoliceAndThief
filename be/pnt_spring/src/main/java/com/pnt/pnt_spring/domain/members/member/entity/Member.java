@@ -21,10 +21,10 @@ public class Member extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "login_id", length = 20, nullable = false, unique = true)
+    @Column(name = "login_id", length = 20, nullable = false, unique = true) // 5자리 이상 ~ 12자리 이하
     private String loginId;
 
-    @Column(nullable = false)
+    @Column(nullable = false) // 8자리 ~ 16 자리 이하 --> 특수문자 필요X
     private String password;
 
     @Column(length = 50, unique = true)
