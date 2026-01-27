@@ -5,14 +5,17 @@ import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
 import jakarta.persistence.LockModeType;
+import com.pnt.pnt_spring.domain.games.game.entity.GameMemberPosition;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
 
     @Query("""
@@ -43,6 +46,7 @@ public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
 
     Optional<GameMember> findByGameIdAndMemberId(Long gameId, Long memberId);
 
+    // 특정 게임에 참여한 모든 유저 조회
     List<GameMember> findAllByGameId(Long gameId);
 
     long countByGameId(Long gameId);
@@ -78,4 +82,7 @@ public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
         order by gm.id asc
     """)
     List<GameMember> findAllByGameIdWithMember(@Param("gameId") Long gameId);
+    // 특정 게임에서 특정 역할을 가진 유저들 조회
+    // Entity의 필드명(givenPosition)에 맞춰 쿼리 메소드를 작성합니다.
+    List<GameMember> findAllByGameIdAndGivenPosition(Long gameId, GameMemberPosition givenPosition);
 }

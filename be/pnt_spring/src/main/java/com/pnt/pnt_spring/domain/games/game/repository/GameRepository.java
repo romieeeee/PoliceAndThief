@@ -8,7 +8,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface GameRepository extends JpaRepository<Game, Long> {
 
     Optional<Game> findByRoomCode(String roomCode);

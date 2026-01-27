@@ -4,7 +4,7 @@ import Counter from "../utils/Counter.js";
 const chatSchema = new Schema({
     _id: Number,
     content: String,
-    memberId: String,
+    memberId: Number,
     chatRoomId: String,
     avatarUrl: String,
     createdAt: String

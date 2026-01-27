@@ -28,7 +28,8 @@ public class MemberDoc {
     private Long memberId;
     @Size(max = 20)
     private String nickname;
-    private String avatarUrl;
+    @Builder.Default
+    private String avatarUrl = "default.png";
     @Builder.Default
     private boolean isDeleted = false;
     @CreatedDate

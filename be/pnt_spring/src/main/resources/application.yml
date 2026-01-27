@@ -61,3 +61,7 @@ oauth2:
     app-id:
   google:
       client-id:
+
+server:
+  servlet:
+    context-path: /spring

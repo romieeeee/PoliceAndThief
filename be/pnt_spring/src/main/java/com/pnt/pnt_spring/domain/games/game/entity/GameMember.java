@@ -32,7 +32,6 @@ public class GameMember extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    // 목적 불명확이라 유지 (나중에 제거/rename 추천)
     @Column(name = "serial_code")
     private String serialCode;
 
@@ -50,6 +49,10 @@ public class GameMember extends BaseEntity {
     private Boolean ready;
 
     @Column(length = 10)
+    @Enumerated(value = EnumType.STRING)
+    private GameMemberStatus status;
+
+    private Boolean inGameConnected;
     private String status;
 
     /* =========================

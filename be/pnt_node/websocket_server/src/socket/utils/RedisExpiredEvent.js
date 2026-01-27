@@ -54,8 +54,7 @@ export class WebSocketReconnect {
     }
 
     chatDisconnect = async (userId, roomId) => {
-        await this.chatRoomService.disconnectChatRoom(roomId, userId);
-        await this.deleteKeys(userId, roomId);
+        await this.deleteKeys(userId, roomId, "chat");
 
         console.log("user_left", { userId, roomId });
 
@@ -63,19 +62,19 @@ export class WebSocketReconnect {
     }
 
     readyRoomDisconnect = async (userId, roomId) => {
-
-
+        await this.deleteKeys(userId, roomId, "readyRoom");
         this.readyRoomIo.to(roomId).emit("user left", { userId });
     }
 
     gameDisconnect = async (userId, roomId) => {
+        await this.deleteKeys(userId, roomId, "game");
 
         this.gameIo.to(roomId).emit("user left", { userId });
     }
 
-    deleteKeys = async (userId, roomId) => {
+    deleteKeys = async (userId, roomId, namespace) => {
         this.pubClient.del(`websocket:reconnect:lock:${userId}`);
-        this.pubClient.del(`websocket:reconnect:info:chat:${userId}`);
-        this.pubClient.del(`websocket:reconnect:timer:chat:${roomId}:${userId}`);
+        this.pubClient.del(`websocket:reconnect:info:${namespace}:${userId}`);
+        this.pubClient.del(`websocket:reconnect:timer:${namespace}:${roomId}:${userId}`);
     }
 }
