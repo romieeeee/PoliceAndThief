@@ -120,6 +120,11 @@ public class JwtTokenProvider {
         }
     }
 
+    // 리프레시 토큰에서 LoginId(Subject)만 추출하기 위한 메서드
+    public String getMemberLoginId(String token) {
+        return parseClaims(token).getSubject();
+    }
+
     // 토큰 남은 유효시간 계산
     public Long getExpiration(String accessToken) {
         Date expiration = parseClaims(accessToken).getExpiration();
