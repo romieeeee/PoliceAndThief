@@ -1,5 +1,5 @@
-import GameSetting from "../entity/GameSetting.js";
-import sequelize from "../../global/db/sequelize/index.js";
+import GameSetting from "../../../global/db/sequelize/entity/GameSetting.js"
+import sequelize from "../../../global/db/sequelize/SequelizeDB.js";
 
 export class GameSettingService {
     findGameSettingByLocation = async (lat, lng) => {
