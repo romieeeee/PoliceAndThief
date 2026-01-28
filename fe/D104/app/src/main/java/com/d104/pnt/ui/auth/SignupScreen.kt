@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -131,7 +132,9 @@ fun SignupScreen(
             )
 
             Column(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .imePadding(),
             ) {
                 // 아이디
                 LabeledInputField(
@@ -206,7 +209,7 @@ fun SignupScreen(
                 Spacer(Modifier.height(16.dp))
 
                 // 생년월일
-                BirthDateInputField(
+                BirthDatePicker(
                     label = "생년월일",
                     value = birth,
                     onValueChange = { viewModel.updateBirth(it) }
@@ -223,7 +226,7 @@ fun SignupScreen(
             ) {
                 // 이전 버튼
                 PixelIconButton(
-                    onClick = onBack,
+                    onClick = { onBack() },
                     modifier = Modifier
                         .weight(1f)
                         .height(40.dp)
@@ -266,6 +269,7 @@ fun SignupScreen(
 
 @Composable
 fun LabeledInputField(
+    modifier: Modifier = Modifier,
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
@@ -298,7 +302,7 @@ fun LabeledInputField(
                     errorMessage = errorMessage,
                     isPassword = isPassword,
                     keyboardType = keyboardType,
-                    modifier = Modifier
+                    modifier = modifier
                         .weight(1f)
                         .fillMaxHeight(),
                     borderColor = BorderDefault
@@ -308,6 +312,7 @@ fun LabeledInputField(
             }
         } else {
             PixelInputField(
+                modifier = modifier,
                 value = value,
                 onValueChange = onValueChange,
                 placeholder = placeholder,
