@@ -3,14 +3,14 @@ package com.pnt.pnt_spring.domain.games.news.entity;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "game_news")
+@Builder
+@AllArgsConstructor
 public class GameNews extends BaseEntity {
 
     @Id
@@ -22,5 +22,14 @@ public class GameNews extends BaseEntity {
     private Game game;
 
     private String title;
-    private String contents;
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String content;
+
+    public GameNews(Game game, String title, String contents) {
+        this.game = game;
+        this.title = title;
+        this.content = contents;
+    }
 }

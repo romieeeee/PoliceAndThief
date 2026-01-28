@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.auth.api.req;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -10,15 +11,18 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class SignupRequest {
     @NotBlank(message = "아이디는 필수입니다.")
+    @Size(min = 5, max = 12, message = "아이디는 5자 이상 12자 이하여야 합니다.") // 5~12자 제한
     private String id; // user ID 아니고 로그인 ID
 
     @NotBlank(message = "비밀번호는 필수입니다.")
+    @Size(min = 8, max = 16, message = "비밀번호는 8자 이상 16자 이하여야 합니다.") // 8~16자 제한
     private String password;
 
     @NotBlank(message = "비밀번호 확인은 필수입니다.")
     private String passwordConfirm;
 
     @NotBlank(message = "닉네임은 필수입니다.")
+    @Size(min = 2, max = 10, message = "닉네임은 2자 이상 10자 이하여야 합니다.") // 2~10자 제한
     private String nickname;
 
     private String email;
