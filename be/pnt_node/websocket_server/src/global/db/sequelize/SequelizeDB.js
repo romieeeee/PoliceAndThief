@@ -17,6 +17,7 @@ import Mission from "./entity/Mission.js";
 import GameMission from "./entity/GameMission.js";
 import GameNews from "./entity/GameNews.js";
 import GameSkill from "./entity/GameSkill.js";
+import GameMemberStat from "./entity/GameMemberStat.js";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -49,6 +50,7 @@ class SequelizeDB {
         GameMission.initiate(sequelize);
         GameNews.initiate(sequelize);
         GameSkill.initiate(sequelize);
+        GameMemberStat.initiate(sequelize);
 
         // Associate Models
         Member.associate(sequelize.models);
@@ -69,10 +71,16 @@ class SequelizeDB {
         GameMission.associate(sequelize.models);
         GameNews.associate(sequelize.models);
         GameSkill.associate(sequelize.models);
+        GameMemberStat.associate(sequelize.models);
 
         await this.sync(sequelize);
 
+        this.sequelize = sequelize;
         return sequelize;
+    }
+
+    getSequelize = () => {
+        return this.sequelize;
     }
 
     sync = async (sequelize) => {
@@ -82,6 +90,7 @@ class SequelizeDB {
             console.error("Failed to synchronize database:", error);
         });
     }
+
 }
 
 const db = new SequelizeDB();

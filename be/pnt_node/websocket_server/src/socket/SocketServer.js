@@ -1,7 +1,8 @@
 import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
-import chatSocketServer from "./chats/ChatSocketServer.js";
-import gameSocketServer from "./games/GameSocketServer.js";
+import chatSocketServer from "./chats/server/ChatSocketServer.js";
+import gameSocketServer from "./games/server/GameSocketServer.js";
+
 
 import redisDB from "../global/db/redis/RedisDB.js";
 import { RedisEvent } from "./utils/RedisEvent.js";
