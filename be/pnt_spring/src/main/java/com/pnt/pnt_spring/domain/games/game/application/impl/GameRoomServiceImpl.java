@@ -115,8 +115,11 @@ public class GameRoomServiceImpl implements GameRoomService {
             throw new BusinessException(ErrorCode.ROOM_NOT_READY);
         }
 
-        long notReady = gameMemberRepository.countByGameIdAndIsDeletedFalseAndReadyFalse(roomId);
-        if (notReady > 0) {
+        long notReadyExceptHost = gameMemberRepository.countByGameIdAndIsDeletedFalseAndMemberIdNotAndReadyFalse(
+                        roomId,
+                        actorMemberId
+                );
+        if (notReadyExceptHost > 0) {
             throw new BusinessException(ErrorCode.ROOM_NOT_READY);
         }
 
