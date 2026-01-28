@@ -56,9 +56,9 @@ export class GameService {
     // 게임 종료 조건 확인 => 모든 도둑이 잡혔을때 종료.
     // 게임 승리팀 상태를 비관적 락으로 처리해야할 수도 있음.
     checkGameHaveToFinish = async (gameId) => {
-        const game = await this.findGame(gameId, GameStatus.PLAYING);
+        const game = await this.findGame(gameId, GameStatus.IN_GAME);
 
-        if (!game || game.status === GameStatus.END) {
+        if (!game || game.status === GameStatus.ENDED) {
             return false;
         }
 
@@ -87,12 +87,12 @@ export class GameService {
     }
 
     // 게임 종료 처리
-    endGame = async (gameId, winnerPosition) => {
+    endGame = async (gameId, winnerTeam) => {
         try {
             // 게임 상태 변경 (END)
             await Game.update({
-                status: GameStatus.END,
-                winnerPosition: winnerPosition,
+                status: GameStatus.ENDED,
+                winTeam: winnerTeam,
                 endedAt: new Date().toISOString(),
             }, {
                 where: {

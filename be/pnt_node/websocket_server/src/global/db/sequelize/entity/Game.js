@@ -9,7 +9,7 @@ export default class Game extends Model {
                     primaryKey: true,
                     autoIncrement: true,
                 },
-                hostUserId: {
+                hostMemberId: {
                     type: DataTypes.BIGINT,
                     allowNull: false,
                 },
@@ -38,6 +38,11 @@ export default class Game extends Model {
                     allowNull: false,
                     defaultValue: false,
                 },
+                caughtCount: {
+                    type: DataTypes.INTEGER,
+                    allowNull: false,
+                    defaultValue: 0,
+                },
             },
             {
                 sequelize,
@@ -54,7 +59,7 @@ export default class Game extends Model {
 
     static associate(db) {
         db.Game.belongsTo(db.Member, {
-            foreignKey: 'hostUserId',
+            foreignKey: 'hostMemberId',
             targetKey: 'id',
             as: 'host'
         });

@@ -1,3 +1,4 @@
+import { min } from "moment-timezone";
 import { RedisClient } from "../client/RedisClient.js";
 
 export class GpsChannel {
@@ -16,6 +17,7 @@ export class GpsChannel {
 
                 const gameId = parseInt(roomId.split("-")[1]);
                 const locations = await this.redisClient.getAllLocations(gameId);
+                console.log("locations", locations);
 
                 if (locations.length === 0) continue;
 
@@ -24,12 +26,12 @@ export class GpsChannel {
 
                 const data = {
                     gameId: gameId,
-                    seconds: 0,
+                    min: 0,
                     locations: locations
                 }
 
                 if (startTime) {
-                    data.seconds = Math.round((Date.now() - startTime) / 1000);
+                    data.min = Math.round((Date.now() - startTime) / 1000);
                 }
                 // volatile: 클라이언트가 연결을 유지하지 않는 경우에도 데이터를 전송 -> tcp 보장 X
                 // local: redis를 거치지 않고, 현재 연결되어있는 소켓에만 데이터를 전송

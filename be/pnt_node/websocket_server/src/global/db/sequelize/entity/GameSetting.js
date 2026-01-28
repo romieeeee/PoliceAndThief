@@ -9,7 +9,11 @@ export default class GameSetting extends Model {
                     primaryKey: true,
                     allowNull: false,
                 },
-                timeLimitSec: {
+                timeLimit: {
+                    type: DataTypes.INTEGER,
+                    allowNull: true,
+                },
+                playerCount: {
                     type: DataTypes.INTEGER,
                     allowNull: true,
                 },
@@ -25,8 +29,12 @@ export default class GameSetting extends Model {
                     type: DataTypes.GEOMETRY('POLYGON'),
                     allowNull: true,
                 },
-                prisonLocation: {
-                    type: DataTypes.GEOMETRY('POINT'),
+                prisonLat: {
+                    type: DataTypes.DOUBLE,
+                    allowNull: true,
+                },
+                prisonLng: {
+                    type: DataTypes.DOUBLE,
                     allowNull: true,
                 },
                 isDeleted: {

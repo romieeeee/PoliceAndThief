@@ -37,7 +37,7 @@ export class GameController {
 
     isActiveRoom = async (gameId) => {
         try {
-            await this.gameService.findGame(gameId, GameStatus.PLAYING);
+            await this.gameService.findGame(gameId, GameStatus.IN_GAME);
             return true;
         } catch (error) {
             return false;
@@ -53,9 +53,10 @@ export class GameController {
     joinRoom = async (payload) => {
         // 채팅방 접속 db 처리 => is_connected = true로 처리
         try {
+            console.log("joinRoom", payload);
             const gameId = `game-${payload.gameId}`;
 
-            await this.gameService.findGame(payload.gameId, GameStatus.RUNNING);
+            await this.gameService.findGame(payload.gameId, GameStatus.IN_GAME);
             await this.gameMemberService.findMemberGame(payload.gameId, this.socket.data.memberId);
 
             this.socket.join(gameId);
@@ -92,6 +93,7 @@ export class GameController {
      */
     startGame = async () => {
         try {
+            console.log("startGame");
             const gameId = this.socket.data.gameId;
 
             const integerGameId = parseInt(gameId.split("-")[1]);
@@ -111,7 +113,7 @@ export class GameController {
 
             await this.redisClient.setGameSetting(gameId, gameSetting);
 
-            this.io.to(gameId).emit("get start game", {
+            this.io.to(gameId).emit("get will start game", {
                 message: "start game",
                 gameId: integerGameId,
                 willStartAt: new Date(Date.now() + 5000).toISOString(),
@@ -121,6 +123,12 @@ export class GameController {
                 await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);
 
                 await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString() });
+
+                this.io.to(gameId).emit("get start game", {
+                    message: "start game",
+                    gameId: integerGameId,
+                    startTime: new Date().toISOString(),
+                });
             }, 5000);
         } catch (error) {
             console.error("startGame error", error);
@@ -166,7 +174,7 @@ export class GameController {
                 return;
             }
 
-            const isMine = await this.redisClient.setGameSettingLock(gameId, gameSetting.timeLimit);
+            const isMine = await this.redisClient.setGameSettingLock(gameId, gameSetting.timeLimit * 60);
 
             if (!isMine) {
                 return;
@@ -174,16 +182,22 @@ export class GameController {
 
             await this.redisClient.setGameSetting(gameId, gameSetting);
 
-            this.io.to(gameId).emit("get start game", {
+            this.io.to(gameId).emit("get will start game", {
                 message: "start game",
                 gameId: integerGameId,
                 willStartAt: new Date(Date.now() + 5000).toISOString(),
             });
 
             setTimeout(async () => {
-                await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);
+                await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit * 60);
 
                 await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString() });
+
+                this.io.to(gameId).emit("get start game", {
+                    message: "start game",
+                    gameId: integerGameId,
+                    startTime: new Date().toISOString(),
+                });
             }, 5000);
         } catch (error) {
             console.error("startGame error", error);
@@ -210,7 +224,8 @@ export class GameController {
     postGps = async (payload) => {
         try {
             if (!payload || !payload.lat || !payload.lng) {
-                throw { code: 400, message: "Invalid payload: lat and lng are required" };
+                this.socket.emit("error", { code: 400, message: "Invalid payload: lat and lng are required" });
+                return;
             }
 
             const { lat, lng, walk, longestSurvived } = payload;
@@ -234,6 +249,8 @@ export class GameController {
                 status,
                 timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
             });
+
+            console.log("postGps", locationData);
 
             // Hash에 저장 (이미 있으면 덮어쓰기됨 -> 자동 최신화)
             await this.redisClient.setLocation(memberId, integerGameId, locationData);
@@ -263,7 +280,7 @@ export class GameController {
             // 도둑이고, 상태가 PRISON 일때 탈옥 판별
             // 감옥에서 10m 이상 벗어났을때 탈옥 (오차범위 5m) 
             if (position === GameMemberPosition.THIEF && status === GameMemberStatus.PRISON
-                && !(await this.turfService.checkUserInPrison([lng, lat], gameSetting.prisonLocation.coordinates))) {
+                && !(await this.turfService.checkUserInPrison([lng, lat], [gameSetting.prisonLng, gameSetting.prisonLat]))) {
 
                 await this.gameMemberService.updateMemberStatus(integerGameId, memberId, GameMemberStatus.FREE);
 
@@ -280,7 +297,7 @@ export class GameController {
 
             // 이송 중이고, 감옥 범위 안에 들어왔을때
             if (position === GameMemberPosition.THIEF && status === GameMemberStatus.TRANSFER
-                && await this.turfService.checkUserInPrison([lng, lat], gameSetting.prisonLocation.coordinates)) {
+                && await this.turfService.checkUserInPrison([lng, lat], [gameSetting.prisonLng, gameSetting.prisonLat])) {
 
                 await this.gameMemberService.updateMemberStatus(integerGameId, memberId, GameMemberStatus.PRISON);
                 const res = {
@@ -294,21 +311,7 @@ export class GameController {
                 return;
             }
 
-            // 이송 중이고, 감옥 범위 안에 들어왔을때
-            if (position === GameMemberPosition.THIEF && status === GameMemberStatus.TRANSFER
-                && await this.turfService.checkUserInPrison([lng, lat], gameSetting.prisonLocation.coordinates)) {
 
-                await this.gameMemberService.updateMemberStatus(integerGameId, memberId, GameMemberStatus.PRISON);
-                const res = {
-                    gameId: integerGameId,
-                    thiefId: memberId,
-                    status: GameMemberStatus.PRISON,
-                    arrestedAt: new Date().toISOString(),
-                };
-                this.io.to(gameId).emit("modify member status", res);
-                console.log("modify from transfer to prison member status", res);
-                return;
-            }
 
         } catch (error) {
             console.error("postGps error", error);
@@ -336,12 +339,12 @@ export class GameController {
      * 
      * res : {
      *  gameId: 10,
-     *  status: "GAME_RUNNING" || "GAME_FINISHED",
+     *  status: "IN_GAME" || "ENDED",
      *  members: [
      *    {
      *      memberId: 1,
      *      position: "POLICE",
-     *      status: "STATUS_FREE" || "STATUS_PRISON" || "STATUS_TRANSFER",
+     *      status: "FREE" || "PRISON" || "TRANSFER",
      *    },
      *  ],
      *  missions: [

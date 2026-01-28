@@ -71,11 +71,11 @@ export class RedisClient {
      * 게임세팅
      */
     setGameSetting = async (gameId, gameSetting) => {
-        await this.pubClient.hset(this.getGameSettingString(gameId), JSON.stringify(gameSetting));
+        await this.pubClient.set(this.getGameSettingString(gameId), JSON.stringify(gameSetting));
     }
 
     getGameSetting = async (gameId) => {
-        const gameSetting = await this.pubClient.hget(this.getGameSettingString(gameId));
+        const gameSetting = await this.pubClient.get(this.getGameSettingString(gameId));
         return JSON.parse(gameSetting);
     }
 
@@ -185,7 +185,7 @@ export class RedisClient {
     // time은 초단위
     setGameTimer = async (gameId, time) => {
         return await this.pubClient.set(`websocket:game:timer:${gameId}`, Date.now().toString(), "EX", time);
-    }   
+    }
 
     getGameTimer = async (gameId) => {
         const gameTimer = await this.pubClient.get(`websocket:game:timer:${gameId}`);

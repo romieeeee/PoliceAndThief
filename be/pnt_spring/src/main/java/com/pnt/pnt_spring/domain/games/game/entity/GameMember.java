@@ -47,13 +47,11 @@ public class GameMember extends BaseEntity {
     @Column(nullable = false)
     private Boolean ready;
 
-    @Enumerated(EnumType.STRING)
     @Column(length = 10)
     @Enumerated(value = EnumType.STRING)
     private GameMemberStatus status;
 
     private Boolean inGameConnected;
-    private String status;
 
     /* =========================
        생성/상태 변경 메서드
