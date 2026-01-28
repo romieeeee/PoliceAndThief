@@ -34,6 +34,7 @@ import com.d104.pnt.navigation.BottomNavBar
 import com.d104.pnt.navigation.BottomNavItem
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.navigation.Routes
+import com.d104.pnt.ui.chatroom.ChatRoomCreateScreen
 import com.d104.pnt.ui.chatroomlist.ChatRoomListScreen
 import com.d104.pnt.ui.game.create.GameCreateScreen
 import com.d104.pnt.ui.game.end.GameResultScreen
@@ -110,6 +111,16 @@ fun MainScreen(
 //                    navigateToChatRoom = { chatId ->
 //                        navController.navigate(Routes.buildChatRoom(chatId))
 //                    }
+                    navigateToChatCreate = {
+                        navController.navigate(Routes.CHAT_CREATE)
+                    }
+                )
+            }
+
+            composable(Routes.CHAT_CREATE){
+                ChatRoomCreateScreen(
+                    onCancel = { navController.popBackStack() },
+                    onConfirm = { "TODO: 채팅방 생성"},
                 )
             }
 
