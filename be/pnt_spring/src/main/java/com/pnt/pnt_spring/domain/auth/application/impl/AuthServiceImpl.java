@@ -72,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
         Member member = Member.builder()
                 .loginId(request.getId())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .email(request.getEmail())
+                .email(StringUtils.isBlank(request.getEmail()) ? null : request.getEmail())
                 .birth(request.getBirth())
                 .role(MemberRole.USER) // 일반 회원가입 시 유저 권한 부여
                 .build();
