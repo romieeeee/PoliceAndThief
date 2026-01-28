@@ -40,6 +40,11 @@ public class GameRoomServiceImpl implements GameRoomService {
 
     @Override
     public GameRoomCreateResponse createRoom(Long hostMemberId, GameRoomCreateRequest req) {
+        // 이미 다른 방에 참여 중이면 방 생성 불가
+        if (gameMemberRepository.existsByMemberIdAndIsDeletedFalse(hostMemberId)) {
+            throw new BusinessException(ErrorCode.ROOM_ALREADY_JOINED);
+        }
+
         if (req == null) throw new IllegalArgumentException("방 생성 요청 바디가 필요합니다.");
         if (req.getPlayerCount() == null || req.getTimeLimit() == null
                 || req.getPoliceCount() == null || req.getThiefCount() == null
