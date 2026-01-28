@@ -7,11 +7,13 @@ import com.pnt.pnt_spring.domain.games.game.application.GameRoomCodeGenerator;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomService;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
+import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
 import com.pnt.pnt_spring.domain.games.game.entity.GameSetting;
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
+import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
@@ -35,6 +37,7 @@ public class GameRoomServiceImpl implements GameRoomService {
     private final GameSettingRepository gameSettingRepository;
     private final MemberRepository memberRepository;
     private final GameRoomCodeGenerator gameRoomCodeGenerator;
+    private final GameMemberStatRepository gameMemberStatRepository;
 
     private static final GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
 
@@ -126,6 +129,13 @@ public class GameRoomServiceImpl implements GameRoomService {
         // 게임 시작
         game.start();
 
+        // 3. Stat 생성
+        for (GameMember member : members) {
+            if (!gameMemberStatRepository.existsByGameMemberId(member.getId())) {
+                GameMemberStat stat = GameMemberStat.create(member);
+                gameMemberStatRepository.save(stat);
+            }
+        }
         return GameStartResponse.from(game, members);
     }
 

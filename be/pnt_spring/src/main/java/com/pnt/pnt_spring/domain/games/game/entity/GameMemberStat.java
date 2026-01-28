@@ -10,7 +10,8 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "game_member_stat")
+@Table(name = "game_member_stat",
+        uniqueConstraints = @UniqueConstraint(columnNames = "game_member_id"))
 public class GameMemberStat extends BaseEntity {
 
     @Id
@@ -35,6 +36,16 @@ public class GameMemberStat extends BaseEntity {
         this.walk = 0;
         this.arrestCount = 0;
         this.longestSurvived = 0;
+    }
+
+    public static GameMemberStat create(GameMember gameMember) {
+        GameMemberStat stat = new GameMemberStat();
+        stat.gameMember = gameMember;
+        stat.position = gameMember.getGivenPosition().name();
+        stat.walk = 0;
+        stat.arrestCount = 0;
+        stat.longestSurvived = 0;
+        return stat;
     }
 
     // 생존 시간 업데이트 메서드 추가

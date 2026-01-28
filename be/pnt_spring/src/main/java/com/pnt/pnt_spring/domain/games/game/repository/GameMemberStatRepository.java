@@ -1,6 +1,8 @@
 package com.pnt.pnt_spring.domain.games.game.repository;
 
 import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,7 +13,11 @@ import java.util.Optional;
 @Repository
 public interface GameMemberStatRepository extends JpaRepository<GameMemberStat, Long> {
 
-    // 경찰 MVP: 특정 게임(gameId)에서 경찰 역할인 사람들 중 체포 수 1등
+    Optional<GameMemberStat> findByGameMemberId(Long gameMemberId);
+
+    boolean existsByGameMemberId(Long gameMemberId);
+
+    // 경찰 MVP
     @Query("""
         SELECT s 
         FROM GameMemberStat s
@@ -21,11 +27,10 @@ public interface GameMemberStatRepository extends JpaRepository<GameMemberStat, 
         WHERE gm.game.id = :gameId
           AND gm.givenPosition = com.pnt.pnt_spring.domain.games.game.enums.Position.POLICE
         ORDER BY s.arrestCount DESC
-        LIMIT 1
     """)
-    Optional<GameMemberStat> findPoliceMvp(@Param("gameId") Long gameId);
+    Optional<GameMemberStat> findPoliceMvp(@Param("gameId") Long gameId, Pageable pageable);
 
-    // 도둑 MVP: 특정 게임(gameId)에서 도둑 역할인 사람들 중 생존 시간 1등
+    // 도둑 MVP
     @Query("""
         SELECT s 
         FROM GameMemberStat s
@@ -35,9 +40,6 @@ public interface GameMemberStatRepository extends JpaRepository<GameMemberStat, 
         WHERE gm.game.id = :gameId
           AND gm.givenPosition = com.pnt.pnt_spring.domain.games.game.enums.Position.THIEF
         ORDER BY s.longestSurvived DESC
-        LIMIT 1
     """)
-    Optional<GameMemberStat> findThiefMvp(@Param("gameId") Long gameId);
-
-    Optional<GameMemberStat> findByGameMemberId(Long gameMemberId);
+    Optional<GameMemberStat> findThiefMvp(@Param("gameId") Long gameId, Pageable pageable);
 }

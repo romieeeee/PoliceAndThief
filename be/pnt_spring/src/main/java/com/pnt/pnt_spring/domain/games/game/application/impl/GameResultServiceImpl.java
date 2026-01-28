@@ -16,6 +16,7 @@ import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,12 +55,12 @@ public class GameResultServiceImpl implements GameResultService { // 클래스�
         String mvpDescription = "";
 
         if ("POLICE".equals(winner)) { // 요청받은 winner 기준 (또는 game.getWinTeam())
-            mvpStat = gameMemberStatRepository.findPoliceMvp(gameId).orElse(null);
+            mvpStat = gameMemberStatRepository.findPoliceMvp(gameId, PageRequest.of(0, 1)).orElse(null);
             if (mvpStat != null) {
                 mvpDescription = mvpStat.getArrestCount() + "회 체포 달성";
             }
         } else {
-            mvpStat = gameMemberStatRepository.findThiefMvp(gameId).orElse(null);
+            mvpStat = gameMemberStatRepository.findThiefMvp(gameId, PageRequest.of(0, 1)).orElse(null);
             if (mvpStat != null) {
                 mvpDescription = mvpStat.getLongestSurvived() + "초 생존";
             }

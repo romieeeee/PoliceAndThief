@@ -32,7 +32,7 @@ public class GameRoomSettingController {
                 HttpStatus.OK
         );
     }
-    
+
     @PatchMapping("/{roomId}/settings")
     public CommonResponse<GameRoomSettingUpdateResponse> updateSettings(
             @PathVariable Long roomId,
