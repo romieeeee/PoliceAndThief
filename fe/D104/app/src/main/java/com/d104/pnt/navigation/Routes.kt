@@ -19,6 +19,8 @@ object Routes {
     const val PROFILE = "profile"
 
     // ===== 채팅 =====
+    const val CHAT_CREATE = "chat_create"                // 채팅방 생성
+
     const val CHAT_ROOM = "chat_room"                    // 채팅방
     fun buildChatRoom(chatId: Long) = "$CHAT_ROOM/$chatId"
 

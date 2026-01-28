@@ -29,6 +29,8 @@ android {
         manifestPlaceholders["GOOGLE_MAP_API_KEY"] = localProperties.getProperty("GOOGLE_MAP_API_KEY") ?: ""
         manifestPlaceholders["INGAME_MAPS_ID"] = localProperties.getProperty("INGAME_MAPS_ID") ?: ""
         manifestPlaceholders["SETTING_MAPS_ID"] = localProperties.getProperty("SETTING_MAPS_ID") ?: ""
+        manifestPlaceholders["CLIENT_ID"] = localProperties.getProperty("CLIENT_ID") ?: ""
+        manifestPlaceholders["CLIENT_SECRET"] = localProperties.getProperty("CLIENT_SECRET") ?: ""
 
         buildConfigField(
             "String",
@@ -44,6 +46,16 @@ android {
             "String",
             "SETTING_MAP_ID",
             "\"${localProperties["SETTING_MAP_ID"]}\""
+        )
+        buildConfigField(
+            "String",
+            "CLIENT_ID",
+            "\"${localProperties["CLIENT_ID"]}\""
+        )
+        buildConfigField(
+            "String",
+            "CLIENT_SECRET",
+            "\"${localProperties["CLIENT_SECRET"]}\""
         )
     }
 
