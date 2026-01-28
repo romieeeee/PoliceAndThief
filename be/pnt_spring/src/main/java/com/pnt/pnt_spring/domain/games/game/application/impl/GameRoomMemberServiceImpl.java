@@ -1,18 +1,19 @@
 package com.pnt.pnt_spring.domain.games.game.application.impl;
 
-import com.pnt.pnt_spring.domain.games.game.api.req.*;
+import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomJoinRequest;
+import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomPositionRequest;
+import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomReadyRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.*;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomMemberService;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.entity.GameSetting;
-import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
-import com.pnt.pnt_spring.domain.members.member.repository.MemberRepository;
+import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
