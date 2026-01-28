@@ -11,11 +11,11 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class SignupRequest {
     @NotBlank(message = "아이디는 필수입니다.")
-    @Size(min = 5, max = 12, message = "아이디는 5자 이상 12자 이하여야 합니다.") // 5~12자 제한
-    private String id; // user ID 아니고 로그인 ID
+    @Size(min = 5, message = "아이디는 최소 5글자 이상이어야 합니다.") // max를 제거하면 기본 제한이 풀립니다.
+    private String id;
 
     @NotBlank(message = "비밀번호는 필수입니다.")
-    @Size(min = 8, max = 16, message = "비밀번호는 8자 이상 16자 이하여야 합니다.") // 8~16자 제한
+    @Size(min = 8, message = "비밀번호는 8자 이상이어야 합니다.") // 8~16자 제한
     private String password;
 
     @NotBlank(message = "비밀번호 확인은 필수입니다.")

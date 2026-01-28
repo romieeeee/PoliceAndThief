@@ -22,7 +22,7 @@ public class Member extends BaseEntity {
     private Long id;
 
     // 아이디: 5자리 이상 ~ 12자리 이하 (DB 컬럼 길이를 12로 제한)
-    @Column(name = "login_id", length = 12, nullable = false, unique = true)
+    @Column(name = "login_id", nullable = false, unique = true, length=50)
     private String loginId;
 
     @Column(nullable = false)
