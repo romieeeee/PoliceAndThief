@@ -3,10 +3,12 @@ package com.d104.pnt.data.remote.api
 import com.d104.pnt.data.remote.model.request.CheckDuplicateRequest
 import com.d104.pnt.data.remote.model.request.LoginRequest
 import com.d104.pnt.data.remote.model.request.SignupRequest
+import com.d104.pnt.data.remote.model.request.SocialLoginRequest
 import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.data.remote.model.response.DuplicateCheckResponse
 import com.d104.pnt.data.remote.model.response.LoginResponse
 import com.d104.pnt.data.remote.model.response.SignupResponse
+import com.d104.pnt.data.remote.model.response.SocialLoginResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -24,6 +26,14 @@ interface AuthApiService {
     suspend fun login(
         @Body request: LoginRequest
     ): Response<BaseResponse<LoginResponse>>
+
+    /**
+     * 소셜 로그인 API
+     */
+    @POST("auth/social-login")
+    suspend fun socialLogin(
+        @Body request: SocialLoginRequest
+    ): SocialLoginResponse
 
 
     /**

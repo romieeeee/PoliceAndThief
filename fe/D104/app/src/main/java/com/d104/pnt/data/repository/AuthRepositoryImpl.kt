@@ -11,9 +11,11 @@ import com.d104.pnt.data.remote.api.AuthApiService
 import com.d104.pnt.data.remote.model.request.CheckDuplicateRequest
 import com.d104.pnt.data.remote.model.request.LoginRequest
 import com.d104.pnt.data.remote.model.request.SignupRequest
+import com.d104.pnt.data.remote.model.request.SocialLoginRequest
 import com.d104.pnt.data.remote.model.response.DuplicateCheckResponse
 import com.d104.pnt.data.remote.model.response.LoginResponse
 import com.d104.pnt.data.remote.model.response.SignupResponse
+import com.d104.pnt.data.remote.model.response.SocialLoginResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -47,6 +49,25 @@ class AuthRepositoryImpl @Inject constructor(
             apiService.login(LoginRequest(id, password))
         }
     }
+
+    override suspend fun socialLogin(
+        provider: String,
+        token: String
+    ): BaseResult<SocialLoginResponse> {
+        return directApiCall(
+            onSuccess = { response ->
+                saveLoginData(
+                    accessToken = response.accessToken,
+                    refreshToken = response.refreshToken,
+                    userId = response.member.id,
+                    memberId = response.member.memberId
+                )
+            }
+        ) {
+            apiService.socialLogin(SocialLoginRequest(provider, token))
+        }
+    }
+
 
     override suspend fun checkDuplicate(id: String): BaseResult<DuplicateCheckResponse> {
         return safeApiCall {
@@ -110,6 +131,9 @@ class AuthRepositoryImpl @Inject constructor(
         return dataStore.data.map { it[KEY_ACCESS_TOKEN] ?: "" }
     }
 
+    override fun getRefreshToken(): Flow<String> {
+        return dataStore.data.map { it[KEY_REFRESH_TOKEN] ?: "" }
+    }
 
     override suspend fun saveLoginData(
         accessToken: String,
