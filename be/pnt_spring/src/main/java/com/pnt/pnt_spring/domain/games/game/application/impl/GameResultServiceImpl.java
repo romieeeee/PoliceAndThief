@@ -7,6 +7,7 @@ import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
 import com.pnt.pnt_spring.domain.games.game.entity.*;
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
+import com.pnt.pnt_spring.domain.games.game.enums.WinTeam;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
@@ -45,7 +46,8 @@ public class GameResultServiceImpl implements GameResultService { // 클래스�
         }
 
         // 게임 종료 상태 저장 (winner: "POLICE" or "THIEF")
-        game.finish(winner);
+        WinTeam winTeam = parseWinTeam(winner);
+        game.end(winTeam);
 
         // MVP 조회 및 선정
         GameMemberStat mvpStat = null;
@@ -110,5 +112,18 @@ public class GameResultServiceImpl implements GameResultService { // 클래스�
     @Override
     public Long calculateSurvivalTime(Game game, GameMember member) {
         return 0L;
+    }
+
+    /** "POLICE"/"THIEF" (대소문자/공백 허용) -> WinTeam */
+    private WinTeam parseWinTeam(String winner) {
+        if (winner == null || winner.isBlank()) {
+            return WinTeam.NONE;
+        }
+        String w = winner.trim().toUpperCase();
+        return switch (w) {
+            case "POLICE" -> WinTeam.POLICE;
+            case "THIEF" -> WinTeam.THIEF;
+            default -> WinTeam.NONE; // 또는 INVALID_REQUEST 던지게 정책 선택
+        };
     }
 }
