@@ -2,6 +2,7 @@ package com.d104.pnt.data.repository
 
 import android.location.Location
 import com.d104.pnt.domain.model.DraggableLatLng
+import com.d104.pnt.domain.model.GeoLocationInfo
 import com.d104.pnt.domain.model.PlayerLocation
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,8 @@ interface LocationRepository {
     fun setPrisonLocation(location: LatLng?)
 
     fun dismissCreateGame()
+
+    suspend fun getAddressFromLatLng(latitude: Double, longitude: Double): GeoLocationInfo
 
     // TODO: 더미 데이터 셋팅 지울것
     fun DummyPlayer()
