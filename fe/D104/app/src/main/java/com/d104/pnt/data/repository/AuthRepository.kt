@@ -14,10 +14,17 @@ interface AuthRepository {
      */
     suspend fun login(id: String, password: String): BaseResult<LoginResponse>
 
+
+    /**
+     * 소셜 로그인
+     */
+    suspend fun socialLogin(provider: String, token: String): BaseResult<LoginResponse>
+
+
     /**
      * 로그아웃
      */
-    suspend fun logout(): BaseResult<Unit>
+    suspend fun logout(): BaseResult<String>
 
     /**
      * 로그인 상태 확인
@@ -32,6 +39,7 @@ interface AuthRepository {
     fun getMemberId(): Flow<Long>
     suspend fun getUserIdSync(): String
     fun getAccessToken(): Flow<String>
+    fun getRefreshToken(): Flow<String>
 
     /**
      * 로그인 정보 저장

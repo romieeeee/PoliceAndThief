@@ -2,8 +2,6 @@ package com.d104.pnt.ui.chatroom
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -17,7 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.domain.model.ChatMessage
-import com.d104.pnt.domain.model.RoomData
+import com.d104.pnt.domain.model.ChatsData
 import com.d104.pnt.ui.component.ChatList
 import com.d104.pnt.ui.component.ChatRoomFooter
 import com.d104.pnt.ui.component.ChatRoomHeader
@@ -26,7 +24,7 @@ import com.d104.pnt.ui.theme.DarkBackground
 @Composable
 fun ChatRoomScreen(
     modifier: Modifier,
-    chatRoomData: RoomData,
+    chatRoomData: ChatsData,
     chatMessages: List<ChatMessage>,
     onSendMessage: (String) -> Unit,
     onScrollToBottom: () -> Unit,
@@ -154,7 +152,7 @@ fun PreviewChatRoomScreen(){
     )
     ChatRoomScreen(
         modifier = Modifier,
-        chatRoomData = RoomData(
+        chatRoomData = ChatsData(
             1,
             "진평동 빡겜 추격전 진평동 빡겜 추격전 진평동 빡겜 추격전 진평동 빡겜 추격전",
             "날이 많이 추우니 장갑 꼭 챙겨오세요",

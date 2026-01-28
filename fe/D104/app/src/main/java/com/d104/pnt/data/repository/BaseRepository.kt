@@ -3,6 +3,8 @@ package com.d104.pnt.data.repository
 import com.d104.pnt.data.model.common.ApiError
 import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.domain.model.common.BaseResult
+import com.google.gson.Gson
+import retrofit2.HttpException
 import retrofit2.Response
 import timber.log.Timber
 import java.io.IOException
@@ -85,6 +87,50 @@ abstract class BaseRepository {
         } catch (e: Exception) {
             Timber.e(e, "Unknown error")
             BaseResult.Error(ApiError.unknownError(e.message ?: "알 수 없는 오류"))
+        }
+    }
+
+    /**
+     * BaseResponse 없이 직접 응답이 오는 API 호출
+     */
+    protected suspend fun <T> directApiCall(
+        onSuccess: (suspend (T) -> Unit)? = null,
+        apiCall: suspend () -> T
+    ): BaseResult<T> {
+        return try {
+            val response = apiCall()
+            onSuccess?.invoke(response)
+            Timber.d("Direct API call successful")
+            BaseResult.Success(response)
+
+        } catch (e: HttpException) {
+            Timber.e(e, "Direct API call HTTP error: ${e.code()}")
+            val errorBody = e.response()?.errorBody()?.string()
+            val apiError = try {
+                Gson().fromJson(errorBody, ApiError::class.java)
+            } catch (ex: Exception) {
+                ApiError(
+                    code = e.code(),
+                    message = e.message() ?: "API 호출에 실패했습니다"
+                )
+            }
+            BaseResult.Error(apiError)
+
+        } catch (e: IOException) {
+            Timber.e(e, "Direct API call network error")
+            BaseResult.Error(
+                ApiError(
+                    message = "네트워크 연결을 확인해주세요"
+                )
+            )
+
+        } catch (e: Exception) {
+            Timber.e(e, "Direct API call unexpected error")
+            BaseResult.Error(
+                ApiError(
+                    message = "알 수 없는 오류가 발생했습니다: ${e.message}"
+                )
+            )
         }
     }
 }
