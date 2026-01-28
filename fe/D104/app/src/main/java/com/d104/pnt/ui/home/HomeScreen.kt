@@ -91,8 +91,8 @@ fun HomeScreen(
 
             PixelIconButton(
                 onClick = {
-//                    viewModel.logout()
-                    navigateToGameRoom(1)
+                    viewModel.logout()
+//                    navigateToGameRoom(1)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
