@@ -4,6 +4,7 @@ import com.d104.pnt.base.AuthTokenInterceptor
 import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.api.AuthApiService
 import com.d104.pnt.data.remote.api.ChatApiService
+import com.d104.pnt.data.remote.api.GameRoomApiService
 import com.d104.pnt.data.remote.api.NaverApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -83,6 +84,7 @@ object NetworkModule {
         return retrofit.create(ChatApiService::class.java)
     }
 
+    // 역 지오코딩 관련
     @Provides
     @Singleton
     fun provideNaverApiService(): NaverApiService {
@@ -92,5 +94,12 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(NaverApiService::class.java)
+    }
+
+    // 게임 룸 API
+    @Provides
+    @Singleton
+    fun provideGameRoomApiService(retrofit: Retrofit): GameRoomApiService {
+        return retrofit.create(GameRoomApiService::class.java)
     }
 }

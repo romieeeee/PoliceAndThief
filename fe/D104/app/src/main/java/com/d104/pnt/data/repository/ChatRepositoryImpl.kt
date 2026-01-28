@@ -1,7 +1,7 @@
 package com.d104.pnt.data.repository
 
 import com.d104.pnt.data.remote.api.ChatApiService
-import com.d104.pnt.data.remote.model.response.ChatCreateRequest
+import com.d104.pnt.data.remote.model.request.ChatCreateRequest
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.MutableStateFlow

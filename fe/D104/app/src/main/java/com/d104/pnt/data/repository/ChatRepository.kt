@@ -1,11 +1,12 @@
 package com.d104.pnt.data.repository
 
-import com.d104.pnt.data.remote.model.response.ChatCreateRequest
+import com.d104.pnt.data.remote.model.request.ChatCreateRequest
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.StateFlow
 
 interface ChatRepository {
+    // 나중에 이거 지우고 구현부에서 private로 만들기 기왕이면 데이터 클래스 하나로 관리가능 하면 더 좋고
     var currentChatRoom: Long?
     var currentChatRoomTitle: String?
     var currentChatRoomDescription: String?
