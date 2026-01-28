@@ -2,17 +2,11 @@ package com.d104.pnt.base
 
 import android.app.Application
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import com.d104.pnt.BuildConfig
+import com.d104.pnt.util.AuthEventBus
+import com.kakao.sdk.common.KakaoSdk
 import dagger.hilt.android.HiltAndroidApp
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
+import jakarta.inject.Inject
 import timber.log.Timber
 
 /**
@@ -20,6 +14,10 @@ import timber.log.Timber
  */
 @HiltAndroidApp
 class BaseApplication : Application() {
+
+
+    @Inject
+    lateinit var authEventBus: AuthEventBus
 
     companion object {
         private var instance: BaseApplication? = null
@@ -39,6 +37,7 @@ class BaseApplication : Application() {
 
     }
 
+
     override fun onCreate() {
         super.onCreate()
         instance = this
@@ -46,6 +45,9 @@ class BaseApplication : Application() {
         // Timber 초기화
         Timber.plant(Timber.DebugTree())
 
-        Timber.d("BaseApplication with Hilt initialized")
+        // 카카오 SDK 초기화 (BuildConfig 사용)
+        KakaoSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
+
+        Timber.d("Kakao SDK initialized with key: ${BuildConfig.KAKAO_NATIVE_APP_KEY}")
     }
 }

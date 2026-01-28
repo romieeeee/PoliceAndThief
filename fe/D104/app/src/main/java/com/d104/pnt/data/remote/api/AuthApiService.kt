@@ -3,6 +3,7 @@ package com.d104.pnt.data.remote.api
 import com.d104.pnt.data.remote.model.request.CheckDuplicateRequest
 import com.d104.pnt.data.remote.model.request.LoginRequest
 import com.d104.pnt.data.remote.model.request.SignupRequest
+import com.d104.pnt.data.remote.model.request.SocialLoginRequest
 import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.data.remote.model.response.DuplicateCheckResponse
 import com.d104.pnt.data.remote.model.response.LoginResponse
@@ -23,6 +24,14 @@ interface AuthApiService {
     @POST("auth/login")
     suspend fun login(
         @Body request: LoginRequest
+    ): Response<BaseResponse<LoginResponse>>
+
+    /**
+     * 소셜 로그인 API
+     */
+    @POST("auth/social-login")
+    suspend fun socialLogin(
+        @Body request: SocialLoginRequest
     ): Response<BaseResponse<LoginResponse>>
 
 
