@@ -10,7 +10,6 @@ import com.pnt.pnt_spring.domain.games.news.repository.GameNewsRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +31,7 @@ public class GameNewsServiceImpl implements GameNewsService {
         // 뉴스 엔티티 빌드
         GameNews gameNews = GameNews.builder()
                 .game(game)
-                .title(response.getHeadline())
+                .title(response.getTitle())
                 .content(response.getContent())
                 .build();
 
