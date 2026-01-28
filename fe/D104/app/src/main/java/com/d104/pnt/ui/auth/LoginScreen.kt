@@ -1,5 +1,7 @@
 package com.d104.pnt.ui.auth
 
+import android.content.pm.PackageManager
+import android.util.Base64
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -34,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -44,6 +47,8 @@ import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.theme.AccentRed
 import com.d104.pnt.ui.theme.BorderDefault
+import timber.log.Timber
+import java.security.MessageDigest
 
 @Composable
 fun LoginScreen(
@@ -56,11 +61,32 @@ fun LoginScreen(
     val password by viewModel.password.collectAsState()
     val loginState by viewModel.loginState.collectAsState()
 
+    val context = LocalContext.current
+
     // 로그인 성공 처리
     LaunchedEffect(loginState) {
         if (loginState is UiState.Success) {
             val response = (loginState as UiState.Success<LoginResponse>).data
             onLoginSuccess(response.member.id)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        try {
+            val info = context.packageManager.getPackageInfo(
+                context.packageName,
+                PackageManager.GET_SIGNATURES
+            )
+            for (signature in info.signatures!!) {
+                val md = MessageDigest.getInstance("SHA")
+                md.update(signature.toByteArray())
+                val keyHash = Base64.encodeToString(md.digest(), Base64.NO_WRAP)
+                Timber.d("========================================")
+                Timber.d("📱 Current KeyHash: $keyHash")
+                Timber.d("========================================")
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error getting key hash")
         }
     }
 
@@ -248,7 +274,7 @@ fun LoginScreen(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) {
-                        /* 클릭 이벤트 */
+                        viewModel.loginWithKakao(context)
                     },
                 painter = painterResource(R.drawable.kakao_login_btn),
                 contentDescription = "카카오 로그인",

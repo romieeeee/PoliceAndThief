@@ -1,14 +1,18 @@
 package com.d104.pnt.ui.auth
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.response.LoginResponse
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
+import com.d104.pnt.util.KakaoLoginHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -25,15 +29,18 @@ class LoginViewModel @Inject constructor(
     private val _password = MutableStateFlow("")
     val password: StateFlow<String> = _password.asStateFlow()
 
+    sealed interface LoginEvent {
+        data class Success(val userId: String) : LoginEvent
+        data class Error(val message: String) : LoginEvent
+        object Loading : LoginEvent
+    }
+
+    private val _loginEvent = MutableSharedFlow<LoginEvent>()
+    val loginEvent = _loginEvent.asSharedFlow()
+
     // 로그인 상태
     private val _loginState = MutableStateFlow<UiState<LoginResponse>>(UiState.Idle)
     val loginState: StateFlow<UiState<LoginResponse>> = _loginState.asStateFlow()
-
-    private val _logoutState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
-    val logoutState: StateFlow<UiState<Unit>> = _logoutState.asStateFlow()
-
-    // 로그인 여부 (Repository에서 Flow로 제공)
-    val isLoggedIn = authRepository.isLoggedIn()
 
     // 입력값 업데이트
     fun updateId(newId: String) {
@@ -68,24 +75,43 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-
     /**
-     * 로그아웃
+     * 카카오 소셜 로그인
      */
-    fun logout() {
+    /**
+     * 카카오 소셜 로그인
+     */
+    fun loginWithKakao(context: Context) {
         viewModelScope.launch {
-            _logoutState.value = UiState.Loading
+            _loginEvent.emit(LoginEvent.Loading)
 
-            when (val result = authRepository.logout()) {
-                is BaseResult.Success -> {
-                    _logoutState.value = UiState.Success(Unit)
-                    Timber.d("Logout successful")
+            try {
+                // 1. 카카오 SDK로 액세스 토큰 받기
+                val kakaoToken = KakaoLoginHelper.login(context)
+
+                if (kakaoToken == null) {
+                    Timber.w("Kakao login cancelled or failed")
+                    _loginEvent.emit(LoginEvent.Error("카카오 로그인을 취소했습니다"))
+                    return@launch
                 }
 
-                is BaseResult.Error -> {
-                    _logoutState.value = UiState.Error(result.error.message)
-                    Timber.e("Logout failed: ${result.error.message}")
+                Timber.d("Kakao token received: ${kakaoToken.take(10)}...")
+
+                // 2. 서버에 provider="kakao"와 token 전송
+                when (val result = authRepository.socialLogin("KAKAO", kakaoToken)) {
+                    is BaseResult.Success -> {
+                        Timber.d("Social login successful: ${result.data.member.id}")
+                        _loginEvent.emit(LoginEvent.Success(result.data.member.id))
+                    }
+
+                    is BaseResult.Error -> {
+                        Timber.e("Social login failed: ${result.error.message}")
+                        _loginEvent.emit(LoginEvent.Error("로그인 실패: ${result.error.message}"))
+                    }
                 }
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error during Kakao login")
+                _loginEvent.emit(LoginEvent.Error("로그인 중 오류가 발생했습니다"))
             }
         }
     }
@@ -95,9 +121,5 @@ class LoginViewModel @Inject constructor(
      */
     fun resetLoginState() {
         _loginState.value = UiState.Idle
-    }
-
-    fun resetLogoutState() {
-        _logoutState.value = UiState.Idle
     }
 }
