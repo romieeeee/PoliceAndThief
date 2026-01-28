@@ -3,7 +3,6 @@ package com.d104.pnt.data.repository
 import com.d104.pnt.data.remote.model.response.DuplicateCheckResponse
 import com.d104.pnt.data.remote.model.response.LoginResponse
 import com.d104.pnt.data.remote.model.response.SignupResponse
-import com.d104.pnt.data.remote.model.response.SocialLoginResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.Flow
 
@@ -19,7 +18,7 @@ interface AuthRepository {
     /**
      * 소셜 로그인
      */
-    suspend fun socialLogin(provider: String, token: String): BaseResult<SocialLoginResponse>
+    suspend fun socialLogin(provider: String, token: String): BaseResult<LoginResponse>
 
 
     /**

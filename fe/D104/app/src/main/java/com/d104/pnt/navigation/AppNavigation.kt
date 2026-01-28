@@ -57,7 +57,7 @@ fun AppNavigation(
 
     // 현재 화면 상태
     var currentScreen by remember { mutableStateOf(AppScreen.Intro) }
-    var userName by remember { mutableStateOf("") }
+    var memberId by remember { mutableStateOf("") }
 
     // 다이얼로그 표시 상태
     var showPermissionDialog by remember { mutableStateOf(false) }
@@ -95,7 +95,7 @@ fun AppNavigation(
         }
     )
 
-    // 핵심: 설정에서 돌아왔을 때 재확인 (onResume)
+    // 설정에서 돌아왔을 때 재확인 (onResume)
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -152,6 +152,7 @@ fun AppNavigation(
                     onClick = {
                         if (isLoggedIn) {
                             Timber.d("Navigation: Intro -> Main")
+
                             currentScreen = AppScreen.Main
                         } else {
                             Timber.d("Navigation: Intro -> Login")
@@ -165,9 +166,9 @@ fun AppNavigation(
             // 로그인 화면
             AppScreen.Login -> {
                 LoginScreen(
-                    onLoginSuccess = { userId ->
-                        userName = userId
-                        Timber.d("Login success: $userId")
+                    onLoginSuccess = { id ->
+                        memberId = id
+                        Timber.d("Login success: $id")
                         currentScreen = AppScreen.Main
 
                         // 이미 권한이 있는 상태로 로그인
@@ -202,7 +203,7 @@ fun AppNavigation(
             // 메인 앱
             AppScreen.Main -> {
                 MainScreen(
-                    userName = userName,
+                    memberId = memberId,
                     navigateToIntro = {
                         Timber.d("Navigation: Main -> Intro (Logout)")
                         currentScreen = AppScreen.Intro // ⭐ Intro로 변경
@@ -235,7 +236,7 @@ fun AppNavigation(
             // 실시간으로 거부된 권한 목록 확인
             val deniedPermissions = PermissionHelper.getDeniedPermissions(context)
 
-            // ⭐ 만약 설정에서 모두 허용했으면 다이얼로그 자동으로 안 보임
+            // 만약 설정에서 모두 허용했으면 다이얼로그 자동으로 안 보임
             if (deniedPermissions.isEmpty()) {
                 // 모든 권한 허용됨 → 다이얼로그 닫고 메인으로
                 showPermissionDeniedDialog = false

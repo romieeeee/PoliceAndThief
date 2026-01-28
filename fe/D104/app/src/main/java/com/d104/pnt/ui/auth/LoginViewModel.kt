@@ -42,6 +42,7 @@ class LoginViewModel @Inject constructor(
     private val _loginState = MutableStateFlow<UiState<LoginResponse>>(UiState.Idle)
     val loginState: StateFlow<UiState<LoginResponse>> = _loginState.asStateFlow()
 
+
     // 입력값 업데이트
     fun updateId(newId: String) {
         _id.value = newId
@@ -78,40 +79,38 @@ class LoginViewModel @Inject constructor(
     /**
      * 카카오 소셜 로그인
      */
-    /**
-     * 카카오 소셜 로그인
-     */
     fun loginWithKakao(context: Context) {
         viewModelScope.launch {
-            _loginEvent.emit(LoginEvent.Loading)
+            _loginState.value = UiState.Loading
 
             try {
-                // 1. 카카오 SDK로 액세스 토큰 받기
+                // 1. 카카오 SDK로 ID 토큰 받기
                 val kakaoToken = KakaoLoginHelper.login(context)
 
                 if (kakaoToken == null) {
                     Timber.w("Kakao login cancelled or failed")
-                    _loginEvent.emit(LoginEvent.Error("카카오 로그인을 취소했습니다"))
+                    _loginState.value = UiState.Error("카카오 로그인을 취소했습니다")
                     return@launch
                 }
 
-                Timber.d("Kakao token received: ${kakaoToken.take(10)}...")
+                Timber.d("Kakao token received: ${kakaoToken.take(50)}...")
 
-                // 2. 서버에 provider="kakao"와 token 전송
+                // 2. 서버에 provider="KAKAO"와 token 전송
                 when (val result = authRepository.socialLogin("KAKAO", kakaoToken)) {
                     is BaseResult.Success -> {
-                        Timber.d("Social login successful: ${result.data.member.id}")
-                        _loginEvent.emit(LoginEvent.Success(result.data.member.id))
+                        Timber.d("✅ Social login successful: ${result.data.member.id}")
+                        // ⭐ 이미 LoginResponse라서 변환 불필요!
+                        _loginState.value = UiState.Success(result.data)
                     }
 
                     is BaseResult.Error -> {
-                        Timber.e("Social login failed: ${result.error.message}")
-                        _loginEvent.emit(LoginEvent.Error("로그인 실패: ${result.error.message}"))
+                        Timber.e("❌ Social login failed: ${result.error.message}")
+                        _loginState.value = UiState.Error("로그인 실패: ${result.error.message}")
                     }
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Unexpected error during Kakao login")
-                _loginEvent.emit(LoginEvent.Error("로그인 중 오류가 발생했습니다"))
+                Timber.e(e, "❌ Unexpected error during Kakao login")
+                _loginState.value = UiState.Error("로그인 중 오류가 발생했습니다")
             }
         }
     }

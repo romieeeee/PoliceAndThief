@@ -15,7 +15,6 @@ import com.d104.pnt.data.remote.model.request.SocialLoginRequest
 import com.d104.pnt.data.remote.model.response.DuplicateCheckResponse
 import com.d104.pnt.data.remote.model.response.LoginResponse
 import com.d104.pnt.data.remote.model.response.SignupResponse
-import com.d104.pnt.data.remote.model.response.SocialLoginResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -53,8 +52,13 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun socialLogin(
         provider: String,
         token: String
-    ): BaseResult<SocialLoginResponse> {
-        return directApiCall(
+    ): BaseResult<LoginResponse> {
+        Timber.d("=== Social Login Request ===")
+        Timber.d("Provider: $provider")
+        Timber.d("Token (first 50 chars): ${token.take(50)}...")
+        Timber.d("==========================")
+
+        return safeApiCall(
             onSuccess = { response ->
                 saveLoginData(
                     accessToken = response.accessToken,
@@ -62,6 +66,7 @@ class AuthRepositoryImpl @Inject constructor(
                     userId = response.member.id,
                     memberId = response.member.memberId
                 )
+                Timber.d("✅ Social login data saved successfully")
             }
         ) {
             apiService.socialLogin(SocialLoginRequest(provider, token))
@@ -150,6 +155,13 @@ class AuthRepositoryImpl @Inject constructor(
         }
 
         Timber.d("Login data saved for user: $userId")
+        Timber.d(
+            """
+                    accessToken = "${accessToken.take(10)}..."
+                    userId = "$userId
+                    memberId = "$memberId
+                """.trimIndent()
+        )
     }
 
     override suspend fun clearAuthData() {

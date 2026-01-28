@@ -8,7 +8,6 @@ import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.data.remote.model.response.DuplicateCheckResponse
 import com.d104.pnt.data.remote.model.response.LoginResponse
 import com.d104.pnt.data.remote.model.response.SignupResponse
-import com.d104.pnt.data.remote.model.response.SocialLoginResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -33,7 +32,7 @@ interface AuthApiService {
     @POST("auth/social-login")
     suspend fun socialLogin(
         @Body request: SocialLoginRequest
-    ): SocialLoginResponse
+    ): Response<BaseResponse<LoginResponse>>
 
 
     /**
