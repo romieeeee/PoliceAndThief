@@ -78,7 +78,7 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun logout(): BaseResult<Unit> {
+    override suspend fun logout(): BaseResult<String> {
         return safeApiCall(
             onSuccess = { clearAuthData() }
         ) {
@@ -135,7 +135,16 @@ class AuthRepositoryImpl @Inject constructor(
             preferences.remove(KEY_USER_ID)
             preferences.remove(KEY_MEMBER_ID)
             preferences[KEY_IS_LOGGED_IN] = false
+
+            Timber.d(
+                """
+                Auth data cleared
+                - ${preferences[KEY_ACCESS_TOKEN]}
+                - ${preferences[KEY_USER_ID]}
+                - ${preferences[KEY_MEMBER_ID]}
+                - ${preferences[KEY_IS_LOGGED_IN]}
+            """.trimIndent()
+            )
         }
-        Timber.d("Auth data cleared")
     }
 }

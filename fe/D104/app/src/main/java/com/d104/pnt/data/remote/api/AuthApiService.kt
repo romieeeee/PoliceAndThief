@@ -47,5 +47,5 @@ interface AuthApiService {
      * 로그아웃 API
      */
     @POST("auth/logout")
-    suspend fun logout(): Response<BaseResponse<Unit>>
+    suspend fun logout(): Response<BaseResponse<String>>
 }

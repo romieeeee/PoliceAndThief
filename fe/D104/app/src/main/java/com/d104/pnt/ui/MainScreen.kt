@@ -47,7 +47,10 @@ import com.d104.pnt.ui.profile.ProfileScreen
 import kotlinx.coroutines.launch
 
 @Composable
-fun MainScreen(userName: String) {
+fun MainScreen(
+    userName: String,
+    navigateToIntro: () -> Unit
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val activity = context as? Activity
@@ -95,7 +98,8 @@ fun MainScreen(userName: String) {
                     },
                     navigateToGameRoom = { roomId ->
                         navController.navigate(Routes.ROLE_SELECT)
-                    }
+                    },
+                    navigateToIntro = { navigateToIntro() }
                 )
             }
 
