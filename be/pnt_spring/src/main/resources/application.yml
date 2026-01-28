@@ -63,7 +63,7 @@ jwt:
 
 oauth2:
   kakao:
-    app-id:
+    app-id: ${KAKAO_APP_ID}
   google:
       client-id:
 
