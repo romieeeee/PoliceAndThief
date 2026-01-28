@@ -6,6 +6,7 @@ export class RedisClient {
         this.subClient = redisDB.getSubClient();
         this.RECONNECT_PREFIX = "websocket:reconnect:timer:";
         this.GAME_TIMER_PREFIX = "room:game:timer:";
+        this.CCTV_TIMER_PREFIX = "room:game:cctv:";
     }
 
     /**
@@ -178,6 +179,7 @@ export class RedisClient {
     deleteAllInGameCachesByGameId = async (gameId) => {
         await this.deleteAllLocations(gameId);
         await this.pubClient.del(this.getPenaltyKeyString(gameId));
+        await this.deleteCctvTimer(gameId);
     }
 
     /**
@@ -207,6 +209,21 @@ export class RedisClient {
     }
 
     /**
+     * CCTV
+     */
+    setCctvTimer = async (gameId, time) => {
+        return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", time);
+    }
+
+    deleteCctvTimer = async (gameId) => {
+        await this.pubClient.del(this.getCctvTimerKeyString(gameId));
+    }
+
+    getCctvTimerKeyString = (gameId) => {
+        return `room:game:cctv:${gameId}`;
+    }
+
+    /**
      * 게임에 관한 모든 캐시 삭제
      * 
      * 개발때 쓸
@@ -221,7 +238,9 @@ export class RedisClient {
         await this.deleteGameTimer(gameId);
         await this.deleteGameTimerLock(gameId);
         await this.pubClient.del(this.getStartedString(gameId));
+        await this.pubClient.del(this.getStartedString(gameId));
         await this.deleteStartedCount(gameId);
+        await this.deleteCctvTimer(gameId);
     }
 
     getGameTimerLock = async (gameId) => {

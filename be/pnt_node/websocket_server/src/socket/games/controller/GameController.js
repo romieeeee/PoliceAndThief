@@ -13,6 +13,10 @@ import { TurfService } from "../application/TurfService.js";
 import { MQConfig } from "../../../global/mq/MQConfig.js";
 
 
+/**
+ * ToDo CCTV
+ */
+
 export class GameController {
     constructor(io, socket, mq) {
         this.io = io;
@@ -91,50 +95,7 @@ export class GameController {
      * 
      * 현재 시간으로 부터 5초 뒤에 시작.
      */
-    startGame = async () => {
-        try {
-            console.log("startGame");
-            const gameId = this.socket.data.gameId;
 
-            const integerGameId = parseInt(gameId);
-
-            const gameSetting = await this.gameSettingService.findGameSetting(integerGameId);
-            const startedCount = await this.redisClient.getStartedCount(integerGameId);
-
-            if (startedCount < gameSetting.policeCount + gameSetting.thiefCount) {
-                return;
-            }
-
-            const isMine = await this.redisClient.setGameSettingLock(integerGameId, gameSetting.timeLimit);
-
-            if (!isMine) {
-                return;
-            }
-
-            await this.redisClient.setGameSetting(integerGameId, gameSetting);
-
-            this.io.to(gameId).emit("get will start game", {
-                message: "start game",
-                gameId: integerGameId,
-                willStartAt: new Date(Date.now() + 5000).toISOString(),
-            });
-
-            setTimeout(async () => {
-                await this.redisClient.setGameTimer(integerGameId, gameSetting.timeLimit);
-
-                await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString() });
-
-                this.io.to(gameId).emit("get start game", {
-                    message: "start game",
-                    gameId: integerGameId,
-                    startTime: new Date().toISOString(),
-                });
-            }, 5000);
-        } catch (error) {
-            console.error("startGame error", error);
-            sendError(this.socket, error, "GameError");
-        }
-    }
 
 
     /**
@@ -191,6 +152,9 @@ export class GameController {
 
             setTimeout(async () => {
                 await this.redisClient.setGameTimer(integerGameId, gameSetting.timeLimit * 60);
+
+                // cctv 작동
+                await this.redisClient.setCctvTimer(integerGameId, gameSetting.cctvInterval);
 
                 await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString() });
 
@@ -258,6 +222,10 @@ export class GameController {
                 penalty,
                 timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
             };
+
+            if (position === GameMemberPosition.THIEF && status === GameMemberStatus.FREE) {
+                locationData.longestSurvived++;
+            }
 
             console.log("postGps", locationData);
 
@@ -341,7 +309,23 @@ export class GameController {
                 return;
             }
 
+            // 비프음
+            const locationDatas = await this.redisClient.getAllLocations(gameId);
+            const polices = locationDatas
+                .find((data) => data.position === GameMemberPosition.POLICE)
+                .map((data) => { return { policeId: data.memberId, lng: data.lng, lat: data.lat } });
 
+            if (polices) {
+                const nearPolice = this.turfService.checkNearPolice([lng, lat], polices);
+                if (nearPolice) {
+                    this.socket.emit("get beep use", {
+                        gameId: gameId,
+                        policeId: nearPolice.policeId,
+                        thiefId: memberId,
+                        distance: nearPolice.distance,
+                    });
+                }
+            }
 
         } catch (error) {
             console.error("postGps error", error);
@@ -629,7 +613,7 @@ export class GameController {
             }, 5000);
 
             // 게임 종료 처리 => spring boot에 요청을 보내야함.
-            
+
 
             // 게임 종료 알림
             // 게임 종료 알림
