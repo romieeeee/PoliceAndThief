@@ -25,24 +25,6 @@ class HomeViewModel @Inject constructor(
         _joinCode.value = newCode
     }
 
-    /**
-     * 로그아웃
-     */
-    fun testLogout() {
-        viewModelScope.launch {
-
-            when (val result = authRepository.logout()) {
-                is BaseResult.Success -> {
-                    Timber.d("Logout successful")
-                }
-
-                is BaseResult.Error -> {
-                    Timber.e("Logout failed: ${result.error.message}")
-                }
-            }
-        }
-    }
-
     sealed interface HomeUiEvent {
         object NavigateToIntro : HomeUiEvent
         data class ShowMessage(val message: String) : HomeUiEvent
@@ -54,17 +36,11 @@ class HomeViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
-            when (val result = authRepository.logout()) {
-                is BaseResult.Success -> {
-                    Timber.d("Logout successful")
-                    _uiEvent.emit(HomeUiEvent.ShowMessage("로그아웃되었습니다"))
-                    _uiEvent.emit(HomeUiEvent.NavigateToIntro)
-                }
-                is BaseResult.Error -> {
-                    Timber.e("Logout failed: ${result.error.message}")
-                    _uiEvent.emit(HomeUiEvent.ShowError("로그아웃 실패: ${result.error.message}"))
-                }
-            }
+            authRepository.clearAuthData()
+
+            Timber.d("Logout completed")
+            _uiEvent.emit(HomeUiEvent.ShowMessage("로그아웃되었습니다"))
+            _uiEvent.emit(HomeUiEvent.NavigateToIntro)
         }
     }
 }
