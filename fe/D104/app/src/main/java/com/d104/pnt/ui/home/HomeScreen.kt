@@ -1,5 +1,6 @@
 package com.d104.pnt.ui.home
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -42,11 +45,32 @@ import com.d104.pnt.ui.theme.TextPrimary
 fun HomeScreen(
     goToGameCreate: () -> Unit,
     navigateToGameRoom: (Long) -> Unit,
+    navigateToIntro: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     var showJoinDialog by remember { mutableStateOf(false) }
-
     val joinCode by viewModel.joinCode.collectAsStateWithLifecycle()
+
+    // 이벤트 수집
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is HomeViewModel.HomeUiEvent.NavigateToIntro -> {
+                    navigateToIntro()
+                }
+
+                is HomeViewModel.HomeUiEvent.ShowMessage -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+
+                is HomeViewModel.HomeUiEvent.ShowError -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
 
     Surface(modifier = Modifier.fillMaxSize()) {
 
@@ -66,7 +90,10 @@ fun HomeScreen(
         ) {
 
             PixelIconButton(
-                onClick = { navigateToGameRoom(1) },
+                onClick = {
+//                    viewModel.logout()
+                    navigateToGameRoom(1)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)

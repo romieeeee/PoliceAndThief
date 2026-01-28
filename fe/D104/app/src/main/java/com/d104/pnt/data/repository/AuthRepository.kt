@@ -17,7 +17,7 @@ interface AuthRepository {
     /**
      * 로그아웃
      */
-    suspend fun logout(): BaseResult<Unit>
+    suspend fun logout(): BaseResult<String>
 
     /**
      * 로그인 상태 확인
