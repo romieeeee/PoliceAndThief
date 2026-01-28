@@ -1,4 +1,4 @@
-package com.pnt.pnt_spring.domain.games.game.entity;
+package com.pnt.pnt_spring.domain.games.game.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

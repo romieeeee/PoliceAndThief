@@ -249,4 +249,49 @@ public class AuthServiceImpl implements AuthService {
         return LoginResponse.of(tokenDto, member, memberProfile);
     }
 
+    @Override
+    @Transactional
+    public TokenDto reissue(TokenDto tokenDto) {
+        // Refresh Token 검증 (만료 여부 및 서명 확인)
+        if (!jwtTokenProvider.validateToken(tokenDto.getRefreshToken())) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "유효하지 않은 리프레시 토큰입니다.");
+        }
+
+        // Refresh Token에서 Member LoginId 가져오기
+        String refreshToken = tokenDto.getRefreshToken();
+        String loginId = jwtTokenProvider.getMemberLoginId(refreshToken);
+
+        // Redis에서 저장된 Refresh Token 가져오기
+        String redisRefreshToken = redisTemplate.opsForValue().get("RT:" + loginId);
+
+        // Redis에 저장된 토큰이 없거나(로그아웃 등), 요청된 토큰과 일치하지 않는 경우
+        if (StringUtils.isEmpty(redisRefreshToken) || !redisRefreshToken.equals(refreshToken)) {
+            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        // 새로운 토큰 생성을 위해 Member 정보 조회
+        // (토큰의 정보보다 DB의 최신 정보를 기준으로 권한 등을 다시 담는 것이 안전함)
+        Member member = memberRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                member.getLoginId(),
+                null,
+                List.of(new SimpleGrantedAuthority(member.getRole().getKey()))
+        );
+
+        // 새로운 토큰 발급
+        TokenDto newTokenDto = jwtTokenProvider.generateToken(authentication, member.getId());
+
+        // Redis에 새로운 Refresh Token 저장 (RTR: Refresh Token Rotation 적용 시)
+        redisTemplate.opsForValue().set(
+                "RT:" + loginId,
+                newTokenDto.getRefreshToken(),
+                newTokenDto.getRefreshTokenExpiresIn(),
+                TimeUnit.MILLISECONDS
+        );
+
+        return newTokenDto;
+    }
+
 }

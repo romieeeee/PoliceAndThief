@@ -2,7 +2,7 @@ package com.pnt.pnt_spring.domain.chats.api.controller;
 
 import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomMemberResponse;
 import com.pnt.pnt_spring.domain.chats.application.ChatRoomMemberService;
-import com.pnt.pnt_spring.domain.chats.utils.SecurityUtils;
+import com.pnt.pnt_spring.global.utils.SecurityUtils;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

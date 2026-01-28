@@ -34,6 +34,8 @@ public enum ErrorCode {
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, 1, "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, 1, "만료된 토큰입니다."),
     INVALID_INPUT_VALUE(HttpStatus.NOT_FOUND, 1, "지원하지 않는 소셜 플랫폼입니다"),
+    REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, 1, "로그아웃 된 사용자입니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, 1, "리프레시 토큰이 일치하지 않습니다."),
 
     FORBIDDEN(HttpStatus.FORBIDDEN, 1, "접근 권한이 없습니다."),
 
