@@ -16,7 +16,7 @@ public class GameRoomCodeGenerator {
 
     public String generateUniqueCode() {
         for (int i = 0; i < 30; i++) {
-            String code = randomCode(4);
+            String code = randomCode(6);
             if (!gameRepository.existsByRoomCode(code)) return code;
         }
         throw new IllegalStateException("roomCode 생성 실패");
