@@ -1,5 +1,6 @@
 package com.pnt.pnt_spring.domain.games.game.entity;
 
+import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.WinTeam;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.utils.BaseEntity;
@@ -39,7 +40,7 @@ public class Game extends BaseEntity {
     private String roomCode;
 
     @Column(nullable = false)
-    private Integer caughtedCount;
+    private Integer caughtCount;
 
     public static Game createWaitingRoom(Member host, String roomCode) {
         Game game = new Game();
@@ -80,8 +81,11 @@ public class Game extends BaseEntity {
     }
 
     public void finish(String winnerTeam){
-        this.status = GameStatus.FINISHED;
-        this.winTeam = winnerTeam;
+        this.status = GameStatus.ENDED;
+        if(winnerTeam.equals("도둑"))
+            this.winTeam = WinTeam.THIEF;
+        else
+            this.winTeam = WinTeam.POLICE;
         this.endTime = OffsetDateTime.now();
     }
 }

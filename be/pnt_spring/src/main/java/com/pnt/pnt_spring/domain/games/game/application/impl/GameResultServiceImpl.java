@@ -6,6 +6,7 @@ import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
 import com.pnt.pnt_spring.domain.games.game.entity.*;
+import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
@@ -39,7 +40,7 @@ public class GameResultServiceImpl implements GameResultService { // 클래스�
                 .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
         // 이미 끝났다면
-        if (game.getStatus() == GameStatus.FINISHED) {
+        if (game.getStatus() == GameStatus.ENDED) {
             throw new BusinessException(ErrorCode.GAME_ALREADY_ENDED);
         }
 
@@ -95,7 +96,7 @@ public class GameResultServiceImpl implements GameResultService { // 클래스�
         // 7. 최종 결과 반환
         return GameResultResponse.builder()
                 .gameId(game.getId())
-                .winner(game.getWinTeam())
+                .winner(game.getWinTeam().toString())
                 .mvp(mvpResp)
                 .endedAt(game.getEndTime())
                 .stats(GameResultResponse.TotalStats.builder()
