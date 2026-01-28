@@ -21,13 +21,14 @@ public class Member extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "login_id", length = 20, nullable = false, unique = true)
+    // 아이디: 5자리 이상 ~ 12자리 이하 (DB 컬럼 길이를 12로 제한)
+    @Column(name = "login_id", length = 12, nullable = false, unique = true)
     private String loginId;
 
     @Column(nullable = false)
     private String password;
 
-    @Column(length = 50, unique = true)
+    @Column(length = 50, unique = true, nullable = true)
     private String email;
 
     private LocalDate birth;
@@ -35,11 +36,15 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private MemberRole role;
 
-    // 연관관계 설정(과다 조회 방지)
-    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "profile_id")
     private MemberProfile memberProfile;
 
-    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private MemberAuthProvider memberAuthProvider;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "stat_id")
     private MemberStat memberStat;
 
     @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)

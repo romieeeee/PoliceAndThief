@@ -6,8 +6,8 @@ import com.pnt.pnt_spring.domain.members.member.api.resp.MemberProfileUpdateResp
 import com.pnt.pnt_spring.domain.members.member.application.MemberService;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.members.member.entity.document.MemberDoc;
-import com.pnt.pnt_spring.domain.members.member.repository.MemberMongoRepository;
-import com.pnt.pnt_spring.domain.members.member.repository.MemberRepository;
+import com.pnt.pnt_spring.domain.members.member.repository.mongo.MemberMongoRepository;
+import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import com.pnt.pnt_spring.domain.members.stat.api.resp.MemberPoliceResponse;
 import com.pnt.pnt_spring.domain.members.stat.api.resp.MemberThiefResponse;
 import com.pnt.pnt_spring.domain.members.stat.repository.MemberStatPoliceRepository;
