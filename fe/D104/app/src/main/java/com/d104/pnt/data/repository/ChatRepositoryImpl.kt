@@ -17,13 +17,13 @@ class ChatRepositoryImpl @Inject constructor (
     override var currentChatRoom: Long? = null
     override var currentChatRoomTitle: String? = null
     override var currentChatRoomDescription: String? = null
-    override var currentChatRoomRegionCode: Long? = null
+    override var currentChatRoomRegionCode: Int? = null
     override var currentChatRoomMaxMember: Int? = null
     override val currentChatRoomMember = _currentChatRoomMember.asStateFlow()
 
     override suspend fun createChatRoom(
         title: String,
-        regionCode: Long,
+        regionCode: Int,
         description: String,
         maxMembers: Int
     ): BaseResult<ChatCreateResponse> {
@@ -47,7 +47,7 @@ class ChatRepositoryImpl @Inject constructor (
         memberId: Long,
         title: String,
         description: String,
-        regionCode: Long,
+        regionCode: Int,
         maxMembers: Int
     ) {
 

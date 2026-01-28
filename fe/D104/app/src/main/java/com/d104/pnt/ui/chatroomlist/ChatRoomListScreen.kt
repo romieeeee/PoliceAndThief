@@ -27,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.domain.model.ChatsData
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelDropdown
@@ -37,7 +39,13 @@ import com.d104.pnt.ui.theme.*
 @Composable
 fun ChatRoomListScreen(
     navigateToChatCreate: () -> Unit,
+    viewModel: ChatRoomListViewModel = hiltViewModel()
 ) {
+    val majors = viewModel.majorList
+    val middles by viewModel.middleList.collectAsStateWithLifecycle()
+
+    val selectedMajor by viewModel.selectedMajor.collectAsStateWithLifecycle()
+    val selectedMiddle by viewModel.selectedMiddle.collectAsStateWithLifecycle()
     // 테스트용 더미 데이터
     val roomList = List(10) {
         ChatsData(
@@ -57,7 +65,18 @@ fun ChatRoomListScreen(
             .statusBarsPadding() // 상태바 겹침 방지
     ) {
         // 1. 상단 버튼 영역 (Header)
-        ChatRoomListHeader()
+        ChatRoomListHeader(
+            majors = majors,
+            middles = middles,
+            selectedMajor = selectedMajor,
+            selectedMiddle = selectedMiddle,
+            onMajorSelected = { newMajor ->
+                viewModel.selectMajor(newMajor)
+            },
+            onMiddleSelected = { newMiddle ->
+                viewModel.selectMiddle(newMiddle)
+            }
+        )
 
         Spacer(modifier = Modifier.height(5.dp))
 
@@ -107,10 +126,14 @@ fun ChatRoomListScreen(
 }
 
 @Composable
-fun ChatRoomListHeader() {
-    val regionList = listOf("서울", "인천", "대구", "부산", "대전", "광주", "울산", "세종")
-    var selectedRegion by remember { mutableStateOf(regionList[0]) }
-
+fun ChatRoomListHeader(
+    majors: List<String>,
+    middles: List<String>,
+    selectedMajor: String,
+    selectedMiddle: String,
+    onMajorSelected: (String) -> Unit,
+    onMiddleSelected: (String) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -130,21 +153,21 @@ fun ChatRoomListHeader() {
             textColor = TextPrimary
         )
 
-        // 오른쪽 드롭다운
+        // 시/도 드롭다운
         PixelDropdown(
-            items = regionList,
-            selectedItem = selectedRegion,
-            onItemSelected = { selectedRegion = it },
-            modifier = Modifier.weight(1f)
+            items = majors,
+            selectedItem = selectedMajor,
+            onItemSelected = onMajorSelected,
+            modifier = Modifier.weight(1f),
+            label = "시/도"
+        )
+        // 시/군/구 드롭다운
+        PixelDropdown(
+            items = middles,
+            selectedItem = selectedMiddle,
+            onItemSelected = onMiddleSelected,
+            modifier = Modifier.weight(1f),
+            label = "시/군/구"
         )
     }
-}
-
-// 디버깅용 미리보기
-@Preview
-@Composable
-fun ChatRoomScreenPreview() {
-    ChatRoomListScreen(
-        navigateToChatCreate = {}
-    )
 }

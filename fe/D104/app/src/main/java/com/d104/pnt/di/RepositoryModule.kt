@@ -4,6 +4,8 @@ import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.AuthRepositoryImpl
 import com.d104.pnt.data.repository.ChatRepository
 import com.d104.pnt.data.repository.ChatRepositoryImpl
+import com.d104.pnt.data.repository.GameRoomRepository
+import com.d104.pnt.data.repository.GameRoomRepositoryImpl
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.data.repository.LocationRepositoryImpl
 import com.d104.pnt.data.repository.WalkieRepository
@@ -41,4 +43,10 @@ abstract class RepositoryModule {
     abstract fun bindChatRepository(
         impl: ChatRepositoryImpl
     ): ChatRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGameRoomRepository(
+        impl: GameRoomRepositoryImpl
+    ): GameRoomRepository
 }

@@ -12,7 +12,7 @@ data class ChatCreateResponse(
     @SerializedName("description")
     val description: String,
     @SerializedName("regionCode")
-    val regionCode: Long,
+    val regionCode: Int,
     @SerializedName("maxMembers")
     val maxMembers: Int,
     @SerializedName("currentMembers")

@@ -2,11 +2,13 @@ package com.d104.pnt.data.repository
 
 import com.d104.pnt.data.remote.model.request.Location
 import com.d104.pnt.data.remote.model.response.CreateGameRoomResponse
+import com.d104.pnt.domain.model.CurrentGameRoomData
 import com.d104.pnt.domain.model.common.BaseResult
+import kotlinx.coroutines.flow.StateFlow
 
 interface GameRoomRepository{
 
-//    fun getCurrentGameRoom(): GameRoom? TODO: 데이터 클래스 만들기
+    fun getCurrentGameRoom(): StateFlow<CurrentGameRoomData?>
 
     // 게임 방 생성
     suspend fun createGameRoom(

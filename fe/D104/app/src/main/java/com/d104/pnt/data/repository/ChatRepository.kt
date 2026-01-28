@@ -10,13 +10,13 @@ interface ChatRepository {
     var currentChatRoom: Long?
     var currentChatRoomTitle: String?
     var currentChatRoomDescription: String?
-    var currentChatRoomRegionCode: Long?
+    var currentChatRoomRegionCode: Int?
     var currentChatRoomMaxMember: Int?
     val currentChatRoomMember: StateFlow<Int?>
 
     suspend fun createChatRoom(
         title: String,
-        regionCode: Long,
+        regionCode: Int,
         description: String,
         maxMembers: Int
     ): BaseResult<ChatCreateResponse>
@@ -26,7 +26,7 @@ interface ChatRepository {
         memberId: Long,
         title: String,
         description: String,
-        regionCode: Long,
+        regionCode: Int,
         maxMembers: Int
     )
 

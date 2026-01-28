@@ -34,6 +34,8 @@ interface LocationRepository {
 
     suspend fun getAddressFromLatLng(latitude: Double, longitude: Double): GeoLocationInfo
 
+    fun getRegionCode(major: String, middle: String): Int
+
     // TODO: 더미 데이터 셋팅 지울것
     fun DummyPlayer()
 }
