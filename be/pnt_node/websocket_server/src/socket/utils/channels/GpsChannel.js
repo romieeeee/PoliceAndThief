@@ -13,25 +13,26 @@ export class GpsChannel {
             const rooms = this.gameIo.adapter.rooms;
 
             for (const [roomId, sockets] of rooms) {
-                if (!roomId.startsWith("game-")) continue;
+                // 숫자로만 구성된 roomId만 처리
+                if (!/^\d+$/.test(roomId)) continue;
 
-                const gameId = parseInt(roomId.split("-")[1]);
+                const gameId = parseInt(roomId);
+
                 const locations = await this.redisClient.getAllLocations(gameId);
-                console.log("locations", locations);
 
                 if (locations.length === 0) continue;
 
                 // 게임 시작시간
-                const startTime = await this.redisClient.getGameTimer(roomId);
+                const startTime = await this.redisClient.getGameTimer(gameId);
 
                 const data = {
                     gameId: gameId,
-                    min: 0,
+                    sec: 0,
                     locations: locations
                 }
 
                 if (startTime) {
-                    data.min = Math.round((Date.now() - startTime) / 1000);
+                    data.sec = Math.round((Date.now() - startTime) / 1000);
                 }
                 // volatile: 클라이언트가 연결을 유지하지 않는 경우에도 데이터를 전송 -> tcp 보장 X
                 // local: redis를 거치지 않고, 현재 연결되어있는 소켓에만 데이터를 전송

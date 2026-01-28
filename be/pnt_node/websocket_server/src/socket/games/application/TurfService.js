@@ -30,6 +30,8 @@ export class TurfService {
 
         const distance = turf.distance(userPt, prisonPt, { units: 'meters' });
 
+        console.log("distance", distance);
+
         return distance <= 15;
     }
 }

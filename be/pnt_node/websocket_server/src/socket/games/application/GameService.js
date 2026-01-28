@@ -42,7 +42,7 @@ export class GameService {
             await this.gameMemberService.updateMemberStatus(gameId, thiefId, GameMemberStatus.TRANSFER, { transaction: t });
 
             // police 스탯 업데이트 (체포 횟수 증가)
-            await this.gameMemberStatService.updateArrestCount(policeId, { transaction: t });
+            // await this.gameMemberStatService.updateArrestCount(policeId, { transaction: t });
 
             await t.commit();
             return true;
@@ -63,9 +63,13 @@ export class GameService {
         }
 
         const gameMembers = await this.gameMemberService.findAllByGameId(gameId);
+        
 
         const thiefMembers = gameMembers
-            .filter(member => member.givenPosition === GameMemberPosition.THIEF && member.status !== GameMemberStatus.FREE);
+            .filter(member => member.givenPosition === GameMemberPosition.THIEF && member.status === GameMemberStatus.FREE);
+        
+        console.log("thiefMembers", thiefMembers.length);
+        console.log('thiefMembers', thiefMembers);
 
         const isGameEnd = thiefMembers.length === 0;
 

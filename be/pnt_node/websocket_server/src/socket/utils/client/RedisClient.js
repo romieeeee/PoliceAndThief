@@ -5,7 +5,7 @@ export class RedisClient {
         this.pubClient = redisDB.getPubClient();
         this.subClient = redisDB.getSubClient();
         this.RECONNECT_PREFIX = "websocket:reconnect:timer:";
-        this.GAME_TIMER_PREFIX = "websocket:game:timer:";
+        this.GAME_TIMER_PREFIX = "room:game:timer:";
     }
 
     /**
@@ -65,6 +65,7 @@ export class RedisClient {
      * gps + 멤버스탯
      * 패널티
      * 게임 세팅
+     * 
      */
 
     /**
@@ -80,11 +81,11 @@ export class RedisClient {
     }
 
     setGameSettingLock = async (gameId, time) => {
-        return await this.pubClient.set(`websocket:game:setting:lock:${gameId}`, "locked", "NX", "EX", time);
+        return await this.pubClient.set(`room:game:setting:lock:${gameId}`, "locked", "NX", "EX", time);
     }
 
     deleteGameSettingLock = async (gameId) => {
-        await this.pubClient.del(`websocket:game:setting:lock:${gameId}`);
+        await this.pubClient.del(`room:game:setting:lock:${gameId}`);
     }
 
     /**
@@ -97,6 +98,10 @@ export class RedisClient {
     getStartedCount = async (gameId) => {
         const startedCount = await this.pubClient.scard(this.getStartedString(gameId));
         return startedCount;
+    }
+
+    deleteStartedCount = async (gameId) => {
+        await this.pubClient.del(this.getStartedString(gameId));
     }
 
     /**
@@ -141,6 +146,7 @@ export class RedisClient {
 
         const res = await this.pubClient.hincrby(this.getPenaltyKeyString(gameId), memberId, 1);
         await this.pubClient.set(lockKey, "1", "EX", 10);
+        console.log("패널티 부여, member=", memberId);
         return res;
     }
 
@@ -155,9 +161,9 @@ export class RedisClient {
 
     getLocationKeyString = (gameId, memberId) => {
         if (memberId) {
-            return `room:${gameId}:locations:${memberId}`;
+            return `room:game:${gameId}:locations:${memberId}`;
         }
-        return `room:${gameId}:locations`;
+        return `room:game:${gameId}:locations`;
     }
 
 
@@ -179,45 +185,78 @@ export class RedisClient {
      */
     setGameTimerLock = async (gameId) => {
         // 키가 존재할땐 false 반환, 키가 존재하지 않을땐 생성후 true 반환
-        return await this.pubClient.set(`websocket:game:timer:lock:${gameId}`, "locked", "NX", "EX", 5);
+        return await this.pubClient.set(this.getGameTimerLockKeyString(gameId), "locked", "NX", "EX", 5);
+    }
+
+    deleteGameTimerLock = async (gameId) => {
+        await this.pubClient.del(this.getGameTimerLockKeyString(gameId));
     }
 
     // time은 초단위
     setGameTimer = async (gameId, time) => {
-        return await this.pubClient.set(`websocket:game:timer:${gameId}`, Date.now().toString(), "EX", time);
+        return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", time);
     }
 
     getGameTimer = async (gameId) => {
-        const gameTimer = await this.pubClient.get(`websocket:game:timer:${gameId}`);
+        const gameTimer = await this.pubClient.get(this.getGameTimerKeyString(gameId));
         return parseInt(gameTimer);
     }
 
     deleteGameTimer = async (gameId) => {
-        await this.pubClient.del(`websocket:game:timer:${gameId}`);
+        await this.pubClient.del(this.getGameTimerKeyString(gameId));
     }
 
+    /**
+     * 게임에 관한 모든 캐시 삭제
+     * 
+     * 개발때 쓸
+     * 
+     * 게임이 종료되고 
+     */
+    deleteAllGameCachesByGameId = async (gameId) => {
+        await this.deleteAllLocations(gameId);
+        await this.pubClient.del(this.getPenaltyKeyString(gameId));
+        await this.pubClient.del(this.getGameSettingString(gameId));
+        await this.pubClient.del(this.getGameSettingLockString(gameId));
+        await this.deleteGameTimer(gameId);
+        await this.deleteGameTimerLock(gameId);
+        await this.pubClient.del(this.getStartedString(gameId));
+        await this.deleteStartedCount(gameId);
+    }
+
+    getGameTimerLock = async (gameId) => {
+        return await this.pubClient.get(this.getGameTimerLockKeyString(gameId));
+    }
+
+    getGameTimerKeyString = (gameId) => {
+        return `room:game:timer:${gameId}`;
+    }
+
+    getGameTimerLockKeyString = (gameId) => {
+        return `room:game:timer:lock:${gameId}`;
+    }
 
 
     getPenaltyKeyString = (gameId, memberId) => {
         if (memberId) {
-            return `room:${gameId}:penalty:${memberId}`;
+            return `room:game:penalty:${gameId}:${memberId}`;
         }
-        return `room:${gameId}:penalty`;
+        return `room:game:penalty:${gameId}`;
     }
 
     getPenaltyLockString = (gameId, memberId) => {
-        return `room:${gameId}:penalty:lock:${memberId}`;
+        return `room:game:penalty:lock:${gameId}:${memberId}`;
     }
 
     getGameSettingString = (gameId) => {
-        return `room:${gameId}:setting`;
+        return `room:game:setting:${gameId}`;
     }
 
     getGameSettingLockString = (gameId) => {
-        return `room:${gameId}:setting:lock`;
+        return `room:game:setting:lock:${gameId}`;
     }
 
     getStartedString = (gameId) => {
-        return `room:${gameId}:started`;
+        return `room:game:started:${gameId}`;
     }
 }

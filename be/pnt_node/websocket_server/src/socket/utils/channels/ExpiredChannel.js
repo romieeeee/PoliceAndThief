@@ -37,11 +37,13 @@ const expiredChannel = async (message, pubClient, chatIo, readyRoomIo, gameIo) =
         }
     }
 
-    // Key format: websocket:game:timer:<gameId>
-    // Example: websocket:game:timer:game-123
+    // Key format: room:game:timer:${gameId}
+    // Example: room:game:timer:123
     else if (key.startsWith(redisClient.GAME_TIMER_PREFIX)) {
         const parts = key.split(":");
         const gameId = parts[3];
+
+        if (gameId === 'lock') return;
 
         // 게임 종료 처리 => 컨트롤러에서 처리
         gameController.gameEnd(gameIo, redisClient, gameId, GameMemberPosition.THIEF);
@@ -56,12 +58,14 @@ const chatDisconnect = async (memberId, roomId, chatIo) => {
     chatIo.to(roomId).emit("user left", { memberId });
 }
 
+// => 비정상 로직이니까 만약 아무도 없다면 방 삭제
 const readyRoomDisconnect = async (memberId, roomId, readyRoomIo) => {
     await redisClient.deleteKeys("readyRoom", roomId, memberId);
 
     readyRoomIo.to(roomId).emit("user left", { memberId });
 }
 
+// => 비정상 로직이니까 만약 아무도 없다면 방 삭제 => 연쇄로 다 삭제.
 const gameDisconnect = async (memberId, roomId, gameIo) => {
     // 게임 접속 정보 업데이트
     const integerRoomId = parseInt(roomId.split("-")[1]);
