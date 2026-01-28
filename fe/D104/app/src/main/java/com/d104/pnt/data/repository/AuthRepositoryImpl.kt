@@ -11,6 +11,7 @@ import com.d104.pnt.data.remote.api.AuthApiService
 import com.d104.pnt.data.remote.model.request.CheckDuplicateRequest
 import com.d104.pnt.data.remote.model.request.LoginRequest
 import com.d104.pnt.data.remote.model.request.SignupRequest
+import com.d104.pnt.data.remote.model.request.SocialLoginRequest
 import com.d104.pnt.data.remote.model.response.DuplicateCheckResponse
 import com.d104.pnt.data.remote.model.response.LoginResponse
 import com.d104.pnt.data.remote.model.response.SignupResponse
@@ -47,6 +48,31 @@ class AuthRepositoryImpl @Inject constructor(
             apiService.login(LoginRequest(id, password))
         }
     }
+
+    override suspend fun socialLogin(
+        provider: String,
+        token: String
+    ): BaseResult<LoginResponse> {
+        Timber.d("=== Social Login Request ===")
+        Timber.d("Provider: $provider")
+        Timber.d("Token (first 50 chars): ${token.take(50)}...")
+        Timber.d("==========================")
+
+        return safeApiCall(
+            onSuccess = { response ->
+                saveLoginData(
+                    accessToken = response.accessToken,
+                    refreshToken = response.refreshToken,
+                    userId = response.member.id,
+                    memberId = response.member.memberId
+                )
+                Timber.d("✅ Social login data saved successfully")
+            }
+        ) {
+            apiService.socialLogin(SocialLoginRequest(provider, token))
+        }
+    }
+
 
     override suspend fun checkDuplicate(id: String): BaseResult<DuplicateCheckResponse> {
         return safeApiCall {
@@ -110,6 +136,9 @@ class AuthRepositoryImpl @Inject constructor(
         return dataStore.data.map { it[KEY_ACCESS_TOKEN] ?: "" }
     }
 
+    override fun getRefreshToken(): Flow<String> {
+        return dataStore.data.map { it[KEY_REFRESH_TOKEN] ?: "" }
+    }
 
     override suspend fun saveLoginData(
         accessToken: String,
@@ -126,6 +155,13 @@ class AuthRepositoryImpl @Inject constructor(
         }
 
         Timber.d("Login data saved for user: $userId")
+        Timber.d(
+            """
+                    accessToken = "${accessToken.take(10)}..."
+                    userId = "$userId
+                    memberId = "$memberId
+                """.trimIndent()
+        )
     }
 
     override suspend fun clearAuthData() {

@@ -32,6 +32,9 @@ android {
         manifestPlaceholders["CLIENT_ID"] = localProperties.getProperty("CLIENT_ID") ?: ""
         manifestPlaceholders["CLIENT_SECRET"] = localProperties.getProperty("CLIENT_SECRET") ?: ""
 
+        // Kakao Login
+        manifestPlaceholders["KAKAO_NATIVE_APP_KEY"] = localProperties.getProperty("KAKAO_NATIVE_APP_KEY") ?: ""
+
         buildConfigField(
             "String",
             "GOOGLE_MAP_API_KEY",
@@ -46,6 +49,11 @@ android {
             "String",
             "SETTING_MAP_ID",
             "\"${localProperties["SETTING_MAP_ID"]}\""
+        )
+        buildConfigField(
+            "String",
+            "KAKAO_NATIVE_APP_KEY",
+            "\"${localProperties["KAKAO_NATIVE_APP_KEY"]}\""
         )
         buildConfigField(
             "String",
@@ -198,6 +206,9 @@ dependencies {
 
     // Wheel Date Picker
     implementation("com.github.commandiron:WheelPickerCompose:1.1.11")
+
+    // KaKao Login
+    implementation("com.kakao.sdk:v2-user:2.23.2")
 
     // Test
     testImplementation(libs.junit)
