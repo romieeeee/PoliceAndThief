@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.games.game.api.controller;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomSettingUpdateRequest;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomSettingGetResponse;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomSettingUpdateResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomSettingService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
@@ -17,6 +18,21 @@ public class GameRoomSettingController {
 
     private final GameRoomSettingService gameRoomSettingService;
 
+    @GetMapping("/{roomId}/settings")
+    public CommonResponse<GameRoomSettingGetResponse> getSettings(@PathVariable Long roomId) {
+
+        Long actorMemberId = SecurityUtils.currentMemberId();
+
+        GameRoomSettingGetResponse data =
+                gameRoomSettingService.getSettings(actorMemberId, roomId);
+
+        return new CommonResponse<>(
+                data,
+                "게임방 설정 조회 성공",
+                HttpStatus.OK
+        );
+    }
+    
     @PatchMapping("/{roomId}/settings")
     public CommonResponse<GameRoomSettingUpdateResponse> updateSettings(
             @PathVariable Long roomId,
