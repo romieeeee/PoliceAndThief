@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.games.game.api.req;
 
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
+import com.pnt.pnt_spring.domain.games.game.enums.WinTeam;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -12,7 +13,7 @@ import java.util.List;
 @ToString
 public class GameResultRequest {
     private Long gameId;
-    private Position winTeam; // "POLICE" or "THIEF"
+    private WinTeam winTeam; // "POLICE" or "THIEF"
     private List<MemberStat> memberStats;
 
     @Getter

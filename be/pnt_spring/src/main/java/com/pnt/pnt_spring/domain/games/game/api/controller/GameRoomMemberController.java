@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.games.game.api.controller;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomJoinRequest;
+import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomKickRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomPositionRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomReadyRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomJoinResponse;
@@ -38,6 +39,16 @@ public class GameRoomMemberController {
                 HttpStatus.OK
         );
     }
+
+    @DeleteMapping("/{roomId}/members/me")
+    public CommonResponse<Void> leave(@PathVariable Long roomId) {
+        Long memberId = SecurityUtils.currentMemberId();
+        gameRoomMemberService.leave(memberId, roomId);
+        return new CommonResponse<>(
+                null,
+                "게임방 나가기 성공",
+                HttpStatus.OK
+        );    }
 
     /**
      * 게임방 멤버 목록 조회
@@ -88,4 +99,15 @@ public class GameRoomMemberController {
                 HttpStatus.OK
         );
     }
+
+    @PostMapping("/{roomId}/members/kick")
+    public CommonResponse<Void> kick(@PathVariable Long roomId,
+                                     @Valid @RequestBody GameRoomKickRequest req) {
+        Long actorId = SecurityUtils.currentMemberId();
+        gameRoomMemberService.kick(actorId, roomId, req.getTargetMemberId(), req.getReason());
+        return new CommonResponse<>(
+                null,
+                "게임방 강퇴 처리 성공",
+                HttpStatus.OK
+        );    }
 }

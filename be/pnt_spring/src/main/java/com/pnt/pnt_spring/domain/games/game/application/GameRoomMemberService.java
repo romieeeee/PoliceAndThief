@@ -12,9 +12,13 @@ public interface GameRoomMemberService {
 
     GameRoomJoinResponse joinRoom(Long memberId, GameRoomJoinRequest req);
 
+    void leave(Long memberId, Long roomId);
+
     GameRoomMemberListResponse getRoomMembers(Long roomId);
 
     GameRoomReadyResponse updateReady(Long roomId, Long memberId, GameRoomReadyRequest req);
 
     GameRoomPositionResponse pickPosition(Long actorMemberId, Long roomId, GameRoomPositionRequest req);
+
+    void kick(Long actorId, Long roomId, Long targetMemberId, String reason);
 }

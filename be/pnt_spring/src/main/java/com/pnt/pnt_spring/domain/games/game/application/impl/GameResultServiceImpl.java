@@ -8,6 +8,7 @@ import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
+import com.pnt.pnt_spring.domain.games.game.enums.WinTeam;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
@@ -50,8 +51,8 @@ public class GameResultServiceImpl implements GameResultService {
             throw new BusinessException(ErrorCode.GAME_ALREADY_ENDED);
         }
 
-        // 게임 상태 업데이트 (종료 시간, 승리 팀)
-        game.finish(String.valueOf(request.getWinTeam()));
+        // 게임 종료 상태 저장 (winner: "POLICE" or "THIEF
+        game.end(request.getWinTeam());
 
         // 멤버별 통계 저장 (walk, survived 등)
         for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
@@ -158,4 +159,5 @@ public class GameResultServiceImpl implements GameResultService {
     public Long calculateSurvivalTime(Game game, GameMember member) {
         return 0L;
     }
+
 }
