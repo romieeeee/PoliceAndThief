@@ -34,6 +34,7 @@ fun PixelInputField(
     keyboardType: KeyboardType = KeyboardType.Text,
     backgroundColor: Color = Color.White,
     borderColor: Color = Color.White,
+    enabled: Boolean = true
 ) {
     Column(modifier = modifier) {
         PixelContainer(
@@ -46,6 +47,7 @@ fun PixelInputField(
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
+                enabled = enabled,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.Black),
