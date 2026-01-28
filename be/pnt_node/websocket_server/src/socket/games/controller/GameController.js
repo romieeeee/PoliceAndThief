@@ -629,7 +629,7 @@ export class GameController {
             }, 5000);
 
             // 게임 종료 처리 => spring boot에 요청을 보내야함.
-
+            
 
             // 게임 종료 알림
             // 게임 종료 알림

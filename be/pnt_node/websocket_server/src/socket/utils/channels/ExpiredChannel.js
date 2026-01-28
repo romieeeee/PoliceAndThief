@@ -1,11 +1,12 @@
 import { RedisClient } from "../client/RedisClient.js";
 import { GameController } from "../../games/controller/GameController.js";
 import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemberPosition.js";
+import axios from "axios";
 
 const redisClient = new RedisClient();
 const gameController = new GameController();
 
-const expiredChannel = async (message, pubClient, chatIo, readyRoomIo, gameIo) => {
+const expiredChannel = async (message, pubClient, chatIo, roomIo, gameIo) => {
 
     const key = message;
 
@@ -27,8 +28,8 @@ const expiredChannel = async (message, pubClient, chatIo, readyRoomIo, gameIo) =
 
             if (namespace === "chat") {
                 chatDisconnect(memberId, roomId, chatIo, pubClient);
-            } else if (namespace === "readyRoom") {
-                readyRoomDisconnect(memberId, roomId, readyRoomIo, pubClient);
+            } else if (namespace === "room") {
+                roomDisconnect(memberId, roomId, roomIo, pubClient);
             } else if (namespace === "game") {
                 gameDisconnect(memberId, roomId, gameIo, pubClient);
             }
@@ -59,17 +60,34 @@ const chatDisconnect = async (memberId, roomId, chatIo) => {
 }
 
 // => 비정상 로직이니까 만약 아무도 없다면 방 삭제
-const readyRoomDisconnect = async (memberId, roomId, readyRoomIo) => {
-    await redisClient.deleteKeys("readyRoom", roomId, memberId);
+// => 이거는 그냥 api 호출하면 됨.
+const roomDisconnect = async (memberId, roomId, roomIo) => {
+    await redisClient.deleteKeys("room", roomId, memberId);
 
-    readyRoomIo.to(roomId).emit("user left", { memberId });
+    const response = await axios.delete(`${process.env.SPRING_API_URL}/spring/rooms/${roomId}/members/me`, {
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${this.socket.data.accessToken}`
+        }
+    });
+
+    if (response.status !== 200) {
+        // 에러 처리 해야함. => 이건 무식한 방법이긴 한데 어쩔 수 없다. 유저가 이미 소켓을 끊은 상황이기때문에... => mq 넣는것 말고는 방법이 없는것 같다.
+        await axios.delete(`${process.env.SPRING_API_URL}/spring/rooms/${roomId}/members/me`, {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${this.socket.data.accessToken}`
+            }
+        });
+    }
+    console.log("user_left", { memberId, roomId });
+    roomIo.to(roomId).emit("user left", { memberId });
 }
 
 // => 비정상 로직이니까 만약 아무도 없다면 방 삭제 => 연쇄로 다 삭제.
 const gameDisconnect = async (memberId, roomId, gameIo) => {
     // 게임 접속 정보 업데이트
-    const integerRoomId = parseInt(roomId.split("-")[1]);
-    await gameController.gameMemberService.updateInGameConnected(integerRoomId, memberId, false);
+    await gameController.gameMemberService.updateInGameConnected(roomId, memberId, false);
 
     await redisClient.deleteKeys("game", roomId, memberId);
 
