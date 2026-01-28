@@ -1,5 +1,6 @@
 package com.pnt.pnt_spring.domain.games.game.entity;
 
+import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -22,7 +23,7 @@ public class GameMemberStat extends BaseEntity {
     private GameMember gameMember;
 
     @Enumerated(EnumType.STRING)
-    private GameMemberPosition position;
+    private Position position;
 
     private Integer walk = 0;
 
@@ -42,7 +43,7 @@ public class GameMemberStat extends BaseEntity {
     }
 
     @Builder
-    public GameMemberStat(GameMember gameMember, GameMemberPosition position, Integer walk, Integer arrestCount, Integer longestSurvived) {
+    public GameMemberStat(GameMember gameMember, Position position, Integer walk, Integer arrestCount, Integer longestSurvived) {
         this.gameMember = gameMember;
         this.position = position;
         this.walk = walk;

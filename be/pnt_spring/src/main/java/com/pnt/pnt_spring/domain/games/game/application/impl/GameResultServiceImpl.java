@@ -3,7 +3,11 @@ package com.pnt.pnt_spring.domain.games.game.application.impl;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameResultRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameResultResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameResultService;
-import com.pnt.pnt_spring.domain.games.game.entity.*;
+import com.pnt.pnt_spring.domain.games.game.entity.Game;
+import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
+import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
+import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
+import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
@@ -41,13 +45,13 @@ public class GameResultServiceImpl implements GameResultService {
         Game game = gameRepository.findById(request.getGameId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
-        if (game.getStatus() == GameStatus.FINISHED) {
-            log.warn("이미 종료된 게임입니다.");
-            return;
+        // 이미 끝났다면
+        if (game.getStatus() == GameStatus.ENDED) {
+            throw new BusinessException(ErrorCode.GAME_ALREADY_ENDED);
         }
 
         // 게임 상태 업데이트 (종료 시간, 승리 팀)
-        game.finish(request.getWinTeam().name());
+        game.finish(String.valueOf(request.getWinTeam()));
 
         // 멤버별 통계 저장 (walk, survived 등)
         for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
@@ -98,7 +102,7 @@ public class GameResultServiceImpl implements GameResultService {
         // 응답 반환
         return GameResultResponse.builder()
                 .gameId(game.getId())
-                .winner(game.getWinTeam())
+                .winner(game.getWinTeam().toString())
                 .endedAt(game.getEndTime())
                 .mvp(mvpStat != null ? GameResultResponse.MvpResponse.builder()
                         .memberId(mvpStat.getGameMember().getMember().getId())
@@ -121,8 +125,8 @@ public class GameResultServiceImpl implements GameResultService {
                 : "없음";
 
         List<GameMember> members = gameMemberRepository.findAllByGameId(game.getId());
-        int policeCount = (int) members.stream().filter(m -> m.getGivenPosition() == GameMemberPosition.POLICE).count();
-        int thiefCount = (int) members.stream().filter(m -> m.getGivenPosition() == GameMemberPosition.THIEF).count();
+        int policeCount = (int) members.stream().filter(m -> m.getGivenPosition() == Position.POLICE).count();
+        int thiefCount = (int) members.stream().filter(m -> m.getGivenPosition() == Position.THIEF).count();
         int durationSec = (int) Duration.between(game.getStartTime(), game.getEndTime()).toSeconds();
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");

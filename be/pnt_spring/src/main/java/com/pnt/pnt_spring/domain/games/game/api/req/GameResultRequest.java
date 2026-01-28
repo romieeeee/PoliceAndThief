@@ -1,6 +1,6 @@
 package com.pnt.pnt_spring.domain.games.game.api.req;
 
-import com.pnt.pnt_spring.domain.games.game.entity.GameMemberPosition;
+import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -12,7 +12,7 @@ import java.util.List;
 @ToString
 public class GameResultRequest {
     private Long gameId;
-    private GameMemberPosition winTeam; // "POLICE" or "THIEF"
+    private Position winTeam; // "POLICE" or "THIEF"
     private List<MemberStat> memberStats;
 
     @Getter
@@ -20,7 +20,7 @@ public class GameResultRequest {
     @ToString
     public static class MemberStat {
         private Long gameMemberId;
-        private GameMemberPosition position;
+        private Position position;
         private Integer walk;
         private Integer longestSurvived;
     }

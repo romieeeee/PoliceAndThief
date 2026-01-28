@@ -5,7 +5,6 @@ import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
 import jakarta.persistence.LockModeType;
-import com.pnt.pnt_spring.domain.games.game.entity.GameMemberPosition;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -84,5 +83,5 @@ public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
     List<GameMember> findAllByGameIdWithMember(@Param("gameId") Long gameId);
     // 특정 게임에서 특정 역할을 가진 유저들 조회
     // Entity의 필드명(givenPosition)에 맞춰 쿼리 메소드를 작성합니다.
-    List<GameMember> findAllByGameIdAndGivenPosition(Long gameId, GameMemberPosition givenPosition);
+    List<GameMember> findAllByGameIdAndGivenPosition(Long gameId, Position givenPosition);
 }
