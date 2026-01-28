@@ -11,7 +11,7 @@ import lombok.ToString;
 @AllArgsConstructor
 public class AiNewsResponse {
     private Long gameId;      // 어떤 게임의 뉴스인지 식별 (필수)
-    private String headline;  // 뉴스 제목
+    private String title;  // 뉴스 제목
     private String content;   // 뉴스 본문
 
 }

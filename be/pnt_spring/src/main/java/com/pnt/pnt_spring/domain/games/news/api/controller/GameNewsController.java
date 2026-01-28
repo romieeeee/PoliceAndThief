@@ -21,6 +21,7 @@ public class GameNewsController {
     @Operation(summary = "AI 뉴스 저장", description = "FastAPI 서버로부터 생성된 뉴스를 받아 DB에 저장합니다.")
     @PostMapping("/result")
     public CommonResponse<Void> saveGameNews(@RequestBody AiNewsResponse response) {
+        gameNewsService.saveNews(response);
         return new CommonResponse<>(null, "AI 뉴스 저장 성공", HttpStatus.OK);
     }
 
