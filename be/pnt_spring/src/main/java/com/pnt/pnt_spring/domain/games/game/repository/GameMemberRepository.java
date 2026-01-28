@@ -111,6 +111,9 @@ public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
 
     Optional<GameMember> findFirstByGameIdAndIsDeletedFalseOrderByCreatedAtAsc(Long gameId);
 
+    boolean existsByMemberIdAndIsDeletedFalse(Long memberId);
+
+    Optional<GameMember> findFirstByMemberIdAndIsDeletedFalse(Long memberId);
 
 
 }

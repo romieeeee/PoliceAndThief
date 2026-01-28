@@ -34,24 +34,44 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
     @Override
     public GameRoomJoinResponse joinRoom(Long memberId, GameRoomJoinRequest req) {
         if (req == null || req.getRoomCode() == null || req.getRoomCode().isBlank()) {
-            throw new IllegalArgumentException("roomCode가 필요합니다.");
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
         }
 
         String roomCode = req.getRoomCode().trim();
 
         Game game = gameRepository.findByRoomCodeForUpdate(roomCode)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 방 코드입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
 
         if (!game.isWaiting()) {
-            throw new IllegalStateException("이미 시작된 게임방에는 참여할 수 없습니다.");
+            throw new BusinessException(ErrorCode.ROOM_ALREADY_STARTED);
+        }
+
+        //  1) 내가 "이미 이 방에 참여 중"이면 멱등 처리(그대로 성공 응답)
+        if (gameMemberRepository.existsByGameIdAndMemberIdAndIsDeletedFalse(game.getId(), memberId)) {
+            GameMember gm = gameMemberRepository.findByGameIdAndMemberIdForUpdate(game.getId(), memberId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR));
+
+            return new GameRoomJoinResponse(
+                    game.getId(),
+                    game.getRoomCode(),
+                    memberId,
+                    gm.getPreferPosition(),
+                    gm.getGivenPosition(),
+                    gm.getReady()
+            );
+        }
+
+        //  2) 내가 "다른 방에 참여 중"이면 차단
+        if (gameMemberRepository.existsByMemberIdAndIsDeletedFalse(memberId)) {
+            throw new BusinessException(ErrorCode.ROOM_ALREADY_JOINED);
         }
 
         GameSetting setting = gameSettingRepository.findById(game.getId())
-                .orElseThrow(() -> new IllegalArgumentException("게임 설정이 존재하지 않습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
 
         long current = gameMemberRepository.countByGameIdAndIsDeletedFalse(game.getId());
         if (current >= setting.getPlayerCount()) {
-            throw new IllegalStateException("게임방 정원이 가득 찼습니다.");
+            throw new BusinessException(ErrorCode.ROOM_FULL);
         }
 
         Member memberRef = memberRepository.getReferenceById(memberId);
@@ -63,7 +83,7 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
             gm = GameMember.join(game, memberRef);
             gameMemberRepository.save(gm);
         } else {
-            gm.rejoin();
+            gm.rejoin(); // 이전에 들어왔다가 나갔던 기록이 있으면 복구
         }
 
         return new GameRoomJoinResponse(
@@ -75,6 +95,7 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
                 gm.getReady()
         );
     }
+
 
     @Override
     public void leave(Long memberId, Long roomId) {
