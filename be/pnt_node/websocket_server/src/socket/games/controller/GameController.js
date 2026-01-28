@@ -11,6 +11,15 @@ import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
 import { GameMissionService } from "../application/GameMissionService.js";
 import { TurfService } from "../application/TurfService.js";
 import { MQConfig } from "../../../global/mq/MQConfig.js";
+import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemberPosition.js";
+import { GameMemberStatus } from "../../../global/db/sequelize/status/GameMemberStatus.js";
+import { GameSkillService } from "../application/GameSkillService.js";
+import { GameMemberStatService } from "../application/GameMemberStatService.js";
+import { RedisClient } from "../../utils/client/RedisClient.js";
+import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
+import { GameMissionService } from "../application/GameMissionService.js";
+import { TurfService } from "../application/TurfService.js";
+import { MQConfig } from "../../../global/mq/MQConfig.js";
 
 export class GameController {
     constructor(io, socket, mq) {
@@ -26,6 +35,13 @@ export class GameController {
         this.turfService = new TurfService();
         this.mq = mq;
     }
+
+    /**
+     * 게임 방 접속
+     * {
+     *  'gameId': 1
+     * }
+     */
 
     isActiveRoom = async (gameId) => {
         try {
@@ -136,6 +152,69 @@ export class GameController {
      *   "longestSurvived" : 1 (초단위)
      * }
      */
+    /**
+     * redis에 게임 설정을 저장
+     * redis에 게임 타이머를 저장
+     * 게임 시작 시간을 db에 저장
+     * 
+     * 시작 이벤트 emit.
+     * 
+     * 현재 시간으로 부터 5초 뒤에 시작.
+     */
+    startGame = async () => {
+        try {
+            const gameId = this.socket.data.gameId;
+
+            const integerGameId = parseInt(gameId.split("-")[1]);
+
+            const gameSetting = await this.gameSettingService.findGameSetting(integerGameId);
+            const startedCount = await this.redisClient.getStartedCount(gameId);
+
+            if (startedCount < gameSetting.policeCount + gameSetting.thiefCount) {
+                return;
+            }
+
+            const isMine = await this.redisClient.setGameSettingLock(gameId, gameSetting.timeLimit);
+
+            if (!isMine) {
+                return;
+            }
+
+            await this.redisClient.setGameSetting(gameId, gameSetting);
+
+            this.io.to(gameId).emit("get start game", {
+                message: "start game",
+                gameId: integerGameId,
+                willStartAt: new Date(Date.now() + 5000).toISOString(),
+            });
+
+            setTimeout(async () => {
+                await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);
+
+                await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString() });
+            }, 5000);
+        } catch (error) {
+            console.error("startGame error", error);
+            sendError(this.socket, error, "GameError");
+        }
+    }
+
+
+    /**
+     * GPS 위치 정보
+     * 도둑의 탈옥 로직
+     * 도둑의 이송 로직
+     * 경계선 벗어남
+     *  - 패널티 부여 및 초과시 체포
+     * 
+     * {
+     *   "gameId": 10,
+     *   "lat": 35.0,
+     *   "lng": 129.0,
+     *   "walk: 1 (걸음수),
+     *   "longestSurvived" : 1 (초단위)
+     * }
+     */
     postGps = async (payload) => {
         try {
             if (!payload || !payload.lat || !payload.lng) {
@@ -145,6 +224,7 @@ export class GameController {
             const { lat, lng, walk, longestSurvived } = payload;
             const gameId = this.socket.data.gameId;
             const integerGameId = parseInt(gameId.split("-")[1]);
+
             const memberId = this.socket.data.memberId; // 미들웨어에서 가져온 ID
             const gameMember = await this.gameMemberService.findMemberGame(integerGameId, memberId);
             const position = gameMember.givenPosition;
@@ -170,6 +250,7 @@ export class GameController {
             const gameSetting = await this.redisClient.getGameSetting(gameId);
             const isInBoundary = await this.turfService.checkUserInBoundary([lng, lat], gameSetting.boundaryGeo.coordinates[0]);
 
+
             if (!isInBoundary) {
                 const res = {
                     gameId: integerGameId,
@@ -190,7 +271,7 @@ export class GameController {
             // 도둑이고, 상태가 PRISON 일때 탈옥 판별
             // 감옥에서 10m 이상 벗어났을때 탈옥 (오차범위 5m) 
             if (position === GameMemberPosition.THIEF && status === GameMemberStatus.PRISON
-                && !(await this.gameSettingService.checkUserInPrison(integerGameId, lng, lat))) {
+                && !(await this.turfService.checkUserInPrison([lng, lat], gameSetting.prisonLocation.coordinates))) {
 
                 await this.gameMemberService.updateMemberStatus(integerGameId, memberId, GameMemberStatus.FREE);
 
@@ -221,12 +302,37 @@ export class GameController {
                 return;
             }
 
+            // 이송 중이고, 감옥 범위 안에 들어왔을때
+            if (position === GameMemberPosition.THIEF && status === GameMemberStatus.TRANSFER
+                && await this.turfService.checkUserInPrison([lng, lat], gameSetting.prisonLocation.coordinates)) {
+
+                await this.gameMemberService.updateMemberStatus(integerGameId, memberId, GameMemberStatus.PRISON);
+                const res = {
+                    gameId: integerGameId,
+                    thiefId: memberId,
+                    status: GameMemberStatus.PRISON,
+                    arrestedAt: new Date().toISOString(),
+                };
+                this.io.to(gameId).emit("modify member status", res);
+                console.log("modify from transfer to prison member status", res);
+                return;
+            }
+
         } catch (error) {
             console.error("postGps error", error);
             sendError(this.socket, error, "GameError");
         }
     }
 
+    /**
+     * {
+        "gameId": 10,
+        "policeId": 1,
+        "thiefId": 2,
+        "lat": 35.0,
+        "lng": 129.0,
+    } 
+     */
     /**
      * 게임인포 동기화
      * 게임 timer는 get gps에서 계산해서 보내주므로 여기서는 계산하지 않음
@@ -297,19 +403,18 @@ export class GameController {
     postArrest = async (payload) => {
         try {
             console.log("postArrest", payload);
-            const { strGameId, policeId, thiefId, lat, lng } = payload;
-            const integerGameId = parseInt(strGameId);
+            const { gameId, policeId, thiefId, lat, lng } = payload;
 
-            const gameId = `game-${strGameId}`;
+            const strGameId = `game-${gameId}`;
 
-            const thief = await this.gameMemberService.findMemberGame(integerGameId, thiefId);
+            const thief = await this.gameMemberService.findMemberGame(gameId, thiefId);
 
             // 도둑이 아닐때 체포 실패
             if (thief.position !== GameMemberPosition.THIEF) {
                 const res = {
-                    gameId: integerGameId,
-                    policeId: integerPoliceId,
-                    thiefId: integerThiefId,
+                    gameId: gameId,
+                    policeId: policeId,
+                    thiefId: thiefId,
                     result: "FAIL",
                     reason: "NOT_THIEF",
                     arrestedAt: new Date().toISOString(),
@@ -322,9 +427,9 @@ export class GameController {
             // 이미 체포가 됐을때 다시 체포하면 실패
             if (thief.status !== GameMemberStatus.FREE) {
                 const res = {
-                    gameId: integerGameId,
-                    policeId: integerPoliceId,
-                    thiefId: integerThiefId,
+                    gameId: gameId,
+                    policeId: policeId,
+                    thiefId: thiefId,
                     result: "FAIL",
                     reason: "ALREADY_CAUGHT",
                     arrestedAt: new Date().toISOString(),
@@ -334,11 +439,11 @@ export class GameController {
                 return;
             }
 
-            const police = await this.gameMemberService.findMemberGame(integerGameId, policeId);
+            const police = await this.gameMemberService.findMemberGame(gameId, policeId);
 
             if (police.position !== GameMemberPosition.POLICE) {
                 const res = {
-                    gameId: integerGameId,
+                    gameId: gameId,
                     policeId: policeId,
                     thiefId: integerThiefId,
                     result: "FAIL",
@@ -351,11 +456,11 @@ export class GameController {
                 return;
             }
 
-            await this.gameService.processArrest(integerGameId, thiefId, policeId);
+            await this.gameService.processArrest(gameId, thiefId, policeId);
 
             // 정상 체포 로직
             const res = {
-                gameId: integerGameId,
+                gameId: gameId,
                 policeId: policeId,
                 thiefId: integerThiefId,
                 result: "SUCCESS",
@@ -364,12 +469,12 @@ export class GameController {
             };
 
             // 게임 종료 조건 검사
-            const isGameEnd = await this.gameService.checkGameHaveToFinish(integerGameId);
+            const isGameEnd = await this.gameService.checkGameHaveToFinish(gameId);
 
             if (isGameEnd) {
-                await this.gameEnd(integerGameId, GameMemberPosition.THIEF);
+                await this.gameEnd(gameId, GameMemberPosition.THIEF);
 
-                console.log("game end", integerGameId);
+                console.log("game end", gameId);
                 return;
             }
 
@@ -383,6 +488,13 @@ export class GameController {
         }
     }
 
+    /**
+     * 스킬 사용
+     * { 
+     *  "gameId": 1,
+     *  "policeId": 1
+     * }
+     */
     /**
      * 스킬 사용
      * { 
@@ -424,14 +536,22 @@ export class GameController {
 
             this.io.to(gameId).emit("get skill use", res);
             console.log("success skill use", res);
-
-            // Validation and logic here
         } catch (error) {
             console.error("postSkillUse error", error);
             sendError(this.socket, error, "GameError");
         }
     }
 
+    /**
+     * mq에 이미지 전송
+     * 
+     * req : {
+     *  gameId: 1,
+     *  memberId: 1,
+     *  gameMissionId: 1,
+     *  imageUrl: "url" 
+     * } 
+     */
     /**
      * mq에 이미지 전송
      * 
