@@ -1,17 +1,28 @@
 package com.d104.pnt.data.repository
 
+import android.content.Context
 import android.location.Location
+import com.d104.pnt.BuildConfig
+import com.d104.pnt.data.remote.api.NaverApiService
 import com.d104.pnt.domain.model.DraggableLatLng
+import com.d104.pnt.domain.model.GeoLocationInfo
 import com.d104.pnt.domain.model.PlayerLocation
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.PolyUtil
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class LocationRepositoryImpl @Inject constructor() : LocationRepository {
+class LocationRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val naverApiService: NaverApiService
+) : LocationRepository {
     // 내부 수정용 MutableStateFlow
     private val _currentLocation = MutableStateFlow<Location?>(null)
     private val _polygonPoints = MutableStateFlow<List<LatLng>>(emptyList())
@@ -90,6 +101,38 @@ class LocationRepositoryImpl @Inject constructor() : LocationRepository {
     override fun dismissCreateGame() {
         _polygonPoints.value = emptyList()
         _prisonLocation.value = null
+    }
+
+    override suspend fun getAddressFromLatLng(latitude: Double, longitude: Double): GeoLocationInfo {
+        return withContext(Dispatchers.IO) {
+            try {
+                // local.properties에 저장한 키 가져오기
+                val clientId = BuildConfig.CLIENT_ID
+                val clientSecret = BuildConfig.CLIENT_SECRET
+
+                // ⭐️ 네이버는 "경도,위도" 문자열로 보냄
+                val coords = "$longitude,$latitude"
+
+                val response = naverApiService.getAddress(
+                    clientId = clientId,
+                    clientSecret = clientSecret,
+                    coords = coords
+                )
+
+                if (response.results.isNotEmpty()) {
+                    // results[0]은 보통 legalcode(법정동) 또는 admcode(행정동) 중 첫 번째 것
+                    val region = response.results[0].region
+
+                    return@withContext GeoLocationInfo(
+                        major = region.area1.name, // 서울특별시
+                        middle = region.area2.name, // 강남구
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            return@withContext GeoLocationInfo()
+        }
     }
 
     override fun DummyPlayer() {
