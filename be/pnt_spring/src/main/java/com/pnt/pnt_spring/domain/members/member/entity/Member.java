@@ -35,15 +35,13 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private MemberRole role;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "profile_id")
+    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private MemberProfile memberProfile;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private MemberAuthProvider memberAuthProvider;
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "stat_id")
+    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private MemberStat memberStat;
 
     @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
