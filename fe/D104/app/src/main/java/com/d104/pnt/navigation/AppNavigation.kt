@@ -1,6 +1,8 @@
 package com.d104.pnt.navigation
 
 import android.app.Activity
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -33,6 +35,7 @@ import timber.log.Timber
  * 전체 앱 네비게이션
  * 설정 복귀 시 자동 재확인 처리 개선
  */
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AppNavigation(
@@ -162,6 +165,9 @@ fun AppNavigation(
                     onSuccess = {
                         currentScreen = AppScreen.Login
                         Timber.d("Signup success -> Login")
+                    },
+                    onBack = {
+                        currentScreen = AppScreen.Login
                     }
                 )
             }

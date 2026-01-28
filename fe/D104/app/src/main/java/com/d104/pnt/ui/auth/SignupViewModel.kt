@@ -2,7 +2,6 @@ package com.d104.pnt.ui.auth
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.response.SignupResponse
@@ -20,6 +19,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.random.Random
 
 @RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
@@ -40,8 +40,8 @@ class SignupViewModel @Inject constructor(
     private val _nickname = MutableStateFlow("")
     val nickname: StateFlow<String> = _nickname.asStateFlow()
 
-    private val _birth = MutableStateFlow(TextFieldValue(""))
-    val birth: StateFlow<TextFieldValue> = _birth.asStateFlow()
+    private val _birth = MutableStateFlow("")
+    val birth: StateFlow<String> = _birth.asStateFlow()
 
     // ===== 중복 체크 상태 =====
     private val _isDuplicateChecked = MutableStateFlow(false)
@@ -112,20 +112,18 @@ class SignupViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
-    // 생년월일 유효성 길이만 체크 (YYYY.MM.DD = 10자)
+    // 생년월일 유효성 (YYYY.MM.DD = 10자)
     val isBirthValid: StateFlow<Boolean> = birth.map { birthValue ->
-        val text = birthValue.text
-        val isValid = text.length == 10
-        Timber.d("isBirthValid calculated: birth='$text', length=${text.length}, isValid=$isValid")
+        val isValid = birthValue.length == 10
+        Timber.d("isBirthValid calculated: birth='$birthValue', length=${birthValue.length}, isValid=$isValid")
         isValid
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val birthErrorMessage: StateFlow<String> =
         birth.map { birthValue ->
-            val text = birthValue.text
             when {
-                text.isEmpty() -> ""
-                text.length < 10 -> ""
+                birthValue.isEmpty() -> ""
+                birthValue.length < 10 -> ""
                 else -> ""
             }
         }.stateIn(
@@ -160,7 +158,7 @@ class SignupViewModel @Inject constructor(
         _nickname.value = newNickname
     }
 
-    fun updateBirth(newBirth: TextFieldValue) {
+    fun updateBirth(newBirth: String) {
         _birth.value = newBirth
     }
 
@@ -204,14 +202,12 @@ class SignupViewModel @Inject constructor(
         val pwCheck = _pw.value.length in 8..16
         val pwMatchCheck = _pw.value == _pwConfirm.value
         val nicknameCheck = _nickname.value.length in 2..10
-        val birthCheck = _birth.value.text.length == 10 && isBirthValid.value
+        val birthCheck = _birth.value.length == 10
         val duplicateCheck = _isDuplicateChecked.value
         val notDuplicatedCheck = !_isDuplicated.value
 
-        // birthValidCheck를 제거하고 birthLengthCheck만 사용
-        val birthLengthCheck = _birth.value.text.length == 10
         val result = idCheck && pwCheck && pwMatchCheck && nicknameCheck &&
-                birthLengthCheck && duplicateCheck && notDuplicatedCheck
+                birthCheck && duplicateCheck && notDuplicatedCheck
 
         Timber.d(
             """
@@ -223,10 +219,9 @@ class SignupViewModel @Inject constructor(
             2. PW 길이 (8~16자): $pwCheck (actual: ${_pw.value.length})
             3. PW 일치: $pwMatchCheck
             4. 닉네임 길이 (2~10자): $nicknameCheck (actual: ${_nickname.value.length})
-            5. 생년월일 길이: ${_birth.value.text.length == 10} (actual: ${_birth.value.text.length})
-            6. 생년월일 유효성: ${isBirthValid.value}
-            7. 중복 체크 완료: $duplicateCheck
-            8. 중복 아님: $notDuplicatedCheck (isDuplicated=${_isDuplicated.value})
+            5. 생년월일 길이: $birthCheck (actual: ${_birth.value.length})
+            6. 중복 체크 완료: $duplicateCheck
+            7. 중복 아님: $notDuplicatedCheck (isDuplicated=${_isDuplicated.value})
             =====================================
         """.trimIndent()
         )
@@ -247,7 +242,7 @@ class SignupViewModel @Inject constructor(
             _signupState.value = UiState.Loading
             Timber.d("Signup started for ID: ${_id.value}")
 
-            val formattedBirth = formatBirthForServer(_birth.value.text)
+            val formattedBirth = formatBirthForServer(_birth.value)
 
             try {
                 when (val result = authRepository.signup(
@@ -255,7 +250,7 @@ class SignupViewModel @Inject constructor(
                     password = _pw.value,
                     passwordConfirm = _pwConfirm.value,
                     nickname = _nickname.value,
-                    email = "",
+                    email = Random.nextInt(1_000_000).toString(), // TODO: 서버 수정 전 임시 수정 후엔 빈 스트링으로 수정
                     birth = formattedBirth,
                     avatarUrl = null
                 )) {
@@ -282,5 +277,5 @@ class SignupViewModel @Inject constructor(
 }
 
 private fun formatBirthForServer(birth: String): String {
-    return birth.replace(".", "-")   // 구분자 변경
+    return birth.replace(".", "-")   // YYYY.MM.DD -> YYYY-MM-DD
 }
