@@ -6,26 +6,26 @@ import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.StateFlow
 
 interface ChatRepository {
-    var currentChatRoom: Int?
+    var currentChatRoom: Long?
     var currentChatRoomTitle: String?
     var currentChatRoomDescription: String?
-    var currentChatRoomRegionCode: Int?
+    var currentChatRoomRegionCode: Long?
     var currentChatRoomMaxMember: Int?
     val currentChatRoomMember: StateFlow<Int?>
 
     suspend fun createChatRoom(
         title: String,
-        regionCode: Int,
+        regionCode: Long,
         description: String,
         maxMember: Int
     ): BaseResult<ChatCreateResponse>
 
     suspend fun joinChatRoom(
-        chatRoomId: Int,
-        memberId: Int,
+        chatRoomId: Long,
+        memberId: Long,
         title: String,
         description: String,
-        regionCode: Int,
+        regionCode: Long,
         maxMember: Int
     )
 

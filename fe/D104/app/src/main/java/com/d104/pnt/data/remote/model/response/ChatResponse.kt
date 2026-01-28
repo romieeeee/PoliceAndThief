@@ -8,22 +8,22 @@ data class ChatCreateRequest(
     @SerializedName("description")
     val description: String,
     @SerializedName("regionCode")
-    val regionCode: Int,
+    val regionCode: Long,
     @SerializedName("maxMember")
     val maxMember: Int
 )
 
 data class ChatCreateResponse(
     @SerializedName("chatRoomId")
-    val chatRoomId: Int,
+    val chatRoomId: Long,
     @SerializedName("ownerId")
-    val ownerId: Int,
+    val ownerId: Long,
     @SerializedName("title")
     val title: String,
     @SerializedName("description")
     val description: String,
     @SerializedName("regionCode")
-    val regionCode: Int,
+    val regionCode: Long,
     @SerializedName("maxMember")
     val maxMember: Int,
     @SerializedName("currentMember")

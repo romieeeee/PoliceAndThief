@@ -39,6 +39,7 @@ import com.d104.pnt.ui.theme.BorderDefault
 import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.DialogBorderColor
 import com.d104.pnt.ui.theme.TextPrimary
+import timber.log.Timber
 
 @Composable
 fun ChatRoomCreateScreen(
@@ -48,6 +49,7 @@ fun ChatRoomCreateScreen(
 ){
     val title by viewModel.title.collectAsStateWithLifecycle()
     val description by viewModel.description.collectAsStateWithLifecycle()
+    val maxMember by viewModel.maxMember.collectAsStateWithLifecycle()
     val currentAddress by viewModel.currentAddress.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
@@ -113,12 +115,12 @@ fun ChatRoomCreateScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         PixelInputField(
-                            modifier = Modifier.fillMaxWidth()
-                                .height(150.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             placeholder = "채팅방 설명을 입력하세요",
                             borderColor = DialogBorderColor,
                             value = description,
-                            onValueChange = { viewModel.updateDescription(it) }
+                            onValueChange = { viewModel.updateDescription(it) },
+                            multiLine = true,
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -131,10 +133,10 @@ fun ChatRoomCreateScreen(
                             modifier = Modifier.padding(horizontal = 80.dp),
                             label = "최대 인원수",
                             icon = Icons.Default.People,
-                            value = "30",
+                            value = maxMember.toString(),
                             unit = "명",
-                            onDecrease = {  },
-                            onIncrease = {  }
+                            onDecrease = { viewModel.updateMaxMember(false) },
+                            onIncrease = { viewModel.updateMaxMember(true) }
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -157,35 +159,24 @@ fun ChatRoomCreateScreen(
                         ) {
                             Row (
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    modifier = Modifier.weight(0.3f),
+                                    modifier = Modifier.weight(0.4f),
                                     text = currentAddress.major,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = BorderDefault
                                 )
                                 Text(
-                                    modifier = Modifier.weight(0.05f),
+                                    modifier = Modifier.weight(0.2f),
                                     text = "-",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = BorderDefault
                                 )
                                 Text(
-                                    modifier = Modifier.weight(0.3f),
+                                    modifier = Modifier.weight(0.4f),
                                     text = currentAddress.middle,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = BorderDefault
-                                )
-                                Text(
-                                    modifier = Modifier.weight(0.05f),
-                                    text = "-",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = BorderDefault
-                                )
-                                Text(
-                                    modifier = Modifier.weight(0.3f),
-                                    text = currentAddress.sub,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = BorderDefault
                                 )
@@ -208,7 +199,17 @@ fun ChatRoomCreateScreen(
 
                             RoundedButton(
                                 text = "생성",
-                                onClick = { onConfirm() },
+                                onClick = {
+                                    Timber.d("Create Clicked")
+                                    if (viewModel.isValid()) {
+                                        Timber.d("Valid")
+                                        viewModel.createChatRoom()
+                                        onConfirm()
+                                    }
+                                    else {
+                                        Timber.d("Not Valid")
+                                    }
+                                },
                                 containerColor = Color.White,
                                 modifier = Modifier.weight(1f)
                             )

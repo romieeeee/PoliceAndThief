@@ -10,16 +10,21 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.d104.pnt.ui.theme.BorderDefault
+import com.d104.pnt.ui.theme.TextPrimary
 
 
 // String 버전
@@ -34,6 +39,7 @@ fun PixelInputField(
     keyboardType: KeyboardType = KeyboardType.Text,
     backgroundColor: Color = Color.White,
     borderColor: Color = Color.White,
+    multiLine: Boolean = false
 ) {
     Column(modifier = modifier) {
         PixelContainer(
@@ -41,39 +47,70 @@ fun PixelInputField(
             borderWidth = 10f,
             cornerSize = 20f,
             backgroundColor = backgroundColor,
-            borderColor = borderColor
+            borderColor = borderColor,
         ) {
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.Black),
-                cursorBrush = SolidColor(Color.Black),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = keyboardType
-                ),
-                visualTransformation = if (isPassword) {
-                    PasswordVisualTransformation()
-                } else {
-                    VisualTransformation.None
-                },
-                decorationBox = { innerTextField ->
-                    Box(
-                        contentAlignment = Alignment.CenterStart,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (value.isEmpty()) {
-                            Text(
-                                text = placeholder,
-                                color = Color.Gray,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+            if (multiLine){
+                TextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 5,
+                    maxLines = 5,
+                    textStyle = MaterialTheme.typography.bodyMedium,
+                    placeholder = {
+                        Text(text = placeholder, color = Color.Gray)
+                    },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = TextPrimary,
+                        unfocusedContainerColor = TextPrimary,
+                        disabledContainerColor = TextPrimary,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        disabledTextColor = Color.Black,
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Default
+                    ),
+                )
+            }
+            else {
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.Black),
+                    cursorBrush = SolidColor(Color.Black),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = keyboardType
+                    ),
+                    visualTransformation = if (isPassword) {
+                        PasswordVisualTransformation()
+                    } else {
+                        VisualTransformation.None
+                    },
+                    decorationBox = { innerTextField ->
+                        Box(
+                            contentAlignment = Alignment.CenterStart,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (value.isEmpty()) {
+                                Text(
+                                    text = placeholder,
+                                    color = Color.Gray,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            innerTextField()
                         }
-                        innerTextField()
                     }
-                }
-            )
+                )
+            }
+
         }
 
         if (errorMessage.isNotEmpty()) {

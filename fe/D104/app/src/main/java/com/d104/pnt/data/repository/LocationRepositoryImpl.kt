@@ -1,9 +1,9 @@
 package com.d104.pnt.data.repository
 
 import android.content.Context
-import android.location.Geocoder
 import android.location.Location
-import android.os.Build
+import com.d104.pnt.BuildConfig
+import com.d104.pnt.data.remote.api.NaverApiService
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GeoLocationInfo
 import com.d104.pnt.domain.model.PlayerLocation
@@ -15,15 +15,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 @Singleton
 class LocationRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val naverApiService: NaverApiService
 ) : LocationRepository {
     // 내부 수정용 MutableStateFlow
     private val _currentLocation = MutableStateFlow<Location?>(null)
@@ -108,69 +106,32 @@ class LocationRepositoryImpl @Inject constructor(
     override suspend fun getAddressFromLatLng(latitude: Double, longitude: Double): GeoLocationInfo {
         return withContext(Dispatchers.IO) {
             try {
-                val geocoder = Geocoder(context, Locale.KOREA) // 한국어로 설정
+                // local.properties에 저장한 키 가져오기
+                val clientId = BuildConfig.CLIENT_ID
+                val clientSecret = BuildConfig.CLIENT_SECRET
 
-                // 지오코더 사용 불가능한 경우 (구글 서비스 미설치 등)
-                if (!Geocoder.isPresent()) {
-                    return@withContext GeoLocationInfo("", "", "")
-                }
+                // ⭐️ 네이버는 "경도,위도" 문자열로 보냄
+                val coords = "$longitude,$latitude"
 
-                // API 33 (Tiramisu) 이상: 리스너 방식 사용 (비동기)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    // suspendCoroutine을 사용해 콜백을 코루틴 스타일로 변환
-                    return@withContext suspendCoroutine { continuation ->
-                        geocoder.getFromLocation(latitude, longitude, 1) { addresses ->
-                            if (addresses.isNotEmpty()) {
-                                val address = addresses[0]
-                                Timber.d("addresses: $addresses")
-                                // 1. Major (시/도)
-                                // adminArea가 보통 '서울특별시', '경상북도' 등을 가짐
-                                val major = address.adminArea ?: ""
+                val response = naverApiService.getAddress(
+                    clientId = clientId,
+                    clientSecret = clientSecret,
+                    coords = coords
+                )
 
-                                // 2. Middle (시/구/군)
-                                // subLocality가 있으면(강남구, 분당구 등) 그걸 쓰고,
-                                // 없으면 locality(구미시, 수원시 등)를 씀.
-                                // 서울의 경우 locality도 '서울'인 경우가 있어서 subLocality 우선 체크가 중요함.
-                                val middle = address.subLocality ?: address.locality ?: ""
+                if (response.results.isNotEmpty()) {
+                    // results[0]은 보통 legalcode(법정동) 또는 admcode(행정동) 중 첫 번째 것
+                    val region = response.results[0].region
 
-                                // 3. Sub (동/읍/면 or 도로명)
-                                // thoroughfare가 보통 '도로명(대학로)' 또는 '동(역삼동)'을 가짐.
-                                val sub = address.thoroughfare ?: ""
-                                continuation.resume(GeoLocationInfo(major, middle, sub))
-                            } else {
-                                continuation.resume(GeoLocationInfo("", "", ""))
-                            }
-                        }
-                    }
-                }
-                // API 33 미만: 기존 방식 사용 (동기 blocking)
-                else {
-                    @Suppress("DEPRECATION")
-                    val addresses = geocoder.getFromLocation(latitude, longitude, 1)
-                    if (!addresses.isNullOrEmpty()) {
-                        val address = addresses[0]
-                        // 1. Major (시/도)
-                        val major = address.adminArea ?: ""
-
-                        // 2. Middle (시/구/군)
-                        // subLocality가 있으면(강남구, 분당구 등) 그걸 쓰고,
-                        // 없으면 locality(구미시, 수원시 등)를 씀.
-                        // 서울의 경우 locality도 '서울'인 경우가 있어서 subLocality 우선 체크가 중요함.
-                        val middle = address.subLocality ?: address.locality ?: ""
-
-                        // 3. Sub (동/읍/면 or 도로명)
-                        // thoroughfare가 보통 '도로명(대학로)' 또는 '동(역삼동)'을 가짐.
-                        val sub = address.thoroughfare ?:  ""
-
-                        return@withContext GeoLocationInfo(major, middle, sub)
-                    } else {
-                        return@withContext GeoLocationInfo("", "", "")
-                    }
+                    return@withContext GeoLocationInfo(
+                        major = region.area1.name, // 서울특별시
+                        middle = region.area2.name, // 강남구
+                    )
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                return@withContext GeoLocationInfo("주소", "변환", "에러")
             }
+            return@withContext GeoLocationInfo()
         }
     }
 

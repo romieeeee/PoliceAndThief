@@ -14,16 +14,16 @@ class ChatRepositoryImpl @Inject constructor (
 
     private val _currentChatRoomMember = MutableStateFlow<Int?>(null)
 
-    override var currentChatRoom: Int? = null
+    override var currentChatRoom: Long? = null
     override var currentChatRoomTitle: String? = null
     override var currentChatRoomDescription: String? = null
-    override var currentChatRoomRegionCode: Int? = null
+    override var currentChatRoomRegionCode: Long? = null
     override var currentChatRoomMaxMember: Int? = null
     override val currentChatRoomMember = _currentChatRoomMember.asStateFlow()
 
     override suspend fun createChatRoom(
         title: String,
-        regionCode: Int,
+        regionCode: Long,
         description: String,
         maxMember: Int
     ): BaseResult<ChatCreateResponse> {
@@ -42,25 +42,12 @@ class ChatRepositoryImpl @Inject constructor (
             chatApiService.createChatRoom(ChatCreateRequest(title, description, regionCode, maxMember))
         }
     }
-//    override suspend fun login(id: String, password: String): BaseResult<LoginResponse> {
-//        return safeApiCall(
-//            onSuccess = { loginResponse ->
-//                saveLoginData(
-//                    accessToken = loginResponse.accessToken,
-//                    refreshToken = loginResponse.refreshToken,
-//                    userId = loginResponse.member.id
-//                )
-//            }
-//        ) {
-//            apiService.login(LoginRequest(id, password))
-//        }
-//    }
     override suspend fun joinChatRoom(
-        chatRoomId: Int,
-        memberId: Int,
+        chatRoomId: Long,
+        memberId: Long,
         title: String,
         description: String,
-        regionCode: Int,
+        regionCode: Long,
         maxMember: Int
     ) {
 
