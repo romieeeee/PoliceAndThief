@@ -6,13 +6,13 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.Point;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "game_setting")
 public class GameSetting extends BaseEntity {
+
     @Id
     private Long gameId;
 
@@ -21,10 +21,74 @@ public class GameSetting extends BaseEntity {
     @JoinColumn(name = "game_id")
     private Game game;
 
-    private Integer timeLimitSec;
+    // === 게임 설정 ===
+    private Integer timeLimit;     // 분 단위
+    private Integer playerCount;
     private Integer policeCount;
     private Integer thiefCount;
 
+    // === 지도 정보 ===
+    @Column(columnDefinition = "geometry")
     private Geometry boundaryGeo;
-    private Point prisonLocation;
+
+    private Double prisonLat;
+    private Double prisonLng;
+
+    /* =========================
+       생성 메서드
+       ========================= */
+
+    public static GameSetting create(
+            Game game,
+            Integer timeLimit,
+            Integer playerCount,
+            Integer policeCount,
+            Integer thiefCount,
+            Geometry boundaryGeo,
+            Double prisonLat,
+            Double prisonLng
+    ) {
+        GameSetting s = new GameSetting();
+        s.game = game;
+        s.timeLimit = timeLimit;
+        s.playerCount = playerCount;
+        s.policeCount = policeCount;
+        s.thiefCount = thiefCount;
+        s.boundaryGeo = boundaryGeo;
+        s.prisonLat = prisonLat;
+        s.prisonLng = prisonLng;
+        return s;
+    }
+
+    /* =========================
+       변경 메서드 (PATCH용)
+       ========================= */
+
+    /**
+     * 게임 규칙 관련 설정 수정
+     */
+    public void updateSetting(
+            Integer timeLimit,
+            Integer playerCount,
+            Integer policeCount,
+            Integer thiefCount
+    ) {
+        if (timeLimit != null) this.timeLimit = timeLimit;
+        if (playerCount != null) this.playerCount = playerCount;
+        if (policeCount != null) this.policeCount = policeCount;
+        if (thiefCount != null) this.thiefCount = thiefCount;
+    }
+
+    /**
+     * 지도/좌표 관련 수정
+     */
+    public void updateMap(
+            Geometry boundaryGeo,
+            Double prisonLat,
+            Double prisonLng
+    ) {
+        if (boundaryGeo != null) this.boundaryGeo = boundaryGeo;
+        if (prisonLat != null) this.prisonLat = prisonLat;
+        if (prisonLng != null) this.prisonLng = prisonLng;
+    }
 }

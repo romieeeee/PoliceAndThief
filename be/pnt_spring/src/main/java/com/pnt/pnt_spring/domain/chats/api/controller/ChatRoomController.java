@@ -5,7 +5,7 @@ import com.pnt.pnt_spring.domain.chats.api.req.ChatRoomUpdateRequest;
 import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomListResponse;
 import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomResponse;
 import com.pnt.pnt_spring.domain.chats.application.ChatRoomService;
-import com.pnt.pnt_spring.domain.chats.utils.SecurityUtils;
+import com.pnt.pnt_spring.global.utils.SecurityUtils;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
