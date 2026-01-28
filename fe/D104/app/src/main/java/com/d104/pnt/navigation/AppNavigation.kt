@@ -2,11 +2,13 @@ package com.d104.pnt.navigation
 
 import android.app.Activity
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,6 +21,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.IntroScreen
+import com.d104.pnt.base.BaseApplication
 import com.d104.pnt.permission.PermissionDeniedDialog
 import com.d104.pnt.permission.PermissionDialog
 import com.d104.pnt.permission.exitApp
@@ -26,6 +29,7 @@ import com.d104.pnt.ui.MainScreen
 import com.d104.pnt.ui.MainViewModel
 import com.d104.pnt.ui.auth.LoginScreen
 import com.d104.pnt.ui.auth.SignupScreen
+import com.d104.pnt.util.AuthEventBus
 import com.d104.pnt.util.PermissionHelper
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -41,11 +45,15 @@ import timber.log.Timber
 fun AppNavigation(
     viewModel: MainViewModel = hiltViewModel()
 ) {
-    val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
-
     val context = LocalContext.current
     val activity = context as? Activity
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
+
+    val authEventBus = remember {
+        (context.applicationContext as BaseApplication).authEventBus
+    }
 
     // 현재 화면 상태
     var currentScreen by remember { mutableStateOf(AppScreen.Intro) }
@@ -113,6 +121,25 @@ fun AppNavigation(
 
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        authEventBus.events.collect { event ->
+            when (event) {
+                is AuthEventBus.AuthEvent.TokenExpired -> {
+                    Timber.w("🔴 Token expired - Auto logout")
+                    currentScreen = AppScreen.Intro
+                    Toast.makeText(
+                        context,
+                        "세션이 만료되었습니다. 다시 로그인해주세요.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                is AuthEventBus.AuthEvent.Unauthorized -> {
+                    currentScreen = AppScreen.Intro
+                }
+            }
         }
     }
 
