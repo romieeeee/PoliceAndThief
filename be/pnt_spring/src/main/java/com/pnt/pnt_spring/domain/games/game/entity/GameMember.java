@@ -34,10 +34,12 @@ public class GameMember extends BaseEntity {
     @Column(name = "serial_code")
     private String serialCode;
 
+    // === 선호 포지션 (픽) ===
     @Enumerated(EnumType.STRING)
     @Column(name = "prefer_position", length = 10, nullable = false)
     private PreferPosition preferPosition;
 
+    // === 배정 포지션 (게임 시작 시 확정) ===
     @Enumerated(EnumType.STRING)
     @Column(name = "given_position", length = 10)
     private Position givenPosition; // 시작 전 null 가능
@@ -47,9 +49,11 @@ public class GameMember extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
+    @Enumerated(value = EnumType.STRING)
     private GameMemberStatus status;
 
     private Boolean inGameConnected;
+    private String status;
 
     /* =========================
        생성/상태 변경 메서드
@@ -115,6 +119,7 @@ public class GameMember extends BaseEntity {
         this.ready = !this.ready;
     }
 
+    // “픽” prefer를 변경
     public void pickPreferPosition(PreferPosition preferPosition) {
         if (preferPosition == null) {
             throw new IllegalArgumentException("preferPosition은 null일 수 없습니다.");
@@ -122,10 +127,13 @@ public class GameMember extends BaseEntity {
         this.preferPosition = preferPosition;
     }
 
+    // 배정은 게임 시작 단계에서
     public void assignPosition(Position position) {
         if (position == null) {
             throw new IllegalArgumentException("givenPosition은 null일 수 없습니다.");
         }
         this.givenPosition = position;
     }
+
+
 }

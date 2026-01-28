@@ -37,7 +37,7 @@ class MessagingQueue {
     sendMessage = (message, queueKey) => {
         this.channel.publish(this.exchangeName, queueKey, Buffer.from(JSON.stringify(message)), (error) => {
             if (error) {
-                console.error("Failed to send message:", error);
+                console.error("Failed to send mq message:", error);
             }
         });
     }
