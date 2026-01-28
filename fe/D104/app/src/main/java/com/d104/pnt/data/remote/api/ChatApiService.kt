@@ -8,7 +8,7 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface ChatApiService {
-    @POST("/chats")
+    @POST("chats")
     suspend fun createChatRoom(
         @Body request: ChatCreateRequest
     ): Response<BaseResponse<ChatCreateResponse>>
