@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { TestController } from "./test/TestController.js";
+import { MissionController } from "./mission/controller/MissionController.js";
 
 const router = Router();
 
 export default router;
 
-const testController = new TestController();
+const missionController = new MissionController();
 
-router.use("/token", testController.getRouter());
+router.use("/mission", missionController.getRouter());

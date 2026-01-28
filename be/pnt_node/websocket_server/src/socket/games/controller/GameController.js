@@ -514,7 +514,6 @@ export class GameController {
      *   'walk': 1,
      *   'longestSurvived': 1
      * }
-     * 
      */
     postGameEndAfter = async (payload) => {
         try {

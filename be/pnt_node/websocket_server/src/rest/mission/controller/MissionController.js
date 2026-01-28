@@ -16,7 +16,7 @@ export class MissionController {
     }
 
     init = () => {
-        this.router.post("/mission/complete", this.missionComplete);
+        this.router.post("/complete", this.missionComplete);
     }
 
     getRouter = () => {
@@ -41,7 +41,7 @@ export class MissionController {
      *   "thiefId": 2,
      *   "success": true,
      *   "reason": "NOT_MATCHED|TIMEOUT|null",
-     *   "updatedAt": "2026-01-19T09:00:00+09:00"
+     *   "completedAt": "2026-01-19T09:00:00+09:00"
      */
     missionComplete = async (req, res) => {
         try {
