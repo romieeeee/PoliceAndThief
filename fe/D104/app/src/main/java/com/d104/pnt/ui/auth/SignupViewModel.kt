@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.random.Random
 
 @RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
@@ -255,7 +256,7 @@ class SignupViewModel @Inject constructor(
                     password = _pw.value,
                     passwordConfirm = _pwConfirm.value,
                     nickname = _nickname.value,
-                    email = "",
+                    email = Random.nextInt(1_000_000).toString(), // TODO: 서버 수정 전 임시 수정 후엔 빈 스트링으로 수정
                     birth = formattedBirth,
                     avatarUrl = null
                 )) {

@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class ProfileResponse(
     @SerializedName("avatarUrl")
-    val avatarUrl: String,
+    val avatarUrl: String?,
 
     @SerializedName("createdAt")
     val createdAt: String,
@@ -16,7 +16,7 @@ data class ProfileResponse(
     val memberId: Long,
 
     @SerializedName("nickname")
-    val nickname: String,
+    val nickname: String?,
 
     @SerializedName("stat")
     val stat: Stat

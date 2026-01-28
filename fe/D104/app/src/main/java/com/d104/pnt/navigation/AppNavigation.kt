@@ -119,13 +119,15 @@ fun AppNavigation(
             AppScreen.Intro -> {
                 IntroScreen(
                     onClick = {
-                        if (isLoggedIn) {
-                            Timber.d("Navigation: Intro -> Main")
-                            currentScreen = AppScreen.Main
-                        } else {
-                            Timber.d("Navigation: Intro -> Login")
                             currentScreen = AppScreen.Login
-                        }
+//                            currentScreen = AppScreen.Main
+//                        if (isLoggedIn) {
+//                            Timber.d("Navigation: Intro -> Main")
+//                            currentScreen = AppScreen.Main
+//                        } else {
+//                            Timber.d("Navigation: Intro -> Login")
+//                            currentScreen = AppScreen.Login
+//                        }
 
                     }
                 )
