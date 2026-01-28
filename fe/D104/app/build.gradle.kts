@@ -196,6 +196,9 @@ dependencies {
     // EXIF 정보 처리 (이미지 회전 문제 해결용) - 필수 추가!
     implementation("androidx.exifinterface:exifinterface:1.3.7")
 
+    // Wheel Date Picker
+    implementation("com.github.commandiron:WheelPickerCompose:1.1.11")
+
     // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -1,15 +1,27 @@
 package com.d104.pnt.ui
 
+import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -33,16 +45,43 @@ import com.d104.pnt.ui.game.wait.GameWaitingScreen
 import com.d104.pnt.ui.game.wait.RoleSelectScreen
 import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
+import kotlinx.coroutines.launch
 
 @Composable
-fun MainScreen(userName: String) {
+fun MainScreen(
+    userName: String,
+    navigateToIntro: () -> Unit
+) {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val activity = context as? Activity
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
     // BottomBar 표시 화면
     val bottomBarRoutes = BottomNavItem.items.map { it.route }
+
+    // 뒤로가기 두 번 누르기 처리
+    var backPressedTime by remember { mutableLongStateOf(0L) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+
+    // BottomNav 화면에서 뒤로가기 처리
+    BackHandler(enabled = currentRoute in bottomBarRoutes) {
+
+        if (System.currentTimeMillis() - backPressedTime <= 2000) {
+            // 2초 이내에 다시 누르면 앱 종료
+            activity?.finish()
+        } else {
+            // 스낵바 메시지 표시
+            backPressedTime = System.currentTimeMillis()
+            scope.launch {
+                snackbarHostState.showSnackbar("한 번 더 누르면 종료됩니다")
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
@@ -60,7 +99,8 @@ fun MainScreen(userName: String) {
                     },
                     navigateToGameRoom = { roomId ->
                         navController.navigate(Routes.ROLE_SELECT)
-                    }
+                    },
+                    navigateToIntro = { navigateToIntro() }
                 )
             }
 
@@ -192,7 +232,7 @@ fun MainScreen(userName: String) {
 //                        viewModel.submitMissionPhoto(compressedPhotoFile)
 
                         // 또는 다음 화면으로 이동
-                         navController.popBackStack()
+                        navController.popBackStack()
                     },
                     compressionQuality = 80, // 압축 품질 (0-100) - 기본값 80
                     maxWidth = 1280,         // 최대 가로 해상도 - 기본값 1280px
@@ -293,5 +333,14 @@ fun MainScreen(userName: String) {
                 BottomNavBar(navController)
             }
         }
+
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .systemBarsPadding()
+                .padding(bottom = 80.dp) // BottomBar 높이 + 여유 공간
+        )
     }
 }

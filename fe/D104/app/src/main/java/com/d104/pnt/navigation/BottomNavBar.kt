@@ -35,6 +35,29 @@ import com.d104.pnt.ui.theme.DeepDark
 fun BottomNavBar(navController: NavHostController) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
+    fun navigateToTab(route: String) {
+        if (currentRoute != route) {
+            navController.navigate(route) {
+                popUpTo(Routes.HOME) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
+
+    fun navigateToHome() {
+        if (currentRoute != BottomNavItem.Home.route) {
+            navController.navigate(BottomNavItem.Home.route) {
+                popUpTo(Routes.HOME) {
+                    inclusive = true
+                }
+                launchSingleTop = true
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -56,7 +79,7 @@ fun BottomNavBar(navController: NavHostController) {
                 isSelected = currentRoute == BottomNavItem.Chat.route,
                 modifier = Modifier.weight(1f)
             ) {
-                navController.navigate(BottomNavItem.Chat.route) { }
+                navigateToTab(BottomNavItem.Chat.route)
             }
 
             Spacer(modifier = Modifier.width(40.dp))
@@ -67,7 +90,7 @@ fun BottomNavBar(navController: NavHostController) {
                 isSelected = currentRoute == BottomNavItem.Profile.route,
                 modifier = Modifier.weight(1f)
             ) {
-                navController.navigate(BottomNavItem.Profile.route) { }
+                navigateToTab(BottomNavItem.Profile.route)
             }
         }
 
@@ -79,11 +102,7 @@ fun BottomNavBar(navController: NavHostController) {
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) {
-                    navController.navigate(BottomNavItem.Home.route){
-                        popUpTo(Routes.LOGIN) {
-                            inclusive = true
-                        }
-                    }
+                    navigateToHome()
                 },
             contentAlignment = Alignment.Center
         ) {
@@ -95,6 +114,7 @@ fun BottomNavBar(navController: NavHostController) {
         }
     }
 }
+
 
 @Composable
 fun NavItem(

@@ -1,11 +1,12 @@
 package com.d104.pnt.navigation
 
 import android.app.Activity
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,6 +17,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.IntroScreen
 import com.d104.pnt.permission.PermissionDeniedDialog
 import com.d104.pnt.permission.PermissionDialog
@@ -33,11 +35,14 @@ import timber.log.Timber
  * 전체 앱 네비게이션
  * 설정 복귀 시 자동 재확인 처리 개선
  */
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AppNavigation(
     viewModel: MainViewModel = hiltViewModel()
 ) {
+    val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
+
     val context = LocalContext.current
     val activity = context as? Activity
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -111,7 +116,6 @@ fun AppNavigation(
         }
     }
 
-    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (currentScreen) {
@@ -161,13 +165,22 @@ fun AppNavigation(
                     onSuccess = {
                         currentScreen = AppScreen.Login
                         Timber.d("Signup success -> Login")
+                    },
+                    onBack = {
+                        currentScreen = AppScreen.Login
                     }
                 )
             }
 
             // 메인 앱
             AppScreen.Main -> {
-                MainScreen(userName = userName)
+                MainScreen(
+                    userName = userName,
+                    navigateToIntro = {
+                        Timber.d("Navigation: Main -> Intro (Logout)")
+                        currentScreen = AppScreen.Intro // ⭐ Intro로 변경
+                    }
+                )
             }
         }
 

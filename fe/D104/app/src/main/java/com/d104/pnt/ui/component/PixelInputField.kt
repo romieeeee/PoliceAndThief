@@ -23,7 +23,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.d104.pnt.ui.theme.BorderDefault
 import com.d104.pnt.ui.theme.TextPrimary
 
 
@@ -39,7 +38,8 @@ fun PixelInputField(
     keyboardType: KeyboardType = KeyboardType.Text,
     backgroundColor: Color = Color.White,
     borderColor: Color = Color.White,
-    multiLine: Boolean = false
+    multiLine: Boolean = false,
+    enabled: Boolean = true,
 ) {
     Column(modifier = modifier) {
         PixelContainer(
@@ -47,7 +47,7 @@ fun PixelInputField(
             borderWidth = 10f,
             cornerSize = 20f,
             backgroundColor = backgroundColor,
-            borderColor = borderColor,
+            borderColor = borderColor
         ) {
             if (multiLine){
                 TextField(
@@ -81,6 +81,7 @@ fun PixelInputField(
                 BasicTextField(
                     value = value,
                     onValueChange = onValueChange,
+                    enabled = enabled,
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.Black),
@@ -110,7 +111,6 @@ fun PixelInputField(
                     }
                 )
             }
-
         }
 
         if (errorMessage.isNotEmpty()) {
