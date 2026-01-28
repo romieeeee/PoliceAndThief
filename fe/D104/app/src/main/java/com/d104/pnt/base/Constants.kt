@@ -3,7 +3,8 @@ package com.d104.pnt.base
 object Constants {
 
     // API
-    const val BASE_URL = "http://i14d104.p.ssafy.io/spring/"
+    const val BASE_URL = "http://i14d104.p.ssafy.io/"
+    const val SPRING_SERVER_URL = "${BASE_URL}spring/"
     const val WEBSOCKET_URL = "wss://your-api-server.com/ws"
 
     const val CONNECT_TIMEOUT = 30L // seconds

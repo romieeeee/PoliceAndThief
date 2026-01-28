@@ -39,7 +39,6 @@ import timber.log.Timber
  * 전체 앱 네비게이션
  * 설정 복귀 시 자동 재확인 처리 개선
  */
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AppNavigation(

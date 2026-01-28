@@ -210,6 +210,9 @@ dependencies {
     // KaKao Login
     implementation("com.kakao.sdk:v2-user:2.23.2")
 
+    // socket
+    implementation("io.socket:socket.io-client:2.1.0")
+
     // Test
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
