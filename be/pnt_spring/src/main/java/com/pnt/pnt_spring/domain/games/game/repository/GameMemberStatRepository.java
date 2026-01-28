@@ -19,7 +19,7 @@ public interface GameMemberStatRepository extends JpaRepository<GameMemberStat, 
         JOIN FETCH gm.member m
         JOIN FETCH m.memberProfile
         WHERE gm.game.id = :gameId
-          AND gm.givenPosition = com.pnt.pnt_spring.domain.games.game.entity.GameMemberPosition.POLICE
+          AND gm.givenPosition = com.pnt.pnt_spring.domain.games.game.enums.Position.POLICE
         ORDER BY s.arrestCount DESC
         LIMIT 1
     """)
@@ -33,7 +33,7 @@ public interface GameMemberStatRepository extends JpaRepository<GameMemberStat, 
         JOIN FETCH gm.member m
         JOIN FETCH m.memberProfile
         WHERE gm.game.id = :gameId
-          AND gm.givenPosition = com.pnt.pnt_spring.domain.games.game.entity.GameMemberPosition.THIEF
+          AND gm.givenPosition = com.pnt.pnt_spring.domain.games.game.enums.Position.THIEF
         ORDER BY s.longestSurvived DESC
         LIMIT 1
     """)
