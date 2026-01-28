@@ -14,9 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,19 +27,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.d104.pnt.domain.model.RoomData
+import com.d104.pnt.domain.model.ChatsData
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelDropdown
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.RoomList
 import com.d104.pnt.ui.theme.*
-import kotlin.Int
 
 @Composable
-fun ChatRoomListScreen() {
+fun ChatRoomListScreen(
+    navigateToChatCreate: () -> Unit,
+) {
     // 테스트용 더미 데이터
     val roomList = List(10) {
-        RoomData(
+        ChatsData(
             id = it,
             title = "진평동 빡겜 추격전",
             description = "날이 많이 추우니 장갑 꼭 챙겨오세요~~~~~~~~~~~~~~~~",
@@ -61,10 +62,25 @@ fun ChatRoomListScreen() {
         Spacer(modifier = Modifier.height(5.dp))
 
         // 2. 검색 아이콘 영역
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.CenterEnd // 오른쪽 정렬
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
+            PixelIconButton (
+                modifier = Modifier.size(48.dp),
+                mainColor = ButtonPrimary,
+                borderColor = ButtonHighlight,
+                onClick = navigateToChatCreate
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "검색",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
             PixelIconButton (
                 modifier = Modifier.size(48.dp),
                 mainColor = ButtonPrimary,
@@ -128,5 +144,7 @@ fun ChatRoomListHeader() {
 @Preview
 @Composable
 fun ChatRoomScreenPreview() {
-    ChatRoomListScreen()
+    ChatRoomListScreen(
+        navigateToChatCreate = {}
+    )
 }

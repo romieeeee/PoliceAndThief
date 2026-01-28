@@ -25,14 +25,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.d104.pnt.domain.model.RoomData
+import com.d104.pnt.domain.model.ChatsData
 import com.d104.pnt.ui.theme.*
 
 // 단일 채팅방 아이템 컴포넌트
 @Composable
 fun RoomListItem(
-    data: RoomData,
-    onJoinClick: (RoomData) -> Unit = {}
+    data: ChatsData,
+    onJoinClick: (ChatsData) -> Unit = {}
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
@@ -141,7 +141,7 @@ fun RoomListItem(
 @Preview
 @Composable
 fun previewRoomListItem(){
-    val room =  RoomData(
+    val room =  ChatsData(
         2,
         "강남역 상습 탈옥범 잡을 마동석 같은 강력계 형사 모집중",
         "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
