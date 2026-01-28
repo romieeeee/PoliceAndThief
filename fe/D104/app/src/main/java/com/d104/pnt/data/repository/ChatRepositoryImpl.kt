@@ -25,7 +25,7 @@ class ChatRepositoryImpl @Inject constructor (
         title: String,
         regionCode: Long,
         description: String,
-        maxMember: Int
+        maxMembers: Int
     ): BaseResult<ChatCreateResponse> {
         return safeApiCall (
             onSuccess = { chatCreateResponse ->
@@ -35,11 +35,11 @@ class ChatRepositoryImpl @Inject constructor (
                     title = chatCreateResponse.title,
                     description = chatCreateResponse.description,
                     regionCode = chatCreateResponse.regionCode,
-                    maxMember = chatCreateResponse.maxMember
+                    maxMembers = chatCreateResponse.maxMembers
                 )
             }
         ) {
-            chatApiService.createChatRoom(ChatCreateRequest(title, description, regionCode, maxMember))
+            chatApiService.createChatRoom(ChatCreateRequest(title, description, regionCode, maxMembers))
         }
     }
     override suspend fun joinChatRoom(
@@ -48,7 +48,7 @@ class ChatRepositoryImpl @Inject constructor (
         title: String,
         description: String,
         regionCode: Long,
-        maxMember: Int
+        maxMembers: Int
     ) {
 
     }

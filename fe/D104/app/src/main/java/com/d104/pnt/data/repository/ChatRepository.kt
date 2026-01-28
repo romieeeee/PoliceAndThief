@@ -17,7 +17,7 @@ interface ChatRepository {
         title: String,
         regionCode: Long,
         description: String,
-        maxMember: Int
+        maxMembers: Int
     ): BaseResult<ChatCreateResponse>
 
     suspend fun joinChatRoom(
@@ -26,7 +26,7 @@ interface ChatRepository {
         title: String,
         description: String,
         regionCode: Long,
-        maxMember: Int
+        maxMembers: Int
     )
 
     suspend fun leaveChatRoom()
