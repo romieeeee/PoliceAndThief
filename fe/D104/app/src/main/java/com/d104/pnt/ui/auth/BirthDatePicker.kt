@@ -1,9 +1,9 @@
 package com.d104.pnt.ui.auth
 
+
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -21,11 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.commandiron.wheel_picker_compose.WheelDatePicker
-import com.commandiron.wheel_picker_compose.core.WheelPickerDefaults
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.theme.BorderDefault
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.atomic.AtomicReference
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -36,27 +38,20 @@ fun BirthDatePicker(
     modifier: Modifier = Modifier
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
-    val interactionSource = remember { MutableInteractionSource() }
 
-    // 선택된 날짜 상태 (기본값: 2000년 1월 1일)
-    var selectedDate by remember {
-        mutableStateOf(
+    // 1. 초기 날짜 계산 (리컴포지션 시 재계산 방지)
+    val initialDate = remember(value) {
+        try {
             if (value.isNotEmpty()) {
-                try {
-                    val parts = value.split(".")
-                    if (parts.size == 3) {
-                        LocalDate.of(parts[0].toInt(), parts[1].toInt(), parts[2].toInt())
-                    } else {
-                        LocalDate.of(2000, 1, 1)
-                    }
-                } catch (e: Exception) {
-                    LocalDate.of(2000, 1, 1)
-                }
-            } else {
-                LocalDate.of(2000, 1, 1)
-            }
-        )
+                val parts = value.split(".")
+                LocalDate.of(parts[0].toInt(), parts[1].toInt(), parts[2].toInt())
+            } else LocalDate.of(2000, 1, 1)
+        } catch (e: Exception) {
+            LocalDate.of(2000, 1, 1)
+        }
     }
+
+    val snappedDateRef = remember { AtomicReference(initialDate) }
 
     Column(modifier = modifier) {
         Text(
@@ -69,15 +64,13 @@ fun BirthDatePicker(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null
-                ) {
+                .clickable {
+                    snappedDateRef.set(initialDate) // 열릴 때 초기값 세팅
                     showDatePicker = true
                 }
         ) {
             PixelInputField(
-                value = value.ifEmpty { "" },
+                value = value,
                 onValueChange = { },
                 placeholder = "YYYY.MM.DD",
                 borderColor = BorderDefault,
@@ -93,32 +86,28 @@ fun BirthDatePicker(
             title = {
                 Text(
                     text = "생년월일 선택",
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
             },
             text = {
-                WheelDatePicker(
-                    startDate = selectedDate,
-                    minDate = LocalDate.of(1900, 1, 1),
-                    maxDate = LocalDate.now(),
-                    yearsRange = IntRange(1900, LocalDate.now().year),
-                    textStyle = MaterialTheme.typography.titleLarge,
-                    textColor = Color.White,
-                    selectorProperties = WheelPickerDefaults.selectorProperties(
-                        enabled = true,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                    ),
-                    onSnappedDate = { snappedDate ->
-                        selectedDate = snappedDate
-                    }
-                )
+                // key를 사용하여 다이얼로그가 열릴 때마다 내부 상태를 안정적으로 초기화
+                key(showDatePicker) {
+                    WheelDatePicker(
+                        startDate = initialDate,
+                        minDate = LocalDate.of(1900, 1, 1),
+                        maxDate = LocalDate.now(),
+                        yearsRange = IntRange(1900, LocalDate.now().year),
+                        textStyle = MaterialTheme.typography.bodyLarge,
+                        textColor = Color.White,
+                        onSnappedDate = { snapped -> snappedDateRef.set(snapped) }
+                    )
+                }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val formatted = selectedDate.format(
-                            DateTimeFormatter.ofPattern("yyyy.MM.dd")
-                        )
+                        val finalDate = snappedDateRef.get()
+                        val formatted = finalDate.format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))
                         onValueChange(formatted)
                         showDatePicker = false
                     }
