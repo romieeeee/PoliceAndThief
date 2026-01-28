@@ -66,6 +66,12 @@ dependencies {
 
     // mongo
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
+    // RabbitMQ
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
+    // 유효성 검사
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
 }
 
 tasks.named('test') {
