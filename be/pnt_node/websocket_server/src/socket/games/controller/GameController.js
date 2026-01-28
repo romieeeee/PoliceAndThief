@@ -8,9 +8,12 @@ import { GameSkillService } from "../application/GameSkillService.js";
 import { GameMemberStatService } from "../application/GameMemberStatService.js";
 import { RedisClient } from "../../utils/client/RedisClient.js";
 import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
+import { GameMissionService } from "../application/GameMissionService.js";
+import { TurfService } from "../application/TurfService.js";
+import { MQConfig } from "../../../global/mq/MQConfig.js";
 
 export class GameController {
-    constructor(io, socket) {
+    constructor(io, socket, mq) {
         this.io = io;
         this.socket = socket;
         this.redisClient = new RedisClient();
@@ -19,6 +22,9 @@ export class GameController {
         this.gameSettingService = new GameSettingService();
         this.gameSkillService = new GameSkillService();
         this.gameMemberStatService = new GameMemberStatService();
+        this.gameMissionService = new GameMissionService();
+        this.turfService = new TurfService();
+        this.mq = mq;
     }
 
     isActiveRoom = async (gameId) => {
@@ -43,7 +49,6 @@ export class GameController {
 
             await this.gameService.findGame(payload.gameId, GameStatus.RUNNING);
             await this.gameMemberService.findMemberGame(payload.gameId, this.socket.data.memberId);
-            await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
 
             this.socket.join(gameId);
             this.socket.data.gameId = gameId;
@@ -90,7 +95,7 @@ export class GameController {
                 return;
             }
 
-            const isMine = await this.redisClient.setGameSettingLock(gameId);
+            const isMine = await this.redisClient.setGameSettingLock(gameId, gameSetting.timeLimit);
 
             if (!isMine) {
                 return;
@@ -106,8 +111,8 @@ export class GameController {
 
             setTimeout(async () => {
                 await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);
-                
-                await this.gameService.updateGame({gameId: integerGameId, startTime: new Date().toISOString()});
+
+                await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString() });
             }, 5000);
         } catch (error) {
             console.error("startGame error", error);
@@ -144,7 +149,7 @@ export class GameController {
             const gameMember = await this.gameMemberService.findMemberGame(integerGameId, memberId);
             const position = gameMember.givenPosition;
             const status = gameMember.status;
-            
+
 
             const locationData = JSON.stringify({
                 lat,
@@ -162,7 +167,8 @@ export class GameController {
             await this.redisClient.setLocation(memberId, integerGameId, locationData);
 
             // 경계선 확인 => turf.js 사용
-            const isInBoundary = await this.gameSettingService.checkUserInBoundary(integerGameId, lng, lat);
+            const gameSetting = await this.redisClient.getGameSetting(gameId);
+            const isInBoundary = await this.turfService.checkUserInBoundary([lng, lat], gameSetting.boundaryGeo.coordinates[0]);
 
             if (!isInBoundary) {
                 const res = {
@@ -201,7 +207,7 @@ export class GameController {
 
             // 이송 중이고, 감옥 범위 안에 들어왔을때
             if (position === GameMemberPosition.THIEF && status === GameMemberStatus.TRANSFER
-                && await this.gameSettingService.checkUserInPrison(integerGameId, lng, lat)) {
+                && await this.turfService.checkUserInPrison([lng, lat], gameSetting.prisonLocation.coordinates)) {
 
                 await this.gameMemberService.updateMemberStatus(integerGameId, memberId, GameMemberStatus.PRISON);
                 const res = {
@@ -217,6 +223,64 @@ export class GameController {
 
         } catch (error) {
             console.error("postGps error", error);
+            sendError(this.socket, error, "GameError");
+        }
+    }
+
+    /**
+     * 게임인포 동기화
+     * 게임 timer는 get gps에서 계산해서 보내주므로 여기서는 계산하지 않음
+     * need: 체포상태, 미션 상태
+     * 
+     * req : {
+     *  gameId: 10
+     * }
+     * 
+     * res : {
+     *  gameId: 10,
+     *  status: "GAME_RUNNING" || "GAME_FINISHED",
+     *  members: [
+     *    {
+     *      memberId: 1,
+     *      position: "POLICE",
+     *      status: "STATUS_FREE" || "STATUS_PRISON" || "STATUS_TRANSFER",
+     *    },
+     *  ],
+     *  missions: [
+     *    {
+     *      "id" : "gameMissionId", 
+     *       "missionId": "missionId" ,
+     *       "gameId": "gameId", 
+     *       "status": "SUCCESS" || "IN_PROGRESS", 
+     *       "completedAt": "completedAt", 
+     *       "completedBy": "completedBy"
+     *    },
+     *  ],
+     * }
+     */
+    syncGameInfo = async (payload) => {
+        try {
+            console.log("syncGameInfo", payload);
+            const { gameId } = payload;
+
+            const game = await this.gameService.findGame(gameId);
+            const gameMembers = await this.gameMemberService.findAllByGameId(gameId);
+            const gameMissions = await this.gameMissionService.findAllByGameId(gameId);
+
+            const res = {
+                gameId: gameId,
+                gameStatus: game.status,
+                members: gameMembers.map(member => ({
+                    memberId: member.memberId,
+                    position: member.position,
+                    status: member.status,
+                })),
+                missions: gameMissions
+            };
+            this.socket.emit("get sync game info", res);
+            console.log("sync game info", res);
+        } catch (error) {
+            console.error("syncGameInfo error", error);
             sendError(this.socket, error, "GameError");
         }
     }
@@ -368,10 +432,21 @@ export class GameController {
         }
     }
 
+    /**
+     * mq에 이미지 전송
+     * 
+     * req : {
+     *  gameId: 1,
+     *  memberId: 1,
+     *  gameMissionId: 1,
+     *  imageUrl: "url" 
+     * } 
+     */
     postMissionImage = async (payload) => {
         try {
+            const gameId = payload.gameId;
+            this.mq.sendMessage(payload, MQConfig.MQ_IMAGE);
             console.log("postMissionImage", payload);
-            // Validation and logic here
         } catch (error) {
             console.error("postMissionImage error", error);
             sendError(this.socket, error, "GameError");
@@ -401,13 +476,15 @@ export class GameController {
 
             // redis에서 게임 타이머 삭제
             await redisClient.deleteGameTimer(gameId);
+            await redisClient.deleteGameSettingLock(gameId);
+
             // 패널티와 위치 정보는 5초 후 삭제
             setTimeout(async () => {
                 await redisClient.deleteAllInGameCachesByGameId(gameId);
             }, 5000);
 
             // 게임 종료 처리 => spring boot에 요청을 보내야함.
-            
+
 
             // 게임 종료 알림
             io.to(gameId).emit("get end game", {
@@ -428,6 +505,8 @@ export class GameController {
     /**
      * 게임 종료 후 개인이 보내는 이벤트
      * 
+     * 이 이벤트가 일어나야만 redis gps 삭제 로직과 패널티 삭제로직이 실행됨.
+     * 
      * {
      *   'gameId': 1,
      *   'memberId': 1,
@@ -435,6 +514,7 @@ export class GameController {
      *   'walk': 1,
      *   'longestSurvived': 1
      * }
+     * 
      */
     postGameEndAfter = async (payload) => {
         try {
@@ -453,7 +533,6 @@ export class GameController {
             const stringGameId = `game-${gameId}`;
             await this.redisClient.deleteGameCachesByMemberId(memberId, stringGameId);
 
-
         } catch (error) {
             console.error("postGameEndAfter error", error);
             sendError(this.socket, error, "GameError");
@@ -470,11 +549,6 @@ export class GameController {
             const integerGameId = parseInt(this.socket.data.gameId.split("-")[1]);
 
             await this.gameMemberService.updateInGameConnected(integerGameId, this.socket.data.memberId, false);
-
-            // redis gps 삭제
-            if (this.socket.data.gameId && this.socket.data.memberId) {
-                await this.redisClient.deleteLocation(this.socket.data.memberId, this.socket.data.gameId);
-            }
 
             console.log("disconnect", this.socket.data);
             this.socket.disconnect();

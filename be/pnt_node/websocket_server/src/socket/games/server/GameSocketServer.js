@@ -1,17 +1,21 @@
 import { GameController } from "../controller/GameController.js";
 import { resolveInSocket } from "../../../global/auth/JwtResolver.js";
 import { RedisClient } from "../../utils/client/RedisClient.js";
+import MessagingQueue from "../../../global/mq/MessagingQueue.js";
 
 const redisClient = new RedisClient();
 
 const gameSocketServer = (io) => {
     io.use(resolveInSocket);
 
+    // 연결 타이머가 만료되었을 때만, inGameConnected = false로 변경 : 이건 ExpiredChannel에서 수행
     io.on("connection", async (socket) => {
         const storedGameId = await redisClient.getStoredRoomId(socket, "game");
 
+        const mq = await MessagingQueue.create();
+
         socket.data.isIntentionalExit = false; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
-        const gameController = new GameController(io, socket);
+        const gameController = new GameController(io, socket, mq);
 
         const isActiveRoom = await gameController.isActiveRoom(storedGameId);
 
@@ -33,6 +37,7 @@ const gameSocketServer = (io) => {
         socket.on("post skill use", gameController.postSkillUse);
         socket.on("post mission image", gameController.postMissionImage);
         // socket.on("post after game end", gameController.postGameEndAfter);
+        socket.on("post sync game info", gameController.syncGameInfo);
 
         socket.on("post disconnect", gameController.disconnect);
 

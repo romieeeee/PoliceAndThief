@@ -79,8 +79,12 @@ export class RedisClient {
         return JSON.parse(gameSetting);
     }
 
-    setGameSettingLock = async (gameId) => {
-        return await this.pubClient.set(`websocket:game:setting:lock:${gameId}`, "locked", "NX", "EX", 5);
+    setGameSettingLock = async (gameId, time) => {
+        return await this.pubClient.set(`websocket:game:setting:lock:${gameId}`, "locked", "NX", "EX", time);
+    }
+
+    deleteGameSettingLock = async (gameId) => {
+        await this.pubClient.del(`websocket:game:setting:lock:${gameId}`);
     }
 
     /**
@@ -156,7 +160,7 @@ export class RedisClient {
         return `room:${gameId}:locations`;
     }
 
-    
+
 
     // 이 함수는 게임이 종료됐을때만 실행.
     deleteGameCachesByMemberId = async (memberId, gameId) => {
@@ -180,14 +184,19 @@ export class RedisClient {
 
     // time은 초단위
     setGameTimer = async (gameId, time) => {
-        return await this.pubClient.set(`websocket:game:timer:${gameId}`, "timer", "EX", time);
+        return await this.pubClient.set(`websocket:game:timer:${gameId}`, Date.now().toString(), "EX", time);
+    }   
+
+    getGameTimer = async (gameId) => {
+        const gameTimer = await this.pubClient.get(`websocket:game:timer:${gameId}`);
+        return parseInt(gameTimer);
     }
 
     deleteGameTimer = async (gameId) => {
         await this.pubClient.del(`websocket:game:timer:${gameId}`);
     }
 
-    
+
 
     getPenaltyKeyString = (gameId, memberId) => {
         if (memberId) {
