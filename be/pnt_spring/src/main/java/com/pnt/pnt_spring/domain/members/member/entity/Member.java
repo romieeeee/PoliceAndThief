@@ -21,8 +21,7 @@ public class Member extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 아이디: 5자리 이상 ~ 12자리 이하 (DB 컬럼 길이를 12로 제한)
-    @Column(name = "login_id", length = 12, nullable = false, unique = true)
+    @Column(name = "login_id", nullable = false, unique = true)
     private String loginId;
 
     @Column(nullable = false)
