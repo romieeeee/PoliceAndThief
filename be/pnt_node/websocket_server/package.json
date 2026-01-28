@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",
+    "@socket.io/redis-emitter": "^5.1.0",
     "@turf/turf": "^7.3.2",
     "amqplib": "^0.10.9",
     "cors": "^2.8.5",
@@ -24,6 +25,7 @@
     "mongoose-sequence": "^6.0.1",
     "pg": "^8.17.2",
     "pg-hstore": "^2.3.4",
+    "redis": "^5.10.0",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.3"
   }
