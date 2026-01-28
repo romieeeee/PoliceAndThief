@@ -37,6 +37,7 @@ public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
         join gm.member m
         left join m.memberProfile mp
         where g.id = :gameId
+          and gm.isDeleted = false
         order by gm.id asc
     """)
     List<GameRoomMemberItem> findRoomMemberItems(@Param("gameId") Long gameId);
@@ -72,6 +73,7 @@ public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
     Optional<GameMember> findByGameIdAndMemberIdForUpdate(@Param("gameId") Long gameId,
                                                           @Param("memberId") Long memberId);
 
+
     // 멤버 목록 조회 최적화 (N+1 방지)
     @Query("""
         select gm
@@ -81,7 +83,29 @@ public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
         order by gm.id asc
     """)
     List<GameMember> findAllByGameIdWithMember(@Param("gameId") Long gameId);
+
+
+    @Query("""
+          select gm
+          from GameMember gm
+          join fetch gm.member m
+          where gm.game.id = :gameId
+            and gm.isDeleted = false
+          order by gm.id asc
+        """)
+    List<GameMember> findAllActiveByGameIdWithMember(@Param("gameId") Long gameId);
+
     // 특정 게임에서 특정 역할을 가진 유저들 조회
     // Entity의 필드명(givenPosition)에 맞춰 쿼리 메소드를 작성합니다.
     List<GameMember> findAllByGameIdAndGivenPosition(Long gameId, Position givenPosition);
+
+    Optional<GameMember> findByGameIdAndMemberIdAndIsDeletedFalse(Long gameId, Long memberId);
+
+    boolean existsByGameIdAndMemberIdAndIsDeletedFalse(Long gameId, Long memberId);
+
+    long countByGameIdAndIsDeletedFalse(Long gameId);
+
+    Optional<GameMember> findFirstByGameIdAndIsDeletedFalseOrderByCreatedAtAsc(Long gameId);
+
+
 }
