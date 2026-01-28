@@ -119,24 +119,26 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
 
     @Override
     public GameRoomReadyResponse updateReady(Long roomId, Long memberId, GameRoomReadyRequest req) {
-        if (req == null) {
-            throw new IllegalArgumentException("ready 요청 바디가 필요합니다.");
+        if (req == null || req.getReady() == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
         }
 
         Game game = gameRepository.findByIdForUpdate(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 방입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
 
         if (!game.isWaiting()) {
-            throw new IllegalStateException("게임이 이미 시작되어 준비 상태를 변경할 수 없습니다.");
+            throw new BusinessException(ErrorCode.ROOM_ALREADY_STARTED);
         }
 
         GameMember gm = gameMemberRepository.findByGameIdAndMemberIdForUpdate(roomId, memberId)
-                .orElseThrow(() -> new IllegalArgumentException("방에 참가한 멤버가 아닙니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_JOINED));
 
-        gm.toggleReady();
+        // A안: 토글이 아니라 요청값 그대로 세팅
+        gm.setReady(req.getReady());
 
         return new GameRoomReadyResponse(roomId, memberId, gm.getReady());
     }
+
 
     @Override
     public GameRoomPositionResponse pickPosition(Long actorMemberId, Long roomId, GameRoomPositionRequest req) {
