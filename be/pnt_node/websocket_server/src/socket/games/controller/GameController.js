@@ -11,6 +11,15 @@ import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
 import { GameMissionService } from "../application/GameMissionService.js";
 import { TurfService } from "../application/TurfService.js";
 import { MQConfig } from "../../../global/mq/MQConfig.js";
+import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemberPosition.js";
+import { GameMemberStatus } from "../../../global/db/sequelize/status/GameMemberStatus.js";
+import { GameSkillService } from "../application/GameSkillService.js";
+import { GameMemberStatService } from "../application/GameMemberStatService.js";
+import { RedisClient } from "../../utils/client/RedisClient.js";
+import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
+import { GameMissionService } from "../application/GameMissionService.js";
+import { TurfService } from "../application/TurfService.js";
+import { MQConfig } from "../../../global/mq/MQConfig.js";
 
 export class GameController {
     constructor(io, socket, mq) {
