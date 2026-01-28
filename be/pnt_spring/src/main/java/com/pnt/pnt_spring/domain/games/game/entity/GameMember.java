@@ -1,5 +1,6 @@
 package com.pnt.pnt_spring.domain.games.game.entity;
 
+import com.pnt.pnt_spring.domain.games.game.enums.GameMemberStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
@@ -53,7 +54,6 @@ public class GameMember extends BaseEntity {
     private GameMemberStatus status;
 
     private Boolean inGameConnected;
-    private String status;
 
     /* =========================
        생성/상태 변경 메서드
@@ -66,7 +66,7 @@ public class GameMember extends BaseEntity {
         gm.ready = false;
         gm.preferPosition = PreferPosition.ANY; // 기본값: 상관없음
         gm.givenPosition = null;                // 배정은 게임 시작 때
-        gm.status = "JOINED"; // TODO: enum으로 변경
+        gm.status = null;
         return gm;
     }
 
