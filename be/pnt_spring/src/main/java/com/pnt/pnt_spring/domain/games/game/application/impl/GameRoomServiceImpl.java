@@ -2,6 +2,7 @@ package com.pnt.pnt_spring.domain.games.game.application.impl;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomCreateRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomCreateResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomStartableResponse;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameStartResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomCodeGenerator;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomService;
@@ -91,7 +92,6 @@ public class GameRoomServiceImpl implements GameRoomService {
         return new GameRoomCreateResponse(game.getId(), game.getRoomCode(), GameStatus.WAITING);
     }
 
-
     @Override
     public GameStartResponse start(Long actorMemberId, Long roomId) {
 
@@ -140,6 +140,40 @@ public class GameRoomServiceImpl implements GameRoomService {
             }
         }
         return GameStartResponse.from(game, members);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GameRoomStartableResponse getStartable(Long actorMemberId, Long roomId) {
+
+        Game game = gameRepository.findByIdAndIsDeletedFalse(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+
+        // 방장만 의미 있음 → 방장이 아니면 항상 false
+        boolean isHost = game.isHost(actorMemberId);
+
+        GameSetting setting = gameSettingRepository.findById(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
+
+        long joined = gameMemberRepository.countByGameIdAndIsDeletedFalse(roomId);
+        long notReady = gameMemberRepository
+                .countByGameIdAndIsDeletedFalseAndMemberIdNotAndReadyFalse(
+                        roomId,
+                        game.getHost().getId()
+                );
+
+        boolean canStart =
+                isHost &&
+                        game.isWaiting() &&
+                        joined == setting.getPlayerCount() &&
+                        notReady == 0;
+
+        return new GameRoomStartableResponse(
+                canStart,
+                joined,
+                setting.getPlayerCount(),
+                notReady
+        );
     }
 
     private boolean joinedEqualsSetting(long joined, Integer playerCount) {
