@@ -2,6 +2,7 @@ package com.pnt.pnt_spring.domain.games.game.application.impl;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomCreateRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomCreateResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameStartResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomCodeGenerator;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomService;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
@@ -9,11 +10,14 @@ import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.entity.GameSetting;
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
+import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.members.member.repository.MemberRepository;
+import com.pnt.pnt_spring.global.api.code.ErrorCode;
+import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.*;
 import org.springframework.stereotype.Service;
@@ -79,6 +83,54 @@ public class GameRoomServiceImpl implements GameRoomService {
         return new GameRoomCreateResponse(game.getId(), game.getRoomCode(), GameStatus.WAITING);
     }
 
+
+    @Override
+    public GameStartResponse start(Long actorMemberId, Long roomId) {
+
+        Game game = gameRepository.findByIdForUpdate(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+
+        if (!game.isHost(actorMemberId)) {
+            throw new BusinessException(ErrorCode.ROOM_NOT_HOST);
+        }
+
+        if (!game.isWaiting()) {
+            throw new BusinessException(ErrorCode.ROOM_ALREADY_STARTED);
+        }
+
+        GameSetting setting = gameSettingRepository.findById(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
+
+        long joined = gameMemberRepository.countByGameIdAndIsDeletedFalse(roomId);
+        if (!joinedEqualsSetting(joined, setting.getPlayerCount())) {
+            // 정원 미충족/초과는 지금 코드 체계상 ROOM_NOT_READY로 묶는게 가장 자연스러움
+            throw new BusinessException(ErrorCode.ROOM_NOT_READY);
+        }
+
+        long notReady = gameMemberRepository.countByGameIdAndIsDeletedFalseAndReadyFalse(roomId);
+        if (notReady > 0) {
+            throw new BusinessException(ErrorCode.ROOM_NOT_READY);
+        }
+
+        // active 멤버 로드(닉네임 응답용 memberProfile까지 fetch)
+        List<GameMember> members = gameMemberRepository.findAllActiveByGameIdWithMember(roomId);
+
+        // 포지션 확정(PreferPosition 반영)
+        assignPositions(setting, members);
+
+        // 게임 시작
+        game.start();
+
+        return GameStartResponse.from(game, members);
+    }
+
+    private boolean joinedEqualsSetting(long joined, Integer playerCount) {
+        if (playerCount == null) return false;
+        return joined == playerCount.longValue();
+    }
+
+
+
     private Polygon toPolygon(List<GameRoomCreateRequest.LatLng> polygon) {
         if (polygon == null || polygon.size() < 3) {
             throw new IllegalArgumentException("polygon은 최소 3개 좌표가 필요합니다.");
@@ -115,4 +167,57 @@ public class GameRoomServiceImpl implements GameRoomService {
 
         return poly;
     }
+
+    private void assignPositions(GameSetting setting, List<GameMember> members) {
+        int thiefNeed = setting.getThiefCount();
+        int policeNeed = setting.getPoliceCount();
+
+        if (thiefNeed + policeNeed != members.size()) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
+        }
+
+        // 1) 선호로 후보군 나누기
+        List<GameMember> preferThief = members.stream()
+                .filter(gm -> gm.getPreferPosition() == PreferPosition.THIEF)
+                .toList();
+
+        List<GameMember> preferAny = members.stream()
+                .filter(gm -> gm.getPreferPosition() == PreferPosition.ANY)
+                .toList();
+
+        List<GameMember> preferPolice = members.stream()
+                .filter(gm -> gm.getPreferPosition() == PreferPosition.POLICE)
+                .toList();
+
+        // 2) thiefNeed 만큼 도둑 선정: THIEF 선호 → ANY → POLICE(강제 전환)
+        java.util.LinkedHashSet<GameMember> thieves = new java.util.LinkedHashSet<>();
+
+        for (GameMember gm : preferThief) {
+            if (thieves.size() >= thiefNeed) break;
+            thieves.add(gm);
+        }
+        for (GameMember gm : preferAny) {
+            if (thieves.size() >= thiefNeed) break;
+            thieves.add(gm);
+        }
+        for (GameMember gm : preferPolice) {
+            if (thieves.size() >= thiefNeed) break;
+            thieves.add(gm);
+        }
+
+        if (thieves.size() != thiefNeed) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
+        }
+
+        // 3) 확정 배정
+        for (GameMember gm : members) {
+            if (thieves.contains(gm)) {
+                gm.assignPosition(Position.THIEF);
+            } else {
+                gm.assignPosition(Position.POLICE);
+            }
+        }
+    }
+
+
 }
