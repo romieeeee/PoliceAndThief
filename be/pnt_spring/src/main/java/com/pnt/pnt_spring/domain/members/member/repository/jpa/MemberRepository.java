@@ -1,4 +1,4 @@
-package com.pnt.pnt_spring.domain.members.member.repository;
+package com.pnt.pnt_spring.domain.members.member.repository.jpa;
 
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;

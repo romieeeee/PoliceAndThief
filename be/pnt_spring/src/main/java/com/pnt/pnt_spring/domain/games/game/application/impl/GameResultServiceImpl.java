@@ -136,7 +136,7 @@ public class GameResultServiceImpl implements GameResultService {
                 .startTime(game.getStartTime().format(formatter))
                 .winningTeam("POLICE".equals(game.getWinTeam()) ? "경찰" : "도둑")
                 .playTime(durationSec)
-                .location("SSAFY 구미캠퍼스 운동장")
+                .location("SSAFY 구미캠퍼스 운동장") // TODO : 지역코드로 조회해서 받아와서 어쩌구 저쩌구 저장하는 식으로 해야함
                 .policeCount(policeCount)
                 .thiefCount(thiefCount)
                 .mvp(mvpNickname)

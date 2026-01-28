@@ -48,6 +48,7 @@ public class Game extends BaseEntity {
         game.roomCode = roomCode;
         game.status = GameStatus.WAITING;
         game.winTeam = WinTeam.NONE;
+        game.caughtCount = 0;
         return game;
     }
 

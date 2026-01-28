@@ -1,4 +1,4 @@
-package com.pnt.pnt_spring.domain.members.member.repository;
+package com.pnt.pnt_spring.domain.members.member.repository.mongo;
 
 import com.pnt.pnt_spring.domain.members.member.entity.document.MemberDoc;
 import org.springframework.data.mongodb.repository.MongoRepository;

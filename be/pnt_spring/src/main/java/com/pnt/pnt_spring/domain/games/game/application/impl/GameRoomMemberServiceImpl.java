@@ -12,7 +12,7 @@ import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
-import com.pnt.pnt_spring.domain.members.member.repository.MemberRepository;
+import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

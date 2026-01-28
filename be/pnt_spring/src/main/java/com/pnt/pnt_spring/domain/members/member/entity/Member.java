@@ -35,11 +35,15 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private MemberRole role;
 
-    // 연관관계 설정(과다 조회 방지)
-    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "profile_id")
     private MemberProfile memberProfile;
 
-    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private MemberAuthProvider memberAuthProvider;
+
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "stat_id")
     private MemberStat memberStat;
 
     @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
