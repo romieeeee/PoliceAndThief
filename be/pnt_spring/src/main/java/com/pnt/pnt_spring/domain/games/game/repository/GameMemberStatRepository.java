@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -28,7 +30,7 @@ public interface GameMemberStatRepository extends JpaRepository<GameMemberStat, 
           AND gm.givenPosition = com.pnt.pnt_spring.domain.games.game.enums.Position.POLICE
         ORDER BY s.arrestCount DESC
     """)
-    Optional<GameMemberStat> findPoliceMvp(@Param("gameId") Long gameId, Pageable pageable);
+    List<GameMemberStat> findPoliceMvp(@Param("gameId") Long gameId, Pageable pageable);
 
     // 도둑 MVP
     @Query("""
@@ -41,5 +43,5 @@ public interface GameMemberStatRepository extends JpaRepository<GameMemberStat, 
           AND gm.givenPosition = com.pnt.pnt_spring.domain.games.game.enums.Position.THIEF
         ORDER BY s.longestSurvived DESC
     """)
-    Optional<GameMemberStat> findThiefMvp(@Param("gameId") Long gameId, Pageable pageable);
+    List<GameMemberStat> findThiefMvp(@Param("gameId") Long gameId, Pageable pageable);
 }

@@ -55,12 +55,18 @@ public class GameResultServiceImpl implements GameResultService { // 클래스�
         String mvpDescription = "";
 
         if ("POLICE".equals(winner)) { // 요청받은 winner 기준 (또는 game.getWinTeam())
-            mvpStat = gameMemberStatRepository.findPoliceMvp(gameId, PageRequest.of(0, 1)).orElse(null);
+            mvpStat = gameMemberStatRepository.findPoliceMvp(gameId, PageRequest.of(0, 1))
+                    .stream()
+                    .findFirst()
+                    .orElse(null);;
             if (mvpStat != null) {
                 mvpDescription = mvpStat.getArrestCount() + "회 체포 달성";
             }
         } else {
-            mvpStat = gameMemberStatRepository.findThiefMvp(gameId, PageRequest.of(0, 1)).orElse(null);
+            mvpStat = gameMemberStatRepository.findThiefMvp(gameId, PageRequest.of(0, 1))
+                    .stream()
+                    .findFirst()
+                    .orElse(null);;
             if (mvpStat != null) {
                 mvpDescription = mvpStat.getLongestSurvived() + "초 생존";
             }
