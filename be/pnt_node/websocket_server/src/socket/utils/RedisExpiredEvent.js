@@ -1,5 +1,6 @@
 import redisDB from "../../global/db/redis/RedisDB.js";
 import { ChatRoomService } from "../chats/application/ChatRoomService.js";
+import { RedisClient } from "./client/RedisClient.js";
 
 export class WebSocketReconnect {
     constructor(chatIo, readyRoomIo, gameIo) {
@@ -9,6 +10,7 @@ export class WebSocketReconnect {
         this.readyRoomIo = readyRoomIo;
         this.gameIo = gameIo;
         this.chatRoomService = new ChatRoomService();
+        this.redisClient = new RedisClient();
     }
 
     listen = async () => {
@@ -24,26 +26,26 @@ export class WebSocketReconnect {
 
                 // Key format: websocket:reconnect:timer:<namespace>:<roomId>:<userId>
                 // Example: websocket:reconnect:timer:chat:123:user456
-                if (key.startsWith("websocket:reconnect:timer:")) {
+                if (key.startsWith(this.redisClient.RECONNECT_PREFIX)) {
                     const parts = key.split(":");
                     const namespace = parts[3];
                     const roomId = parts[4];
-                    const userId = parts[5];
+                    const memberId = parts[5];
 
                     // [중복 방지 핵심] 
                     // "내가 처리할게"라고 Lock을 걸어봄. (setNX: 없으면 세팅하고 true, 있으면 false)
                     // 락 자체도 5초 뒤에 사라지게 설정 (데드락 방지)
-                    const isMine = await this.pubClient.set(`websocket:reconnect:lock:${userId}`, "locked", "NX", "EX", 5);
+                    const isMine = await this.redisClient.setReconnectLock(memberId);
 
                     if (isMine) {
-                        console.log(`[Process ${process.pid}] Winner! Handling disconnect for ${userId}`);
+                        console.log(`[Process ${process.pid}] Winner! Handling disconnect for ${memberId}`);
 
                         if (namespace === "chat") {
-                            this.chatDisconnect(userId, roomId);
+                            this.chatDisconnect(memberId, roomId);
                         } else if (namespace === "readyRoom") {
-                            this.readyRoomDisconnect(userId, roomId);
+                            this.readyRoomDisconnect(memberId, roomId);
                         } else if (namespace === "game") {
-                            this.gameDisconnect(userId, roomId);
+                            this.gameDisconnect(memberId, roomId);
                         }
                     } else {
                         console.log(`[Process ${process.pid}] User ${userId} expired, but handled by another process.`);
@@ -53,28 +55,26 @@ export class WebSocketReconnect {
         });
     }
 
-    chatDisconnect = async (userId, roomId) => {
-        await this.deleteKeys(userId, roomId, "chat");
+    chatDisconnect = async (memberId, roomId) => {
+        await this.redisClient.deleteKeys(memberId, roomId, "chat");
 
-        console.log("user_left", { userId, roomId });
+        console.log("user_left", { memberId, roomId });
 
-        this.chatIo.to(roomId).emit("user left", { userId });
+        this.chatIo.to(roomId).emit("user left", { memberId });
     }
 
-    readyRoomDisconnect = async (userId, roomId) => {
-        await this.deleteKeys(userId, roomId, "readyRoom");
-        this.readyRoomIo.to(roomId).emit("user left", { userId });
+    readyRoomDisconnect = async (memberId, roomId) => {
+        await this.redisClient.deleteKeys(memberId, roomId, "readyRoom");
+        this.readyRoomIo.to(roomId).emit("user left", { memberId });
     }
 
-    gameDisconnect = async (userId, roomId) => {
-        await this.deleteKeys(userId, roomId, "game");
+    gameDisconnect = async (memberId, roomId) => {
+        await this.redisClient.deleteKeys(memberId, roomId, "game");
 
-        this.gameIo.to(roomId).emit("user left", { userId });
+        // 게임에서 쓰는 redis cache들 삭제 (내 위치 정보 삭제, 경계 벗어남 패널티 횟수 관리 정보 삭제)
+        await this.redisClient.deleteGameCaches(memberId, roomId);
+
+        this.gameIo.to(roomId).emit("user left", { memberId });
     }
 
-    deleteKeys = async (userId, roomId, namespace) => {
-        this.pubClient.del(`websocket:reconnect:lock:${userId}`);
-        this.pubClient.del(`websocket:reconnect:info:${namespace}:${userId}`);
-        this.pubClient.del(`websocket:reconnect:timer:${namespace}:${roomId}:${userId}`);
-    }
 }
