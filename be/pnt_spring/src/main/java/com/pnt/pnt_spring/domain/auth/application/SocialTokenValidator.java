@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
@@ -87,9 +88,14 @@ public class SocialTokenValidator {
 
             return String.valueOf(body.get("id"));
 
+        } catch (HttpClientErrorException e) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN, "유효하지 않은 카카오 토큰입니다.");
+        } catch (BusinessException e) {
+            // 이미 발생한 비즈니스 예외(INVALID_TOKEN 등)는 그대로 던짐
+            throw e;
         } catch (Exception e) {
-            log.error("Kakao Token Validation Error: {}", e.getMessage());
-            throw new BusinessException(ErrorCode.INVALID_TOKEN, "카카오 로그인 실패");
+            // 그 외 예측 못한 에러만 500으로 처리
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "카카오 로그인 중 알 수 없는 오류가 발생했습니다.");
         }
     }
 }
