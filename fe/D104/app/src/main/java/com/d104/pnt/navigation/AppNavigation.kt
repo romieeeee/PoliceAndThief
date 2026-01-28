@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -16,6 +15,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.IntroScreen
 import com.d104.pnt.permission.PermissionDeniedDialog
 import com.d104.pnt.permission.PermissionDialog
@@ -38,6 +38,8 @@ import timber.log.Timber
 fun AppNavigation(
     viewModel: MainViewModel = hiltViewModel()
 ) {
+    val isLoggedIn by viewModel.isLoggedIn.collectAsStateWithLifecycle()
+
     val context = LocalContext.current
     val activity = context as? Activity
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -111,7 +113,6 @@ fun AppNavigation(
         }
     }
 
-    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (currentScreen) {
@@ -167,7 +168,13 @@ fun AppNavigation(
 
             // 메인 앱
             AppScreen.Main -> {
-                MainScreen(userName = userName)
+                MainScreen(
+                    userName = userName,
+                    navigateToIntro = {
+                        Timber.d("Navigation: Main -> Intro (Logout)")
+                        currentScreen = AppScreen.Intro // ⭐ Intro로 변경
+                    }
+                )
             }
         }
 

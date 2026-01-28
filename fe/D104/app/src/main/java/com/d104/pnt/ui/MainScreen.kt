@@ -34,7 +34,10 @@ import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
 
 @Composable
-fun MainScreen(userName: String) {
+fun MainScreen(
+    userName: String,
+    navigateToIntro: () -> Unit
+) {
     val navController = rememberNavController()
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -59,7 +62,8 @@ fun MainScreen(userName: String) {
                     },
                     navigateToGameRoom = { roomId ->
                         navController.navigate(Routes.ROLE_SELECT)
-                    }
+                    },
+                    navigateToIntro = { navigateToIntro() }
                 )
             }
 
@@ -181,7 +185,7 @@ fun MainScreen(userName: String) {
 //                        viewModel.submitMissionPhoto(compressedPhotoFile)
 
                         // 또는 다음 화면으로 이동
-                         navController.popBackStack()
+                        navController.popBackStack()
                     },
                     compressionQuality = 80, // 압축 품질 (0-100) - 기본값 80
                     maxWidth = 1280,         // 최대 가로 해상도 - 기본값 1280px
