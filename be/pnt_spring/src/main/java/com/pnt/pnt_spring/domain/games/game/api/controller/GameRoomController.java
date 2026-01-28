@@ -2,6 +2,7 @@ package com.pnt.pnt_spring.domain.games.game.api.controller;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomCreateRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomCreateResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameStartResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import com.pnt.pnt_spring.global.utils.SecurityUtils;
@@ -33,4 +34,18 @@ public class GameRoomController {
                 HttpStatus.CREATED
         );
     }
+
+
+    @PostMapping("/{roomId}/start")
+    public CommonResponse<GameStartResponse> start(@PathVariable Long roomId) {
+        Long actorId = SecurityUtils.currentMemberId();
+        GameStartResponse data = gameRoomService.start(actorId, roomId);
+
+        return new CommonResponse<>(
+                data,
+                "게임 시작 성공",
+                HttpStatus.OK
+        );
+    }
+
 }
