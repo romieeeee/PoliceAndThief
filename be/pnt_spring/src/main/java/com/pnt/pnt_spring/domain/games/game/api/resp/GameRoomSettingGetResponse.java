@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class GameRoomSettingUpdateResponse {
+public class GameRoomSettingGetResponse {
     private Long roomId;
     private String status;
 
