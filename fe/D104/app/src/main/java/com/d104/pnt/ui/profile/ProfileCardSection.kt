@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.d104.pnt.R
 import com.d104.pnt.ui.component.PixelContainer
+import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
 fun ProfileCardSection(
@@ -118,6 +119,7 @@ fun ProfileCardSection(
                         value = editedNickname,
                         onValueChange = { if (it.length <= 10) editedNickname = it },
                         textStyle = LocalTextStyle.current.copy(
+                            fontFamily = PixelFont,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -132,10 +134,12 @@ fun ProfileCardSection(
                 } else {
                     Text(
                         text = nickname,
+                        fontFamily = PixelFont,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(4.dp)
                     )
                 }
 
@@ -147,6 +151,7 @@ fun ProfileCardSection(
                     colorFilter = if (isEditing) null else ColorFilter.tint(Color.White),
                     modifier = Modifier
                         .size(iconSize)
+                        .padding(if (isEditing) 3.dp else 0.dp)
                         .clickable {
                             if (isEditing) {
                                 if (editedNickname.isNotBlank() && editedNickname != nickname) {
@@ -277,6 +282,7 @@ private fun GradeItem(
         // 타이틀
         Text(
             text = title,
+            fontFamily = PixelFont,
             color = Color.White,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold
@@ -308,3 +314,4 @@ private fun GradeItem(
         }
     }
 }
+

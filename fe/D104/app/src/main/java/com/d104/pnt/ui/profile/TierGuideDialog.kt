@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
 fun TierGuideDialog(
@@ -30,7 +31,7 @@ fun TierGuideDialog(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(500.dp) // 높이 고정 (스크롤 사용 위해)
+                .height(500.dp)
                 .background(Color(0xFF232323), RoundedCornerShape(16.dp))
                 .border(2.dp, Color(0xFF8D90B3), RoundedCornerShape(16.dp))
                 .padding(24.dp)
@@ -38,9 +39,9 @@ fun TierGuideDialog(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 제목
                 Text(
-                    text = "계급 시스템 가이드",
+                    text = "계급이란?",
+                    fontFamily = PixelFont,
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
@@ -48,9 +49,9 @@ fun TierGuideDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 설명 멘트
                 Text(
                     text = "경기를 승리하면 승급하고,\n패배하면 강등됩니다.",
+                    fontFamily = PixelFont,
                     color = Color(0xFFC4C4C4),
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center
@@ -58,11 +59,11 @@ fun TierGuideDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 계급표 헤더
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "경찰",
                         modifier = Modifier.weight(1f),
+                        fontFamily = PixelFont,
                         color = Color(0xFF6591E9),
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
@@ -70,7 +71,8 @@ fun TierGuideDialog(
                     Text(
                         text = "도둑",
                         modifier = Modifier.weight(1f),
-                        color = Color(0xFFFF6B6B), // 도둑은 붉은 계열 추천 (혹은 테마색)
+                        fontFamily = PixelFont,
+                        color = Color(0xFFFF6B6B),
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
@@ -79,7 +81,6 @@ fun TierGuideDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 HorizontalDivider(color = Color.Gray, thickness = 1.dp)
 
-                // 계급 리스트 (스크롤 가능)
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -94,7 +95,6 @@ fun TierGuideDialog(
                         "은행털이", "홍길동", "인비저블", "괴도", "대도"
                     )
 
-                    // 11단계 표시
                     for (i in 0 until 11) {
                         Row(
                             modifier = Modifier
@@ -105,14 +105,15 @@ fun TierGuideDialog(
                             Text(
                                 text = policeRanks.getOrElse(i) { "" },
                                 modifier = Modifier.weight(1f),
+                                fontFamily = PixelFont,
                                 color = Color.White,
                                 textAlign = TextAlign.Center,
                                 fontSize = 14.sp
                             )
 
-                            // 중앙 화살표나 구분
                             Text(
                                 text = "Lv.${i + 1}",
+                                fontFamily = PixelFont,
                                 color = Color.Gray,
                                 fontSize = 10.sp
                             )
@@ -120,6 +121,7 @@ fun TierGuideDialog(
                             Text(
                                 text = thiefRanks.getOrElse(i) { "" },
                                 modifier = Modifier.weight(1f),
+                                fontFamily = PixelFont,
                                 color = Color.White,
                                 textAlign = TextAlign.Center,
                                 fontSize = 14.sp
@@ -132,7 +134,6 @@ fun TierGuideDialog(
                 }
             }
 
-            // 닫기 버튼 (우측 상단)
             IconButton(
                 onClick = onDismissRequest,
                 modifier = Modifier.align(Alignment.TopEnd).offset(x = 12.dp, y = (-12).dp)

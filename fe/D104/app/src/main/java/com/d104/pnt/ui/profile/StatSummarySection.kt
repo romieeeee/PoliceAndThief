@@ -2,15 +2,23 @@ package com.d104.pnt.ui.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.BaselineShift
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.d104.pnt.ui.component.PixelContainer
+import kotlin.math.roundToInt
+import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
 fun StatSummarySection(
@@ -18,76 +26,103 @@ fun StatSummarySection(
     totalGames: Int,
     modifier: Modifier = Modifier
 ) {
-    val winRate = if (totalGames > 0) (wins.toFloat() / totalGames) * 100 else 0f
-    // 승률에 따른 게이지 칸 수 (총 10칸 기준)
-    val activeBlocks = if (totalGames > 0) (winRate / 10).toInt() else 0
+    // 승률 계산
+    val rawWinRate = if (totalGames > 0) (wins.toDouble() / totalGames * 100) else 0.0
+    val winRate = rawWinRate.roundToInt()
 
     PixelContainer(
         modifier = modifier,
         backgroundColor = Color(0xFF3F3F68),
         borderColor = Color(0xFF8D90B3),
-        borderWidth = 8f,
+        borderWidth = 6f,
         cornerSize = 20f
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(vertical = 20.dp, horizontal = 24.dp)
         ) {
+            // 타이틀
             Text(
                 text = "전적 요약",
+                fontFamily = PixelFont,
                 color = Color.White,
-                fontSize = 16.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
 
-            // 초록색 게이지 바
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 승률 게이지
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                repeat(10) { index ->
+                for (i in 1..10) {
+                    val blockMax = i * 10
+                    val blockMin = (i - 1) * 10
+
+                    val fillFraction = when {
+                        winRate >= blockMax -> 1f
+                        winRate <= blockMin -> 0f
+                        else -> (winRate - blockMin) / 10f
+                    }
+
+                    // 빈칸 박스
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(12.dp) // 높이 조절
-                            .background(
-                                if (index < activeBlocks) Color(0xFFA3E946) // 형광 연두 (채워짐)
-                                else Color(0xFFD9D9D9) // 회색 (빈칸)
-                            )
-                    )
+                            .aspectRatio(1.5f)
+                            .padding(horizontal = 2.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color(0xFF5A5A82))
+                    ) {
+                        // 채워짐 박스
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .fillMaxWidth(fillFraction)
+                                .background(Color(0xFFD9D9D9))
+                        )
+                    }
                 }
             }
 
-            // 하단 텍스트 정보
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 하단 정보
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // 승률 텍스트
                 Text(
-                    text = "승률 (${winRate.toInt()}%)",
+                    text = "승률 ($winRate%)",
+                    fontFamily = PixelFont,
                     color = Color(0xFFC4C4C4),
-                    fontSize = 12.sp
+                    fontSize = 14.sp
                 )
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "🎮", fontSize = 14.sp)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "플레이 횟수",
-                        color = Color(0xFFC4C4C4),
-                        fontSize = 12.sp
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "$totalGames",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                // 플레이 횟수
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(style = SpanStyle(color = Color(0xFFC4C4C4))) {
+                            append("플레이 횟수  ")
+                        }
+                        withStyle(
+                            style = SpanStyle(
+                                color = Color(0xFFFFD54F),
+                                fontWeight = FontWeight.Bold,
+                                baselineShift = BaselineShift(-0.2f)
+                            )
+                        ) {
+                            append("$totalGames")
+                        }
+                    },
+                    fontFamily = PixelFont,
+                    fontSize = 14.sp
+                )
             }
         }
     }

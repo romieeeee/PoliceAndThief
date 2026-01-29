@@ -117,7 +117,7 @@ fun ProfileContent(
 
     Column(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(24.dp) // 카드 간 간격
+        verticalArrangement = Arrangement.spacedBy(40.dp) // 카드 간 간격
     ) {
         Spacer(modifier = Modifier.height(40.dp)) // 상단 여백
 
@@ -132,16 +132,16 @@ fun ProfileContent(
             onUpdateAvatar = onUpdateAvatar,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 36.dp)
         )
 
-        // 2. 전적 요약 섹션
+        // 전적 요약 섹션
         StatSummarySection(
             wins = wins,
             totalGames = totalGames,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 36.dp)
         )
 
         Spacer(modifier = Modifier.weight(1f))
