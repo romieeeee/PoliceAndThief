@@ -62,14 +62,19 @@ class SignupViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val idErrorMessage: StateFlow<String> =
-        combine(_id, isDuplicateChecked, isDuplicated) { id, checked, duplicated ->
+        combine(_id, _isDuplicateChecked, _isDuplicated) { id, checked, duplicated ->
             when {
                 id.isEmpty() -> ""
                 id.length !in 5..12 -> "아이디는 5~12자 이내여야 합니다"
-                duplicated -> "이미 사용 중인 아이디입니다"
+                !checked -> "아이디 중복 확인을 해주세요"  // 중복 체크를 안 했을 때
+                duplicated -> "이미 사용 중인 아이디입니다" // 체크했는데 중복일 때
                 else -> ""  // 사용 가능
             }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ""
+        )
 
     // 비밀번호 유효성
     val isPwValid: StateFlow<Boolean> = _pw.map {
@@ -250,7 +255,8 @@ class SignupViewModel @Inject constructor(
                     password = _pw.value,
                     passwordConfirm = _pwConfirm.value,
                     nickname = _nickname.value,
-                    email = Random.nextInt(1_000_000).toString(), // TODO: 서버 수정 전 임시 수정 후엔 빈 스트링으로 수정
+                    email = Random.nextInt(1_000_000)
+                        .toString(), // TODO: 서버 수정 전 임시 수정 후엔 빈 스트링으로 수정
                     birth = formattedBirth,
                     avatarUrl = null
                 )) {
