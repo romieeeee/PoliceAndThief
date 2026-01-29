@@ -100,6 +100,7 @@ class ChatRoomListViewModel @Inject constructor(
         title: String?,
         regionCode: Int?
     ) {
+        if (_viewMode.value == ViewMode.Me) _viewMode.value = ViewMode.Title
         viewModelScope.launch {
             _listState.value = UiState.Loading
             when (val result = chatRepository.searchChatRoom(title, regionCode)) {
