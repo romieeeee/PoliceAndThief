@@ -109,6 +109,7 @@ class GameCreateViewModel @Inject constructor(
     fun createGameRoom(
         playerCount: Int,
         timeLimit: Int,
+        cctvInterval: Int,
         policeCount: Int,
         thiefCount: Int,
         prison: Location,
@@ -119,6 +120,7 @@ class GameCreateViewModel @Inject constructor(
             when (val result = gameRoomRepository.createGameRoom(
                 playerCount,
                 timeLimit,
+                cctvInterval,
                 policeCount,
                 thiefCount,
                 prison,

@@ -7,6 +7,8 @@ data class CreateGameRoomRequest(
     val playerCount: Int,
     @SerializedName("timeLimit")
     val timeLimit: Int,
+    @SerializedName("cctvInterval")
+    val cctvInterval: Int,
     @SerializedName("policeCount")
     val policeCount: Int,
     @SerializedName("thiefCount")

@@ -1,7 +1,7 @@
 package com.d104.pnt.ui.game.create
 
+import android.util.Log
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -24,12 +24,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.data.remote.model.request.Location
-import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.DraggableLatLng
+import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.GoogleMaps
-//import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
-import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.component.RoundedButton
 import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.DialogBorderColor
@@ -39,7 +37,7 @@ import com.google.android.gms.maps.model.LatLng
 @Composable
 fun GameCreateScreen(
     onCancel: () -> Unit,
-    onConfirm: () -> Unit,
+    onConfirm: (Long) -> Unit,
     viewModel: GameCreateViewModel = hiltViewModel()
 ) {
     val gameName by viewModel.gameName.collectAsStateWithLifecycle()
@@ -56,10 +54,20 @@ fun GameCreateScreen(
     val polygonPoints by viewModel.polygonPoints.collectAsStateWithLifecycle()
     val prisonLocation by viewModel.prisonLocation.collectAsStateWithLifecycle()
 
+    val gameRoomState by viewModel.gameRoomState.collectAsStateWithLifecycle()
+
     var showMapPopup by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         // ViewModel에게 Context를 줘서 위치를 가져오고 저장하게 시킴
         viewModel.setDefaultSettings(context)
+    }
+
+    LaunchedEffect(gameRoomState) {
+        if (gameRoomState is UiState.Success) {
+            val roomId = (gameRoomState as UiState.Success).data.roomId
+            onConfirm(roomId) // 성공한 방 번호를 MainScreen으로 전달
+        }
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -222,6 +230,32 @@ fun GameCreateScreen(
                                             lng = it.longitude
                                         )
                                     }
+                                    val isValid = viewModel.isValid(
+                                        playerCount = totalPlayers,
+                                        timeLimit = gameTime,
+                                        policeCount = policeCount,
+                                        thiefCount = thiefCount,
+                                        polygon = polyPoint
+                                    )
+                                    Log.d("TEST_CLICK", "유효성 검사 결과: $isValid")
+                                    Log.d("TEST_CLICK", "폴리곤 점 개수: ${polyPoint.size}")
+                                    Log.d("TEST_CLICK", "인원: $totalPlayers, 시간: $gameTime")
+                                    // ------------------------
+
+                                    if (isValid) {
+                                        viewModel.createGameRoom(
+                                            playerCount = totalPlayers,
+                                            timeLimit = gameTime,
+                                            cctvInterval = cctvCycle,
+                                            policeCount = policeCount,
+                                            thiefCount = thiefCount,
+                                            prison = Location(prisonLocation!!.latitude, prisonLocation!!.longitude),
+                                            polygon = polyPoint
+                                        )
+                                    } else {
+                                        // 실패 시 토스트라도 띄워서 알려주면 좋습니다.
+                                        // Toast.makeText(context, "설정 조건을 확인해주세요 (맵 영역 등)", Toast.LENGTH_SHORT).show()
+                                    }
                                     if (viewModel.isValid(
                                         playerCount = totalPlayers,
                                         timeLimit = gameTime,
@@ -232,6 +266,7 @@ fun GameCreateScreen(
                                         viewModel.createGameRoom(
                                             playerCount = totalPlayers,
                                             timeLimit = gameTime,
+                                            cctvInterval = cctvCycle,
                                             policeCount = policeCount,
                                             thiefCount = thiefCount,
                                             prison = Location(
@@ -240,7 +275,6 @@ fun GameCreateScreen(
                                             ),
                                             polygon = polyPoint
                                         )
-                                        onConfirm()
                                     }
                                           },
                                 containerColor = Color.White,

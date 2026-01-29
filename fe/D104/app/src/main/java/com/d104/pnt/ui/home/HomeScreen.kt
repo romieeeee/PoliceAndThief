@@ -52,25 +52,25 @@ fun HomeScreen(
     var showJoinDialog by remember { mutableStateOf(false) }
     val joinCode by viewModel.joinCode.collectAsStateWithLifecycle()
 
-    // 이벤트 수집
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is HomeViewModel.HomeUiEvent.NavigateToIntro -> {
                     navigateToIntro()
                 }
-
                 is HomeViewModel.HomeUiEvent.ShowMessage -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
-
                 is HomeViewModel.HomeUiEvent.ShowError -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+                is HomeViewModel.HomeUiEvent.NavigateToGameRoom -> {
+                    showJoinDialog = false
+                    navigateToGameRoom(event.roomId)
                 }
             }
         }
     }
-
 
     Surface(modifier = Modifier.fillMaxSize()) {
 
@@ -134,7 +134,7 @@ fun HomeScreen(
                     JoinGameDialog(
                         onDismiss = { showJoinDialog = false },
                         onConfirm = {
-                            showJoinDialog = false
+                            viewModel.joinGame()
                         },
                         joinCode = joinCode,
                         onUpdateCode = {

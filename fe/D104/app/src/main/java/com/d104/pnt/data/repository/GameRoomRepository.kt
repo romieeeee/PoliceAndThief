@@ -16,6 +16,7 @@ interface GameRoomRepository{
     suspend fun createGameRoom(
         playerCount: Int,
         timeLimit: Int,
+        cctvInterval: Int,
         policeCount: Int,
         thiefCount: Int,
         prison: Location,

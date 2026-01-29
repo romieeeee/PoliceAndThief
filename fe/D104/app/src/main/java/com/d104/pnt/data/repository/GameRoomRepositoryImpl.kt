@@ -28,6 +28,7 @@ class GameRoomRepositoryImpl @Inject constructor(
     override suspend fun createGameRoom(
         playerCount: Int,
         timeLimit: Int,
+        cctvInterval: Int,
         policeCount: Int,
         thiefCount: Int,
         prison: Location,
@@ -46,6 +47,7 @@ class GameRoomRepositoryImpl @Inject constructor(
                 CreateGameRoomRequest(
                     playerCount,
                     timeLimit,
+                    cctvInterval,
                     policeCount,
                     thiefCount,
                     prison,

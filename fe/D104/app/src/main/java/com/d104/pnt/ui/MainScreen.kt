@@ -100,7 +100,7 @@ fun MainScreen(
                         navController.navigate(Routes.GAME_CREATE)
                     },
                     navigateToGameRoom = { roomId ->
-                        navController.navigate(Routes.ROLE_SELECT)
+                        navController.navigate(Routes.buildGameRoom(roomId))
                     },
                     navigateToIntro = { navigateToIntro() }
                 )
@@ -216,13 +216,11 @@ fun MainScreen(
                     onCancel = {
                         navController.popBackStack()
                     },
-                    onConfirm = {
-                        // TODO: 게임 방 생성 후 대기방 이동할지 메인으로 갈지 고민중
-//                        navController.navigate(
-//                            Routes.buildGameRoom(1)
-//                        ) {
-//                            popUpTo(Routes.HOME)
-//                        }
+                    onConfirm = { roomId ->
+                        navController.navigate(Routes.buildGameRoom(roomId)) {
+
+                            popUpTo(Routes.HOME)
+                        }
                     }
                 )
             }

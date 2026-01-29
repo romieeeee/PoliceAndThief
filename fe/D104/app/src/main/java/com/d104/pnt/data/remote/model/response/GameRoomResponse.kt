@@ -15,6 +15,9 @@ data class GameRoomSettingsResponse(
     @SerializedName("roomId")
     val roomId: Long,
 
+    @SerializedName("roomCode")
+    val roomCode: String,
+
     @SerializedName("status")
     val status: String,
 

@@ -33,8 +33,8 @@ class GameWaitingViewModel @Inject constructor(
     private val roomId: Long = savedStateHandle.get<Long>(NavArgs.ROOM_ID) ?: 0L
 
     // 내 Member ID
-    val myMemberId: StateFlow<Long> = authRepository.getMemberId()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
+    private val _myMemberId = MutableStateFlow(0L)
+    val myMemberId: StateFlow<Long> = _myMemberId.asStateFlow()
 
     // 참가자 리스트
     private val _players = MutableStateFlow<List<WaitingPlayer>>(emptyList())
@@ -60,6 +60,15 @@ class GameWaitingViewModel @Inject constructor(
     private var pollingJob: Job? = null
 
     init {
+        viewModelScope.launch {
+            authRepository.getMemberId().collect { id ->
+                if (id != 0L) {
+                    _myMemberId.value = id
+                    Timber.d("GameWaitingViewModel: 내 ID 로드 성공 -> $id")
+                }
+            }
+        }
+
         loadRoomSettings()
         startPolling()
     }
@@ -70,8 +79,9 @@ class GameWaitingViewModel @Inject constructor(
             when (val result = gameRoomRepository.getRoomSettings(roomId)) {
                 is BaseResult.Success -> {
                     val data = result.data
+
                     _roomInfo.value = GameRoomInfoState(
-                        roomCode = "ROOM-${data.roomId}",
+                        roomCode = data.roomCode, // <-- 여기를 수정했습니다!
                         maxCount = data.playerCount,
                         policeCount = data.policeCount,
                         thiefCount = data.thiefCount,
@@ -93,11 +103,27 @@ class GameWaitingViewModel @Inject constructor(
                 val items = result.data.items
                 val currentMemberId = myMemberId.value
 
+                // 🔍 디버깅용 로그 추가
+                Timber.d("CheckHost: 내 ID=$currentMemberId")
+
                 val uiPlayers = items.map { item ->
-                    // 내 상태 갱신
+                    // 🔍 멤버 정보 로그
+                    if (item.host) {
+                        Timber.d("CheckHost: 방장 발견! ID=${item.memberId}, 닉네임=${item.nickname}")
+                    }
+
+                    // 내 상태 갱신 로직
                     if (item.memberId == currentMemberId) {
-                        _isHost.value = item.host
-                        _isMeReady.value = item.ready
+                        // 내가 방장인지 확인
+                        if (_isHost.value != item.host) {
+                            _isHost.value = item.host
+                            Timber.d("CheckHost: 내 방장 권한 변경됨 -> ${item.host}")
+                        }
+
+                        // 준비 상태 동기화
+                        if (_isMeReady.value != item.ready) {
+                            _isMeReady.value = item.ready
+                        }
                     }
 
                     WaitingPlayer(
@@ -106,7 +132,6 @@ class GameWaitingViewModel @Inject constructor(
                         role = if (item.role == "POLICE") GameRole.POLICE else GameRole.THIEF,
                         isReady = item.ready,
                         profileUrl = item.profileImageUrl,
-                        // 로컬 상태와 결합
                         isChangingRole = _changingRoleMemberIds.value.contains(item.memberId)
                     )
                 }
