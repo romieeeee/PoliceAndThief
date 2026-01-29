@@ -3,6 +3,7 @@ package com.d104.pnt.ui.game.wait
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -12,9 +13,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -33,15 +37,16 @@ import com.d104.pnt.R
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
-import com.d104.pnt.ui.theme.PixelFont
-import androidx.compose.material3.MaterialTheme
 import com.d104.pnt.ui.theme.AccentYellow
+import com.d104.pnt.ui.theme.PixelFont
 
 // UI 테스트용 더미 데이터
 data class WaitingPlayer(
     val id: Long,
     val nickname: String,
     val role: GameRole,
+    val isReady: Boolean = false,
+    val isChangingRole: Boolean = false,
     val profileUrl: String? = null
 )
 
@@ -49,19 +54,27 @@ data class WaitingPlayer(
 fun GameWaitingScreen(
     roomId: Long,
     roomCode: String = "ENTRY1",
+    isHost: Boolean = true,
+    isMeReady: Boolean = false,
     players: List<WaitingPlayer> = List(30) {
         WaitingPlayer(
             it.toLong(),
             "참가자 ${it + 1}",
-            if (it % 3 == 0) GameRole.POLICE else GameRole.THIEF
+            if (it % 3 == 0) GameRole.POLICE else GameRole.THIEF,
+            isReady = (it % 2 == 0),
+            isChangingRole = (it == 4) // 5번째 참가자(index 4) 테스트
         )
     },
-    onStartGame: (Long, GameRole) -> Unit = { _, _ -> },
+    onStartGame: () -> Unit = { },
+    onReady: () -> Unit = { },
     onChangeRole: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     onBackPressed: () -> Boolean = { false }
 ) {
     val policeCount = players.count { it.role == GameRole.POLICE }
     val thiefCount = players.count { it.role == GameRole.THIEF }
+
+    val isAllReady = players.all { it.isReady && !it.isChangingRole }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // 배경 이미지
@@ -83,7 +96,9 @@ fun GameWaitingScreen(
                 roomCode = roomCode,
                 currentCount = players.size,
                 maxCount = 30,
-                timeLeft = "30:00"
+                timeLeft = "30:00",
+                isHost = isHost,
+                onSettingsClick = onSettingsClick
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -102,28 +117,64 @@ fun GameWaitingScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // 준비 버튼
-            PixelIconButton(
-                onClick = { /* 준비 완료 로직 */ },
-                modifier = Modifier.fillMaxWidth(),
-                mainColor = Color.White,
-                borderColor = Color.Black,
-                pixelSize = 3.5.dp,
-                blockHeight = 16,
-                content = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "준비",
-                            fontFamily = PixelFont,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        )
+            if (isHost) {
+                // 방장
+                // 모두 준비되면 흰색, 아니면 회색
+                val buttonColor = if (isAllReady) Color.White else Color.Gray
+                val borderColor = if (isAllReady) Color.Black else Color.DarkGray
+
+                PixelIconButton(
+                    onClick = { if (isAllReady) onStartGame() }, // 준비 안되면 클릭 무시
+                    modifier = Modifier.fillMaxWidth(),
+                    mainColor = buttonColor,
+                    borderColor = borderColor,
+                    pixelSize = 3.5.dp,
+                    blockHeight = 16,
+                    content = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "게임 시작",
+                                fontFamily = PixelFont,
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp
+                            )
+                        }
                     }
-                }
-            )
+                )
+            } else {
+                val buttonColor = if (isMeReady) Color.Gray else Color.White
+                val buttonBorderColor = if (isMeReady) Color.DarkGray else Color.Black
+                val textColor = if (isMeReady) Color.White else Color.Black
+                val buttonText = if (isMeReady) "준비 취소" else "준비"
+
+                // 참가자
+                PixelIconButton(
+                    onClick = onReady,
+                    modifier = Modifier.fillMaxWidth(),
+                    mainColor = buttonColor,
+                    borderColor = buttonBorderColor,
+                    pixelSize = 3.5.dp,
+                    blockHeight = 16,
+                    content = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = buttonText,
+                                fontFamily = PixelFont,
+                                color = textColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp
+                            )
+                        }
+                    }
+                )
+            }
             Spacer(modifier = Modifier.height(60.dp))
         }
     }
@@ -135,7 +186,9 @@ fun WaitingHeaderSection(
     roomCode: String,
     currentCount: Int,
     maxCount: Int,
-    timeLeft: String
+    timeLeft: String,
+    isHost: Boolean,
+    onSettingsClick: () -> Unit
 ) {
     PixelContainer(
         modifier = Modifier.fillMaxWidth(),
@@ -202,12 +255,18 @@ fun WaitingHeaderSection(
                 }
 
                 // 설정 아이콘
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = null,
-                    tint = Color(0xFF6591E9),
-                    modifier = Modifier.size(24.dp)
-                )
+                if (isHost) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "설정",
+                        tint = Color(0xFF6591E9),
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable { onSettingsClick() }
+                    )
+                } else {
+                    // 아이콘 자리만큼 공간 확보하거나 생략 (여기선 생략)
+                }
             }
         }
     }
@@ -340,19 +399,32 @@ fun RoleCountInfo(policeCount: Int, thiefCount: Int) {
 // 참가자 슬롯 카드
 @Composable
 fun PlayerSlotCard(player: WaitingPlayer) {
+    // 테두리 색상 결정:
+    // 1. 역할 변경 중 -> 빨간색
+    // 2. 준비 완료 -> 연두색
+    // 3. 그 외 -> 회색
+    val borderColor = when {
+        player.isChangingRole -> Color(0xFFFF5252) // 빨간색 (에러/변경 느낌)
+        player.isReady -> Color(0xFF76FF03) // 연두색 (준비 완료)
+        else -> Color(0xFF8D90B3) // 기본 회색
+    }
+
+    // 아이콘 결정:
+    // 역할 변경 중 -> "?"
+    // 그 외 -> 역할에 따른 이모지
+    val roleIcon = if (player.isChangingRole) "?" else if (player.role == GameRole.POLICE) "👮" else "🕵️"
+
     PixelContainer(
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp),
         backgroundColor = Color.White,
-        borderColor = Color(0xFF8D90B3),
-        borderWidth = 2f,
+        borderColor = borderColor, // ✅ 동적 테두리 색상
+        borderWidth = 5f,
         cornerSize = 8f
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxSize(),
-//                .padding(horizontal = 2.dp),
+            modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -361,9 +433,7 @@ fun PlayerSlotCard(player: WaitingPlayer) {
                     .size(24.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFFFF59D))
-            ) {
-                // 추후 프로필 이미지 추가
-            }
+            )
             Spacer(modifier = Modifier.width(12.dp))
 
             Text(
@@ -378,9 +448,12 @@ fun PlayerSlotCard(player: WaitingPlayer) {
 
             Spacer(modifier = Modifier.width(12.dp))
 
+            // ✅ 동적 아이콘 (👮 / 🕵️ / ?)
             Text(
-                text = if (player.role == GameRole.POLICE) "👮" else "🕵️",
-                fontSize = 18.sp
+                text = roleIcon,
+                fontSize = 18.sp,
+                fontWeight = if (player.isChangingRole) FontWeight.Bold else FontWeight.Normal,
+                color = if (player.isChangingRole) Color.Red else Color.Black
             )
         }
     }
