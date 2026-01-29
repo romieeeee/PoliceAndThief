@@ -1,18 +1,26 @@
 package com.d104.pnt.ui.chatroomlist
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.d104.pnt.data.remote.model.response.ChatSearchResponse
+import com.d104.pnt.data.repository.ChatRepository
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.data.source.local.RegionCodeManager
+import com.d104.pnt.domain.model.ChatRoomData
+import com.d104.pnt.domain.model.common.BaseResult
+import com.d104.pnt.domain.model.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
 class ChatRoomListViewModel @Inject constructor(
     private val regionManager: RegionCodeManager,
-    private val locationRepository: LocationRepository
+    private val locationRepository: LocationRepository,
+    private val chatRepository: ChatRepository
 ): ViewModel() {
     // 1. 시/도 목록 (변하지 않음)
     val majorList = regionManager.majorRegions
@@ -27,6 +35,18 @@ class ChatRoomListViewModel @Inject constructor(
     // 3. 현재 선택된 시/도에 따른 시/군/구 목록
     private val _middleList = MutableStateFlow<List<String>>(emptyList())
     val middleList = _middleList.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    private val _listState = MutableStateFlow<UiState<ChatSearchResponse>>(UiState.Idle)
+    val listState = _listState.asStateFlow()
+
+
+
+    fun updateSearchQuery(newQuery: String) {
+        _searchQuery.value = newQuery
+    }
 
     // 시/도 선택 시 호출
     fun selectMajor(major: String) {
@@ -46,4 +66,24 @@ class ChatRoomListViewModel @Inject constructor(
         Timber.d("Selected Code: $code")
         // 쿼리 보내기
     }
+
+    fun searchChatRoom(
+        title: String?,
+        regionCode: Int?
+    ) {
+        viewModelScope.launch {
+            _listState.value = UiState.Loading
+            when (val result = chatRepository.searchChatRoom(title, regionCode)) {
+                is BaseResult.Success -> {
+                    _listState.value = UiState.Success(result.data)
+                    Timber.d("chatList: ${result.data}")
+                }
+                is BaseResult.Error -> {
+                    _listState.value = UiState.Error(result.error.message)
+                    Timber.d("error: ${result.error.message}")
+                }
+            }
+        }
+    }
+
 }

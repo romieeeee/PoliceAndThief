@@ -3,6 +3,7 @@ package com.d104.pnt.data.repository
 import com.d104.pnt.data.remote.api.ChatApiService
 import com.d104.pnt.data.remote.model.request.ChatCreateRequest
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
+import com.d104.pnt.data.remote.model.response.ChatSearchResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,6 +43,16 @@ class ChatRepositoryImpl @Inject constructor (
             chatApiService.createChatRoom(ChatCreateRequest(title, description, regionCode, maxMembers))
         }
     }
+
+    override suspend fun searchChatRoom(
+        title: String?,
+        regionCode: Int?
+    ): BaseResult<ChatSearchResponse> {
+        return safeApiCall {
+            chatApiService.getFilteredChatRoom(title, regionCode)
+        }
+    }
+
     override suspend fun joinChatRoom(
         chatRoomId: Long,
         memberId: Long,
