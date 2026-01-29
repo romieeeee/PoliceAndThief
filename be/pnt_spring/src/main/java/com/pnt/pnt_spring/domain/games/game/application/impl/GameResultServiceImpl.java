@@ -73,12 +73,10 @@ public class GameResultServiceImpl implements GameResultService {
                     });
 
             stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived());
-
-            updateMemberGradeAndStats(stat, request.getWinTeam(), statReq.getPosition());
         }
 
         // AI 뉴스 생성 요청
-        triggerAiNewsGeneration(game);
+        triggerAiNewsGeneration(game, request.getLatitude(), request.getLongitude());
     }
 
     @Override
@@ -123,7 +121,7 @@ public class GameResultServiceImpl implements GameResultService {
                 .build();
     }
 
-    private void triggerAiNewsGeneration(Game game) {
+    private void triggerAiNewsGeneration(Game game, Double lat, Double lng) {
         // 1. 해당 게임의 모든 멤버 스탯 조회
         List<GameMemberStat> allStats = gameMemberStatRepository.findAllByGameId(game.getId());
 
@@ -183,7 +181,8 @@ public class GameResultServiceImpl implements GameResultService {
                 .startTime(game.getStartTime().format(formatter))
                 .winningTeam(isPoliceWin ? "경찰" : "도둑")
                 .playTime(durationSec)
-                .location("구미시 진평동")
+                .latitude(lat)
+                .longitude(lng)
                 .policeCount(policeStats.size())
                 .thiefCount(thiefStats.size())
                 .mvp(mvpNickname)
@@ -192,7 +191,6 @@ public class GameResultServiceImpl implements GameResultService {
                 .build();
 
         rabbitTemplate.convertAndSend("NEWS", aiRequest);
-        log.info("MQ Message Published to 'NEWS': gameId={}", game.getId());
     }
 
     private GameMemberStat calculateMvp(Game game) {
