@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.chatroom
+package com.d104.pnt.ui.chatroom.create
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
+import com.d104.pnt.ui.chatroom.create.ChatRoomCreateViewModel
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.component.RoundedButton
@@ -112,11 +113,11 @@ fun ChatRoomCreateScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(10.dp)
+                            .padding(vertical = 20.dp, horizontal = 10.dp)
                     ) {
                         Text(
                             text = "채팅방 생성하기",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.titleMedium,
                             color = TextPrimary,
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
@@ -145,7 +146,7 @@ fun ChatRoomCreateScreen(
                             borderColor = DialogBorderColor,
                             value = description,
                             onValueChange = { viewModel.updateDescription(it) },
-                            multiLine = true,
+                            singleLine = false,
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))

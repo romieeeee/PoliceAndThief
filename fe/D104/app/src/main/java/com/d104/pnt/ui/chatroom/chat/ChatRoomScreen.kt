@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.chatroom
+package com.d104.pnt.ui.chatroom.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,9 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.domain.model.ChatsData
-import com.d104.pnt.ui.component.ChatList  // 🔥 추가!
-import com.d104.pnt.ui.component.ChatRoomFooter
-import com.d104.pnt.ui.component.ChatRoomHeader
 import com.d104.pnt.ui.theme.DarkBackground
 
 @Composable
@@ -57,7 +54,6 @@ fun ChatRoomScreen(
         },
         bottomBar = {
             ChatRoomFooter(
-                modifier = Modifier.fillMaxWidth(),
                 onSendMessage = {
                     viewModel.sendMessage()
                 },
