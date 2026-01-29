@@ -11,6 +11,7 @@ export class RoomController {
         this.socket = socket;
         this.redisClient = new RedisClient();
         this.gameSettingService = new GameSettingService();
+        this.gameMemberService = new GameMemberService();
     }
 
     /*
@@ -110,16 +111,14 @@ export class RoomController {
         this.io.to(roomId).emit("get now ready info", readyInfo);
     }
 
-    /**
-     * member까지 반환해야하나. 고민.
-     */
     nowRoomInfo = async (data) => {
         const { roomId } = data;
 
         const room = await this.gameService.getRoomById(roomId);
         const roomSetting = await this.gameSettingService.getGameSettingByRoomId(roomId);
+        const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
 
-        this.io.to(roomId).emit("get now room info", { room, roomSetting });
+        this.io.to(roomId).emit("get now room info", { room, roomSetting, members });
     }
 
     memberKick = async (data) => {
@@ -133,6 +132,19 @@ export class RoomController {
         });
 
         this.io.to(roomId).emit("get member kick", response.data);
+    }
+
+    updateRoomMap =async (data) => {
+        const { roomId } = data;
+
+        const response = await axios.post(`${process.env.SPRING_API_URL}/spring/rooms/${roomId}/map`, data, {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${this.socket.data.accessToken}`
+            }
+        });
+
+        this.io.to(roomId).emit("get update room map", response.data);
     }
 
     disconnect = async (data) => {

@@ -1,4 +1,6 @@
 import GameMember from "../../../global/db/sequelize/entity/GameMember";
+import Member from "../../../global/db/sequelize/entity/Member";
+import MemberProfile from "../../../global/db/sequelize/entity/MemberProfile";
 
 export class GameMemberService {
     findMemberGame = async (gameId, memberId) => {
@@ -44,6 +46,32 @@ export class GameMemberService {
         if (!res) {
             this.makeError("NotFoundException", "게임 멤버 정보를 찾을 수 없습니다.", 404);
         }
+        return res;
+    }
+
+    findMembersWithProfileByGameId = async (gameId) => {
+        const res = await GameMember.findAll({
+            where: {
+                gameId: gameId,
+                isDeleted: false
+            },
+            include: [
+                {
+                    model: Member,
+                    include: [
+                        {
+                            model: MemberProfile,
+                            attributes: ["nickname", "avatarUrl"]
+                        }
+                    ]
+                }
+            ]
+        });
+
+        if (!res) {
+            this.makeError("NotFoundException", "게임 멤버 정보를 찾을 수 없습니다.", 404);
+        }
+
         return res;
     }
 
