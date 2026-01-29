@@ -139,9 +139,12 @@ class ChatRoomViewModel @Inject constructor(
     // 초기 메시지 로드 (채팅방 진입 시)
     private fun loadInitialMessages() {
         _isLoading.value = true
-        // cursor 0 = 최신 메시지부터, limit 50개
+
+        Timber.d("📜 초기 메시지 로드 시작 - cursor: 0, limit: 50")
+
         socketManager.loadPreviousMessages(cursor = 0, limit = 50)
     }
+
 
     // 더 오래된 메시지 로드 (스크롤 시)
     fun loadMoreMessages() {
@@ -168,11 +171,17 @@ class ChatRoomViewModel @Inject constructor(
         }
 
         Timber.d("💬 메시지 전송: $messageText")
-
         socketManager.sendChatMessage(messageText)
 
         // 입력창 초기화
         _message.value = ""
+
+        // 🔥 테스트: 전송 후 2초 뒤 이전 메시지 조회
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(2000)
+            Timber.d("🔄 테스트: 이전 메시지 다시 조회")
+            socketManager.loadPreviousMessages(cursor = 0, limit = 50)
+        }
     }
 
     override fun onCleared() {
