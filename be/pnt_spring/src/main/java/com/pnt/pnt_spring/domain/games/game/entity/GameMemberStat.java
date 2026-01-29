@@ -49,7 +49,7 @@ public class GameMemberStat extends BaseEntity {
     public static GameMemberStat create(GameMember gameMember) {
         GameMemberStat stat = new GameMemberStat();
         stat.gameMember = gameMember;
-        stat.position = gameMember.getGivenPosition();
+        stat.position = gameMember.getGivenPosition().toStatPosition();
         stat.walk = 0;
         stat.arrestCount = 0;
         stat.longestSurvived = 0;

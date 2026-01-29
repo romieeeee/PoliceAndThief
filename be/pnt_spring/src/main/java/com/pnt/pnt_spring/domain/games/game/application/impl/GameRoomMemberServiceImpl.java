@@ -110,6 +110,7 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_JOINED));
 
         me.leave();
+        gameMemberRepository.flush();
 
         long remain = gameMemberRepository.countByGameIdAndIsDeletedFalse(roomId);
         if (remain == 0) {

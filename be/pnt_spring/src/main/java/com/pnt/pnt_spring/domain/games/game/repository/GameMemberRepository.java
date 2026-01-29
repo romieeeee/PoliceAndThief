@@ -74,6 +74,7 @@ public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
         from GameMember gm
         where gm.game.id = :gameId
           and gm.member.id = :memberId
+          and gm.isDeleted = false
     """)
     Optional<GameMember> findByGameIdAndMemberIdForUpdate(@Param("gameId") Long gameId,
                                                           @Param("memberId") Long memberId);
