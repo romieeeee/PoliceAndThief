@@ -82,7 +82,7 @@ class ChatRoomCreateViewModel @Inject constructor(
     fun createChatRoom() {
         viewModelScope.launch {
             _createChatRoomStats.value = UiState.Loading
-            when (val result = chatRepository.createChatRoom(title.value, 1110000L, description.value, maxMember.value)) {
+            when (val result = chatRepository.createChatRoom(title.value, _currentAddress.value.code, description.value, maxMember.value)) {
                 is BaseResult.Success -> {
                     _createChatRoomStats.value = UiState.Success(result.data)
                     Timber.d("${result.data}")
