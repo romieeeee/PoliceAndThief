@@ -17,7 +17,6 @@ class SocketManager @Inject constructor() {
         private const val EVENT_POST_JOIN_ROOM = "post join room"  // 송신
         private const val EVENT_GET_JOIN_ROOM = "get join room"   // 수신
 
-        private const val EVENT_DISCONNECT = "disconnect"
         private const val EVENT_RECONNECT = "reconnect"
 
         private const val EVENT_POST_MESSAGE = "post message"
@@ -62,12 +61,12 @@ class SocketManager @Inject constructor() {
                 Timber.e("🔴 연결 에러: ${args.firstOrNull()}")
             }
 
-            socket?.on("reconnect") {
-                Timber.d("🔄 재연결됨")
-                currentChatRoomId?.let { roomId ->
-                    handleReconnect(roomId)
-                }
-            }
+//            socket?.on(Socket.EVENT_RECONNECT) {
+//                Timber.d("🔄 재연결됨")
+//                currentChatRoomId?.let { roomId ->
+//                    handleReconnect(roomId)
+//                }
+//            }
 
             // 전역 에러 리스너
             socket?.on(EVENT_ERROR) { args ->
@@ -133,7 +132,15 @@ class SocketManager @Inject constructor() {
 
     // 채팅 메시지 보내기
     fun sendChatMessage(content: String) {
+        // 🔥 chatRoomId 확인
+        val roomId = currentChatRoomId
+        if (roomId == null) {
+            Timber.e("❌ chatRoomId가 없어서 메시지 전송 불가")
+            return
+        }
+
         val data = JSONObject().apply {
+            put("chatRoomId", roomId)
             put("content", content)
         }
 
@@ -156,7 +163,14 @@ class SocketManager @Inject constructor() {
 
     // 이전 메시지 조회 (페이징)
     fun loadPreviousMessages(cursor: Int, limit: Int = 50) {
+        val roomId = currentChatRoomId
+        if (roomId == null) {
+            Timber.e("❌ chatRoomId가 없어서 이전 메시지 조회 불가")
+            return
+        }
+
         val data = JSONObject().apply {
+            put("chatRoomId", roomId)  // 🔥 추가!
             put("cursor", cursor)
             put("limit", limit)
         }
@@ -169,50 +183,79 @@ class SocketManager @Inject constructor() {
     fun onPreviousMessages(handler: (List<JSONObject>, Int) -> Unit) {
         socket?.on(EVENT_GET_PREV_CHAT) { args ->
             try {
-                val response = args[0] as JSONObject
-                val items = response.getJSONArray("items")
-                val count = response.getInt("count")
+                Timber.d("📜 실제 서버 응답: ${args[0]}")
 
                 val messageList = mutableListOf<JSONObject>()
-                for (i in 0 until items.length()) {
-                    messageList.add(items.getJSONObject(i))
+
+                // 🔥 명세: 바로 배열로 옴
+                val items = args[0]
+
+                when (items) {
+                    is org.json.JSONArray -> {
+                        // ✅ 정상: 배열
+                        for (i in 0 until items.length()) {
+                            messageList.add(items.getJSONObject(i))
+                        }
+                    }
+                    is JSONObject -> {
+                        // 🔥 구 명세: {items:[], count:0} 형태
+                        val count = items.optInt("count", 0)
+                        if (items.has("items")) {
+                            val innerItems = items.opt("items")
+                            if (innerItems is org.json.JSONArray) {
+                                for (i in 0 until innerItems.length()) {
+                                    messageList.add(innerItems.getJSONObject(i))
+                                }
+                            }
+                        }
+                    }
                 }
 
+                val count = messageList.size
                 Timber.d("📜 이전 메시지 수신: ${count}개")
                 handler(messageList, count)
+
             } catch (e: Exception) {
                 Timber.e(e, "이전 메시지 파싱 실패")
+                handler(emptyList(), 0)
             }
         }
     }
 
     // 동기화 (재연결 시 놓친 메시지)
-    fun syncMessages(lastMessageId: Int) {
-        val data = JSONObject().apply {
-            put("cursor", lastMessageId)
-        }
-
-        Timber.d("🔄 메시지 동기화: $data")
-        socket?.emit(EVENT_POST_SYNC_CHAT, data)
-    }
-
-    // 동기화 메시지 수신 리스너
     fun onSyncMessages(handler: (List<JSONObject>, Int) -> Unit) {
         socket?.on(EVENT_GET_SYNC_CHAT) { args ->
             try {
-                val response = args[0] as JSONObject
-                val items = response.getJSONArray("items")
-                val count = response.getInt("count")
+                Timber.d("🔄 실제 동기화 응답: ${args[0]}")
 
                 val messageList = mutableListOf<JSONObject>()
-                for (i in 0 until items.length()) {
-                    messageList.add(items.getJSONObject(i))
+                val items = args[0]
+
+                when (items) {
+                    is org.json.JSONArray -> {
+                        for (i in 0 until items.length()) {
+                            messageList.add(items.getJSONObject(i))
+                        }
+                    }
+                    is JSONObject -> {
+                        if (items.has("items")) {
+                            val innerItems = items.opt("items")
+                            if (innerItems is org.json.JSONArray) {
+                                for (i in 0 until innerItems.length()) {
+                                    messageList.add(innerItems.getJSONObject(i))
+                                }
+                            }
+                        }
+                    }
                 }
 
+                val count = messageList.size
                 Timber.d("🔄 동기화 메시지 수신: ${count}개")
                 handler(messageList, count)
+
             } catch (e: Exception) {
                 Timber.e(e, "동기화 메시지 파싱 실패")
+                handler(emptyList(), 0)
             }
         }
     }
@@ -239,11 +282,18 @@ class SocketManager @Inject constructor() {
 
     fun disconnect() {
         Timber.d("🔌 소켓 연결 종료")
-        socket?.emit(EVENT_DISCONNECT)
-        socket?.disconnect()
-        socket?.off()
+
+        socket?.let {
+            if (it.connected()) {
+                it.off()
+                it.disconnect()
+            }
+        }
+
+        socket = null
         currentChatRoomId = null
     }
+
 
     fun isConnected(): Boolean = socket?.connected() ?: false
 }
