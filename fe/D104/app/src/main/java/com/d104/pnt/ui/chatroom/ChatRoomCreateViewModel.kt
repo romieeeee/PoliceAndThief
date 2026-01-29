@@ -66,6 +66,13 @@ class ChatRoomCreateViewModel @Inject constructor(
                 )
                 _currentAddress.value = address
             }
+            if (_currentAddress.value.major != "세종특별자치시") {
+                _currentAddress.value = GeoLocationInfo(
+                    major = _currentAddress.value.major,
+                    middle = _currentAddress.value.middle,
+                    code = _currentAddress.value.code / 10000 * 10000
+                )
+            }
         }
     }
 

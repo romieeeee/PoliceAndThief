@@ -27,6 +27,8 @@ interface ChatRepository {
         regionCode: Int?
     ): BaseResult<ChatSearchResponse>
 
+    suspend fun getJoinedChatRoom(): BaseResult<ChatSearchResponse>
+
     suspend fun joinChatRoom(
         chatRoomId: Long,
         memberId: Long,
