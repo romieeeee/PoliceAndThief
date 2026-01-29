@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.chats.application.impl;
 
 import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomMemberInfoResponse;
+import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomResponse;
 import com.pnt.pnt_spring.domain.chats.application.ChatRoomMemberQueryService;
 import com.pnt.pnt_spring.domain.chats.entity.ChatRoom;
 import com.pnt.pnt_spring.domain.chats.entity.MemberChatRoom;
@@ -77,5 +78,11 @@ public class ChatRoomMemberQueryServiceImpl implements ChatRoomMemberQueryServic
                 })
                 .filter(Objects::nonNull)
                 .toList();
+    }
+
+    @Override
+    public List<ChatRoomResponse> myJoinedRooms(Long memberId) {
+        List<ChatRoom> rooms = memberChatRoomRepository.findMyJoinedChatRooms(memberId);
+        return rooms.stream().map(ChatRoomResponse::from).toList();
     }
 }

@@ -13,10 +13,6 @@ import { TurfService } from "../application/TurfService.js";
 import { MQConfig } from "../../../global/mq/MQConfig.js";
 
 
-/**
- * ToDo CCTV
- */
-
 export class GameController {
     constructor(io, socket, mq) {
         this.io = io;
@@ -57,7 +53,6 @@ export class GameController {
     joinRoom = async (payload) => {
         // 채팅방 접속 db 처리 => is_connected = true로 처리
         try {
-            console.log("joinRoom", payload);
             const gameId = payload.gameId;
 
             await this.gameService.findGame(payload.gameId, GameStatus.IN_GAME);
@@ -72,12 +67,15 @@ export class GameController {
                 memberId: this.socket.data.memberId,
             }
 
+            await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
+
             // gameSetting에서 참여자 수 들고오기
             // isGaneConnected true로 변경 => 변경이 됐는지 안됐는지 판별하여 
             // 게임 시작 시간 db에 저장
-            await this.redisClient.setStarted(payload.gameId, this.socket.data.memberId);
-            await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
-            await this.startGame();
+            if (!await this.redisClient.getGameTimer(payload.gameId)) {
+                await this.redisClient.setStarted(payload.gameId, this.socket.data.memberId);
+                await this.startGame();
+            }
 
             this.io.to(gameId).emit("get join room", data);
         } catch (error) {
@@ -130,7 +128,6 @@ export class GameController {
 
             const gameSetting = await this.gameSettingService.findGameSetting(integerGameId);
             const startedCount = await this.redisClient.getStartedCount(integerGameId);
-            console.log("startedCount", startedCount);
 
             if (startedCount < gameSetting.policeCount + gameSetting.thiefCount) {
                 return;
@@ -226,8 +223,6 @@ export class GameController {
             if (position === GameMemberPosition.THIEF && status === GameMemberStatus.FREE) {
                 locationData.longestSurvived++;
             }
-
-            console.log("postGps", locationData);
 
             // Hash에 저장 (이미 있으면 덮어쓰기됨 -> 자동 최신화)
             await this.redisClient.setLocation(memberId, gameId, locationData);
@@ -359,6 +354,9 @@ export class GameController {
      *      memberId: 1,
      *      position: "POLICE",
      *      status: "FREE" || "PRISON" || "TRANSFER",
+     *      nickname: "nickname",
+     *      avatarUrl: "avatarUrl",
+     *      inGameConnected: true || false,
      *    },
      *  ],
      *  missions: [
@@ -375,11 +373,10 @@ export class GameController {
      */
     syncGameInfo = async (payload) => {
         try {
-            console.log("syncGameInfo", payload);
             const { gameId } = payload;
 
             const game = await this.gameService.findGame(gameId);
-            const gameMembers = await this.gameMemberService.findAllByGameId(gameId);
+            const gameMembers = await this.gameMemberService.findMembersWithProfileByGameId(gameId);
             const gameMissions = await this.gameMissionService.findAllByGameId(gameId);
 
             const res = {
@@ -387,13 +384,15 @@ export class GameController {
                 gameStatus: game.status,
                 members: gameMembers.map(member => ({
                     memberId: member.memberId,
-                    position: member.position,
+                    position: member.givenPosition,
                     status: member.status,
+                    nickname: member.memberProfile.nickname,
+                    avatarUrl: member.memberProfile.avatarUrl,
+                    inGameConnected: member.inGameConnected,
                 })),
                 missions: gameMissions
             };
             this.socket.emit("get sync game info", res);
-            console.log("sync game info", res);
         } catch (error) {
             console.error("syncGameInfo error", error);
             sendError(this.socket, error, "GameError");
@@ -411,9 +410,7 @@ export class GameController {
      */
     postArrest = async (payload) => {
         try {
-            console.log("postArrest", payload);
-            const { gameId, policeId, thiefId, lat, lng } = payload;
-
+            const { gameId, policeId, thiefId } = payload;
 
             const thief = await this.gameMemberService.findMemberGame(gameId, thiefId);
 
@@ -487,9 +484,6 @@ export class GameController {
             }
 
             this.io.to(gameId).emit("get arrest", res);
-            console.log("success arrest", res);
-
-            // Validation and logic here
         } catch (error) {
             console.error("postArrest error", error);
             sendError(this.socket, error, "GameError");
@@ -503,16 +497,8 @@ export class GameController {
      *  "policeId": 1
      * }
      */
-    /**
-     * 스킬 사용
-     * { 
-     *  "gameId": 1,
-     *  "policeId": 1
-     * }
-     */
     postSkillUse = async (payload) => {
         try {
-            console.log("postSkillUse", payload);
             const { gameId, policeId } = payload;
 
             // 게임 스킬 정보 조회
@@ -543,7 +529,6 @@ export class GameController {
             };
 
             this.io.to(gameId).emit("get skill use", res);
-            console.log("success skill use", res);
         } catch (error) {
             console.error("postSkillUse error", error);
             sendError(this.socket, error, "GameError");
@@ -600,8 +585,6 @@ export class GameController {
                 return;
             }
 
-            console.log("gameEnd", gameId, winnerPosition);
-
             // redis에서 게임 타이머 삭제
             await redisClient.deleteGameTimer(gameId);
             await redisClient.deleteGameSettingLock(gameId);
@@ -647,8 +630,6 @@ export class GameController {
      */
     postGameEndAfter = async (payload) => {
         try {
-            console.log("postGameEndAfter", payload);
-
             const { gameId, memberId, position, walk, longestSurvived } = payload;
 
             // 사용자의 게임 스탯 업데이트
@@ -669,7 +650,6 @@ export class GameController {
 
     gameReset = async () => {
         try {
-            console.log("gameReset");
             const gameId = this.socket.data.gameId;
             await this.redisClient.deleteAllGameCachesByGameId(gameId);
             this.io.to(gameId).emit("get reset game", {
@@ -685,13 +665,10 @@ export class GameController {
     // custom disconnect
     disconnect = async () => {
         try {
-            console.log("disconnect");
-
             this.socket.data.isIntentionalExit = true;
 
             await this.gameMemberService.updateInGameConnected(this.socket.data.gameId, this.socket.data.memberId, false);
 
-            console.log("disconnect", this.socket.data);
             this.socket.disconnect();
         } catch (error) {
             console.error("disconnect error", error);

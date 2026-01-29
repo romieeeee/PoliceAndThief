@@ -1,5 +1,6 @@
 package com.pnt.pnt_spring.domain.chats.repository;
 
+import com.pnt.pnt_spring.domain.chats.entity.ChatRoom;
 import com.pnt.pnt_spring.domain.chats.entity.MemberChatRoom;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -38,5 +39,16 @@ public interface MemberChatRoomRepository extends JpaRepository<MemberChatRoom, 
      * (옵션) current_members를 DB값 대신 count로 맞추고 싶을 때(동기화/검증용)
      */
 //    long countByChatRoomIdAndIsDeletedFalse(Long chatRoomId);
+
+    @Query("""
+        select cr
+        from ChatRoom cr, MemberChatRoom mcr
+        where mcr.memberId = :memberId
+          and mcr.isDeleted = false
+          and cr.isDeleted = false
+          and mcr.chatRoomId = cr.id
+        order by cr.updatedAt desc
+    """)
+    List<ChatRoom> findMyJoinedChatRooms(@Param("memberId") Long memberId);
 
 }
