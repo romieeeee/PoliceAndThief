@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.component
+package com.d104.pnt.ui.chatroom.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.domain.model.ChatMessage
+import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.theme.*
 @Composable
 fun ChatBubble(
@@ -58,11 +59,11 @@ fun ChatBubble(
                     )
                 }
             }
-            PixelContainer (
+            PixelContainer(
                 modifier = Modifier,
                 cornerSize = 30f,
                 backgroundColor = if (isMe) ButtonHighlight else NeutralColor
-            ){
+            ) {
                 Text(
                     text = message.content,
                     style = MaterialTheme.typography.bodyMedium,

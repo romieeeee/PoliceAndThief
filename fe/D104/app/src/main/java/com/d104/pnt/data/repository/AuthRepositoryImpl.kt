@@ -66,6 +66,15 @@ class AuthRepositoryImpl @Inject constructor(
                     userId = response.member.id,
                     memberId = response.member.memberId
                 )
+
+                Timber.d(
+                    """
+                    accessToken = ${response.accessToken}
+                    userId = ${response.member.id}
+                    memberId = ${response.member.memberId}
+                """.trimIndent()
+                )
+
                 Timber.d("✅ Social login data saved successfully")
             }
         ) {
@@ -157,9 +166,9 @@ class AuthRepositoryImpl @Inject constructor(
         Timber.d("Login data saved for user: $userId")
         Timber.d(
             """
-                    accessToken = "${accessToken.take(10)}..."
-                    userId = "$userId
-                    memberId = "$memberId
+                    accessToken = $accessToken
+                    userId = $userId
+                    memberId = $memberId
                 """.trimIndent()
         )
     }

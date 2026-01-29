@@ -16,7 +16,7 @@ fun RoomList(
     onItemClick: (ChatRoomData) -> Unit = {}
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(16.dp), // 리스트 전체 외곽 여백
+        contentPadding = PaddingValues(12.dp), // 리스트 전체 외곽 여백
         verticalArrangement = Arrangement.spacedBy(12.dp) // 아이템 사이 간격
     ) {
         items(rooms) { room ->
