@@ -40,7 +40,7 @@ public class MissionController {
         return new CommonResponse<>(response, "미션 상세 조회 성공", HttpStatus.OK);
     }
 
-    @Operation(summary = "미션 수행 제출 (Internal)", description = "Node.js 서버에서 호출하는 내부 API입니다.")
+    @Operation(summary = "미션 수행 제출 (Internal)", description = "Node.js 서버에서 호출하는 내부 API입니다. 근데 이거 안씀")
     @PostMapping("/missions/submit")
     public CommonResponse<Boolean> submitMission(
             @RequestBody MissionRequest request) { // PathVariable 제거

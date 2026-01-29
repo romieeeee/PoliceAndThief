@@ -21,7 +21,7 @@ public class MemberAuthProvider extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
