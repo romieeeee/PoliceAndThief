@@ -1,6 +1,7 @@
 package com.d104.pnt.ui.auth
 
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -77,6 +78,11 @@ fun SignupScreen(
     val isDuplicated by viewModel.isDuplicated.collectAsStateWithLifecycle()
     val isDuplicateCheckLoading by viewModel.isDuplicateCheckLoading.collectAsStateWithLifecycle()
     val signupState by viewModel.signupState.collectAsStateWithLifecycle()
+
+    // 뒤로가기 처리
+    BackHandler {
+        onBack()
+    }
 
     // 회원가입 성공 처리
     LaunchedEffect(signupState) {
