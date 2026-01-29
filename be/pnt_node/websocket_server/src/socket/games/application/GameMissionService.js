@@ -7,7 +7,13 @@ export class GameMissionService {
             where: {
                 gameId: gameId,
                 isDeleted: false
-            }
+            },
+            include: [
+                {
+                    model: Mission,
+                    attributes: ["name", "description", "icon", "type", "reward"]
+                }
+            ]
         });
 
         if (!res) {
