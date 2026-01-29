@@ -1,5 +1,6 @@
 package com.pnt.pnt_spring.domain.games.game.entity;
 
+import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -22,17 +23,21 @@ public class GameMemberStat extends BaseEntity {
     @JoinColumn(name = "game_member_id", nullable = false)
     private GameMember gameMember;
 
-    @Column(length = 10)
-    private String position;
+    @Enumerated(EnumType.STRING)
+    private Position position;
 
     private Integer walk = 0;
+
+    @Column(name = "arrest_count")
     private Integer arrestCount = 0;
+
+    @Column(name = "longest_survived")
     private Integer longestSurvived = 0;
 
     // Service에서 사용할 생성자 추가
     public GameMemberStat(GameMember gameMember) {
         this.gameMember = gameMember;
-        this.position = gameMember.getGivenPosition().name();
+        this.position = gameMember.getGivenPosition();
         this.walk = 0;
         this.arrestCount = 0;
         this.longestSurvived = 0;
@@ -41,7 +46,7 @@ public class GameMemberStat extends BaseEntity {
     public static GameMemberStat create(GameMember gameMember) {
         GameMemberStat stat = new GameMemberStat();
         stat.gameMember = gameMember;
-        stat.position = gameMember.getGivenPosition().name();
+        stat.position = gameMember.getGivenPosition();
         stat.walk = 0;
         stat.arrestCount = 0;
         stat.longestSurvived = 0;
@@ -54,11 +59,28 @@ public class GameMemberStat extends BaseEntity {
     }
 
     @Builder
-    public GameMemberStat(GameMember gameMember, String position, Integer walk, Integer arrestCount, Integer longestSurvived) {
+    public GameMemberStat(GameMember gameMember, Position position, Integer walk, Integer arrestCount, Integer longestSurvived) {
         this.gameMember = gameMember;
         this.position = position;
         this.walk = walk;
         this.arrestCount = arrestCount;
+        this.longestSurvived = longestSurvived;
+    }
+
+    // 스탯 초기화 설정
+    public static GameMemberStat createInitialStat(GameMember gameMember) {
+        return GameMemberStat.builder()
+                .gameMember(gameMember)
+                .position(gameMember.getGivenPosition()) // 게임 멤버의 포지션을 가져옴
+                .walk(0)
+                .arrestCount(0)
+                .longestSurvived(0)
+                .build();
+    }
+
+    // 결과 업데이트
+    public void updateResultStats(Integer walk, Integer longestSurvived) {
+        this.walk = walk;
         this.longestSurvived = longestSurvived;
     }
 }

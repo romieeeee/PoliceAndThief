@@ -6,13 +6,12 @@ import com.pnt.pnt_spring.domain.games.game.application.GameRoomMemberService;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.entity.GameSetting;
-import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
-import com.pnt.pnt_spring.domain.members.member.repository.MemberRepository;
+import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -154,7 +153,6 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
         GameMember gm = gameMemberRepository.findByGameIdAndMemberIdForUpdate(roomId, memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_JOINED));
 
-        // A안: 토글이 아니라 요청값 그대로 세팅
         gm.setReady(req.getReady());
 
         return new GameRoomReadyResponse(roomId, memberId, gm.getReady());

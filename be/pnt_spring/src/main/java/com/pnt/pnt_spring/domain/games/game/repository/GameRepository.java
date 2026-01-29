@@ -23,7 +23,7 @@ public interface GameRepository extends JpaRepository<Game, Long> {
     // WAITING 방 코드 중복 방지(활성방 기준)
     boolean existsByRoomCodeAndStatusAndIsDeletedFalse(String roomCode, GameStatus status);
 
-    // gameId로 락 + 활성방만
+    // 시작/설정 변경 등 "게임 1개"를 강하게 잡고 처리할 때
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         select g

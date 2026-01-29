@@ -13,6 +13,7 @@ public enum ErrorCode {
      * 3xxx: ROOM / MATCHING
      * 4xxx: GAME
      * 5xxx: CHAT
+     * 6xxx: NEWS
      * 9xxx: COMMON / SERVER
      */
 
@@ -89,7 +90,12 @@ public enum ErrorCode {
 
     CHAT_ROOM_FORBIDDEN(HttpStatus.FORBIDDEN, 5, "채팅방 권한이 없습니다."),
     CHAT_ROOM_BANNED(HttpStatus.FORBIDDEN, 5,"강퇴(밴) 상태로 재입장할 수 없습니다."),
-    CHAT_ROOM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, 5, "채팅방 멤버가 아닙니다.");
+    CHAT_ROOM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, 5, "채팅방 멤버가 아닙니다."),
+
+    // =========================
+    // NEWS (6xxx)
+    // =========================
+    NEWS_NOT_FOUND(HttpStatus.NOT_FOUND, 6, "뉴스를 찾을 수 없습니다.");
 
     private final HttpStatus statusCode;
     private final int customCode;

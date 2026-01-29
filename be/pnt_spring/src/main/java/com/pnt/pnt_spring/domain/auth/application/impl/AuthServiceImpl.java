@@ -14,10 +14,10 @@ import com.pnt.pnt_spring.domain.members.member.entity.MemberAuthProvider;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberProfile;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberRole;
 import com.pnt.pnt_spring.domain.members.member.entity.document.MemberDoc;
-import com.pnt.pnt_spring.domain.members.member.repository.MemberMongoRepository;
+import com.pnt.pnt_spring.domain.members.member.repository.mongo.MemberMongoRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.MemberAuthProviderRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.MemberProfileRepository;
-import com.pnt.pnt_spring.domain.members.member.repository.MemberRepository;
+import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -72,7 +72,7 @@ public class AuthServiceImpl implements AuthService {
         Member member = Member.builder()
                 .loginId(request.getId())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .email(request.getEmail())
+                .email(StringUtils.isBlank(request.getEmail()) ? null : request.getEmail())
                 .birth(request.getBirth())
                 .role(MemberRole.USER) // 일반 회원가입 시 유저 권한 부여
                 .build();
