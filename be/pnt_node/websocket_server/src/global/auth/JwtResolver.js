@@ -17,6 +17,7 @@ export const resolveInSocket = (socket, next) => {
         console.log("data", data);
 
         socket.data.memberId = data.memberId;
+        socket.data.accessToken = token;
 
         next();
     } catch (err) {
