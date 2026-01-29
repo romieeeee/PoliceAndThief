@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface MissionService {
 
+    List<MissionResponse> getAllMissions();
+
     List<MissionResponse> getMissions(Long gameId);
 
     MissionResponse getMissionDetail(Long gameId, Long missionId);

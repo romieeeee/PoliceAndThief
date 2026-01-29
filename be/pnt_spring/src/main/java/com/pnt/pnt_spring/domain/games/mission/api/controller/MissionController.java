@@ -20,6 +20,13 @@ public class MissionController {
 
     private final MissionService missionService;
 
+    @Operation(summary = "전체 미션 목록 조회 (원본)", description = "게임 할당 여부와 관계없이 시스템에 등록된 모든 원본 미션 목록을 조회합니다.")
+    @GetMapping("/missions")
+    public CommonResponse<List<MissionResponse>> getAllMissions() {
+        List<MissionResponse> response = missionService.getAllMissions();
+        return new CommonResponse<>(response, "전체 미션 목록 조회 성공", HttpStatus.OK);
+    }
+
     @Operation(summary = "미션 목록 조회", description = "도둑들이 수행할 전체 미션 목록을 조회합니다.")
     @GetMapping("/{gameId}/missions")
     public CommonResponse<List<MissionResponse>> getMissions(@PathVariable Long gameId) {
