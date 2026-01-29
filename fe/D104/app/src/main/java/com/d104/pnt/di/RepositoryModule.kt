@@ -2,6 +2,8 @@ package com.d104.pnt.di
 
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.AuthRepositoryImpl
+import com.d104.pnt.data.repository.ProfileRepository
+import com.d104.pnt.data.repository.ProfileRepositoryImpl
 import com.d104.pnt.data.repository.ChatRepository
 import com.d104.pnt.data.repository.ChatRepositoryImpl
 import com.d104.pnt.data.repository.LocationRepository
@@ -35,6 +37,12 @@ abstract class RepositoryModule {
     abstract fun bindLocationRepository(
         impl: LocationRepositoryImpl
     ): LocationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindProfileRepository(
+        impl: ProfileRepositoryImpl
+    ): ProfileRepository
 
     @Binds
     @Singleton

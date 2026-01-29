@@ -1,28 +1,30 @@
 package com.d104.pnt.ui.profile
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.d104.pnt.ui.component.PixelContainer
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.d104.pnt.R
+import com.d104.pnt.data.remote.model.response.ProfileResponse
+import com.d104.pnt.domain.model.common.UiState
 
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(
+    viewModel: ProfileViewModel = hiltViewModel()
+) {
+    val profileState by viewModel.profileState.collectAsState()
+    var showImageDialog by remember { mutableStateOf(false) }
+
     Box(modifier = Modifier.fillMaxSize()) {
+        // 배경 화면
         Image(
             painter = painterResource(id = R.drawable.bg_night),
             contentDescription = "배경 화면",
@@ -30,277 +32,118 @@ fun ProfileScreen() {
             contentScale = ContentScale.Crop
         )
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Spacer(modifier = Modifier.weight(0.2f))
+        when (val state = profileState) {
+            is UiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color.White)
+                }
+            }
+            is UiState.Success -> {
+                val currentProfile = state.data
 
-            ProfileCardSection(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .weight(0.8f)
-            )
+                ProfileContent(
+                    profile = currentProfile,
+                    onLogoutClick = { /* 로그아웃 */ },
+                    onUpdateNickname = { newName ->
+                        val safeAvatarUrl = if (currentProfile.avatarUrl.isNullOrBlank()) "DEFAULT" else currentProfile.avatarUrl
 
-            PixelContainer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 40.dp)
-                    .weight(0.5f),
-                backgroundColor = Color(0xFF3F3F68),
-                borderColor = Color(0xFF8D90B3),
-                borderWidth = 8f,
-                cornerSize = 30f
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.SpaceAround
-                ) {
-                    Text(
-                        text = "전적 요약",
-                        color = Color.White,
-                        fontSize = 14.sp
-                    )
-
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = "승률 (%)",
-                            color = Color(0xFFC4C4C4),
-                            fontSize = 12.sp
+                        viewModel.updateProfile(
+                            nickname = newName,
+                            avatarUrl = safeAvatarUrl
                         )
+                    },
+                    onUpdateAvatar = {
+                        showImageDialog = true
+                    }
+                )
+            }
+            is UiState.Error -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "정보를 불러오지 못했습니다.\n${state.message}",
+                        color = Color.Red
+                    )
+                }
+            }
+            else -> {} // Idle
+        }
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            val activeBlocks = 5
-                            repeat(8) { index ->
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(18.dp)
-                                        .background(
-                                            if (index < activeBlocks) Color(0xFFA3E946)
-                                            else Color(0xFFD9D9D9)
-                                        )
-                                )
+        // 이미지 변경 다이얼로그
+        if (showImageDialog) {
+            val currentAvatarUrl = (profileState as? UiState.Success)?.data?.avatarUrl
+
+            ProfileImageSelectionDialog(
+                currentAvatarUrl = currentAvatarUrl,
+                onDismissRequest = { showImageDialog = false },
+                onImageSelected = { selectedImage ->
+                    val newAvatarUrl = when (selectedImage) {
+                        is AvatarImage.Resource -> {
+                            when (selectedImage.resId) {
+                                R.drawable.profile_img_police_1 -> "POLICE_1"
+                                R.drawable.profile_img_police_2 -> "POLICE_2"
+                                R.drawable.profile_img_thief_1 -> "THIEF_1"
+                                R.drawable.profile_img_thief_2 -> "THIEF_2"
+                                else -> "DEFAULT"
                             }
                         }
+                        is AvatarImage.Gallery -> selectedImage.uri.toString()
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "플레이 횟수",
-                            color = Color(0xFFC4C4C4),
-                            fontSize = 12.sp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                    val currentNickname = (profileState as? UiState.Success)?.data?.nickname
+                    val safeNickname = if (currentNickname.isNullOrBlank()) "이름 없음" else currentNickname
 
-                        Text(text = "🎮", fontSize = 16.sp)
-
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "168",
-                            color = Color.White,
-                            fontSize = 14.sp
-                        )
-                    }
+                    viewModel.updateProfile(
+                        nickname = safeNickname,
+                        avatarUrl = newAvatarUrl
+                    )
                 }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            PixelContainer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 40.dp)
-                    .weight(0.6f),
-                backgroundColor = Color(0xFF3F3F68),
-                borderColor = Color(0xFF8D90B3),
-                borderWidth = 8f,
-                cornerSize = 30f
-            ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(10.dp)
-                            .size(24.dp)
-                            .background(Color(0xFF3F3F68))
-                            .border(1.dp, Color.White),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "?",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "경찰",
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                modifier = Modifier
-                                    .offset(x = -8.dp, y = 0.dp)
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Image(
-                                painter = painterResource(id = R.drawable.img_tier_police),
-                                contentDescription = "경찰 티어",
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .offset(x = -8.dp, y = 0.dp)
-                            )
-                        }
-
-                        Canvas(
-                            modifier = Modifier
-                                .width(2.dp)
-                                .fillMaxHeight(0.8f)
-                        ) {
-                            drawLine(
-                                color = Color(0xFF8D90B3),
-                                start = Offset(0f, 0f),
-                                end = Offset(0f, size.height),
-                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 20f), 0f),
-                                strokeWidth = 4.dp.toPx()
-                            )
-                        }
-
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "도둑",
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                modifier = Modifier
-                                    .offset(x = 8.dp, y = 0.dp)
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Image(
-                                painter = painterResource(id = R.drawable.img_tier_thief),
-                                contentDescription = "도둑 티어",
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .offset(x = 8.dp, y = 0.dp)
-                            )
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.weight(0.6f))
+            )
         }
     }
 }
 
 @Composable
-fun ProfileCardSection(
-    modifier: Modifier = Modifier
+fun ProfileContent(
+    profile: ProfileResponse,
+    onLogoutClick: () -> Unit,
+    onUpdateNickname: (String) -> Unit,
+    onUpdateAvatar: () -> Unit = {}
 ) {
-    Box(modifier = modifier) {
-        Image(
-            painter = painterResource(id = R.drawable.frame_profile),
-            contentDescription = "프로필 배경",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds
+    // 안전한 데이터 추출
+    val wins = try { profile.stat?.wins ?: 0 } catch (e: Exception) { 0 }
+    val totalGames = try { profile.stat?.totalGames ?: 0 } catch (e: Exception) { 0 }
+    val policeGrade = try { profile.stat?.policeGrade ?: "Unranked" } catch (e: Exception) { "Unranked" }
+    val thiefGrade = try { profile.stat?.thiefGrade ?: "Unranked" } catch (e: Exception) { "Unranked" }
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(40.dp) // 카드 간 간격
+    ) {
+        Spacer(modifier = Modifier.height(40.dp)) // 상단 여백
+
+        // 1. 메인 프로필 카드 (아바타 + 닉네임 + 등급 통합됨)
+        ProfileCardSection(
+            nickname = profile.nickname ?: "이름 없음",
+            avatarUrl = profile.avatarUrl,
+            policeGrade = policeGrade,
+            thiefGrade = thiefGrade,
+            onLogoutClick = onLogoutClick,
+            onUpdateNickname = onUpdateNickname,
+            onUpdateAvatar = onUpdateAvatar,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 36.dp)
         )
 
-        Row(
+        // 전적 요약 섹션
+        StatSummarySection(
+            wins = wins,
+            totalGames = totalGames,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(start = 40.dp, top = 10.dp, end = 24.dp, bottom = 24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+                .fillMaxWidth()
+                .padding(horizontal = 36.dp)
+        )
 
-           Box(
-                modifier = Modifier
-                    .size(100.dp)
-                    .offset(x = 0.dp, y = 0.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.img_avatar),
-                    contentDescription = "나의 아바타",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
-            }
-
-            Spacer(modifier = Modifier.width(20.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .offset(x = 0.dp, y = -5.dp)
-                ) {
-                    Text(
-                        text = "이름: 이래롬",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_edit),
-                        contentDescription = "수정 아이콘",
-                        modifier = Modifier.size(30.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Column(
-                    modifier = Modifier
-                        .offset(x = 0.dp, y = -5.dp)
-                ) {
-                    Text(
-                        text = "생년월일:",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                    Text(
-                        text = "1999.12.25",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.Black
-                    )
-                }
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(bottom = 40.dp, end = 24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = "로그아웃", fontSize = 12.sp, color = Color.Gray)
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(text = "→", fontSize = 12.sp, color = Color.Gray)
-        }
+        Spacer(modifier = Modifier.weight(1f))
     }
 }
