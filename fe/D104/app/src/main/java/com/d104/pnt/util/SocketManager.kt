@@ -187,18 +187,15 @@ class SocketManager @Inject constructor() {
 
                 val messageList = mutableListOf<JSONObject>()
 
-                // 🔥 명세: 바로 배열로 옴
                 val items = args[0]
 
                 when (items) {
                     is org.json.JSONArray -> {
-                        // ✅ 정상: 배열
                         for (i in 0 until items.length()) {
                             messageList.add(items.getJSONObject(i))
                         }
                     }
                     is JSONObject -> {
-                        // 🔥 구 명세: {items:[], count:0} 형태
                         val count = items.optInt("count", 0)
                         if (items.has("items")) {
                             val innerItems = items.opt("items")
