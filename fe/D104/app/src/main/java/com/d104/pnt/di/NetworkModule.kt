@@ -1,17 +1,16 @@
 package com.d104.pnt.di
 
-import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import com.d104.pnt.base.AuthTokenInterceptor
 import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.api.AuthApiService
+import com.d104.pnt.data.remote.api.ProfileApiService
+import com.d104.pnt.data.remote.api.ChatApiService
+import com.d104.pnt.data.remote.api.NaverApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -77,5 +76,28 @@ object NetworkModule {
     @Singleton
     fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
         return retrofit.create(AuthApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideProfileApiService(retrofit: Retrofit): ProfileApiService {
+        return retrofit.create(ProfileApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatApiService(retrofit: Retrofit): ChatApiService {
+        return retrofit.create(ChatApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNaverApiService(): NaverApiService {
+        return Retrofit.Builder()
+            // ⭐️ 네이버 클라우드 API 주소
+            .baseUrl("https://maps.apigw.ntruss.com/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(NaverApiService::class.java)
     }
 }

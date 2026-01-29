@@ -1,5 +1,8 @@
 package com.d104.pnt.ui.auth
 
+import android.os.Build
+import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,43 +16,90 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
+import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.theme.BorderDefault
 import com.d104.pnt.ui.theme.CheckGreen
+import timber.log.Timber
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun SignupScreen(
-    onSuccess: (String) -> Unit
+    viewModel: SignupViewModel = hiltViewModel(),
+    onSuccess: (String) -> Unit,
+    onBack: () -> Unit = {}
 ) {
-    var clicked by remember { mutableStateOf(false) }
+    // user input
+    val id by viewModel.id.collectAsStateWithLifecycle()
+    val pw by viewModel.pw.collectAsStateWithLifecycle()
+    val pwConfirm by viewModel.pwConfirm.collectAsStateWithLifecycle()
+    val nickname by viewModel.nickname.collectAsStateWithLifecycle()
+    val birth by viewModel.birth.collectAsStateWithLifecycle()
 
-    var id by remember { mutableStateOf("") }
-    var pw by remember { mutableStateOf("") }
-    var pwCheck by remember { mutableStateOf("") }
-    var nickname by remember { mutableStateOf("") }
-    var bDay by remember { mutableStateOf("") }
+    // 유효성 검사
+    val isIdValid by viewModel.isIdValid.collectAsStateWithLifecycle()
+
+    // 에러 메세지
+    val idErrorMessage by viewModel.idErrorMessage.collectAsStateWithLifecycle()
+    val pwErrorMessage by viewModel.pwErrorMessage.collectAsStateWithLifecycle()
+    val pwConfirmErrorMessage by viewModel.pwConfirmErrorMessage.collectAsStateWithLifecycle()
+    val nicknameErrorMessage by viewModel.nicknameErrorMessage.collectAsStateWithLifecycle()
+
+    // 상태 체크
+    val isDuplicateChecked by viewModel.isDuplicateChecked.collectAsStateWithLifecycle()
+    val isDuplicated by viewModel.isDuplicated.collectAsStateWithLifecycle()
+    val isDuplicateCheckLoading by viewModel.isDuplicateCheckLoading.collectAsStateWithLifecycle()
+    val signupState by viewModel.signupState.collectAsStateWithLifecycle()
+
+    // 뒤로가기 처리
+    BackHandler {
+        onBack()
+    }
+
+    // 회원가입 성공 처리
+    LaunchedEffect(signupState) {
+        when (signupState) {
+            is UiState.Success -> {
+                Timber.d("Signup success - navigating with nickname: ${(signupState as UiState.Success).data.nickname}")
+                onSuccess((signupState as UiState.Success).data.nickname)
+                viewModel.resetSignupState()
+            }
+
+            is UiState.Error -> {
+                Timber.e("Signup error: ${(signupState as UiState.Error).message}")
+            }
+
+            else -> {}
+        }
+    }
 
     Surface(modifier = Modifier.fillMaxSize()) {
 
@@ -74,7 +124,8 @@ fun SignupScreen(
                     WindowInsets
                         .navigationBars
                         .only(WindowInsetsSides.Bottom)
-                ),
+                )
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.Center
         ) {
             Text(
@@ -87,131 +138,101 @@ fun SignupScreen(
             )
 
             Column(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .imePadding(),
             ) {
-                Text(
-                    text = "아이디",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier
-                        .align(Alignment.Start)
-                        .padding(start = 10.dp, bottom = 4.dp)
-                        .fillMaxWidth(),
-                    color = Color.White
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    PixelInputField(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .padding(end = 4.dp)
-                            .weight(1f),
-                        value = id,
-                        onValueChange = { },
-                        placeholder = "아이디 (8~16자 이내)",
-                        borderColor = BorderDefault
-                    )
-
-                    PixelIconButton(
-                        onClick = { clicked = !clicked },
-                        mainColor = if (clicked) Color.White else CheckGreen,
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .aspectRatio(1f)  // 정사각형으로 만들기
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.check),
-                            contentDescription = null,
-                            tint = if (clicked) CheckGreen else Color.White
-                        )
+                // 아이디
+                LabeledInputField(
+                    label = "아이디",
+                    value = id,
+                    onValueChange = { viewModel.updateId(it) },
+                    placeholder = "아이디 (5~12자 이내)",
+                    errorMessage = idErrorMessage,
+                    trailingContent = {
+                        PixelIconButton(
+                            onClick = {
+                                Timber.d("Duplicate check button clicked - ID: $id, isValid: $isIdValid")
+                                viewModel.checkDuplicate()
+                            },
+                            mainColor = when {
+                                isDuplicateChecked && !isDuplicated -> CheckGreen  // 체크 완료
+                                !isIdValid -> Color.Gray  // 비활성화
+                                else -> Color.White  // 체크 전 또는 중복
+                            },
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .aspectRatio(1f)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.check),
+                                contentDescription = "중복 확인",
+                                tint = when {
+                                    isDuplicateChecked && !isDuplicated -> Color.White
+                                    !isIdValid -> Color.DarkGray
+                                    else -> CheckGreen
+                                }
+                            )
+                        }
                     }
-                }
-                Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(16.dp)
                 )
 
-                Text(
-                    text = "비밀번호",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier
-                        .align(Alignment.Start)
-                        .padding(start = 10.dp, bottom = 4.dp)
-                        .fillMaxWidth(),
-                    color = Color.White
-                )
+                Spacer(Modifier.height(16.dp))
 
-                PixelInputField(
+                // 비밀번호
+                LabeledInputField(
+                    label = "비밀번호",
                     value = pw,
-                    onValueChange = { },
-                    placeholder = "비밀번호",
-                    borderColor = BorderDefault
-                )
-                Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(16.dp)
+                    onValueChange = { viewModel.updatePw(it) },
+                    placeholder = "비밀번호 (8~16자)",
+                    errorMessage = pwErrorMessage,
+                    isPassword = true
                 )
 
-                Text(
-                    text = "비밀번호 확인",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier
-                        .align(Alignment.Start)
-                        .padding(start = 10.dp, bottom = 4.dp)
-                        .fillMaxWidth(),
-                    color = Color.White
-                )
+                Spacer(Modifier.height(16.dp))
 
-                PixelInputField(
-                    value = pwCheck,
-                    onValueChange = { },
+                // 비밀번호 확인
+                LabeledInputField(
+                    label = "비밀번호 확인",
+                    value = pwConfirm,
+                    onValueChange = { viewModel.updatePwConfirm(it) },
                     placeholder = "비밀번호 확인",
-                    borderColor = BorderDefault
+                    errorMessage = pwConfirmErrorMessage,
+                    isPassword = true
                 )
 
-                Spacer(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(32.dp)
+                Spacer(Modifier.height(16.dp))
+
+                // 닉네임
+                LabeledInputField(
+                    label = "닉네임",
+                    value = nickname,
+                    onValueChange = { viewModel.updateNickname(it) },
+                    placeholder = "닉네임 (2~10자)",
+                    errorMessage = nicknameErrorMessage
                 )
 
-                Text(
-                    text = "생년월일",
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier
-                        .align(Alignment.Start)
-                        .padding(start = 10.dp, bottom = 4.dp)
-                        .fillMaxWidth(),
-                    color = Color.White
-                )
+                Spacer(Modifier.height(16.dp))
 
-                PixelInputField(
-                    value = bDay,
-                    onValueChange = { },
-                    placeholder = "생년월일",
-                    borderColor = BorderDefault
+                // 생년월일
+                BirthDatePicker(
+                    label = "생년월일",
+                    value = birth,
+                    onValueChange = { viewModel.updateBirth(it) }
                 )
             }
 
-            Spacer(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(32.dp)
-            )
+            Spacer(Modifier.height(32.dp))
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // 이전 버튼
                 PixelIconButton(
-                    onClick = {},
+                    onClick = { onBack() },
                     modifier = Modifier
                         .weight(1f)
                         .height(40.dp)
@@ -223,21 +244,89 @@ fun SignupScreen(
                     )
                 }
 
+                // 확인 버튼
                 PixelIconButton(
-                    onClick = { onSuccess("keroro") },
+                    onClick = {
+                        Timber.d("Signup button clicked - isEnabled: ${viewModel.isSignupEnabled()}")
+                        viewModel.signup()
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .height(40.dp)
                 ) {
-                    Text(
-                        text = "확인",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = Color.Black
-                    )
+                    if (signupState is UiState.Loading) {
+                        CircularProgressIndicator(
+                            color = Color.Black,
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = "확인",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = Color.Black
+                        )
+                    }
                 }
             }
         }
     }
-
 }
 
+@Composable
+fun LabeledInputField(
+    modifier: Modifier = Modifier,
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    errorMessage: String = "",
+    isPassword: Boolean = false,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    trailingContent: (@Composable () -> Unit)? = null
+) {
+    Column {
+        // 라벨
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(start = 10.dp, bottom = 4.dp),
+            color = Color.White
+        )
+
+        if (trailingContent != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                PixelInputField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    placeholder = placeholder,
+                    errorMessage = errorMessage,
+                    isPassword = isPassword,
+                    keyboardType = keyboardType,
+                    modifier = modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
+                    borderColor = BorderDefault
+                )
+
+                trailingContent()
+            }
+        } else {
+            PixelInputField(
+                modifier = modifier,
+                value = value,
+                onValueChange = onValueChange,
+                placeholder = placeholder,
+                errorMessage = errorMessage,
+                isPassword = isPassword,
+                keyboardType = keyboardType,
+                borderColor = BorderDefault
+            )
+        }
+    }
+}

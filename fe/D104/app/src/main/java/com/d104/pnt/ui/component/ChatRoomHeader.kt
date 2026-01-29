@@ -4,9 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -19,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.d104.pnt.domain.model.RoomData
+import com.d104.pnt.domain.model.ChatsData
 import com.d104.pnt.ui.theme.DarkBackground
 import com.d104.pnt.ui.theme.DarkCard
 import com.d104.pnt.ui.theme.TextPrimary
@@ -28,7 +26,7 @@ import com.d104.pnt.ui.theme.TextSecondary
 @Composable
 fun ChatRoomHeader(
     modifier: Modifier,
-    roomData: RoomData,
+    roomData: ChatsData,
     onLeaveClick: () -> Unit,
 ) {
     Box(
@@ -93,7 +91,7 @@ fun ChatRoomHeader(
 fun PreviewChatRoomHeader() {
     ChatRoomHeader(
         modifier = Modifier,
-        roomData = RoomData(
+        roomData = ChatsData(
             1,
             "진평동 빡겜 추격전 진평동 빡겜 추격전 진평동 빡겜 추격전 진평동 빡겜 추격전",
             "날이 많이 추우니 장갑 꼭 챙겨오세요",

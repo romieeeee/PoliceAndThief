@@ -3,7 +3,7 @@ package com.d104.pnt.data.remote.model.response
 import com.google.gson.annotations.SerializedName
 
 /**
- * 로그인/회원가입 응답 데이터
+ * 로그인/회원가입/소셜로그인 응답 데이터
  */
 data class LoginResponse(
     @SerializedName("accessToken")
@@ -27,11 +27,11 @@ data class MemberData(
     val id: String,
 
     @SerializedName("nickname")
-    val nickname: String,
+    val nickname: String?,  // nullable
 
     @SerializedName("avatarUrl")
     val avatarUrl: String?,
 
     @SerializedName("role")
-    val role: String
+    val role: String?  // nullable
 )
