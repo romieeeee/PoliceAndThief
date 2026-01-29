@@ -30,6 +30,37 @@ export class TurfService {
 
         const distance = turf.distance(userPt, prisonPt, { units: 'meters' });
 
+        console.log("distance", distance);
+
         return distance <= 15;
+    }
+
+    /**
+     * police = {
+     *  policeId: number, lat: number, lng: number
+     * }
+     */
+    checkNearPolice = async (thiefPoint, polices) => {
+        const thiefPt = turf.point(thiefPoint);
+
+        const resData = {
+            isNearPolice: false,
+            policeId: 0,
+            distance: 15,
+        };
+
+        for (const policePoint of polices) {
+            const policePt = turf.point([policePoint.lat, policePoint.lng]);
+
+            const distance = turf.distance(thiefPt, policePt, { units: 'meters' });
+
+            if (distance <= 15 && distance < resData.distance) {
+                resData.isNearPolice = true;
+                resData.policeId = policePoint.policeId;
+                resData.distance = distance;
+            }
+        }
+
+        return resData.isNearPolice ? resData : false;
     }
 }

@@ -33,6 +33,15 @@ export default class GameMember extends Model {
                     type: DataTypes.STRING(10),
                     allowNull: true,
                 },
+                preferPosition: {
+                    type: DataTypes.STRING(10),
+                    allowNull: true,
+                },
+                inGameConnected: {
+                    type: DataTypes.BOOLEAN,
+                    allowNull: true,
+                    defaultValue: false,
+                },
                 isDeleted: {
                     type: DataTypes.BOOLEAN,
                     allowNull: false,

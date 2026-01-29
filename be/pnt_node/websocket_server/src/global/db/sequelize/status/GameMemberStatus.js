@@ -1,5 +1,5 @@
 export const GameMemberStatus = {
-    PRISON: "STATUS_PRISON",
-    TRANSFER: "STATUS_TRANSFER",
-    FREE: "STATUS_FREE"
+    PRISON: "PRISON",
+    TRANSFER: "TRANSFER",
+    FREE: "FREE"
 };

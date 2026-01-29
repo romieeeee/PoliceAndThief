@@ -1,4 +1,5 @@
 export const GameStatus = {
-    RUNNING: "GAME_RUNNING",
-    FINISHED: "GAME_FINISHED"
+    WAITING: "WAITING",
+    IN_GAME: "IN_GAME",
+    ENDED: "ENDED"
 };
