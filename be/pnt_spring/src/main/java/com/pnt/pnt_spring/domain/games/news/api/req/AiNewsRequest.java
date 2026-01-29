@@ -11,7 +11,11 @@ public class AiNewsRequest {
     private String startTime;        // yyyy-MM-dd HH:mm
     private String winningTeam;      // "경찰" 또는 "도둑"
     private int playTime;         // 플레이 경과 시간(초 정보)
-    private String location;          // "장소 정보"
+
+    // 좌표 정보로 변경
+    private Double latitude;
+    private Double longitude;
+
     private int thiefCount;
     private int policeCount;
     private String mvp;               // MVP 닉네임
