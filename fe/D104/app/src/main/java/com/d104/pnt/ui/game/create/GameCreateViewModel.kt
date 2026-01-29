@@ -135,4 +135,19 @@ class GameCreateViewModel @Inject constructor(
             }
         }
     }
+
+    fun isValid (
+        playerCount: Int,
+        timeLimit: Int,
+        policeCount: Int,
+        thiefCount: Int,
+        polygon: List<Location>
+    ): Boolean {
+        if (playerCount < 5 || playerCount > 30) return false
+        if (timeLimit < 5 || timeLimit > 60) return false
+        if (policeCount < 1 || policeCount >= playerCount) return false
+        if (thiefCount < 1 || thiefCount >= playerCount) return false
+        if (polygon.size < 3) return false
+        return true
+    }
 }

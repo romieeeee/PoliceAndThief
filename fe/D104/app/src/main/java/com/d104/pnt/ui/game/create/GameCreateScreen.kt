@@ -103,18 +103,6 @@ fun GameCreateScreen(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        SectionTitle(text = "게임 이름 설정")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        PixelInputField(
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = "방 이름을 입력하세요",
-                            borderColor = DialogBorderColor,
-                            value = gameName,
-                            onValueChange = { viewModel.updateGameName(it) }
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
                         SectionTitle(text = "맵 설정 & 감옥 설정")
                         Spacer(modifier = Modifier.height(8.dp))
                         Box(
@@ -228,16 +216,32 @@ fun GameCreateScreen(
                             RoundedButton(
                                 text = "확인",
                                 onClick = {
-                                    val polyPoint = polygonPoints.map { Location(lat = it.latitude, lng = it.longitude) }
-                                    viewModel.createGameRoom(
+                                    val polyPoint = polygonPoints.map {
+                                        Location(
+                                            lat = it.latitude,
+                                            lng = it.longitude
+                                        )
+                                    }
+                                    if (viewModel.isValid(
                                         playerCount = totalPlayers,
                                         timeLimit = gameTime,
                                         policeCount = policeCount,
                                         thiefCount = thiefCount,
-                                        prison = Location(lat = prisonLocation!!.latitude, lng = prisonLocation!!.longitude),
                                         polygon = polyPoint
-                                    )
-                                    onConfirm()
+                                    )) {
+                                        viewModel.createGameRoom(
+                                            playerCount = totalPlayers,
+                                            timeLimit = gameTime,
+                                            policeCount = policeCount,
+                                            thiefCount = thiefCount,
+                                            prison = Location(
+                                                lat = prisonLocation!!.latitude,
+                                                lng = prisonLocation!!.longitude
+                                            ),
+                                            polygon = polyPoint
+                                        )
+                                        onConfirm()
+                                    }
                                           },
                                 containerColor = Color.White,
                                 modifier = Modifier.weight(1f)

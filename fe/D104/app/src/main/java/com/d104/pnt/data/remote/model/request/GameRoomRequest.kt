@@ -20,6 +20,6 @@ data class CreateGameRoomRequest(
 data class Location(
     @SerializedName("lat")
     val lat: Double,
-    @SerializedName("lon")
+    @SerializedName("lng")
     val lng: Double
 )
