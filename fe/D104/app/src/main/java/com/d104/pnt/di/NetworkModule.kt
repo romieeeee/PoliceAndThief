@@ -3,6 +3,7 @@ package com.d104.pnt.di
 import com.d104.pnt.base.AuthTokenInterceptor
 import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.api.AuthApiService
+import com.d104.pnt.data.remote.api.ProfileApiService
 import com.d104.pnt.data.remote.api.ChatApiService
 import com.d104.pnt.data.remote.api.GameRoomApiService
 import com.d104.pnt.data.remote.api.NaverApiService
@@ -76,6 +77,12 @@ object NetworkModule {
     @Singleton
     fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
         return retrofit.create(AuthApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideProfileApiService(retrofit: Retrofit): ProfileApiService {
+        return retrofit.create(ProfileApiService::class.java)
     }
 
     @Provides

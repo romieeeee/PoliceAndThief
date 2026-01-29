@@ -93,13 +93,12 @@ class LoginViewModel @Inject constructor(
                     return@launch
                 }
 
-                Timber.d("Kakao token received: ${kakaoToken.take(50)}...")
+                Timber.d("Kakao token received: ${kakaoToken}")
 
                 // 2. 서버에 provider="KAKAO"와 token 전송
                 when (val result = authRepository.socialLogin("KAKAO", kakaoToken)) {
                     is BaseResult.Success -> {
                         Timber.d("✅ Social login successful: ${result.data.member.id}")
-                        // ⭐ 이미 LoginResponse라서 변환 불필요!
                         _loginState.value = UiState.Success(result.data)
                     }
 
