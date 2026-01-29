@@ -8,22 +8,26 @@ import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
-import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
-import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
-import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
+import com.pnt.pnt_spring.domain.games.game.enums.WinTeam;
+import com.pnt.pnt_spring.domain.games.game.repository.*;
 import com.pnt.pnt_spring.domain.games.news.api.req.AiNewsRequest;
+import com.pnt.pnt_spring.domain.members.member.entity.Member;
+import com.pnt.pnt_spring.domain.members.stat.entity.*;
+import com.pnt.pnt_spring.domain.members.stat.repository.MemberStatPoliceRepository;
+import com.pnt.pnt_spring.domain.members.stat.repository.MemberStatRepository;
+import com.pnt.pnt_spring.domain.members.stat.repository.MemberStatThiefRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -36,10 +40,17 @@ public class GameResultServiceImpl implements GameResultService {
     private final GameMemberRepository gameMemberRepository;
     private final GameMemberStatRepository gameMemberStatRepository;
     private final RabbitTemplate rabbitTemplate;
+    private final MemberStatRepository memberStatRepository;
 
-    /**
-     * 게임 결과 저장 및 AI 뉴스 요청 (Command)
-     */
+
+    private final MemberStatPoliceRepository memberStatPoliceRepository;
+    private final MemberStatThiefRepository memberStatThiefRepository;
+    private final GradePoliceRepository gradePoliceRepository;
+    private final GradeThiefRepository gradeThiefRepository;
+
+    private static final long MIN_GRADE_ID = 1L;
+    private static final long MAX_GRADE_ID = 11L;
+
     @Override
     public void saveGameResult(GameResultRequest request) {
         log.info("게임 결과 저장 시작: GameId={}", request.getGameId());
@@ -47,48 +58,42 @@ public class GameResultServiceImpl implements GameResultService {
         Game game = gameRepository.findById(request.getGameId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
-        // 이미 끝났다면
         if (game.getStatus() == GameStatus.ENDED) {
             throw new BusinessException(ErrorCode.GAME_ALREADY_ENDED);
         }
 
-        // 게임 종료 상태 저장 (winner: "POLICE" or "THIEF
         game.end(request.getWinTeam());
 
-        // 멤버별 통계 저장 (walk, survived 등)
         for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
             GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(statReq.getGameMemberId())
                     .orElseGet(() -> {
-                        // 없으면 생성 (방어 코드)
                         GameMember gm = gameMemberRepository.findById(statReq.getGameMemberId())
                                 .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
                         return gameMemberStatRepository.save(GameMemberStat.createInitialStat(gm));
                     });
 
-            // 기존 arrestCount는 유지하고, 새로 들어온 데이터만 업데이트
             stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived());
+
+            updateMemberGradeAndStats(stat, request.getWinTeam(), statReq.getPosition());
         }
 
-        // AI 뉴스 생성 요청 (저장 시점에 바로 트리거)
+        // AI 뉴스 생성 요청
         triggerAiNewsGeneration(game);
     }
 
-    /**
-     * 게임 결과 조회 및 MVP 산정 (Query)
-     */
     @Override
     @Transactional(readOnly = true)
     public GameResultResponse getGameResult(Long gameId) {
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
-        // MVP 선정 (조회 시점에 계산)
+        // MVP 선정
         GameMemberStat mvpStat = calculateMvp(game);
         String mvpNickname = (mvpStat != null)
                 ? mvpStat.getGameMember().getMember().getMemberProfile().getNickname()
                 : "없음";
 
-        // 통계 집계
+        // 전체 통계 집계 (N+1 방지를 위해 findAllByGameId 사용하는 것을 추천하지만 기존 로직 유지 시)
         List<GameMember> participants = gameMemberRepository.findAllByGameId(gameId);
         int totalArrests = 0;
 
@@ -101,7 +106,6 @@ public class GameResultServiceImpl implements GameResultService {
 
         int durationSec = (int) Duration.between(game.getStartTime(), game.getEndTime()).toSeconds();
 
-        // 응답 반환
         return GameResultResponse.builder()
                 .gameId(game.getId())
                 .winner(game.getWinTeam().toString())
@@ -114,61 +118,192 @@ public class GameResultServiceImpl implements GameResultService {
                 .stats(GameResultResponse.TotalStats.builder()
                         .arrests(totalArrests)
                         .durationSec(durationSec)
-                        .missionsCleared(0) // 미션 로직 연결 시 수정
+                        .missionsCleared(0)
                         .build())
                 .build();
     }
 
     private void triggerAiNewsGeneration(Game game) {
-        // MVP 및 통계 계산 (뉴스 생성을 위해 임시 계산)
-        GameMemberStat mvpStat = calculateMvp(game);
-        String mvpNickname = (mvpStat != null)
-                ? mvpStat.getGameMember().getMember().getMemberProfile().getNickname()
-                : "없음";
+        // 1. 해당 게임의 모든 멤버 스탯 조회
+        List<GameMemberStat> allStats = gameMemberStatRepository.findAllByGameId(game.getId());
 
-        List<GameMember> members = gameMemberRepository.findAllByGameId(game.getId());
-        int policeCount = (int) members.stream().filter(m -> m.getGivenPosition() == Position.POLICE).count();
-        int thiefCount = (int) members.stream().filter(m -> m.getGivenPosition() == Position.THIEF).count();
+        // 2. 팀별 분류
+        List<GameMemberStat> policeStats = new ArrayList<>();
+        List<GameMemberStat> thiefStats = new ArrayList<>();
+
+        for (GameMemberStat stat : allStats) {
+            if (stat.getPosition() == Position.POLICE) {
+                policeStats.add(stat);
+            } else if (stat.getPosition() == Position.THIEF) {
+                thiefStats.add(stat);
+            }
+        }
+
+        // 3. 정렬 (경찰: 체포수 내림차순, 도둑: 생존시간 내림차순)
+        policeStats.sort((a, b) -> compareStats(b.getArrestCount(), a.getArrestCount()));
+        thiefStats.sort((a, b) -> compareStats(b.getLongestSurvived(), a.getLongestSurvived()));
+
+        // 4. 승리/패배 팀 데이터 추출
+        String mvpNickname = "없음";
+        String winnerTopMember = "없음";
+        String loserTopMember = "없음";
+
+        List<GameMemberStat> winnerStats;
+        List<GameMemberStat> loserStats;
+
+        // [중요] WinTeam Enum 비교 (== 사용)
+        boolean isPoliceWin = (game.getWinTeam() == WinTeam.POLICE);
+
+        if (isPoliceWin) {
+            winnerStats = policeStats;
+            loserStats = thiefStats;
+        } else {
+            winnerStats = thiefStats;
+            loserStats = policeStats;
+        }
+
+        // MVP: 승리팀 1등
+        if (!winnerStats.isEmpty()) {
+            mvpNickname = getNickname(winnerStats.get(0));
+        }
+        // Winner Top Member: 승리팀 2등
+        if (winnerStats.size() > 1) {
+            winnerTopMember = getNickname(winnerStats.get(1));
+        }
+        // Loser Top Member: 패배팀 1등
+        if (!loserStats.isEmpty()) {
+            loserTopMember = getNickname(loserStats.get(0));
+        }
+
         int durationSec = (int) Duration.between(game.getStartTime(), game.getEndTime()).toSeconds();
-
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
         AiNewsRequest aiRequest = AiNewsRequest.builder()
                 .gameId(game.getId())
                 .startTime(game.getStartTime().format(formatter))
-                .winningTeam("POLICE".equals(game.getWinTeam()) ? "경찰" : "도둑")
+                .winningTeam(isPoliceWin ? "경찰" : "도둑")
                 .playTime(durationSec)
-                .location("구미 시 진평동") // TODO : 지역코드로 조회해서 받아와서 어쩌구 저쩌구 저장하는 식으로 해야함
-                .policeCount(policeCount)
-                .thiefCount(thiefCount)
+                .location("구미시 진평동")
+                .policeCount(policeStats.size())
+                .thiefCount(thiefStats.size())
                 .mvp(mvpNickname)
-                .winnerTopMember(mvpNickname)
-                .loserTopMember("도망왕") // 필요시 별도 로직 구현
+                .winnerTopMember(winnerTopMember)
+                .loserTopMember(loserTopMember)
                 .build();
 
         rabbitTemplate.convertAndSend("NEWS", aiRequest);
-
         log.info("MQ Message Published to 'NEWS': gameId={}", game.getId());
     }
 
     private GameMemberStat calculateMvp(Game game) {
-        // 승리 팀에 따라 MVP 선정 쿼리 호출
-        return "POLICE".equals(game.getWinTeam())
-                ? gameMemberStatRepository
-                .findPoliceMvp(game.getId(), PageRequest.of(0, 1))
-                .stream()
-                .findFirst()
-                .orElse(null)
-                : gameMemberStatRepository
-                .findThiefMvp(game.getId(), PageRequest.of(0, 1))
-                .stream()
-                .findFirst()
-                .orElse(null);
+        // 0페이지에서 1개만 가져옴 (Top 1 효과)
+        PageRequest limitOne = PageRequest.of(0, 1);
+
+        List<GameMemberStat> stats;
+
+        // WinTeam 비교 (Enum == 사용)
+        if (game.getWinTeam() == WinTeam.POLICE) {
+            stats = gameMemberStatRepository.findPoliceMvp(game.getId(), limitOne);
+        } else {
+            stats = gameMemberStatRepository.findThiefMvp(game.getId(), limitOne);
+        }
+
+        // 리스트가 비어있지 않으면 첫 번째 요소 반환, 없으면 null
+        return stats.isEmpty() ? null : stats.get(0);
     }
 
     @Override
     public Long calculateSurvivalTime(Game game, GameMember member) {
         return 0L;
+    }
+
+    // 닉네임 추출 헬퍼
+    private String getNickname(GameMemberStat stat) {
+        return stat.getGameMember().getMember().getMemberProfile().getNickname();
+    }
+
+    // null-safe Integer 비교 헬퍼
+    private int compareStats(Integer v1, Integer v2) {
+        int val1 = (v1 == null) ? 0 : v1;
+        int val2 = (v2 == null) ? 0 : v2;
+        return Integer.compare(val1, val2);
+    }
+
+    private void updateMemberGradeAndStats(GameMemberStat gameStat, WinTeam winTeam, Position position) {
+        GameMember gameMember = gameStat.getGameMember();
+        Member member = gameMember.getMember();
+
+        // 해당 판에서 이겼는지 여부
+        boolean isWin = (position == Position.POLICE && winTeam == WinTeam.POLICE) ||
+                (position == Position.THIEF && winTeam == WinTeam.THIEF);
+
+        // 1. [공통] MemberStat (전체 통계) 먼저 업데이트
+        MemberStat memberStat = memberStatRepository.findById(member.getId())
+                .orElseGet(() -> memberStatRepository.save(MemberStat.createInitial(member)));
+
+        // 여기서 totalGames, thiefGame 등이 +1 됨
+        memberStat.updateGameStats(isWin, position);
+
+        if (position == Position.POLICE) {
+            // 1. 경찰 누적 스탯 조회 (없으면 초기 생성)
+            MemberStatPolice policeStat = memberStatPoliceRepository.findById(member.getId())
+                    .orElseGet(() -> {
+                        GradePolice initial = gradePoliceRepository.findById(MIN_GRADE_ID)
+                                .orElseThrow(() -> new BusinessException(ErrorCode.GRADE_NOT_FOUND));
+                        return memberStatPoliceRepository.save(MemberStatPolice.createInitial(member, initial));
+                    });
+
+            // 2. 스탯 업데이트 (DB에 있던 gameStat.getArrestCount() 사용)
+            policeStat.updateAfterGame(isWin, gameStat.getArrestCount());
+
+            // 3. 등급 변경 계산
+            long currentGradeId = policeStat.getGradePolice().getId();
+            long nextGradeId = calculateNextGradeId(currentGradeId, isWin);
+
+            if (currentGradeId != nextGradeId) {
+                GradePolice nextGrade = gradePoliceRepository.findById(nextGradeId)
+                        .orElse(policeStat.getGradePolice()); // 없으면 유지
+                policeStat.changeGrade(nextGrade);
+            }
+
+        } else if (position == Position.THIEF) {
+            // 1. 도둑 누적 스탯 조회
+            MemberStatThief thiefStat = memberStatThiefRepository.findById(member.getId())
+                    .orElseGet(() -> {
+                        GradeThief initial = gradeThiefRepository.findById(MIN_GRADE_ID)
+                                .orElseThrow(() -> new BusinessException(ErrorCode.GRADE_NOT_FOUND));
+                        return memberStatThiefRepository.save(MemberStatThief.createInitial(member, initial));
+                    });
+
+            // 도둑 스탯과 평균시간 업데이트
+            thiefStat.updateAfterGame(
+                    isWin,  // 이겼는지 졌는지
+                    gameStat.getLongestSurvived(),
+                    gameStat.getEscapeCount(),
+                    memberStat.getThiefGame() // MemberStat에서 가져온 총 도둑 판수 전달
+            );
+
+            // 3. 등급 변경 계산
+            long currentGradeId = thiefStat.getGradeThief().getId();
+            long nextGradeId = calculateNextGradeId(currentGradeId, isWin);
+
+            if (currentGradeId != nextGradeId) {
+                GradeThief nextGrade = gradeThiefRepository.findById(nextGradeId)
+                        .orElse(thiefStat.getGradeThief());
+                thiefStat.changeGrade(nextGrade);
+            }
+        }
+    }
+
+    // 등급 ID 계산 (1 ~ 11 범위 고정)
+    private long calculateNextGradeId(long currentId, boolean isWin) {
+        if (isWin) {
+            // 승리 시 1단계 승급 (최대 11)
+            return Math.min(currentId + 1, MAX_GRADE_ID);
+        } else {
+            // 패배 시 1단계 강등 (최소 1)
+            return Math.max(currentId - 1, MIN_GRADE_ID);
+        }
     }
 
 }
