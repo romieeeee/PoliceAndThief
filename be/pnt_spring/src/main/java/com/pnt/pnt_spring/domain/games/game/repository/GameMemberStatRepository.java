@@ -2,11 +2,9 @@ package com.pnt.pnt_spring.domain.games.game.repository;
 
 import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -44,4 +42,12 @@ public interface GameMemberStatRepository extends JpaRepository<GameMemberStat, 
         ORDER BY s.longestSurvived DESC
     """)
     List<GameMemberStat> findThiefMvp(@Param("gameId") Long gameId, Pageable pageable);
+
+    // 특정 게임의 모든 참가자 스탯 조회
+    @Query("SELECT s FROM GameMemberStat s " +
+            "JOIN FETCH s.gameMember gm " +
+            "JOIN FETCH gm.member m " +
+            "JOIN FETCH m.memberProfile " +
+            "WHERE gm.game.id = :gameId")
+    List<GameMemberStat> findAllByGameId(@Param("gameId") Long gameId);
 }
