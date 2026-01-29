@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/games/news")
+@RequestMapping("/games/news")
 @RequiredArgsConstructor
 @Slf4j
 public class GameNewsController {

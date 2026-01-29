@@ -56,7 +56,7 @@ public enum ErrorCode {
     // =========================
     ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, 3, "존재하지 않는 방입니다."),
     ROOM_FULL(HttpStatus.CONFLICT, 3, "방의 정원이 초과되었습니다."),
-    ROOM_ALREADY_JOINED(HttpStatus.CONFLICT, 3, "이미 참여 중인 방입니다."),
+    ROOM_ALREADY_JOINED(HttpStatus.CONFLICT, 3, "이미 다른 방에 참여 중입니다."),
     ROOM_NOT_JOINED(HttpStatus.CONFLICT, 3, "참여하지 않은 방에 대한 요청입니다."),
 
     ROOM_NOT_HOST(HttpStatus.FORBIDDEN, 3, "방장 권한이 필요합니다."),
