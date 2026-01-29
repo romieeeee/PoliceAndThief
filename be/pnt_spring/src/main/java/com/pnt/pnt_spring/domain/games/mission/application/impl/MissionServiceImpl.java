@@ -24,6 +24,18 @@ public class MissionServiceImpl implements MissionService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<MissionResponse> getAllMissions() {
+        return missionRepository.findAll().stream()
+                .map(mission -> MissionResponse.builder()
+                        .missionId(mission.getId())
+                        .title(mission.getTitle())
+                        .description(mission.getDescription())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<MissionResponse> getMissions(Long gameId) {
         // 미션 목록 조회
         List<GameMission> gameMissions = gameMissionRepository.findByGameId(gameId);
