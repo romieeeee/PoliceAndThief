@@ -125,15 +125,14 @@ fun ProfileContent(
         ProfileCardSection(
             nickname = profile.nickname ?: "이름 없음",
             avatarUrl = profile.avatarUrl,
-            policeGrade = policeGrade, // ✅ 등급 데이터 전달
-            thiefGrade = thiefGrade,   // ✅ 등급 데이터 전달
+            policeGrade = policeGrade,
+            thiefGrade = thiefGrade,
             onLogoutClick = onLogoutClick,
             onUpdateNickname = onUpdateNickname,
             onUpdateAvatar = onUpdateAvatar,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-            // 높이는 내용물에 맞게 자동 조절됨
         )
 
         // 2. 전적 요약 섹션
