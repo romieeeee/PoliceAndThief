@@ -21,7 +21,6 @@ import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,7 +71,11 @@ public class GameResultServiceImpl implements GameResultService {
                         return gameMemberStatRepository.save(GameMemberStat.createInitialStat(gm));
                     });
 
+            // 1. 해당 판의 결과(이동거리, 생존시간) 업데이트
             stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived());
+
+            // 2. 유저의 누적 스탯(총 승리수, 등급 등) 업데이트 호출
+            updateMemberGradeAndStats(stat, request.getWinTeam(), statReq.getPosition());
         }
 
         // AI 뉴스 생성 요청
@@ -85,47 +88,73 @@ public class GameResultServiceImpl implements GameResultService {
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
-        // MVP 선정
-        GameMemberStat mvpStat = calculateMvp(game);
-        String mvpNickname = (mvpStat != null)
-                ? mvpStat.getGameMember().getMember().getMemberProfile().getNickname()
-                : "없음";
+        // 1. 해당 게임의 모든 멤버 스탯 조회 (N+1 방지를 위해 Fetch Join 쿼리 사용 권장)
+        List<GameMemberStat> allStats = gameMemberStatRepository.findAllByGameId(gameId);
 
-        // 전체 통계 집계 (N+1 방지를 위해 findAllByGameId 사용하는 것을 추천하지만 기존 로직 유지 시)
-        List<GameMember> participants = gameMemberRepository.findAllByGameId(gameId);
+        // 2. 팀별 분류 및 전체 통계 집계
+        List<GameMemberStat> policeStats = new ArrayList<>();
+        List<GameMemberStat> thiefStats = new ArrayList<>();
         int totalArrests = 0;
+        int totalEscapes = 0;
 
-        for (GameMember p : participants) {
-            GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(p.getId()).orElse(null);
-            if (stat != null && stat.getArrestCount() != null) {
-                totalArrests += stat.getArrestCount();
+        for (GameMemberStat stat : allStats) {
+            if (stat.getPosition() == Position.POLICE) {
+                policeStats.add(stat);
+            } else if (stat.getPosition() == Position.THIEF) {
+                thiefStats.add(stat);
             }
+
+            // 전체 통계 합산
+            if (stat.getArrestCount() != null) totalArrests += stat.getArrestCount();
+            if (stat.getEscapeCount() != null) totalEscapes += stat.getEscapeCount();
         }
+
+        // 3. 정렬 (경찰: 체포수 내림차순, 도둑: 생존시간 내림차순) - triggerAiNewsGeneration과 동일 로직
+        policeStats.sort((a, b) -> compareStats(b.getArrestCount(), a.getArrestCount()));
+        thiefStats.sort((a, b) -> compareStats(b.getLongestSurvived(), a.getLongestSurvived()));
+
+        // 4. 승리/패배 팀 데이터 추출
+        List<GameMemberStat> winnerStats;
+        List<GameMemberStat> loserStats;
+        boolean isPoliceWin = (game.getWinTeam() == WinTeam.POLICE);
+
+        if (isPoliceWin) {
+            winnerStats = policeStats;
+            loserStats = thiefStats;
+        } else {
+            winnerStats = thiefStats;
+            loserStats = policeStats;
+        }
+
+        // 5. 주요 플레이어 선정 (MVP, Winning 2nd, Losing 1st)
+        GameMemberStat mvpStat = winnerStats.isEmpty() ? null : winnerStats.get(0);
+        GameMemberStat winningSecondStat = (winnerStats.size() > 1) ? winnerStats.get(1) : null;
+        GameMemberStat losingFirstStat = loserStats.isEmpty() ? null : loserStats.get(0);
 
         int durationSec = (int) Duration.between(game.getStartTime(), game.getEndTime()).toSeconds();
 
+        // 6. 응답 생성
         return GameResultResponse.builder()
                 .gameId(game.getId())
                 .winner(game.getWinTeam().toString())
                 .endedAt(game.getEndTime())
-                .mvp(mvpStat != null ? GameResultResponse.MvpResponse.builder()
-                        .memberId(mvpStat.getGameMember().getMember().getId())
-                        .nickname(mvpNickname)
-                        .role(mvpStat.getGameMember().getGivenPosition().name())
-                        .build() : null)
+                .mvp(toMvpResponse(mvpStat, "MVP"))
+                .winningSecond(toMvpResponse(winningSecondStat, "승리팀 2위"))
+                .losingFirst(toMvpResponse(losingFirstStat, "패배팀 1위"))
                 .stats(GameResultResponse.TotalStats.builder()
                         .arrests(totalArrests)
+                        .escapes(totalEscapes)
+                        .missionsCleared(0) // 미션 완료 수는 별도 집계 필요 (현재는 0)
                         .durationSec(durationSec)
-                        .missionsCleared(0)
                         .build())
                 .build();
     }
 
     private void triggerAiNewsGeneration(Game game, Double lat, Double lng) {
-        // 1. 해당 게임의 모든 멤버 스탯 조회
+        // AI 뉴스 생성 로직에서도 동일한 정렬 로직 사용
+        // (getGameResult와 로직이 유사하지만, 여기서는 문자열 데이터만 추출하여 MQ로 보냄)
         List<GameMemberStat> allStats = gameMemberStatRepository.findAllByGameId(game.getId());
 
-        // 2. 팀별 분류
         List<GameMemberStat> policeStats = new ArrayList<>();
         List<GameMemberStat> thiefStats = new ArrayList<>();
 
@@ -137,11 +166,9 @@ public class GameResultServiceImpl implements GameResultService {
             }
         }
 
-        // 3. 정렬 (경찰: 체포수 내림차순, 도둑: 생존시간 내림차순)
         policeStats.sort((a, b) -> compareStats(b.getArrestCount(), a.getArrestCount()));
         thiefStats.sort((a, b) -> compareStats(b.getLongestSurvived(), a.getLongestSurvived()));
 
-        // 4. 승리/패배 팀 데이터 추출
         String mvpNickname = "없음";
         String winnerTopMember = "없음";
         String loserTopMember = "없음";
@@ -149,7 +176,6 @@ public class GameResultServiceImpl implements GameResultService {
         List<GameMemberStat> winnerStats;
         List<GameMemberStat> loserStats;
 
-        // [중요] WinTeam Enum 비교 (== 사용)
         boolean isPoliceWin = (game.getWinTeam() == WinTeam.POLICE);
 
         if (isPoliceWin) {
@@ -160,15 +186,12 @@ public class GameResultServiceImpl implements GameResultService {
             loserStats = policeStats;
         }
 
-        // MVP: 승리팀 1등
         if (!winnerStats.isEmpty()) {
             mvpNickname = getNickname(winnerStats.get(0));
         }
-        // Winner Top Member: 승리팀 2등
         if (winnerStats.size() > 1) {
             winnerTopMember = getNickname(winnerStats.get(1));
         }
-        // Loser Top Member: 패배팀 1등
         if (!loserStats.isEmpty()) {
             loserTopMember = getNickname(loserStats.get(0));
         }
@@ -193,26 +216,15 @@ public class GameResultServiceImpl implements GameResultService {
         rabbitTemplate.convertAndSend("NEWS", aiRequest);
     }
 
-    private GameMemberStat calculateMvp(Game game) {
-        // 0페이지에서 1개만 가져옴 (Top 1 효과)
-        PageRequest limitOne = PageRequest.of(0, 1);
+    private GameResultResponse.MvpResponse toMvpResponse(GameMemberStat stat, String description) {
+        if (stat == null) return null;
 
-        List<GameMemberStat> stats;
-
-        // WinTeam 비교 (Enum == 사용)
-        if (game.getWinTeam() == WinTeam.POLICE) {
-            stats = gameMemberStatRepository.findPoliceMvp(game.getId(), limitOne);
-        } else {
-            stats = gameMemberStatRepository.findThiefMvp(game.getId(), limitOne);
-        }
-
-        // 리스트가 비어있지 않으면 첫 번째 요소 반환, 없으면 null
-        return stats.isEmpty() ? null : stats.get(0);
-    }
-
-    @Override
-    public Long calculateSurvivalTime(Game game, GameMember member) {
-        return 0L;
+        return GameResultResponse.MvpResponse.builder()
+                .memberId(stat.getGameMember().getMember().getId())
+                .nickname(getNickname(stat))
+                .role(stat.getPosition().name())
+                .description(description)
+                .build();
     }
 
     // 닉네임 추출 헬퍼
