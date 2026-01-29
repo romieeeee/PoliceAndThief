@@ -134,6 +134,19 @@ export class RoomController {
         this.io.to(roomId).emit("get member kick", response.data);
     }
 
+    updateRoomMap =async (data) => {
+        const { roomId } = data;
+
+        const response = await axios.post(`${process.env.SPRING_API_URL}/spring/rooms/${roomId}/map`, data, {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${this.socket.data.accessToken}`
+            }
+        });
+
+        this.io.to(roomId).emit("get update room map", response.data);
+    }
+
     disconnect = async (data) => {
         const { roomId } = data;
 

@@ -410,7 +410,7 @@ export class GameController {
      */
     postArrest = async (payload) => {
         try {
-            const { gameId, policeId, thiefId, lat, lng } = payload;
+            const { gameId, policeId, thiefId } = payload;
 
             const thief = await this.gameMemberService.findMemberGame(gameId, thiefId);
 

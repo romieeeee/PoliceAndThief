@@ -35,7 +35,7 @@ const roomSocketServer = (io) => {
 
         // 로비 관련 이벤트
         socket.on("post join room", roomController.joinRoom);
-        
+
         socket.on("post update room info", roomController.updateRoomInfo);
 
         socket.on("post update ready", roomController.updateReady);
@@ -47,6 +47,9 @@ const roomSocketServer = (io) => {
         socket.on("post now room info", roomController.nowRoomInfo);
 
         socket.on("post member kick", roomController.memberKick);
+
+        socket.on("post update room map", roomController.updateRoomMap);
+
         socket.on("post disconnect", roomController.disconnect);
 
         socket.on("disconnect", async () => {

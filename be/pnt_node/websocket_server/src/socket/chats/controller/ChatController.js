@@ -82,7 +82,7 @@ export class ChatController {
 
             console.log("get prev chat = ", data);
 
-            this.io.to(chatRoomId).emit("get prev chat", data);
+            this.io.to(chatRoomId).emit("get prev chat", { items : data, count: data.length });
         } catch (error) {
             console.error("getPrevChat error", error);
             sendError(this.socket, error, "ChatError");
@@ -107,7 +107,7 @@ export class ChatController {
 
             console.log("sync chat = ", data);
 
-            this.io.to(chatRoomId).emit("get sync chat", data);
+            this.io.to(chatRoomId).emit("get sync chat", { items : data, count: data.length });
         } catch (error) {
             console.error("syncChat error", error);
             sendError(this.socket, error, "ChatError");
