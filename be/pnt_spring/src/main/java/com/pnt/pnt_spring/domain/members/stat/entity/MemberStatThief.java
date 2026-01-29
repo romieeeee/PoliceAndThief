@@ -41,7 +41,7 @@ public class MemberStatThief extends BaseEntity {
                 .build();
     }
 
-    public void updateAfterGame(Integer survivalSec, Integer escapeCount, Integer totalThiefGames) {
+    public void updateAfterGame(boolean isWin, Integer survivalSec, Integer escapeCount, Integer totalThiefGames) {
         int currentSurvival = (survivalSec == null) ? 0 : survivalSec;
         int newEscapes = (escapeCount == null) ? 0 : escapeCount;
         int totalGames = (totalThiefGames == null || totalThiefGames == 0) ? 1 : totalThiefGames; // 0으로 나누기 방지

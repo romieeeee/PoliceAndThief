@@ -74,7 +74,7 @@ public class GameResultServiceImpl implements GameResultService {
 
             stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived());
 
-            updateMemberGradeAndStats(stat, request.getWinTeam());
+            updateMemberGradeAndStats(stat, request.getWinTeam(), statReq.getPosition());
         }
 
         // AI 뉴스 생성 요청
@@ -229,10 +229,9 @@ public class GameResultServiceImpl implements GameResultService {
         return Integer.compare(val1, val2);
     }
 
-    private void updateMemberGradeAndStats(GameMemberStat gameStat, WinTeam winTeam) {
+    private void updateMemberGradeAndStats(GameMemberStat gameStat, WinTeam winTeam, Position position) {
         GameMember gameMember = gameStat.getGameMember();
         Member member = gameMember.getMember();
-        Position position = gameMember.getGivenPosition(); // 해당 판의 역할
 
         // 해당 판에서 이겼는지 여부
         boolean isWin = (position == Position.POLICE && winTeam == WinTeam.POLICE) ||
@@ -278,6 +277,7 @@ public class GameResultServiceImpl implements GameResultService {
 
             // 도둑 스탯과 평균시간 업데이트
             thiefStat.updateAfterGame(
+                    isWin,  // 이겼는지 졌는지
                     gameStat.getLongestSurvived(),
                     gameStat.getEscapeCount(),
                     memberStat.getThiefGame() // MemberStat에서 가져온 총 도둑 판수 전달
