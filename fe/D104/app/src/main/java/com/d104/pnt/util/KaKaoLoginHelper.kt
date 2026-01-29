@@ -24,14 +24,11 @@ object KakaoLoginHelper {
                 Timber.e(error, "카카오 로그인 실패")
                 continuation.resume(null)
             } else if (token != null) {
-                // ID Token 우선, 없으면 Access Token 사용
                 val tokenToSend = token.accessToken
 
                 Timber.d("""
                     카카오 로그인 성공!!: 
                     Access Token = ${token.accessToken}
-                    ID Token = ${token.idToken}
-                    Using: ${if (token.idToken != null) "ID Token" else "Access Token"}
                 """.trimIndent())
 
                 continuation.resume(tokenToSend)
@@ -60,8 +57,7 @@ object KakaoLoginHelper {
                     UserApiClient.instance.loginWithKakaoAccount(context, callback = callback)
                 } else if (token != null) {
                     Timber.d("카카오톡 로그인 성공")
-                    // ⭐ ID Token 우선
-                    val tokenToSend = token.idToken ?: token.accessToken
+                    val tokenToSend = token.accessToken
                     continuation.resume(tokenToSend)
                 } else {
                     continuation.resume(null)
