@@ -31,7 +31,7 @@ public class ChatRoom extends BaseEntity {
     private int currentMembers;
 
     @Column(name = "owner_id", nullable = false)
-    private Long ownerId;   // ✅ 방장 ID
+    private Long ownerId;
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted;
