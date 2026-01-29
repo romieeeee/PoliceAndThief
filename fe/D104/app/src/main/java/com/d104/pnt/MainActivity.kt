@@ -45,10 +45,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             D104Theme {
-                val viewModel: MainViewModel = hiltViewModel()
-                val serverMsg by viewModel.message.collectAsState()
-
-
                 Surface(modifier = Modifier.fillMaxSize()) {
                     AppNavigation()
                 }
