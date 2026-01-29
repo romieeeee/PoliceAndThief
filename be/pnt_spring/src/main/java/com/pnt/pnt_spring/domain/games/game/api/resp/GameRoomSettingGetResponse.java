@@ -13,6 +13,7 @@ public class GameRoomSettingGetResponse {
     private Integer playerCount;
     private Integer policeCount;
     private Integer thiefCount;
+    private Integer cctvInterval;
 
     private Double prisonLat;
     private Double prisonLng;

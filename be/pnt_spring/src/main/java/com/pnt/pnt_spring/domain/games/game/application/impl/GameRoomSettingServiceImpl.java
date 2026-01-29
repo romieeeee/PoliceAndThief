@@ -50,6 +50,7 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
                 setting.getPlayerCount(),
                 setting.getPoliceCount(),
                 setting.getThiefCount(),
+                setting.getCctvInterval(),
                 setting.getPrisonLat(),
                 setting.getPrisonLng()
         );
@@ -101,7 +102,8 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
                 req.getTimeLimit(),
                 req.getPlayerCount(),
                 req.getPoliceCount(),
-                req.getThiefCount()
+                req.getThiefCount(),
+                req.getCctvInterval()
         );
 
         setting.updateMap(boundary, prisonLat, prisonLng);
@@ -113,6 +115,7 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
                 setting.getPlayerCount(),
                 setting.getPoliceCount(),
                 setting.getThiefCount(),
+                setting.getCctvInterval(),
                 setting.getPrisonLat(),
                 setting.getPrisonLng()
         );

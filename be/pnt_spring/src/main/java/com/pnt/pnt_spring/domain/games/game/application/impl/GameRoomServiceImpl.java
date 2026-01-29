@@ -2,6 +2,7 @@ package com.pnt.pnt_spring.domain.games.game.application.impl;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomCreateRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomCreateResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomStartableResponse;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameStartResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomCodeGenerator;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomService;
@@ -10,6 +11,8 @@ import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
 import com.pnt.pnt_spring.domain.games.game.entity.GameSetting;
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
+import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
+import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
@@ -77,6 +80,7 @@ public class GameRoomServiceImpl implements GameRoomService {
                 req.getPlayerCount(),
                 req.getPoliceCount(),
                 req.getThiefCount(),
+                req.getCctvInterval(),
                 boundary,
                 prisonLat,
                 prisonLng

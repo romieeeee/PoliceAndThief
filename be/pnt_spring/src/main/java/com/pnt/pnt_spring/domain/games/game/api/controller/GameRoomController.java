@@ -2,6 +2,7 @@ package com.pnt.pnt_spring.domain.games.game.api.controller;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomCreateRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomCreateResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomStartableResponse;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameStartResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
