@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.chats.api.controller;
 
 import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomMemberInfoResponse;
+import com.pnt.pnt_spring.domain.chats.api.resp.MyChatRoomListResponse;
 import com.pnt.pnt_spring.domain.chats.application.ChatRoomMemberQueryService;
 import com.pnt.pnt_spring.global.utils.SecurityUtils;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
@@ -24,5 +25,11 @@ public class ChatRoomMemberQueryController {
         List<ChatRoomMemberInfoResponse> data = queryService.listMembers(requesterId, chatRoomId);
 
         return new CommonResponse<>(data, "채팅방 멤버 목록 조회 성공", HttpStatus.OK);
+    }
+
+    @GetMapping("/me/rooms")
+    public MyChatRoomListResponse myRooms() {
+        Long memberId = SecurityUtils.currentMemberId();
+        return queryService.myJoinedRooms(memberId);
     }
 }
