@@ -2,22 +2,25 @@ package com.pnt.pnt_spring.domain.games.game.application.impl;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomCreateRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomCreateResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomStartableResponse;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameStartResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomCodeGenerator;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomService;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
+import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
 import com.pnt.pnt_spring.domain.games.game.entity.GameSetting;
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
+import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
+import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
-import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.*;
 import org.springframework.stereotype.Service;
@@ -35,11 +38,17 @@ public class GameRoomServiceImpl implements GameRoomService {
     private final GameSettingRepository gameSettingRepository;
     private final MemberRepository memberRepository;
     private final GameRoomCodeGenerator gameRoomCodeGenerator;
+    private final GameMemberStatRepository gameMemberStatRepository;
 
     private static final GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
 
     @Override
     public GameRoomCreateResponse createRoom(Long hostMemberId, GameRoomCreateRequest req) {
+        // 이미 다른 방에 참여 중이면 방 생성 불가
+        if (gameMemberRepository.existsByMemberIdAndIsDeletedFalse(hostMemberId)) {
+            throw new BusinessException(ErrorCode.ROOM_ALREADY_JOINED);
+        }
+
         if (req == null) throw new IllegalArgumentException("방 생성 요청 바디가 필요합니다.");
         if (req.getPlayerCount() == null || req.getTimeLimit() == null
                 || req.getPoliceCount() == null || req.getThiefCount() == null
@@ -71,6 +80,7 @@ public class GameRoomServiceImpl implements GameRoomService {
                 req.getPlayerCount(),
                 req.getPoliceCount(),
                 req.getThiefCount(),
+                req.getCctvInterval(),
                 boundary,
                 prisonLat,
                 prisonLng
@@ -82,7 +92,6 @@ public class GameRoomServiceImpl implements GameRoomService {
 
         return new GameRoomCreateResponse(game.getId(), game.getRoomCode(), GameStatus.WAITING);
     }
-
 
     @Override
     public GameStartResponse start(Long actorMemberId, Long roomId) {
@@ -107,8 +116,11 @@ public class GameRoomServiceImpl implements GameRoomService {
             throw new BusinessException(ErrorCode.ROOM_NOT_READY);
         }
 
-        long notReady = gameMemberRepository.countByGameIdAndIsDeletedFalseAndReadyFalse(roomId);
-        if (notReady > 0) {
+        long notReadyExceptHost = gameMemberRepository.countByGameIdAndIsDeletedFalseAndMemberIdNotAndReadyFalse(
+                        roomId,
+                        actorMemberId
+                );
+        if (notReadyExceptHost > 0) {
             throw new BusinessException(ErrorCode.ROOM_NOT_READY);
         }
 
@@ -121,7 +133,48 @@ public class GameRoomServiceImpl implements GameRoomService {
         // 게임 시작
         game.start();
 
+        // 3. Stat 생성
+        for (GameMember member : members) {
+            if (!gameMemberStatRepository.existsByGameMemberId(member.getId())) {
+                GameMemberStat stat = GameMemberStat.create(member);
+                gameMemberStatRepository.save(stat);
+            }
+        }
         return GameStartResponse.from(game, members);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GameRoomStartableResponse getStartable(Long actorMemberId, Long roomId) {
+
+        Game game = gameRepository.findByIdAndIsDeletedFalse(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+
+        // 방장만 의미 있음 → 방장이 아니면 항상 false
+        boolean isHost = game.isHost(actorMemberId);
+
+        GameSetting setting = gameSettingRepository.findById(roomId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
+
+        long joined = gameMemberRepository.countByGameIdAndIsDeletedFalse(roomId);
+        long notReady = gameMemberRepository
+                .countByGameIdAndIsDeletedFalseAndMemberIdNotAndReadyFalse(
+                        roomId,
+                        game.getHost().getId()
+                );
+
+        boolean canStart =
+                isHost &&
+                        game.isWaiting() &&
+                        joined == setting.getPlayerCount() &&
+                        notReady == 0;
+
+        return new GameRoomStartableResponse(
+                canStart,
+                joined,
+                setting.getPlayerCount(),
+                notReady
+        );
     }
 
     private boolean joinedEqualsSetting(long joined, Integer playerCount) {

@@ -17,6 +17,8 @@ import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -152,8 +154,16 @@ public class GameResultServiceImpl implements GameResultService {
     private GameMemberStat calculateMvp(Game game) {
         // 승리 팀에 따라 MVP 선정 쿼리 호출
         return "POLICE".equals(game.getWinTeam())
-                ? gameMemberStatRepository.findPoliceMvp(game.getId()).orElse(null)
-                : gameMemberStatRepository.findThiefMvp(game.getId()).orElse(null);
+                ? gameMemberStatRepository
+                .findPoliceMvp(game.getId(), PageRequest.of(0, 1))
+                .stream()
+                .findFirst()
+                .orElse(null)
+                : gameMemberStatRepository
+                .findThiefMvp(game.getId(), PageRequest.of(0, 1))
+                .stream()
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
