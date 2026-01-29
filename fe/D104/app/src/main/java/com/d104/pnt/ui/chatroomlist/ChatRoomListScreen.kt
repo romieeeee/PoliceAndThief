@@ -1,6 +1,5 @@
 package com.d104.pnt.ui.chatroomlist
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -17,12 +17,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,7 +32,10 @@ import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelDropdown
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.RoomList
-import com.d104.pnt.ui.theme.*
+import com.d104.pnt.ui.theme.ButtonHighlight
+import com.d104.pnt.ui.theme.ButtonPrimary
+import com.d104.pnt.ui.theme.DeepDark
+import com.d104.pnt.ui.theme.TextPrimary
 
 @Composable
 fun ChatRoomListScreen(
@@ -49,59 +52,67 @@ fun ChatRoomListScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DeepDark)
-            .padding(16.dp)
-            .statusBarsPadding() // 상태바 겹침 방지
-    ) {
-        // 1. 상단 버튼 영역 (Header)
-        ChatRoomListHeader()
-
-        Spacer(modifier = Modifier.height(5.dp))
-
-        // 2. 검색 아이콘 영역
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            PixelIconButton (
-                modifier = Modifier.size(48.dp),
+    Scaffold(
+        containerColor = DeepDark,
+        floatingActionButton = {
+            PixelIconButton(
+                modifier = Modifier
+                    .size(56.dp)
+                    .navigationBarsPadding(),
                 mainColor = ButtonPrimary,
                 borderColor = ButtonHighlight,
                 onClick = navigateToChatCreate
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "검색",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
-            }
-            PixelIconButton (
-                modifier = Modifier.size(48.dp),
-                mainColor = ButtonPrimary,
-                borderColor = ButtonHighlight,
-                onClick = { /* TODO: 검색 기능 */ }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "검색",
+                    contentDescription = "채팅방 만들기",
                     tint = Color.White,
                     modifier = Modifier.size(32.dp)
                 )
             }
         }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+                .statusBarsPadding() // 상태바 겹침 방지
+        ) {
+            // 1. 상단 버튼 영역 (Header)
+            ChatRoomListHeader()
 
-        // 3. 리스트 영역
-        Box(modifier = Modifier.weight(1f)) {
-            RoomList(
-                rooms = roomList,
-                onItemClick = {}
-            )
+            Spacer(modifier = Modifier.height(5.dp))
+
+            // 2. 검색 아이콘 영역
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.End, // ⭐ 오른쪽 정렬로 변경
+            ) {
+                PixelIconButton(
+                    modifier = Modifier.size(48.dp),
+                    mainColor = ButtonPrimary,
+                    borderColor = ButtonHighlight,
+                    onClick = { /* TODO: 검색 기능 */ }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "검색",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+
+            // 3. 리스트 영역
+            Box(modifier = Modifier.weight(1f)) {
+                RoomList(
+                    rooms = roomList,
+                    onItemClick = {}
+                )
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.d104.pnt.ui.chatroom
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,19 +43,45 @@ import timber.log.Timber
 @Composable
 fun ChatRoomCreateScreen(
     onCancel: () -> Unit,
-    onConfirm: () -> Unit,
+    onConfirm: (chatRoomId: Long) -> Unit,
     viewModel: ChatRoomCreateViewModel = hiltViewModel()
-){
+) {
+    val context = LocalContext.current
+
     val title by viewModel.title.collectAsStateWithLifecycle()
     val description by viewModel.description.collectAsStateWithLifecycle()
     val maxMember by viewModel.maxMember.collectAsStateWithLifecycle()
     val currentAddress by viewModel.currentAddress.collectAsStateWithLifecycle()
 
-    val context = LocalContext.current
+    val createChatRoomStats by viewModel.createChatRoomStats.collectAsStateWithLifecycle()
+
+    val joinRoomState by viewModel.joinRoomState.collectAsStateWithLifecycle()
+
     LaunchedEffect(Unit) {
         // ViewModel에게 Context를 줘서 위치를 가져오고 저장하게 시킴
         viewModel.getLocationInfo(context)
     }
+
+    LaunchedEffect(joinRoomState) {
+        when (val state = joinRoomState) {
+            is ChatRoomCreateViewModel.JoinRoomState.Success -> {
+                Timber.d("✅ 채팅방 입장 완료: ${state.message}")
+                onConfirm(state.chatRoomId)  // 채팅방 ID 전달!
+            }
+
+            is ChatRoomCreateViewModel.JoinRoomState.Error -> {
+                Timber.e("❌ 채팅방 입장 실패: ${state.message}")
+                Toast.makeText(
+                    context,
+                    "입장 실패: ${state.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+
+            else -> {}
+        }
+    }
+
     Surface(modifier = Modifier.fillMaxSize()) {
 
         Image(
@@ -152,12 +177,12 @@ fun ChatRoomCreateScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        PixelContainer (
+                        PixelContainer(
                             modifier = Modifier.fillMaxWidth(),
                             backgroundColor = TextPrimary,
                             borderColor = DialogBorderColor,
                         ) {
-                            Row (
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
@@ -204,9 +229,7 @@ fun ChatRoomCreateScreen(
                                     if (viewModel.isValid()) {
                                         Timber.d("Valid")
                                         viewModel.createChatRoom()
-                                        onConfirm()
-                                    }
-                                    else {
+                                    } else {
                                         Timber.d("Not Valid")
                                     }
                                 },

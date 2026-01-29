@@ -1,7 +1,7 @@
 package com.d104.pnt.data.repository
 
-import com.d104.pnt.data.remote.model.response.ChatCreateRequest
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
+import com.d104.pnt.data.remote.model.response.JoinChatRoomResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.StateFlow
 
@@ -20,14 +20,9 @@ interface ChatRepository {
         maxMembers: Int
     ): BaseResult<ChatCreateResponse>
 
-    suspend fun joinChatRoom(
-        chatRoomId: Long,
-        memberId: Long,
-        title: String,
-        description: String,
-        regionCode: Long,
-        maxMembers: Int
-    )
+    suspend fun joinChatRoom(chatRoomId: Long): BaseResult<JoinChatRoomResponse>
+
+    suspend fun connectChatRoom(chatRoomId: Long): BaseResult<Unit>
 
     suspend fun leaveChatRoom()
 }

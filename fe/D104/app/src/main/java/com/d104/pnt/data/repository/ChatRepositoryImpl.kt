@@ -3,14 +3,15 @@ package com.d104.pnt.data.repository
 import com.d104.pnt.data.remote.api.ChatApiService
 import com.d104.pnt.data.remote.model.response.ChatCreateRequest
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
+import com.d104.pnt.data.remote.model.response.JoinChatRoomResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
-class ChatRepositoryImpl @Inject constructor (
+class ChatRepositoryImpl @Inject constructor(
     private val chatApiService: ChatApiService
-): ChatRepository, BaseRepository() {
+) : ChatRepository, BaseRepository() {
 
     private val _currentChatRoomMember = MutableStateFlow<Int?>(null)
 
@@ -21,36 +22,53 @@ class ChatRepositoryImpl @Inject constructor (
     override var currentChatRoomMaxMember: Int? = null
     override val currentChatRoomMember = _currentChatRoomMember.asStateFlow()
 
+    /**
+     * 채팅방 생성
+     */
     override suspend fun createChatRoom(
         title: String,
         regionCode: Long,
         description: String,
         maxMembers: Int
     ): BaseResult<ChatCreateResponse> {
-        return safeApiCall (
+        return safeApiCall(
             onSuccess = { chatCreateResponse ->
                 joinChatRoom(
-                    chatRoomId = chatCreateResponse.chatRoomId,
-                    memberId = chatCreateResponse.ownerId,
-                    title = chatCreateResponse.title,
-                    description = chatCreateResponse.description,
-                    regionCode = chatCreateResponse.regionCode,
-                    maxMembers = chatCreateResponse.maxMembers
+                    chatRoomId = chatCreateResponse.chatRoomId
                 )
             }
         ) {
-            chatApiService.createChatRoom(ChatCreateRequest(title, description, regionCode, maxMembers))
+            chatApiService.createChatRoom(
+                ChatCreateRequest(
+                    title,
+                    description,
+                    regionCode,
+                    maxMembers
+                )
+            )
         }
     }
-    override suspend fun joinChatRoom(
-        chatRoomId: Long,
-        memberId: Long,
-        title: String,
-        description: String,
-        regionCode: Long,
-        maxMembers: Int
-    ) {
 
+    /**
+     * 채팅방 참여
+     */
+    override suspend fun joinChatRoom(chatRoomId: Long): BaseResult<JoinChatRoomResponse> {
+        return safeApiCall(
+            onSuccess = { joinResponse ->
+                // 참여 성공 시 상태 저장
+                currentChatRoom = joinResponse.chatRoomId
+                _currentChatRoomMember.value = null // connect에서 업데이트될 예정
+            }
+        ) {
+            chatApiService.joinChatRoom(chatRoomId)
+        }
+    }
+
+    // 채팅방 연결 (HTTP)
+    override suspend fun connectChatRoom(chatRoomId: Long): BaseResult<Unit> {
+        return safeApiCall {
+            chatApiService.connectChatRoom(chatRoomId)
+        }
     }
 
     override suspend fun leaveChatRoom() {
