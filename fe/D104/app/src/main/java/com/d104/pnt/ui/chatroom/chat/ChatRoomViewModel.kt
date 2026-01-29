@@ -1,8 +1,9 @@
-package com.d104.pnt.ui.chatroom
+package com.d104.pnt.ui.chatroom.chat
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d104.pnt.data.remote.model.response.ChatRoomResponse
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.ChatRepository
 import com.d104.pnt.domain.model.ChatMessage
@@ -30,8 +31,8 @@ class ChatRoomViewModel @Inject constructor(
 
     // UI에 보여줄 채팅방 정보 상태
     private val _roomInfo =
-        MutableStateFlow<com.d104.pnt.data.remote.model.response.ChatRoomResponse?>(null)
-    val roomInfo: StateFlow<com.d104.pnt.data.remote.model.response.ChatRoomResponse?> =
+        MutableStateFlow<ChatRoomResponse?>(null)
+    val roomInfo: StateFlow<ChatRoomResponse?> =
         _roomInfo.asStateFlow()
 
     private val _message = MutableStateFlow("")
@@ -123,9 +124,9 @@ class ChatRoomViewModel @Inject constructor(
         return try {
             ChatMessage(
                 id = data.getInt("id"),
-                chatRoomId = data.getInt("chatRoomId"),
-                memberId = data.getLong("memberId"),
-                senderNickname = data.getString("senderNickname"),
+                chatRoomId = chatRoomId,
+                memberId = data.optLong("senderId", data.optLong("memberId", 0)),
+                senderNickname = data.optString("senderNickname", "익명"),
                 avataUrl = data.optString("avataUrl", ""),
                 content = data.getString("content"),
             )
