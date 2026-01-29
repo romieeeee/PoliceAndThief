@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.component
+package com.d104.pnt.ui.chatroom.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +18,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.domain.model.ChatRoomData
+import com.d104.pnt.domain.model.ChatsData
+import com.d104.pnt.ui.component.PixelContainer
+import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.theme.DarkBackground
 import com.d104.pnt.ui.theme.DarkCard
 import com.d104.pnt.ui.theme.TextPrimary
@@ -26,7 +29,7 @@ import com.d104.pnt.ui.theme.TextSecondary
 @Composable
 fun ChatRoomHeader(
     modifier: Modifier,
-    roomData: ChatRoomData,
+    roomData: ChatsData,
     onLeaveClick: () -> Unit,
 ) {
     Box(

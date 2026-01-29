@@ -52,6 +52,13 @@ abstract class BaseRepository {
                         )
                     }
 
+                    // code가 200번대면 성공 (data null 허용)
+                    body.code in 200..299 -> {
+                        val data = body.data ?: Unit as T
+                        onSuccess?.invoke(data)
+                        BaseResult.Success(data)
+                    }
+
                     body.data != null -> {
                         // 성공 콜백 실행
                         onSuccess?.invoke(body.data)
