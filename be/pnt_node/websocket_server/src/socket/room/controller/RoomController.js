@@ -11,6 +11,7 @@ export class RoomController {
         this.socket = socket;
         this.redisClient = new RedisClient();
         this.gameSettingService = new GameSettingService();
+        this.gameMemberService = new GameMemberService();
     }
 
     /*
@@ -110,16 +111,14 @@ export class RoomController {
         this.io.to(roomId).emit("get now ready info", readyInfo);
     }
 
-    /**
-     * member까지 반환해야하나. 고민.
-     */
     nowRoomInfo = async (data) => {
         const { roomId } = data;
 
         const room = await this.gameService.getRoomById(roomId);
         const roomSetting = await this.gameSettingService.getGameSettingByRoomId(roomId);
+        const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
 
-        this.io.to(roomId).emit("get now room info", { room, roomSetting });
+        this.io.to(roomId).emit("get now room info", { room, roomSetting, members });
     }
 
     memberKick = async (data) => {

@@ -35,6 +35,7 @@ const roomSocketServer = (io) => {
 
         // 로비 관련 이벤트
         socket.on("post join room", roomController.joinRoom);
+        
         socket.on("post update room info", roomController.updateRoomInfo);
 
         socket.on("post update ready", roomController.updateReady);
