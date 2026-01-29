@@ -108,9 +108,9 @@ fun MainScreen(
 
             composable(Routes.CHAT) {
                 ChatRoomListScreen(
-//                    navigateToChatRoom = { chatId ->
-//                        navController.navigate(Routes.buildChatRoom(chatId))
-//                    }
+                    navigateToChatRoom = { chatRoomId ->
+                        navController.navigate(Routes.buildChatRoom(chatRoomId))
+                    },
                     navigateToChatCreate = {
                         navController.navigate(Routes.CHAT_CREATE)
                     }
