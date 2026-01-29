@@ -91,7 +91,7 @@ fun HomeScreen(
 
             PixelIconButton(
                 onClick = {
-                    viewModel.logout()
+                    showJoinDialog = true
 //                    navigateToGameRoom(1)
                 },
                 modifier = Modifier

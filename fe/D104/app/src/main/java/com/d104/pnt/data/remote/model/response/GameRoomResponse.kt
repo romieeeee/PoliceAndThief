@@ -10,3 +10,60 @@ data class CreateGameRoomResponse(
     @SerializedName("status")
     val status: String,
 )
+
+data class GameRoomSettingsResponse(
+    @SerializedName("roomId")
+    val roomId: Long,
+
+    @SerializedName("status")
+    val status: String,
+
+    @SerializedName("timeLimit")
+    val timeLimit: Int,
+
+    @SerializedName("playerCount")
+    val playerCount: Int,
+
+    @SerializedName("policeCount")
+    val policeCount: Int,
+
+    @SerializedName("thiefCount")
+    val thiefCount: Int,
+
+    @SerializedName("cctvInterval")
+    val cctvInterval: Int,
+
+    @SerializedName("prisonLat")
+    val prisonLat: Int,
+
+    @SerializedName("prisonLng")
+    val prisonLng: Int,
+)
+
+data class GameMemberListResponse(
+    @SerializedName("roomId")
+    val roomId: Long,
+
+    @SerializedName("items")
+    val items: List<Item>
+)
+
+data class Item(
+    @SerializedName("memberId")
+    val memberId: Long,
+
+    @SerializedName("nickname")
+    val nickname: String,
+
+    @SerializedName("role")
+    val role: String,
+
+    @SerializedName("profileImageUrl")
+    val profileImageUrl: String?,
+
+    @SerializedName("host")
+    val host: Boolean,
+
+    @SerializedName("ready")
+    val ready: Boolean
+)

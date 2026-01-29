@@ -11,7 +11,6 @@ import com.d104.pnt.navigation.AppNavigation
 import com.d104.pnt.ui.theme.D104Theme
 import dagger.hilt.android.AndroidEntryPoint
 
-
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

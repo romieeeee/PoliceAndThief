@@ -23,3 +23,18 @@ data class Location(
     @SerializedName("lng")
     val lng: Double
 )
+
+data class ToggleReadyRequest(
+    @SerializedName("ready")
+    val ready: Boolean
+)
+
+data class ChangePositionRequest(
+    @SerializedName("preferPosition")
+    val preferPosition: String
+)
+
+data class JoinGameRoomRequest(
+    @SerializedName("roomCode")
+    val roomCode: String
+)

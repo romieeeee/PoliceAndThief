@@ -21,6 +21,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,8 +35,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.theme.AccentYellow
@@ -53,28 +58,30 @@ data class WaitingPlayer(
 @Composable
 fun GameWaitingScreen(
     roomId: Long,
-    roomCode: String = "ENTRY1",
-    isHost: Boolean = true,
-    isMeReady: Boolean = false,
-    players: List<WaitingPlayer> = List(30) {
-        WaitingPlayer(
-            it.toLong(),
-            "참가자 ${it + 1}",
-            if (it % 3 == 0) GameRole.POLICE else GameRole.THIEF,
-            isReady = (it % 2 == 0),
-            isChangingRole = (it == 4) // 5번째 참가자(index 4) 테스트
-        )
-    },
-    onStartGame: () -> Unit = { },
-    onReady: () -> Unit = { },
-    onChangeRole: () -> Unit = {},
-    onSettingsClick: () -> Unit = {},
+    onStartGame: (Long, GameRole) -> Unit = { _, _ -> },
+    viewModel: GameWaitingViewModel = hiltViewModel(),
     onBackPressed: () -> Boolean = { false }
 ) {
-    val policeCount = players.count { it.role == GameRole.POLICE }
-    val thiefCount = players.count { it.role == GameRole.THIEF }
+    // ViewModel 상태 구독
+    val players by viewModel.players.collectAsStateWithLifecycle()
+    val roomInfo by viewModel.roomInfo.collectAsStateWithLifecycle()
+    val isHost by viewModel.isHost.collectAsStateWithLifecycle()
+    val isMeReady by viewModel.isMeReady.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val isAllReady = players.all { it.isReady && !it.isChangingRole }
+    // 게임 시작 성공 시 화면 이동 처리
+    LaunchedEffect(uiState) {
+        if (uiState is UiState.Success) {
+            // TODO: 게임 시작 시 내 역할 정보가 필요하다면 여기서 players에서 찾아 넘기거나,
+            // API 응답으로 게임 ID를 받아야 할 수도 있습니다.
+            onStartGame(roomId, GameRole.POLICE)
+        }
+    }
+
+    // 기존 UI 로직 (그대로 유지하되, 데이터 소스만 교체)
+    val policeCount = players.count { it.role == GameRole.POLICE && !it.isChangingRole }
+    val thiefCount = players.count { it.role == GameRole.THIEF && !it.isChangingRole }
+    val isAllReady = players.isNotEmpty() && players.all { it.isReady && !it.isChangingRole }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // 배경 이미지
@@ -93,12 +100,12 @@ fun GameWaitingScreen(
         ) {
             // 상단 헤더(인원수, 시간, 환경설정)
             WaitingHeaderSection(
-                roomCode = roomCode,
+                roomCode = roomInfo.roomCode,
                 currentCount = players.size,
                 maxCount = 30,
                 timeLeft = "30:00",
                 isHost = isHost,
-                onSettingsClick = onSettingsClick
+                onSettingsClick = { /* TODO: 설정 다이얼로그 띄우기 */ }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -111,7 +118,7 @@ fun GameWaitingScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                onChangeRole = onChangeRole
+                onChangeRole = { viewModel.changeRole() }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -124,7 +131,7 @@ fun GameWaitingScreen(
                 val borderColor = if (isAllReady) Color.Black else Color.DarkGray
 
                 PixelIconButton(
-                    onClick = { if (isAllReady) onStartGame() }, // 준비 안되면 클릭 무시
+                    onClick = { if (isAllReady) viewModel.startGame() }, // 준비 안되면 클릭 무시
                     modifier = Modifier.fillMaxWidth(),
                     mainColor = buttonColor,
                     borderColor = borderColor,
@@ -153,7 +160,7 @@ fun GameWaitingScreen(
 
                 // 참가자
                 PixelIconButton(
-                    onClick = onReady,
+                    onClick = { viewModel.toggleReady() },
                     modifier = Modifier.fillMaxWidth(),
                     mainColor = buttonColor,
                     borderColor = buttonBorderColor,

@@ -1,9 +1,14 @@
 package com.d104.pnt.data.repository
 
 import com.d104.pnt.data.remote.api.GameRoomApiService
+import com.d104.pnt.data.remote.model.request.ChangePositionRequest
 import com.d104.pnt.data.remote.model.request.CreateGameRoomRequest
+import com.d104.pnt.data.remote.model.request.JoinGameRoomRequest
 import com.d104.pnt.data.remote.model.request.Location
+import com.d104.pnt.data.remote.model.request.ToggleReadyRequest
 import com.d104.pnt.data.remote.model.response.CreateGameRoomResponse
+import com.d104.pnt.data.remote.model.response.GameMemberListResponse
+import com.d104.pnt.data.remote.model.response.GameRoomSettingsResponse
 import com.d104.pnt.domain.model.CurrentGameRoomData
 import com.d104.pnt.domain.model.common.BaseResult
 import com.google.android.gms.maps.model.LatLng
@@ -50,6 +55,20 @@ class GameRoomRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun joinGameRoom(roomCode: String): BaseResult<CreateGameRoomResponse> {
+        return safeApiCall(
+            onSuccess = { response ->
+                joinCreatedGameRoom(
+                    roomId = response.roomId,
+                    roomCode = response.roomCode,
+                    status = response.status
+                )
+            }
+        ) {
+            apiService.joinGameRoom(JoinGameRoomRequest(roomCode))
+        }
+    }
+
     override suspend fun joinCreatedGameRoom(
         roomId: Long,
         roomCode: String,
@@ -74,5 +93,33 @@ class GameRoomRepositoryImpl @Inject constructor(
             polygon = emptyList(),
         )
         _currentGameRoom.value = roomData
+    }
+
+    override suspend fun getRoomMembers(roomId: Long): BaseResult<GameMemberListResponse> {
+        return safeApiCall { apiService.getRoomMembers(roomId) }
+    }
+
+    override suspend fun getRoomSettings(roomId: Long): BaseResult<GameRoomSettingsResponse> {
+        return safeApiCall { apiService.getRoomSettings(roomId) }
+    }
+
+    override suspend fun toggleReady(roomId: Long, isReady: Boolean): BaseResult<Unit> {
+        return safeApiCall {
+            apiService.toggleReady(roomId, ToggleReadyRequest(isReady))
+        }
+    }
+
+    override suspend fun changePosition(roomId: Long, position: String): BaseResult<Unit> {
+        return safeApiCall {
+            apiService.changePosition(roomId, ChangePositionRequest(position))
+        }
+    }
+
+    override suspend fun startGame(roomId: Long): BaseResult<Unit> {
+        return safeApiCall { apiService.startGame(roomId) }
+    }
+
+    override suspend fun leaveRoom(roomId: Long): BaseResult<Unit> {
+        return safeApiCall { apiService.leaveRoom(roomId) }
     }
 }
