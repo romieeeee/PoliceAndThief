@@ -42,7 +42,7 @@ public class GameMember extends BaseEntity {
     // === 배정 포지션 (게임 시작 시 확정) ===
     @Enumerated(EnumType.STRING)
     @Column(name = "given_position", length = 10)
-    private Position givenPosition; // 시작 전 null 가능
+    private Position givenPosition;
 
     @Column(nullable = false)
     private Boolean ready;
@@ -78,11 +78,9 @@ public class GameMember extends BaseEntity {
     public void rejoin() {
         this.isDeleted = false;
 
-        // 정책: 재입장하면 ready는 풀고, 배정 포지션도 초기화
         this.ready = false;
         this.givenPosition = null;
 
-        // 상태값도 대기방 기준으로 초기화하고 싶으면 null/WAITING 같은 걸로 맞추기
         this.status = null;
         this.inGameConnected = false;
     }
@@ -91,8 +89,6 @@ public class GameMember extends BaseEntity {
     public void leave() {
         this.isDeleted = true;
 
-        // 정책: 나가면 ready/포지션은 남겨도 되지만,
-        // 목록/정원은 isDeleted=false만 보니까 실제 기능엔 영향 없음
         this.ready = false;
         this.givenPosition = null;
         this.inGameConnected = false;
@@ -102,21 +98,16 @@ public class GameMember extends BaseEntity {
     public void kick() {
         this.isDeleted = true;
 
-        // 나가기와 동일하게 정리
         this.ready = false;
         this.givenPosition = null;
         this.inGameConnected = false;
     }
 
-    public void toggleReady(boolean ready) {
+    /** A안: ready 값을 명시적으로 세팅 */
+    public void setReady(boolean ready) {
         this.ready = ready;
     }
 
-    public void toggleReady() {
-        this.ready = !this.ready;
-    }
-
-    // “픽” prefer를 변경
     public void pickPreferPosition(PreferPosition preferPosition) {
         if (preferPosition == null) {
             throw new IllegalArgumentException("preferPosition은 null일 수 없습니다.");
@@ -131,6 +122,4 @@ public class GameMember extends BaseEntity {
         }
         this.givenPosition = position;
     }
-
-
 }

@@ -56,6 +56,11 @@ public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
     // "전원 ready" 체크용: ready=false인 사람 수가 0인지로 판단하기 좋음
     long countByGameIdAndReadyFalse(Long gameId);
 
+    long countByGameIdAndIsDeletedFalseAndMemberIdNotAndReadyFalse(
+            Long gameId,
+            Long hostMemberId
+    );
+
     // 특정 포지션 인원 체크 (배정 포지션 POLICE/THIEF 카운트)
     long countByGameIdAndGivenPosition(Long gameId, Position givenPosition);
 
@@ -111,6 +116,9 @@ public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
 
     Optional<GameMember> findFirstByGameIdAndIsDeletedFalseOrderByCreatedAtAsc(Long gameId);
 
+    boolean existsByMemberIdAndIsDeletedFalse(Long memberId);
+
+    Optional<GameMember> findFirstByMemberIdAndIsDeletedFalse(Long memberId);
 
 
 }
