@@ -30,6 +30,8 @@ fun ChatRoomScreen(
 
     val roomInfo by viewModel.roomInfo.collectAsStateWithLifecycle()
 
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -69,12 +71,11 @@ fun ChatRoomScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            ChatList(
+            Chats(
                 modifier = Modifier.fillMaxSize(),
                 chatMessages = chatMessages,
                 myMemberId = myMemberId,
-                onSendMessage = { viewModel.sendMessage() },
-                onScrollToBottom = {},
+                isLoading = isLoading,
                 onLoadMore = { viewModel.loadMoreMessages() }
             )
         }
