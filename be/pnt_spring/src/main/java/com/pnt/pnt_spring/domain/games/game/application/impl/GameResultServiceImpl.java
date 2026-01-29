@@ -9,10 +9,13 @@ import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.enums.WinTeam;
-import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
-import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
-import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
+import com.pnt.pnt_spring.domain.games.game.repository.*;
 import com.pnt.pnt_spring.domain.games.news.api.req.AiNewsRequest;
+import com.pnt.pnt_spring.domain.members.member.entity.Member;
+import com.pnt.pnt_spring.domain.members.stat.entity.*;
+import com.pnt.pnt_spring.domain.members.stat.repository.MemberStatPoliceRepository;
+import com.pnt.pnt_spring.domain.members.stat.repository.MemberStatRepository;
+import com.pnt.pnt_spring.domain.members.stat.repository.MemberStatThiefRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +40,16 @@ public class GameResultServiceImpl implements GameResultService {
     private final GameMemberRepository gameMemberRepository;
     private final GameMemberStatRepository gameMemberStatRepository;
     private final RabbitTemplate rabbitTemplate;
+    private final MemberStatRepository memberStatRepository;
+
+
+    private final MemberStatPoliceRepository memberStatPoliceRepository;
+    private final MemberStatThiefRepository memberStatThiefRepository;
+    private final GradePoliceRepository gradePoliceRepository;
+    private final GradeThiefRepository gradeThiefRepository;
+
+    private static final long MIN_GRADE_ID = 1L;
+    private static final long MAX_GRADE_ID = 11L;
 
     @Override
     public void saveGameResult(GameResultRequest request) {
@@ -60,6 +73,8 @@ public class GameResultServiceImpl implements GameResultService {
                     });
 
             stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived());
+
+            updateMemberGradeAndStats(stat, request.getWinTeam());
         }
 
         // AI 뉴스 생성 요청
@@ -213,4 +228,82 @@ public class GameResultServiceImpl implements GameResultService {
         int val2 = (v2 == null) ? 0 : v2;
         return Integer.compare(val1, val2);
     }
+
+    private void updateMemberGradeAndStats(GameMemberStat gameStat, WinTeam winTeam) {
+        GameMember gameMember = gameStat.getGameMember();
+        Member member = gameMember.getMember();
+        Position position = gameMember.getGivenPosition(); // 해당 판의 역할
+
+        // 해당 판에서 이겼는지 여부
+        boolean isWin = (position == Position.POLICE && winTeam == WinTeam.POLICE) ||
+                (position == Position.THIEF && winTeam == WinTeam.THIEF);
+
+        // 1. [공통] MemberStat (전체 통계) 먼저 업데이트
+        MemberStat memberStat = memberStatRepository.findById(member.getId())
+                .orElseGet(() -> memberStatRepository.save(MemberStat.createInitial(member)));
+
+        // 여기서 totalGames, thiefGame 등이 +1 됨
+        memberStat.updateGameStats(isWin, position);
+
+        if (position == Position.POLICE) {
+            // 1. 경찰 누적 스탯 조회 (없으면 초기 생성)
+            MemberStatPolice policeStat = memberStatPoliceRepository.findById(member.getId())
+                    .orElseGet(() -> {
+                        GradePolice initial = gradePoliceRepository.findById(MIN_GRADE_ID)
+                                .orElseThrow(() -> new BusinessException(ErrorCode.GRADE_NOT_FOUND));
+                        return memberStatPoliceRepository.save(MemberStatPolice.createInitial(member, initial));
+                    });
+
+            // 2. 스탯 업데이트 (DB에 있던 gameStat.getArrestCount() 사용)
+            policeStat.updateAfterGame(isWin, gameStat.getArrestCount());
+
+            // 3. 등급 변경 계산
+            long currentGradeId = policeStat.getGradePolice().getId();
+            long nextGradeId = calculateNextGradeId(currentGradeId, isWin);
+
+            if (currentGradeId != nextGradeId) {
+                GradePolice nextGrade = gradePoliceRepository.findById(nextGradeId)
+                        .orElse(policeStat.getGradePolice()); // 없으면 유지
+                policeStat.changeGrade(nextGrade);
+            }
+
+        } else if (position == Position.THIEF) {
+            // 1. 도둑 누적 스탯 조회
+            MemberStatThief thiefStat = memberStatThiefRepository.findById(member.getId())
+                    .orElseGet(() -> {
+                        GradeThief initial = gradeThiefRepository.findById(MIN_GRADE_ID)
+                                .orElseThrow(() -> new BusinessException(ErrorCode.GRADE_NOT_FOUND));
+                        return memberStatThiefRepository.save(MemberStatThief.createInitial(member, initial));
+                    });
+
+            // 도둑 스탯과 평균시간 업데이트
+            thiefStat.updateAfterGame(
+                    gameStat.getLongestSurvived(),
+                    gameStat.getEscapeCount(),
+                    memberStat.getThiefGame() // MemberStat에서 가져온 총 도둑 판수 전달
+            );
+
+            // 3. 등급 변경 계산
+            long currentGradeId = thiefStat.getGradeThief().getId();
+            long nextGradeId = calculateNextGradeId(currentGradeId, isWin);
+
+            if (currentGradeId != nextGradeId) {
+                GradeThief nextGrade = gradeThiefRepository.findById(nextGradeId)
+                        .orElse(thiefStat.getGradeThief());
+                thiefStat.changeGrade(nextGrade);
+            }
+        }
+    }
+
+    // 등급 ID 계산 (1 ~ 11 범위 고정)
+    private long calculateNextGradeId(long currentId, boolean isWin) {
+        if (isWin) {
+            // 승리 시 1단계 승급 (최대 11)
+            return Math.min(currentId + 1, MAX_GRADE_ID);
+        } else {
+            // 패배 시 1단계 강등 (최소 1)
+            return Math.max(currentId - 1, MIN_GRADE_ID);
+        }
+    }
+
 }

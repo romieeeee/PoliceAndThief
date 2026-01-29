@@ -3,14 +3,14 @@ package com.pnt.pnt_spring.domain.members.stat.entity;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.utils.BaseEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "member_stat_thief")
+@Builder
+@AllArgsConstructor
 public class MemberStatThief extends BaseEntity {
 
     @Id
@@ -25,9 +25,47 @@ public class MemberStatThief extends BaseEntity {
     @JoinColumn(name = "grade_thief_id")
     private GradeThief gradeThief;
 
-    private Integer escapeCount;
+    private Integer totalEscapeCount;
     private Integer totalMissionCount;
     private Integer longestSurvivalSec;
     private Integer averageSurvivalSec;
+
+    public static MemberStatThief createInitial(Member member, GradeThief initialGrade) {
+        return MemberStatThief.builder()
+                .member(member)
+                .gradeThief(initialGrade)// 바늘도둑(ID:1) 객체를 주입받아야 함
+                .totalEscapeCount(0)
+                .totalMissionCount(0)
+                .longestSurvivalSec(0)
+                .averageSurvivalSec(0)
+                .build();
+    }
+
+    public void updateAfterGame(Integer survivalSec, Integer escapeCount, Integer totalThiefGames) {
+        int currentSurvival = (survivalSec == null) ? 0 : survivalSec;
+        int newEscapes = (escapeCount == null) ? 0 : escapeCount;
+        int totalGames = (totalThiefGames == null || totalThiefGames == 0) ? 1 : totalThiefGames; // 0으로 나누기 방지
+
+        // 1. 평균 생존 시간 계산 (MemberStat에서 가져온 totalThiefGames 사용)
+        // 공식: ((기존 평균 * (현재판수 - 1)) + 이번 생존 시간) / 현재판수
+        int previousAvg = (this.averageSurvivalSec == null) ? 0 : this.averageSurvivalSec;
+
+        // totalGames는 이미 1 증가된 상태로 넘어온다고 가정하므로 (totalGames - 1)이 이전 판수
+        long totalSurvivalTime = ((long) previousAvg * (totalGames - 1)) + currentSurvival;
+
+        this.averageSurvivalSec = (int) (totalSurvivalTime / totalGames);
+
+        // 2. 탈출 횟수 누적
+        this.totalEscapeCount = (this.totalEscapeCount == null ? 0 : this.totalEscapeCount) + newEscapes;
+
+        // 3. 최대 생존 시간 갱신
+        if (this.longestSurvivalSec == null || currentSurvival > this.longestSurvivalSec) {
+            this.longestSurvivalSec = currentSurvival;
+        }
+    }
+
+    public void changeGrade(GradeThief newGrade) {
+        this.gradeThief = newGrade;
+    }
 
 }

@@ -9,15 +9,23 @@ import com.pnt.pnt_spring.domain.auth.api.resp.SignupResponse;
 import com.pnt.pnt_spring.domain.auth.application.AuthService;
 import com.pnt.pnt_spring.domain.auth.application.SocialTokenValidator;
 import com.pnt.pnt_spring.domain.auth.jwt.JwtTokenProvider;
+import com.pnt.pnt_spring.domain.games.game.repository.GradePoliceRepository;
+import com.pnt.pnt_spring.domain.games.game.repository.GradeThiefRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberAuthProvider;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberProfile;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberRole;
 import com.pnt.pnt_spring.domain.members.member.entity.document.MemberDoc;
-import com.pnt.pnt_spring.domain.members.member.repository.mongo.MemberMongoRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.MemberAuthProviderRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.MemberProfileRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
+import com.pnt.pnt_spring.domain.members.member.repository.mongo.MemberMongoRepository;
+import com.pnt.pnt_spring.domain.members.stat.entity.GradePolice;
+import com.pnt.pnt_spring.domain.members.stat.entity.GradeThief;
+import com.pnt.pnt_spring.domain.members.stat.entity.MemberStatPolice;
+import com.pnt.pnt_spring.domain.members.stat.entity.MemberStatThief;
+import com.pnt.pnt_spring.domain.members.stat.repository.MemberStatPoliceRepository;
+import com.pnt.pnt_spring.domain.members.stat.repository.MemberStatThiefRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +56,11 @@ public class AuthServiceImpl implements AuthService {
     private final MemberMongoRepository memberMongoRepository;
     private final SocialTokenValidator socialTokenValidator;
     private final MemberAuthProviderRepository memberAuthProviderRepository;
+
+    private final GradeThiefRepository gradeThiefRepository;
+    private final GradePoliceRepository gradePoliceRepository;
+    private final MemberStatThiefRepository memberStatThiefRepository;
+    private final MemberStatPoliceRepository memberStatPoliceRepository;
 
     @Transactional
     public SignupResponse signup(SignupRequest request) {
@@ -96,6 +109,10 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         memberMongoRepository.save(memberDoc);
+
+        // 초기 등급 및 스탯 부여
+
+        initMemberStats(member);
 
         return SignupResponse.from(member, memberProfile);
     }
@@ -220,6 +237,9 @@ public class AuthServiceImpl implements AuthService {
                     .build();
             memberMongoRepository.save(memberDoc);
 
+            // 초기 등급 및 스탯 부여
+            initMemberStats(member);
+
         } else {
             // 기존 회원이면 정보 로드
             member = authProvider.getMember();
@@ -292,6 +312,22 @@ public class AuthServiceImpl implements AuthService {
         );
 
         return newTokenDto;
+    }
+
+    private void initMemberStats(Member member) {
+        // 1. 도둑 초기 세팅
+        GradeThief initialThiefGrade = gradeThiefRepository.findById(1L)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "도둑 초기 등급(ID:1) 데이터가 없습니다. DB 초기화를 확인하세요."));
+
+        MemberStatThief thiefStat = MemberStatThief.createInitial(member, initialThiefGrade);
+        memberStatThiefRepository.save(thiefStat);
+
+        // 2. 경찰 초기 세팅
+        GradePolice initialPoliceGrade = gradePoliceRepository.findById(1L)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR, "경찰 초기 등급(ID:1) 데이터가 없습니다. DB 초기화를 확인하세요."));
+
+        MemberStatPolice policeStat = MemberStatPolice.createInitial(member, initialPoliceGrade);
+        memberStatPoliceRepository.save(policeStat);
     }
 
 }
