@@ -10,50 +10,61 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d104.pnt.domain.model.ChatMessage
 import com.d104.pnt.domain.model.ChatsData
-import com.d104.pnt.ui.component.ChatList
+import com.d104.pnt.ui.component.ChatList  // 🔥 추가!
 import com.d104.pnt.ui.component.ChatRoomFooter
 import com.d104.pnt.ui.component.ChatRoomHeader
 import com.d104.pnt.ui.theme.DarkBackground
 
 @Composable
 fun ChatRoomScreen(
-    modifier: Modifier,
-    chatRoomData: ChatsData,
-    chatMessages: List<ChatMessage>,
-    onSendMessage: (String) -> Unit,
-    onScrollToBottom: () -> Unit,
+    modifier: Modifier = Modifier,
+    onBackPressed: () -> Unit,
     viewModel: ChatRoomViewModel = hiltViewModel()
 ) {
-    val message = viewModel.message.collectAsStateWithLifecycle()
+    // ViewModel에서 상태 가져오기
+    val message by viewModel.message.collectAsStateWithLifecycle()
+    val chatMessages by viewModel.chatMessages.collectAsStateWithLifecycle()
+    val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
 
-    Scaffold (
-        modifier = Modifier
+    val roomInfo by viewModel.roomInfo.collectAsStateWithLifecycle()
+
+    Scaffold(
+        modifier = modifier
             .fillMaxSize()
             .background(DarkBackground)
             .imePadding()
             .statusBarsPadding()
             .navigationBarsPadding(),
         topBar = {
-            ChatRoomHeader(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                roomData = chatRoomData,
-                onLeaveClick = {}
-            )
+            roomInfo?.let { info ->
+                ChatRoomHeader(
+                    modifier = Modifier.fillMaxWidth(),
+                    roomData = ChatsData(
+                        id = info.chatRoomId.toInt(),
+                        title = info.title,
+                        description = info.description,
+                        maxMember = info.maxMembers,
+                        currentMember = info.currentMembers
+                    ),
+                    onLeaveClick = { onBackPressed() }
+                )
+            }
         },
         bottomBar = {
             ChatRoomFooter(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                onSendMessage = onSendMessage,
-                onValueChange = { viewModel.writeMessage(it) },
-                message = message.value
+                modifier = Modifier.fillMaxWidth(),
+                onSendMessage = {
+                    viewModel.sendMessage()
+                },
+                onValueChange = {
+                    viewModel.writeMessage(it)
+                },
+                message = message
             )
         }
     ) { innerPadding ->
@@ -63,104 +74,13 @@ fun ChatRoomScreen(
                 .padding(innerPadding)
         ) {
             ChatList(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 chatMessages = chatMessages,
-                onSendMessage = onSendMessage,
-                onScrollToBottom = onScrollToBottom,
+                myMemberId = myMemberId,
+                onSendMessage = { viewModel.sendMessage() },
+                onScrollToBottom = {},
+                onLoadMore = { viewModel.loadMoreMessages() }
             )
         }
     }
-}
-
-@Preview(heightDp = 800)
-@Composable
-fun PreviewChatRoomScreen(){
-    val dummyMessages = listOf(
-        ChatMessage(
-            id = 3,
-            chatRoomId = 1,
-            memberId = 100,
-            senderNickname = "우사인 홈즈",
-            avataUrl = "",
-            content = "저 그날 시간 되요! 몇시에 할 예정인가요?",
-        ),
-        ChatMessage(
-            id = 2,
-            chatRoomId = 1,
-            memberId = 2,
-            senderNickname = "런닝맨",
-            avataUrl = "",
-            content = "ㅇㅇ공원에서 할거고 경찰은 뿅망치 사용, 도둑은 빨간색 스티커 옷에 앞뒤로 붙이고 할 예정입니다",
-        ),
-        ChatMessage(
-            id = 1,
-            chatRoomId = 1,
-            memberId = 1,
-            senderNickname = "인동 대도",
-            avataUrl = "",
-            content = "2/5일 ㅇㅇ공원 근처에서 경도하실분!",
-        ),
-        ChatMessage(
-            id = 3,
-            chatRoomId = 1,
-            memberId = 100,
-            senderNickname = "우사인 홈즈",
-            avataUrl = "",
-            content = "저 그날 시간 되요! 몇시에 할 예정인가요?",
-        ),
-        ChatMessage(
-            id = 2,
-            chatRoomId = 1,
-            memberId = 2,
-            senderNickname = "런닝맨",
-            avataUrl = "",
-            content = "ㅇㅇ공원에서 할거고 경찰은 뿅망치 사용, 도둑은 빨간색 스티커 옷에 앞뒤로 붙이고 할 예정입니다",
-        ),
-        ChatMessage(
-            id = 1,
-            chatRoomId = 1,
-            memberId = 1,
-            senderNickname = "인동 대도",
-            avataUrl = "",
-            content = "2/5일 ㅇㅇ공원 근처에서 경도하실분!",
-        ),
-        ChatMessage(
-            id = 3,
-            chatRoomId = 1,
-            memberId = 100,
-            senderNickname = "우사인 홈즈",
-            avataUrl = "",
-            content = "저 그날 시간 되요! 몇시에 할 예정인가요?",
-        ),
-        ChatMessage(
-            id = 2,
-            chatRoomId = 1,
-            memberId = 2,
-            senderNickname = "런닝맨",
-            avataUrl = "",
-            content = "ㅇㅇ공원에서 할거고 경찰은 뿅망치 사용, 도둑은 빨간색 스티커 옷에 앞뒤로 붙이고 할 예정입니다",
-        ),
-        ChatMessage(
-            id = 1,
-            chatRoomId = 1,
-            memberId = 1,
-            senderNickname = "인동 대도",
-            avataUrl = "",
-            content = "2/5일 ㅇㅇ공원 근처에서 경도하실분!",
-        ),
-    )
-    ChatRoomScreen(
-        modifier = Modifier,
-        chatRoomData = ChatsData(
-            1,
-            "진평동 빡겜 추격전 진평동 빡겜 추격전 진평동 빡겜 추격전 진평동 빡겜 추격전",
-            "날이 많이 추우니 장갑 꼭 챙겨오세요",
-            30,
-            25
-        ),
-        onSendMessage = {},
-        chatMessages = dummyMessages,
-        onScrollToBottom = {}
-    )
 }

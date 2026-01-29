@@ -3,20 +3,30 @@ package com.d104.pnt.data.remote.api
 import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.data.remote.model.response.ChatCreateRequest
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
+import com.d104.pnt.data.remote.model.response.ChatRoomResponse
 import com.d104.pnt.data.remote.model.response.JoinChatRoomResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface ChatApiService {
     /**
-     * 게임 생성 API
+     * 채팅방 생성
      */
     @POST("chats")
     suspend fun createChatRoom(
         @Body request: ChatCreateRequest
     ): Response<BaseResponse<ChatCreateResponse>>
+
+    /**
+     * 채팅방 단건 조회
+     */
+    @GET("chats/{id}")
+    suspend fun getChatRoom(
+        @Path("id") chatRoomId: Long
+    ): Response<BaseResponse<ChatRoomResponse>>
 
     /**
      * 채팅방 참여

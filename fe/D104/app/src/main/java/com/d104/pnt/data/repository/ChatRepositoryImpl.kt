@@ -3,6 +3,7 @@ package com.d104.pnt.data.repository
 import com.d104.pnt.data.remote.api.ChatApiService
 import com.d104.pnt.data.remote.model.response.ChatCreateRequest
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
+import com.d104.pnt.data.remote.model.response.ChatRoomResponse
 import com.d104.pnt.data.remote.model.response.JoinChatRoomResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,9 +19,28 @@ class ChatRepositoryImpl @Inject constructor(
     override var currentChatRoom: Long? = null
     override var currentChatRoomTitle: String? = null
     override var currentChatRoomDescription: String? = null
-    override var currentChatRoomRegionCode: Long? = null
+    override var currentChatRoomRegionCode: Int? = null
     override var currentChatRoomMaxMember: Int? = null
     override val currentChatRoomMember = _currentChatRoomMember.asStateFlow()
+
+    /**
+     * 채팅방 단건 조회
+     */
+    override suspend fun getChatRoomInfo(chatRoomId: Long): BaseResult<ChatRoomResponse> {
+        return safeApiCall(
+            onSuccess = { chatRoomResponse ->
+                // 정보를 성공적으로 가져왔을 때 Repository의 상태값들을 업데이트합니다.
+                currentChatRoom = chatRoomResponse.chatRoomId
+                currentChatRoomTitle = chatRoomResponse.title
+                currentChatRoomDescription = chatRoomResponse.description
+                currentChatRoomRegionCode = chatRoomResponse.regionCode
+                currentChatRoomMaxMember = chatRoomResponse.maxMembers
+                _currentChatRoomMember.value = chatRoomResponse.currentMembers
+            }
+        ) {
+            chatApiService.getChatRoom(chatRoomId)
+        }
+    }
 
     /**
      * 채팅방 생성
@@ -64,7 +84,9 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    // 채팅방 연결 (HTTP)
+    /**
+     * 채팅방 연결
+     */
     override suspend fun connectChatRoom(chatRoomId: Long): BaseResult<Unit> {
         return safeApiCall {
             chatApiService.connectChatRoom(chatRoomId)

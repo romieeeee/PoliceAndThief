@@ -3,7 +3,10 @@ package com.d104.pnt.ui.chatroom
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d104.pnt.data.repository.AuthRepository
+import com.d104.pnt.data.repository.ChatRepository
 import com.d104.pnt.domain.model.ChatMessage
+import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.util.SocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,10 +21,18 @@ import javax.inject.Inject
 @HiltViewModel
 class ChatRoomViewModel @Inject constructor(
     private val socketManager: SocketManager,
+    private val authRepository: AuthRepository,
+    private val chatRepository: ChatRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val chatRoomId: Int = savedStateHandle.get<Long>(NavArgs.CHAT_ID)?.toInt() ?: 0
+    private val chatRoomId: Long = savedStateHandle.get<Long>(NavArgs.CHAT_ID) ?: 0
+
+    // UI에 보여줄 채팅방 정보 상태
+    private val _roomInfo =
+        MutableStateFlow<com.d104.pnt.data.remote.model.response.ChatRoomResponse?>(null)
+    val roomInfo: StateFlow<com.d104.pnt.data.remote.model.response.ChatRoomResponse?> =
+        _roomInfo.asStateFlow()
 
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message.asStateFlow()
@@ -29,21 +40,49 @@ class ChatRoomViewModel @Inject constructor(
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages.asStateFlow()
 
-
-    init {
-        Timber.d("ChatRoomViewModel 초기화 - chatRoomId: $chatRoomId")
-        setupMessageListeners()
-        loadInitialMessages()
-    }
-
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    // 내 멤버 ID
+    val myMemberId = MutableStateFlow<Long>(0)
+
     init {
         Timber.d("ChatRoomViewModel 초기화 - chatRoomId: $chatRoomId")
+
+        fetchRoomInfo()
+
+        viewModelScope.launch {
+            authRepository.getMemberId().collect { id ->
+                myMemberId.value = id
+                Timber.d("내 멤버 ID: $id")
+            }
+        }
+
+        // 메시지 리스너 설정
         setupMessageListeners()
+
+        // 초기 메시지 로드
         loadInitialMessages()
     }
+
+    private fun fetchRoomInfo() {
+        viewModelScope.launch {
+            val result = chatRepository.getChatRoomInfo(chatRoomId)
+
+            when (result) {
+                is BaseResult.Success -> {
+                    val info = result.data
+                    _roomInfo.value = info
+                    Timber.d("채팅방 정보 로드 성공: ${info.title}")
+                }
+                is BaseResult.Error -> {
+                    val apiError = result.error
+                    Timber.e("채팅방 정보 로드 실패: ${apiError.message} (코드: ${apiError.code})")
+                }
+            }
+        }
+    }
+
 
     // 메시지 리스너 설정
     private fun setupMessageListeners() {
@@ -85,7 +124,7 @@ class ChatRoomViewModel @Inject constructor(
             ChatMessage(
                 id = data.getInt("id"),
                 chatRoomId = data.getInt("chatRoomId"),
-                memberId = data.getInt("memberId"),
+                memberId = data.getLong("memberId"),
                 senderNickname = data.getString("senderNickname"),
                 avataUrl = data.optString("avataUrl", ""),
                 content = data.getString("content"),
@@ -128,6 +167,7 @@ class ChatRoomViewModel @Inject constructor(
         }
 
         Timber.d("💬 메시지 전송: $messageText")
+
         socketManager.sendChatMessage(messageText)
 
         // 입력창 초기화

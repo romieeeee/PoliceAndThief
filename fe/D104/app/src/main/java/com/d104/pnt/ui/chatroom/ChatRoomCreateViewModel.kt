@@ -178,7 +178,7 @@ class ChatRoomCreateViewModel @Inject constructor(
     private fun joinRoomInternal(chatRoomId: Long) {
         socketManager.joinRoom(chatRoomId) { success, message ->
             if (success) {
-                Timber.d("✅ 5️⃣ 소켓 입장 성공: $message")
+                Timber.d("✅ 소켓 입장 성공: $message")
                 _joinRoomState.value = JoinRoomState.Success(chatRoomId, message)
             } else {
                 Timber.e("❌ 소켓 입장 실패: $message")

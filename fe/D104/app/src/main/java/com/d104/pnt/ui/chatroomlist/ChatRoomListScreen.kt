@@ -55,20 +55,25 @@ fun ChatRoomListScreen(
     Scaffold(
         containerColor = DeepDark,
         floatingActionButton = {
-            PixelIconButton(
-                modifier = Modifier
-                    .size(56.dp)
-                    .navigationBarsPadding(),
-                mainColor = ButtonPrimary,
-                borderColor = ButtonHighlight,
-                onClick = navigateToChatCreate
+            Box(
+                modifier = Modifier.padding(end = 16.dp,bottom = 64.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "채팅방 만들기",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
+                PixelIconButton(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .navigationBarsPadding(),
+                    mainColor = ButtonPrimary,
+                    borderColor = ButtonHighlight,
+                    onClick = navigateToChatCreate
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "채팅방 만들기",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
             }
         }
     ) { paddingValues ->
@@ -88,8 +93,8 @@ fun ChatRoomListScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.End, // ⭐ 오른쪽 정렬로 변경
+                    .padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.End, // 오른쪽 정렬로 변경
             ) {
                 PixelIconButton(
                     modifier = Modifier.size(48.dp),
