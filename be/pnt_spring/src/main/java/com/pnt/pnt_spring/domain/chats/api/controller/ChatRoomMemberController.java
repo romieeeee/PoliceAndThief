@@ -29,8 +29,6 @@ public class ChatRoomMemberController {
         Long memberId = SecurityUtils.currentMemberId();
         chatRoomMemberService.leave(memberId, chatRoomId);
         return new CommonResponse<>(null, "채팅방 나가기 성공", HttpStatus.OK);
-        // NO_CONTENT로 하고 싶으면 HttpStatus.NO_CONTENT로 바꿔도 되는데,
-        // CommonResponse는 body가 생기니 보통 OK로 통일합니다.
     }
 
     // 채팅방 연결(접속 상태 업데이트)
