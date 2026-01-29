@@ -21,7 +21,6 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "region_code", nullable = false)
     private Integer regionCode;
 
-    @Lob
     @Column(columnDefinition = "TEXT")
     private String description;
 
