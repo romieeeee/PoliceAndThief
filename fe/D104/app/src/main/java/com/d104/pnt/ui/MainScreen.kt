@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -46,10 +47,11 @@ import com.d104.pnt.ui.game.wait.RoleSelectScreen
 import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Composable
 fun MainScreen(
-    userName: String,
+    memberId: String,
     navigateToIntro: () -> Unit
 ) {
     val navController = rememberNavController()
@@ -167,7 +169,7 @@ fun MainScreen(
                     onRoleSelected = { role: GameRole ->
                         navController.navigate(Routes.buildGameIntro(role.name))
                     },
-                    onBackPressed = { navController.popBackStack() }
+                    onBackPressed = { navController.popBackStack() },
                 )
             }
 

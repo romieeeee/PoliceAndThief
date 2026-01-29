@@ -13,6 +13,10 @@ android {
     namespace = "com.d104.pnt"
     compileSdk = 36
 
+    val localProperties = Properties().apply {
+        project.rootProject.file("local.properties").inputStream().use { load(it) }
+    }
+
     defaultConfig {
         applicationId = "com.d104.pnt"
         minSdk = 24
@@ -22,15 +26,14 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val localProperties = Properties().apply{
-            project.rootProject.file("local.properties").inputStream().use { load(it) }
-        }
-
         manifestPlaceholders["GOOGLE_MAP_API_KEY"] = localProperties.getProperty("GOOGLE_MAP_API_KEY") ?: ""
         manifestPlaceholders["INGAME_MAPS_ID"] = localProperties.getProperty("INGAME_MAPS_ID") ?: ""
         manifestPlaceholders["SETTING_MAPS_ID"] = localProperties.getProperty("SETTING_MAPS_ID") ?: ""
         manifestPlaceholders["CLIENT_ID"] = localProperties.getProperty("CLIENT_ID") ?: ""
         manifestPlaceholders["CLIENT_SECRET"] = localProperties.getProperty("CLIENT_SECRET") ?: ""
+
+        // Kakao Login
+        manifestPlaceholders["KAKAO_NATIVE_APP_KEY"] = localProperties.getProperty("KAKAO_NATIVE_APP_KEY") ?: ""
 
         buildConfigField(
             "String",
@@ -49,6 +52,11 @@ android {
         )
         buildConfigField(
             "String",
+            "KAKAO_NATIVE_APP_KEY",
+            "\"${localProperties["KAKAO_NATIVE_APP_KEY"]}\""
+        )
+        buildConfigField(
+            "String",
             "CLIENT_ID",
             "\"${localProperties["CLIENT_ID"]}\""
         )
@@ -59,7 +67,20 @@ android {
         )
     }
 
+    signingConfigs {
+        create("pnt-debug") {
+            storeFile = file(localProperties.getProperty("SIGNING_STORE_FILE"))
+            storePassword = localProperties.getProperty("SIGNING_STORE_PASSWORD")
+            keyAlias = localProperties.getProperty("SIGNING_KEY_ALIAS")
+            keyPassword = localProperties.getProperty("SIGNING_KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("pnt-debug")
+        }
+
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -182,22 +203,25 @@ dependencies {
     implementation("io.coil-kt:coil-gif:2.4.0")
 
     // CameraX - 카메라 기능을 위한 라이브러리들
-    implementation ("androidx.camera:camera-core:1.4.2")        // 핵심 기능
-    implementation ("androidx.camera:camera-camera2:1.4.2")     // Camera2 API 연결
-    implementation ("androidx.camera:camera-lifecycle:1.4.2")   // 생명주기 관리
-    implementation ("androidx.camera:camera-view:1.4.2")       // 프리뷰 화면
+    implementation("androidx.camera:camera-core:1.4.2")        // 핵심 기능
+    implementation("androidx.camera:camera-camera2:1.4.2")     // Camera2 API 연결
+    implementation("androidx.camera:camera-lifecycle:1.4.2")   // 생명주기 관리
+    implementation("androidx.camera:camera-view:1.4.2")       // 프리뷰 화면
 
     // ML Kit - 머신러닝 기능
-    implementation ("com.google.mlkit:object-detection:17.0.2") // 객체 인식
+    implementation("com.google.mlkit:object-detection:17.0.2") // 객체 인식
 
     // Compose에서 권한 처리를 쉽게 해주는 라이브러리
-    implementation ("com.google.accompanist:accompanist-permissions:0.37.3")
+    implementation("com.google.accompanist:accompanist-permissions:0.37.3")
 
     // EXIF 정보 처리 (이미지 회전 문제 해결용) - 필수 추가!
     implementation("androidx.exifinterface:exifinterface:1.3.7")
 
     // Wheel Date Picker
     implementation("com.github.commandiron:WheelPickerCompose:1.1.11")
+
+    // KaKao Login
+    implementation("com.kakao.sdk:v2-user:2.23.2")
 
     // Test
     testImplementation(libs.junit)
