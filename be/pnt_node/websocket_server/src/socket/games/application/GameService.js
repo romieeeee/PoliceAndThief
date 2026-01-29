@@ -66,7 +66,10 @@ export class GameService {
         
 
         const thiefMembers = gameMembers
-            .filter(member => member.givenPosition === GameMemberPosition.THIEF && member.status === GameMemberStatus.FREE);
+            .filter(member => member.givenPosition === GameMemberPosition.THIEF && 
+                member.status === GameMemberStatus.FREE &&
+                member.inGameConnected === true
+            );
         
         console.log("thiefMembers", thiefMembers.length);
         console.log('thiefMembers', thiefMembers);

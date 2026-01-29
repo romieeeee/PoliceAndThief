@@ -57,6 +57,7 @@ export class GameController {
 
             await this.gameService.findGame(payload.gameId, GameStatus.IN_GAME);
             await this.gameMemberService.findMemberGame(payload.gameId, this.socket.data.memberId);
+            await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
 
             this.socket.join(gameId);
             this.socket.data.gameId = gameId;
@@ -66,8 +67,6 @@ export class GameController {
                 gameId: payload.gameId,
                 memberId: this.socket.data.memberId,
             }
-
-            await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
 
             // gameSetting에서 참여자 수 들고오기
             // isGaneConnected true로 변경 => 변경이 됐는지 안됐는지 판별하여 
@@ -126,6 +125,12 @@ export class GameController {
 
             const integerGameId = parseInt(gameId);
 
+            const gameTimer = await this.redisClient.getGameTimer(integerGameId);
+
+            if (gameTimer) {
+                return;
+            }
+
             const gameSetting = await this.gameSettingService.findGameSetting(integerGameId);
             const startedCount = await this.redisClient.getStartedCount(integerGameId);
 
@@ -133,7 +138,7 @@ export class GameController {
                 return;
             }
 
-            const isMine = await this.redisClient.setGameSettingLock(integerGameId, gameSetting.timeLimit * 60);
+            const isMine = await this.redisClient.setGameSettingLock(integerGameId, 5);
 
             if (!isMine) {
                 return;
@@ -151,9 +156,10 @@ export class GameController {
                 await this.redisClient.setGameTimer(integerGameId, gameSetting.timeLimit * 60);
 
                 // cctv 작동
-                await this.redisClient.setCctvTimer(integerGameId, gameSetting.cctvInterval);
+                const cctvInterval = gameSetting.cctvInterval || 60;
+                await this.redisClient.setCctvTimer(integerGameId, cctvInterval);
 
-                await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString() });
+                await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString(), status: GameStatus.IN_GAME });
 
                 this.io.to(gameId).emit("get start game", {
                     message: "start game",
@@ -306,11 +312,16 @@ export class GameController {
 
             // 비프음
             const locationDatas = await this.redisClient.getAllLocations(gameId);
-            const polices = locationDatas
-                .find((data) => data.position === GameMemberPosition.POLICE)
-                .map((data) => { return { policeId: data.memberId, lng: data.lng, lat: data.lat } });
+            let polices;
+            if (locationDatas) {
+                polices = locationDatas
+                    .filter(data => data.position === GameMemberPosition.POLICE)
+                    .map(({ memberId, lng, lat }) => ({ policeId: memberId, lng, lat }));
 
-            if (polices) {
+                console.log("polices", polices);
+            }
+
+            if (polices && polices.length > 0) {
                 const nearPolice = this.turfService.checkNearPolice([lng, lat], polices);
                 if (nearPolice) {
                     this.socket.emit("get beep use", {
@@ -499,10 +510,15 @@ export class GameController {
      */
     postSkillUse = async (payload) => {
         try {
-            const { gameId, policeId } = payload;
+            let { gameId, policeId } = payload;
+
+            policeId = parseInt(policeId) || parseInt(this.socket.data.memberId);
+            gameId = parseInt(gameId);
+
+            console.log("postSkillUse", payload);
 
             // 게임 스킬 정보 조회
-            const skill = await this.gameSkillService.findGameSkill(gameId, policeId);
+            const skill = await this.gameSkillService.findGameSkill(parseInt(gameId), parseInt(policeId));
 
             // 이미 사용된 스킬이면 실패
             if (skill.isUsed) {
@@ -598,7 +614,6 @@ export class GameController {
             // 게임 종료 처리 => spring boot에 요청을 보내야함.
 
 
-            // 게임 종료 알림
             // 게임 종료 알림
             io.to(gameId).emit("get end game", {
                 gameId: gameId,

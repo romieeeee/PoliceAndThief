@@ -20,7 +20,7 @@ export class GameMemberService {
     }
 
     updateMemberStatus = async (gameId, memberId, status, options = {}) => {
-        const res = await GameMember.update({ status }, {
+        const res = await GameMember.update({ status: status }, {
             where: {
                 gameId: gameId,
                 memberId: memberId,
@@ -76,7 +76,7 @@ export class GameMemberService {
     }
 
     updateInGameConnected = async (gameId, memberId, isConnected) => {
-        const res = await GameMember.update({ isConnected }, {
+        const res = await GameMember.update({ inGameConnected: isConnected }, {
             where: {
                 gameId: gameId,
                 memberId: memberId,
@@ -91,7 +91,7 @@ export class GameMemberService {
     }
 
     updateThiefStats = async (gameId, memberId, walk, longestSurvived) => {
-        const res = await GameMember.update({ walk, longestSurvived }, {
+        const res = await GameMember.update({ walk: walk, longestSurvived: longestSurvived }, {
             where: {
                 gameId: gameId,
                 memberId: memberId,
@@ -106,7 +106,7 @@ export class GameMemberService {
     }
 
     updatePoliceStats = async (gameId, memberId, arrestCount, walk) => {
-        const res = await GameMember.update({ arrestCount, walk }, {
+        const res = await GameMember.update({ arrestCount: arrestCount, walk: walk }, {
             where: {
                 gameId: gameId,
                 memberId: memberId,

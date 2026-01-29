@@ -1,6 +1,7 @@
 import { RedisClient } from "../client/RedisClient.js";
 import { GameController } from "../../games/controller/GameController.js";
 import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemberPosition.js";
+import { GameMemberStatus } from "../../../global/db/sequelize/status/GameMemberStatus.js";
 import axios from "axios";
 
 const redisClient = new RedisClient();
@@ -64,7 +65,7 @@ const expiredChannel = async (message, pubClient, chatIo, roomIo, gameIo) => {
         // 2. 상태가 FREE 인 유저만 필터링
         const thieves = locations.filter(player =>
             player.position === GameMemberPosition.THIEF &&
-            player.status === "FREE" // GameMemberStatus.FREE
+            (!player.status || player.status === GameMemberStatus.FREE)
         );
 
         // 도둑의 수가 적으면 CCTV를 보내지 않음. => 이건 정해야함.
@@ -87,7 +88,8 @@ const expiredChannel = async (message, pubClient, chatIo, roomIo, gameIo) => {
         const gameSetting = await gameController.gameSettingService.findGameSetting(gameId);
 
         if (gameTimer && gameSetting) {
-            await redisClient.setCctvTimer(gameId, gameSetting.cctvInterval);
+            const cctvInterval = gameSetting.cctvInterval || 60;
+            await redisClient.setCctvTimer(gameId, cctvInterval);
         }
     }
 
@@ -131,6 +133,11 @@ const roomDisconnect = async (memberId, roomId, roomIo) => {
 const gameDisconnect = async (memberId, roomId, gameIo) => {
     // 게임 접속 정보 업데이트
     await gameController.gameMemberService.updateInGameConnected(roomId, memberId, false);
+    const isGameEnd = await gameController.gameService.checkGameHaveToFinish(roomId);
+
+    if (isGameEnd) {
+        await gameController.gameEnd(gameIo, redisClient, roomId, GameMemberPosition.POLICE);
+    }
 
     await redisClient.deleteKeys("game", roomId, memberId);
 

@@ -90,6 +90,8 @@ public class GameRoomServiceImpl implements GameRoomService {
         GameMember hostMember = GameMember.join(game, hostRef);
         gameMemberRepository.save(hostMember);
 
+
+
         return new GameRoomCreateResponse(game.getId(), game.getRoomCode(), GameStatus.WAITING);
     }
 
@@ -139,7 +141,12 @@ public class GameRoomServiceImpl implements GameRoomService {
                 GameMemberStat stat = GameMemberStat.create(member);
                 gameMemberStatRepository.save(stat);
             }
+
+            if (member.getMember().getId().equals(actorMemberId)) {
+                member.setReady(true);
+            }
         }
+
         return GameStartResponse.from(game, members);
     }
 
