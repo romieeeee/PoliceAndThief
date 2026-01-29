@@ -24,6 +24,10 @@ public class GameRoomCreateRequest {
     private Integer thiefCount;
 
     @NotNull
+    @Min(1)
+    private Integer cctvInterval;
+
+    @NotNull
     @Valid
     private Prison prison;
 
