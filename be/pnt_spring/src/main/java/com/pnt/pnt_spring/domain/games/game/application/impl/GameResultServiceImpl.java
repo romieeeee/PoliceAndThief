@@ -8,7 +8,6 @@ import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
-import com.pnt.pnt_spring.domain.games.game.enums.WinTeam;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
@@ -137,7 +136,7 @@ public class GameResultServiceImpl implements GameResultService {
                 .startTime(game.getStartTime().format(formatter))
                 .winningTeam("POLICE".equals(game.getWinTeam()) ? "경찰" : "도둑")
                 .playTime(durationSec)
-                .location("SSAFY 구미캠퍼스 운동장") // TODO : 지역코드로 조회해서 받아와서 어쩌구 저쩌구 저장하는 식으로 해야함
+                .location("구미 시 진평동") // TODO : 지역코드로 조회해서 받아와서 어쩌구 저쩌구 저장하는 식으로 해야함
                 .policeCount(policeCount)
                 .thiefCount(thiefCount)
                 .mvp(mvpNickname)
@@ -145,7 +144,9 @@ public class GameResultServiceImpl implements GameResultService {
                 .loserTopMember("도망왕") // 필요시 별도 로직 구현
                 .build();
 
-        rabbitTemplate.convertAndSend("game.news.exchange", "game.news.request", aiRequest);
+        rabbitTemplate.convertAndSend("NEWS", aiRequest);
+
+        log.info("MQ Message Published to 'NEWS': gameId={}", game.getId());
     }
 
     private GameMemberStat calculateMvp(Game game) {
