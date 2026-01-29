@@ -17,13 +17,18 @@ const gameSocketServer = (io) => {
         socket.data.isIntentionalExit = false; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
         const gameController = new GameController(io, socket, mq);
 
-        const isActiveRoom = await gameController.isActiveRoom(storedGameId);
+        let isActiveRoom = null;
+        let integerGameId = null;
 
+        if (storedGameId) {
+            integerGameId = parseInt(storedGameId);
+            isActiveRoom = await gameController.isActiveRoom(integerGameId);
+        }
         // game 방이 유효한지 검사 로직 필요.
         if (isActiveRoom) {
             await redisClient.deleteByCompletedReconnect(socket, "game", storedGameId);
-            const integerGameId = parseInt(storedGameId.split("-")[1]);
             await gameController.gameMemberService.updateInGameConnected(integerGameId, socket.data.memberId, true);
+            console.log("reconnect", storedGameId);
 
             socket.emit("reconnect", { gameId: storedGameId });
         }
@@ -38,6 +43,8 @@ const gameSocketServer = (io) => {
         socket.on("post mission image", gameController.postMissionImage);
         // socket.on("post after game end", gameController.postGameEndAfter);
         socket.on("post sync game info", gameController.syncGameInfo);
+
+        socket.on("post reset game", gameController.gameReset);
 
         socket.on("post disconnect", gameController.disconnect);
 

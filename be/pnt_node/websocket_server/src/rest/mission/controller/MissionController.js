@@ -23,26 +23,6 @@ export class MissionController {
         return this.router;
     }
 
-    /**
-     *  request (http)
-     *   "gameId": 10,
-     *   "missionId": 1,
-     *   "memberId": 2,
-     *   "success": true,
-     * 
-     * 
-     *   response (http)
-     *   "message": "GameMission updated"
-     * 
-     * 
-     *   response (websocket)
-     *   "gameId": 10,
-     *   "missionId": 1,
-     *   "thiefId": 2,
-     *   "success": true,
-     *   "reason": "NOT_MATCHED|TIMEOUT|null",
-     *   "completedAt": "2026-01-19T09:00:00+09:00"
-     */
     missionComplete = async (req, res) => {
         try {
             const payload = req.body;
@@ -51,8 +31,6 @@ export class MissionController {
             if (!gameMission) {
                 throw { code: 404, message: "GameMission not found" };
             }
-
-            const strGameId = `game-${gameId}`;
 
             // 이미 성공했는지 여부 확인
             if (gameMission.status === MissionStatus.SUCCESS) {
@@ -64,7 +42,7 @@ export class MissionController {
                     reason: "ALREADY_COMPLETED",
                     completedAt: gameMission.completedAt // 기존 완료 시간 사용
                 }
-                this.emitter.of(GAME_NAMESPACE).to(strGameId).emit("get mission result", resData);
+                this.emitter.of(GAME_NAMESPACE).to(gameId).emit("get mission result", resData);
                 res.status(200).json({ message: "GameMission already completed" });
                 return;
             }
@@ -96,7 +74,7 @@ export class MissionController {
                 resData.reason = "NOT_MATCHED";
             }
 
-            this.emitter.of(GAME_NAMESPACE).to(strGameId).emit("get mission result", resData);
+            this.emitter.of(GAME_NAMESPACE).to(gameId).emit("get mission result", resData);
         } catch (error) {
             console.error("missionComplete error", error);
             res.status(error.code || 500).json({ message: error.message });

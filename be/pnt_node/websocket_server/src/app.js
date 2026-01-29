@@ -5,6 +5,8 @@ import { socketServer } from "./socket/SocketServer.js";
 import router from "./rest/Router.js";
 import { database } from "./global/db/database.js";
 import mq from "./global/mq/MessagingQueue.js";
+import swaggerUi from "swagger-ui-express";
+import specs from "./global/swagger/swagger.js";
 
 const port = 8090;
 
@@ -14,6 +16,7 @@ const port = 8090;
 
     app.use(cors());
     app.use(express.json());
+    app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
     await mq.create();
     await database();
