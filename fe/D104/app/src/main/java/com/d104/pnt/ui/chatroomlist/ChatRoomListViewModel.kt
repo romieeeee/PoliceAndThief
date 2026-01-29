@@ -39,9 +39,14 @@ class ChatRoomListViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
+    private val _searchRegionQuery = MutableStateFlow(-1)
+    val searchRegionQuery = _searchRegionQuery.asStateFlow()
+
     private val _listState = MutableStateFlow<UiState<ChatSearchResponse>>(UiState.Idle)
     val listState = _listState.asStateFlow()
 
+    private val _viewMode = MutableStateFlow(ViewMode.Me)
+    val viewMode = _viewMode.asStateFlow()
 
 
     fun updateSearchQuery(newQuery: String) {
@@ -50,7 +55,9 @@ class ChatRoomListViewModel @Inject constructor(
 
     // 시/도 선택 시 호출
     fun selectMajor(major: String) {
+        initRegion()
         _selectedMajor.value = major
+        if (_viewMode.value == ViewMode.Region) _viewMode.value = ViewMode.Title
 
         // 시/도가 바뀌었으니 시/군/구 목록 갱신 & 기존 선택 초기화
         _middleList.value = regionManager.getMiddleRegions(major)
@@ -60,11 +67,33 @@ class ChatRoomListViewModel @Inject constructor(
     // 시/군/구 선택 시 호출
     fun selectMiddle(middle: String) {
         _selectedMiddle.value = middle
+        _viewMode.value = ViewMode.Region
 
         // 최종적으로 코드 찾기 등 수행
         val code = locationRepository.getRegionCode(_selectedMajor.value, middle)
         Timber.d("Selected Code: $code")
+        _searchRegionQuery.value = code
+
         // 쿼리 보내기
+        viewModelScope.launch {
+            _listState.value = UiState.Loading
+            when (val result = chatRepository.searchChatRoom(title = null, regionCode = code)) {
+                is BaseResult.Success -> {
+                    _listState.value = UiState.Success(result.data)
+                    Timber.d("chatList: ${result.data}")
+                }
+                is BaseResult.Error -> {
+                    _listState.value = UiState.Error(result.error.message)
+                    Timber.d("error: ${result.error.message}")
+                }
+            }
+        }
+    }
+    fun initRegion() {
+        _selectedMajor.value = ""
+        _selectedMiddle.value = ""
+        _middleList.value = emptyList()
+        _searchRegionQuery.value = -1
     }
 
     fun searchChatRoom(
@@ -86,4 +115,28 @@ class ChatRoomListViewModel @Inject constructor(
         }
     }
 
+    fun getJoinedChatRoom() {
+        _viewMode.value = ViewMode.Me
+        initRegion()
+        viewModelScope.launch {
+            _listState.value = UiState.Loading
+            when (val result = chatRepository.getJoinedChatRoom()) {
+                is BaseResult.Success -> {
+                    _listState.value = UiState.Success(result.data)
+                    Timber.d("chatList: ${result.data}")
+                }
+                is BaseResult.Error -> {
+                    _listState.value = UiState.Error(result.error.message)
+                    Timber.d("error: ${result.error.message}")
+                }
+            }
+
+        }
+    }
+
+    enum class ViewMode(val value: String) {
+        Me("Me"),
+        Title("title"),
+        Region("region");
+    }
 }

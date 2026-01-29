@@ -53,6 +53,12 @@ class ChatRepositoryImpl @Inject constructor (
         }
     }
 
+    override suspend fun getJoinedChatRoom(): BaseResult<ChatSearchResponse> {
+        return safeApiCall {
+            chatApiService.getJoinedChatRoom()
+        }
+    }
+
     override suspend fun joinChatRoom(
         chatRoomId: Long,
         memberId: Long,

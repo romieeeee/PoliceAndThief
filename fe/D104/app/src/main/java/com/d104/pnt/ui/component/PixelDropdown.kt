@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,6 +40,7 @@ import com.d104.pnt.ui.theme.*
 @Composable
 fun PixelDropdown(
     modifier: Modifier = Modifier,
+    highlighted: Boolean = false,
     items: List<String>,
     selectedItem: String,
     onItemSelected: (String) -> Unit,
@@ -64,7 +66,7 @@ fun PixelDropdown(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(enabled = enabled) { isExpanded = !isExpanded },
-            backgroundColor = TextPrimary,
+            backgroundColor = if (highlighted) ButtonPrimary else TextPrimary,
             borderColor = BorderDefault,
             cornerSize = 10f,   // 작은 모서리
             innerVerticalPadding = 10,
@@ -81,7 +83,7 @@ fun PixelDropdown(
                 Text(
                     text = displayText,
                     style = MaterialTheme.typography.labelLarge,
-                    color = BorderDefault
+                    color = if (highlighted) TextPrimary else BorderDefault
 
                 )
 
@@ -109,7 +111,7 @@ fun PixelDropdown(
                     modifier = Modifier
                         .width(popupWidthDp) // 버튼 너비와 맞춤
                         .heightIn(max = 200.dp), // 드롭다운 리스트 높이
-                    backgroundColor = TextPrimary,
+                    backgroundColor = if (highlighted) ButtonPrimary else TextPrimary,
                     borderColor = BorderDefault,
                     cornerSize = 10f,
                     innerHorizontalPadding = 4
@@ -120,6 +122,7 @@ fun PixelDropdown(
                         itemsIndexed(items) { index, item ->
                             PixelDropdownItem(
                                 text = item,
+                                highlighted = highlighted,
                                 isSelected = item == selectedItem,
                                 onClick = {
                                     onItemSelected(item)
