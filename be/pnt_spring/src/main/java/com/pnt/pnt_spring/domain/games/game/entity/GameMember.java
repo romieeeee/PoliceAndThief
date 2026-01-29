@@ -41,7 +41,7 @@ public class GameMember extends BaseEntity {
 
     // === 배정 포지션 (게임 시작 시 확정) ===
     @Enumerated(EnumType.STRING)
-    @Column(name = "given_position", length = 10)
+    @Column(name = "given_position", length = 20)
     private Position givenPosition;
 
     @Column(nullable = false)
