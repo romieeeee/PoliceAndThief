@@ -2,3 +2,4 @@ node_modules/
 front/
 .env
 docs/
+test_client/

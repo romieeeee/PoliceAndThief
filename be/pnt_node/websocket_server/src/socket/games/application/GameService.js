@@ -42,7 +42,7 @@ export class GameService {
             await this.gameMemberService.updateMemberStatus(gameId, thiefId, GameMemberStatus.TRANSFER, { transaction: t });
 
             // police 스탯 업데이트 (체포 횟수 증가)
-            await this.gameMemberStatService.updateArrestCount(policeId, { transaction: t });
+            // await this.gameMemberStatService.updateArrestCount(policeId, { transaction: t });
 
             await t.commit();
             return true;
@@ -56,16 +56,20 @@ export class GameService {
     // 게임 종료 조건 확인 => 모든 도둑이 잡혔을때 종료.
     // 게임 승리팀 상태를 비관적 락으로 처리해야할 수도 있음.
     checkGameHaveToFinish = async (gameId) => {
-        const game = await this.findGame(gameId, GameStatus.PLAYING);
+        const game = await this.findGame(gameId, GameStatus.IN_GAME);
 
-        if (!game || game.status === GameStatus.END) {
+        if (!game || game.status === GameStatus.ENDED) {
             return false;
         }
 
         const gameMembers = await this.gameMemberService.findAllByGameId(gameId);
+        
 
         const thiefMembers = gameMembers
-            .filter(member => member.givenPosition === GameMemberPosition.THIEF && member.status !== GameMemberStatus.FREE);
+            .filter(member => member.givenPosition === GameMemberPosition.THIEF && member.status === GameMemberStatus.FREE);
+        
+        console.log("thiefMembers", thiefMembers.length);
+        console.log('thiefMembers', thiefMembers);
 
         const isGameEnd = thiefMembers.length === 0;
 
@@ -87,12 +91,12 @@ export class GameService {
     }
 
     // 게임 종료 처리
-    endGame = async (gameId, winnerPosition) => {
+    endGame = async (gameId, winnerTeam) => {
         try {
             // 게임 상태 변경 (END)
             await Game.update({
-                status: GameStatus.END,
-                winnerPosition: winnerPosition,
+                status: GameStatus.ENDED,
+                winTeam: winnerTeam,
                 endedAt: new Date().toISOString(),
             }, {
                 where: {

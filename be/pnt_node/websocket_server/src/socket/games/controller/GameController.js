@@ -13,6 +13,10 @@ import { TurfService } from "../application/TurfService.js";
 import { MQConfig } from "../../../global/mq/MQConfig.js";
 
 
+/**
+ * ToDo CCTV
+ */
+
 export class GameController {
     constructor(io, socket, mq) {
         this.io = io;
@@ -37,7 +41,7 @@ export class GameController {
 
     isActiveRoom = async (gameId) => {
         try {
-            await this.gameService.findGame(gameId, GameStatus.PLAYING);
+            await this.gameService.findGame(gameId, GameStatus.IN_GAME);
             return true;
         } catch (error) {
             return false;
@@ -53,9 +57,10 @@ export class GameController {
     joinRoom = async (payload) => {
         // 채팅방 접속 db 처리 => is_connected = true로 처리
         try {
-            const gameId = `game-${payload.gameId}`;
+            console.log("joinRoom", payload);
+            const gameId = payload.gameId;
 
-            await this.gameService.findGame(payload.gameId, GameStatus.RUNNING);
+            await this.gameService.findGame(payload.gameId, GameStatus.IN_GAME);
             await this.gameMemberService.findMemberGame(payload.gameId, this.socket.data.memberId);
 
             this.socket.join(gameId);
@@ -70,7 +75,7 @@ export class GameController {
             // gameSetting에서 참여자 수 들고오기
             // isGaneConnected true로 변경 => 변경이 됐는지 안됐는지 판별하여 
             // 게임 시작 시간 db에 저장
-            await this.redisClient.setStarted(this.socket.data.gameId, this.socket.data.memberId);
+            await this.redisClient.setStarted(payload.gameId, this.socket.data.memberId);
             await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
             await this.startGame();
 
@@ -90,43 +95,7 @@ export class GameController {
      * 
      * 현재 시간으로 부터 5초 뒤에 시작.
      */
-    startGame = async () => {
-        try {
-            const gameId = this.socket.data.gameId;
 
-            const integerGameId = parseInt(gameId.split("-")[1]);
-
-            const gameSetting = await this.gameSettingService.findGameSetting(integerGameId);
-            const startedCount = await this.redisClient.getStartedCount(gameId);
-
-            if (startedCount < gameSetting.policeCount + gameSetting.thiefCount) {
-                return;
-            }
-
-            const isMine = await this.redisClient.setGameSettingLock(gameId, gameSetting.timeLimit);
-
-            if (!isMine) {
-                return;
-            }
-
-            await this.redisClient.setGameSetting(gameId, gameSetting);
-
-            this.io.to(gameId).emit("get start game", {
-                message: "start game",
-                gameId: integerGameId,
-                willStartAt: new Date(Date.now() + 5000).toISOString(),
-            });
-
-            setTimeout(async () => {
-                await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);
-
-                await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString() });
-            }, 5000);
-        } catch (error) {
-            console.error("startGame error", error);
-            sendError(this.socket, error, "GameError");
-        }
-    }
 
 
     /**
@@ -157,33 +126,43 @@ export class GameController {
         try {
             const gameId = this.socket.data.gameId;
 
-            const integerGameId = parseInt(gameId.split("-")[1]);
+            const integerGameId = parseInt(gameId);
 
             const gameSetting = await this.gameSettingService.findGameSetting(integerGameId);
-            const startedCount = await this.redisClient.getStartedCount(gameId);
+            const startedCount = await this.redisClient.getStartedCount(integerGameId);
+            console.log("startedCount", startedCount);
 
             if (startedCount < gameSetting.policeCount + gameSetting.thiefCount) {
                 return;
             }
 
-            const isMine = await this.redisClient.setGameSettingLock(gameId, gameSetting.timeLimit);
+            const isMine = await this.redisClient.setGameSettingLock(integerGameId, gameSetting.timeLimit * 60);
 
             if (!isMine) {
                 return;
             }
 
-            await this.redisClient.setGameSetting(gameId, gameSetting);
+            await this.redisClient.setGameSetting(integerGameId, gameSetting);
 
-            this.io.to(gameId).emit("get start game", {
+            this.io.to(gameId).emit("get will start game", {
                 message: "start game",
                 gameId: integerGameId,
                 willStartAt: new Date(Date.now() + 5000).toISOString(),
             });
 
             setTimeout(async () => {
-                await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);
+                await this.redisClient.setGameTimer(integerGameId, gameSetting.timeLimit * 60);
+
+                // cctv 작동
+                await this.redisClient.setCctvTimer(integerGameId, gameSetting.cctvInterval);
 
                 await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString() });
+
+                this.io.to(gameId).emit("get start game", {
+                    message: "start game",
+                    gameId: integerGameId,
+                    startTime: new Date().toISOString(),
+                });
             }, 5000);
         } catch (error) {
             console.error("startGame error", error);
@@ -210,65 +189,62 @@ export class GameController {
     postGps = async (payload) => {
         try {
             if (!payload || !payload.lat || !payload.lng) {
-                throw { code: 400, message: "Invalid payload: lat and lng are required" };
+                sendError(this.socket, { code: 400, message: "Invalid payload: lat and lng are required" }, "GameError");
+                return;
+            }
+
+            const gameId = this.socket.data.gameId;
+            const gameTimer = await this.redisClient.getGameTimer(gameId);
+            if (!gameTimer) {
+                sendError(this.socket, { code: 400, message: "Game is not started or is finished" }, "GameError");
+                return;
             }
 
             const { lat, lng, walk, longestSurvived } = payload;
-            const gameId = this.socket.data.gameId;
-            const integerGameId = parseInt(gameId.split("-")[1]);
+
 
             const memberId = this.socket.data.memberId; // 미들웨어에서 가져온 ID
-            const gameMember = await this.gameMemberService.findMemberGame(integerGameId, memberId);
+            const gameMember = await this.gameMemberService.findMemberGame(gameId, memberId);
             const position = gameMember.givenPosition;
             const status = gameMember.status;
+            const penalty = await this.redisClient.getPenalty(memberId, gameId) || 0;
 
 
-            const locationData = JSON.stringify({
+            const locationData = {
                 lat,
                 lng,
                 memberId, // 클라이언트 편의를 위해 포함
-                gameId: integerGameId,
+                gameId,
                 walk,
                 longestSurvived,
                 position,
                 status,
+                penalty,
                 timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
-            });
+            };
+
+            if (position === GameMemberPosition.THIEF && status === GameMemberStatus.FREE) {
+                locationData.longestSurvived++;
+            }
+
+            console.log("postGps", locationData);
 
             // Hash에 저장 (이미 있으면 덮어쓰기됨 -> 자동 최신화)
-            await this.redisClient.setLocation(memberId, integerGameId, locationData);
+            await this.redisClient.setLocation(memberId, gameId, locationData);
 
             // 경계선 확인 => turf.js 사용
             const gameSetting = await this.redisClient.getGameSetting(gameId);
             const isInBoundary = await this.turfService.checkUserInBoundary([lng, lat], gameSetting.boundaryGeo.coordinates[0]);
 
-
-            if (!isInBoundary) {
-                const res = {
-                    gameId: integerGameId,
-                    message: "out of boundary",
-                    type: "outOfBoundary",
-                    createdAt: new Date().toISOString(),
-                };
-
-                this.socket.emit("out of boundary", res);
-
-                // 도둑일 때 경계선을 벗어났으면 패널티 부여 -> redis에서 관리.
-                // 만약 3번 이상 벗어나면 자동으로 감옥으로 이송. -> 다음 패널티 체크 활성화까지 10초
-                await this.redisClient.increasePenalty(memberId, gameId);
-
-                return;
-            }
-
             // 도둑이고, 상태가 PRISON 일때 탈옥 판별
             // 감옥에서 10m 이상 벗어났을때 탈옥 (오차범위 5m) 
             if (position === GameMemberPosition.THIEF && status === GameMemberStatus.PRISON
-                && !(await this.turfService.checkUserInPrison([lng, lat], gameSetting.prisonLocation.coordinates))) {
+                && !(await this.turfService.checkUserInPrison([lng, lat], [gameSetting.prisonLng, gameSetting.prisonLat]))) {
 
-                await this.gameMemberService.updateMemberStatus(integerGameId, memberId, GameMemberStatus.FREE);
+                await this.gameMemberService.updateMemberStatus(gameId, memberId, GameMemberStatus.FREE);
 
                 const res = {
-                    gameId: integerGameId,
+                    gameId: gameId,
                     thiefId: memberId,
                     escapePointId: 3,
                     escapedAt: new Date().toISOString(),
@@ -278,13 +254,52 @@ export class GameController {
                 return;
             }
 
+
+            if (!isInBoundary && gameMember.givenPosition === GameMemberPosition.THIEF) {
+                const res = {
+                    gameId: gameId,
+                    memberId: memberId,
+                    message: "out of boundary",
+                    type: "outOfBoundary",
+                    createdAt: new Date().toISOString(),
+                };
+
+                // 도둑일 때 경계선을 벗어났으면 패널티 부여 -> redis에서 관리.
+                // 만약 3번 이상 벗어나면 자동으로 감옥으로 이송. -> 다음 패널티 체크 활성화까지 10초
+                const count = await this.redisClient.increasePenalty(memberId, gameId);
+
+                locationData.penalty = count === 3 ? 0 : count;
+                await this.redisClient.setLocation(memberId, gameId, locationData);
+
+                if (count >= 3) {
+                    await this.gameMemberService.updateMemberStatus(gameId, memberId, GameMemberStatus.TRANSFER);
+                    await this.redisClient.deletePenalty(memberId, gameId);
+
+                    const isGameEnd = await this.gameService.checkGameHaveToFinish(gameId);
+
+                    if (isGameEnd) {
+                        await this.gameEnd(this.io, this.redisClient, gameId, GameMemberPosition.POLICE);
+                        return;
+                    }
+
+                    this.io.to(gameId).emit("get arrest", {
+                        gameId: gameId,
+                        thiefId: memberId,
+                        escapePointId: 3,
+                        arrestedAt: new Date().toISOString(),
+                    });
+                    return;
+                }
+                this.socket.emit("out of boundary", res);
+            }
+
             // 이송 중이고, 감옥 범위 안에 들어왔을때
             if (position === GameMemberPosition.THIEF && status === GameMemberStatus.TRANSFER
-                && await this.turfService.checkUserInPrison([lng, lat], gameSetting.prisonLocation.coordinates)) {
+                && await this.turfService.checkUserInPrison([lng, lat], [gameSetting.prisonLng, gameSetting.prisonLat])) {
 
-                await this.gameMemberService.updateMemberStatus(integerGameId, memberId, GameMemberStatus.PRISON);
+                await this.gameMemberService.updateMemberStatus(gameId, memberId, GameMemberStatus.PRISON);
                 const res = {
-                    gameId: integerGameId,
+                    gameId: gameId,
                     thiefId: memberId,
                     status: GameMemberStatus.PRISON,
                     arrestedAt: new Date().toISOString(),
@@ -294,20 +309,22 @@ export class GameController {
                 return;
             }
 
-            // 이송 중이고, 감옥 범위 안에 들어왔을때
-            if (position === GameMemberPosition.THIEF && status === GameMemberStatus.TRANSFER
-                && await this.turfService.checkUserInPrison([lng, lat], gameSetting.prisonLocation.coordinates)) {
+            // 비프음
+            const locationDatas = await this.redisClient.getAllLocations(gameId);
+            const polices = locationDatas
+                .find((data) => data.position === GameMemberPosition.POLICE)
+                .map((data) => { return { policeId: data.memberId, lng: data.lng, lat: data.lat } });
 
-                await this.gameMemberService.updateMemberStatus(integerGameId, memberId, GameMemberStatus.PRISON);
-                const res = {
-                    gameId: integerGameId,
-                    thiefId: memberId,
-                    status: GameMemberStatus.PRISON,
-                    arrestedAt: new Date().toISOString(),
-                };
-                this.io.to(gameId).emit("modify member status", res);
-                console.log("modify from transfer to prison member status", res);
-                return;
+            if (polices) {
+                const nearPolice = this.turfService.checkNearPolice([lng, lat], polices);
+                if (nearPolice) {
+                    this.socket.emit("get beep use", {
+                        gameId: gameId,
+                        policeId: nearPolice.policeId,
+                        thiefId: memberId,
+                        distance: nearPolice.distance,
+                    });
+                }
             }
 
         } catch (error) {
@@ -336,12 +353,12 @@ export class GameController {
      * 
      * res : {
      *  gameId: 10,
-     *  status: "GAME_RUNNING" || "GAME_FINISHED",
+     *  status: "IN_GAME" || "ENDED",
      *  members: [
      *    {
      *      memberId: 1,
      *      position: "POLICE",
-     *      status: "STATUS_FREE" || "STATUS_PRISON" || "STATUS_TRANSFER",
+     *      status: "FREE" || "PRISON" || "TRANSFER",
      *    },
      *  ],
      *  missions: [
@@ -397,12 +414,11 @@ export class GameController {
             console.log("postArrest", payload);
             const { gameId, policeId, thiefId, lat, lng } = payload;
 
-            const strGameId = `game-${gameId}`;
 
             const thief = await this.gameMemberService.findMemberGame(gameId, thiefId);
 
             // 도둑이 아닐때 체포 실패
-            if (thief.position !== GameMemberPosition.THIEF) {
+            if (thief.givenPosition !== GameMemberPosition.THIEF) {
                 const res = {
                     gameId: gameId,
                     policeId: policeId,
@@ -417,7 +433,7 @@ export class GameController {
             }
 
             // 이미 체포가 됐을때 다시 체포하면 실패
-            if (thief.status !== GameMemberStatus.FREE) {
+            if (thief.status && thief.status !== GameMemberStatus.FREE) {
                 const res = {
                     gameId: gameId,
                     policeId: policeId,
@@ -433,11 +449,11 @@ export class GameController {
 
             const police = await this.gameMemberService.findMemberGame(gameId, policeId);
 
-            if (police.position !== GameMemberPosition.POLICE) {
+            if (police.givenPosition !== GameMemberPosition.POLICE) {
                 const res = {
                     gameId: gameId,
                     policeId: policeId,
-                    thiefId: integerThiefId,
+                    thiefId: thiefId,
                     result: "FAIL",
                     reason: "ASSERTER_NOT_POLICE",
                     arrestedAt: new Date().toISOString(),
@@ -454,7 +470,7 @@ export class GameController {
             const res = {
                 gameId: gameId,
                 policeId: policeId,
-                thiefId: integerThiefId,
+                thiefId: thiefId,
                 result: "SUCCESS",
                 reason: null,
                 arrestedAt: new Date().toISOString(),
@@ -464,7 +480,7 @@ export class GameController {
             const isGameEnd = await this.gameService.checkGameHaveToFinish(gameId);
 
             if (isGameEnd) {
-                await this.gameEnd(gameId, GameMemberPosition.THIEF);
+                await this.gameEnd(this.io, this.redisClient, gameId, GameMemberPosition.POLICE);
 
                 console.log("game end", gameId);
                 return;
@@ -593,18 +609,20 @@ export class GameController {
             // 패널티와 위치 정보는 5초 후 삭제
             setTimeout(async () => {
                 await redisClient.deleteAllInGameCachesByGameId(gameId);
+                await redisClient.deleteStartedCount(gameId);
             }, 5000);
 
             // 게임 종료 처리 => spring boot에 요청을 보내야함.
 
 
             // 게임 종료 알림
+            // 게임 종료 알림
             io.to(gameId).emit("get end game", {
                 gameId: gameId,
                 winnerPosition: winnerPosition,
                 message: winnerPosition === GameMemberPosition.THIEF
-                    ? "모든 도둑이 잡혔습니다. 게임이 종료되었습니다."
-                    : "시간이 모두 소진되었습니다. 게임이 종료되었습니다."
+                    ? "시간이 모두 소진되었습니다. 게임이 종료되었습니다."
+                    : "모든 도둑이 잡혔습니다. 게임이 종료되었습니다."
             });
         } catch (error) {
             console.error("gameEnd error", error);
@@ -641,11 +659,25 @@ export class GameController {
             }
 
             // 사용자의 게임 캐시 삭제
-            const stringGameId = `game-${gameId}`;
-            await this.redisClient.deleteGameCachesByMemberId(memberId, stringGameId);
+            await this.redisClient.deleteGameCachesByMemberId(memberId, gameId);
 
         } catch (error) {
             console.error("postGameEndAfter error", error);
+            sendError(this.socket, error, "GameError");
+        }
+    }
+
+    gameReset = async () => {
+        try {
+            console.log("gameReset");
+            const gameId = this.socket.data.gameId;
+            await this.redisClient.deleteAllGameCachesByGameId(gameId);
+            this.io.to(gameId).emit("get reset game", {
+                gameId: gameId,
+                message: "게임관련 캐시가 모두 삭제되었습니다."
+            });
+        } catch (error) {
+            console.error("gameReset error", error);
             sendError(this.socket, error, "GameError");
         }
     }
@@ -657,9 +689,7 @@ export class GameController {
 
             this.socket.data.isIntentionalExit = true;
 
-            const integerGameId = parseInt(this.socket.data.gameId.split("-")[1]);
-
-            await this.gameMemberService.updateInGameConnected(integerGameId, this.socket.data.memberId, false);
+            await this.gameMemberService.updateInGameConnected(this.socket.data.gameId, this.socket.data.memberId, false);
 
             console.log("disconnect", this.socket.data);
             this.socket.disconnect();
