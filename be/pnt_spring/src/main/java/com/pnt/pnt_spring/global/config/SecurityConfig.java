@@ -1,16 +1,13 @@
 package com.pnt.pnt_spring.global.config;
 
 import com.pnt.pnt_spring.domain.auth.exception.JwtAuthenticationEntryPoint;
-import com.pnt.pnt_spring.domain.auth.exception.JwtAuthenticationEntryPoint;
 import com.pnt.pnt_spring.domain.auth.filter.JwtAuthenticationFilter;
-import com.pnt.pnt_spring.domain.auth.filter.JwtExceptionFilter;
 import com.pnt.pnt_spring.domain.auth.filter.JwtExceptionFilter;
 import com.pnt.pnt_spring.domain.auth.jwt.JwtTokenProvider;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -66,7 +63,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/api/test",
-                                "/auth/**").permitAll()
+                                "/auth/**",
+                                "/games/news/result").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate), UsernamePasswordAuthenticationFilter.class)

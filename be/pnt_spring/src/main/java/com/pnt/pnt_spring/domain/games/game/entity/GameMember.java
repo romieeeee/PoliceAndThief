@@ -48,7 +48,6 @@ public class GameMember extends BaseEntity {
     private Boolean ready;
 
     @Column(length = 10)
-    @Enumerated(value = EnumType.STRING)
     private GameMemberStatus status;
 
     private Boolean inGameConnected;

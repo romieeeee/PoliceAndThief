@@ -8,7 +8,7 @@ import com.pnt.pnt_spring.domain.chats.repository.ChatRoomBanRepository;
 import com.pnt.pnt_spring.domain.chats.repository.ChatRoomRepository;
 import com.pnt.pnt_spring.domain.chats.repository.MemberChatRoomRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
-import com.pnt.pnt_spring.domain.members.member.repository.MemberRepository;
+import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 import lombok.RequiredArgsConstructor;

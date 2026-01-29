@@ -6,6 +6,7 @@ import com.pnt.pnt_spring.domain.auth.api.resp.SignupResponse;
 import com.pnt.pnt_spring.domain.auth.application.AuthService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,7 +25,7 @@ public class AuthController {
 
     // 회원가입
     @PostMapping("/signup")
-    public CommonResponse<SignupResponse> signup(@RequestBody SignupRequest request) {
+    public CommonResponse<SignupResponse> signup(@Valid @RequestBody SignupRequest request) {
         SignupResponse signupResponse = authService.signup(request);
         return new CommonResponse<>(signupResponse, "회원가입에 성공했습니다.", HttpStatus.OK);
     }

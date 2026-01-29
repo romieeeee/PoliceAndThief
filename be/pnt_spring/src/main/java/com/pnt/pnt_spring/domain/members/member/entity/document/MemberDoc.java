@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 public class MemberDoc {
     @Id
     private String id;
-    @Indexed(unique = true)
+    @Indexed(unique = true, name = "memberId_1")
     @Field(name = "memberId")
     private Long memberId;
     @Size(max = 20)
