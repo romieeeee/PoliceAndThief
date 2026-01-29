@@ -12,8 +12,6 @@ interface NaverApiService {
         @Header("x-ncp-apigw-api-key") clientSecret: String,
         @Query("coords") coords: String, // "경도,위도" (문자열)
         @Query("output") output: String = "json",
-        // ⭐️ 중요: admcode(행정동), legalcode(법정동) 등을 요청.
-        // roadaddr(도로명)을 빼면 지번 주소 위주로 줍니다.
-        @Query("orders") orders: String = "legalcode,admcode"
+        @Query("orders") orders: String = "legalcode"
     ): NaverReverseGeocodeResponse
 }

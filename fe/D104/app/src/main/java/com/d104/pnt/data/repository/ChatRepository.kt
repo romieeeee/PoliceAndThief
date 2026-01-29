@@ -1,12 +1,15 @@
 package com.d104.pnt.data.repository
 
+import com.d104.pnt.data.remote.model.request.ChatCreateRequest
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
 import com.d104.pnt.data.remote.model.response.ChatRoomResponse
 import com.d104.pnt.data.remote.model.response.JoinChatRoomResponse
+import com.d104.pnt.data.remote.model.response.ChatSearchResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.StateFlow
 
 interface ChatRepository {
+    // 나중에 이거 지우고 구현부에서 private로 만들기 기왕이면 데이터 클래스 하나로 관리가능 하면 더 좋고
     var currentChatRoom: Long?
     var currentChatRoomTitle: String?
     var currentChatRoomDescription: String?
@@ -16,7 +19,7 @@ interface ChatRepository {
 
     suspend fun createChatRoom(
         title: String,
-        regionCode: Long,
+        regionCode: Int,
         description: String,
         maxMembers: Int
     ): BaseResult<ChatCreateResponse>
@@ -28,6 +31,12 @@ interface ChatRepository {
     suspend fun joinChatRoom(chatRoomId: Long): BaseResult<JoinChatRoomResponse>
 
     suspend fun connectChatRoom(chatRoomId: Long): BaseResult<Unit>
+    suspend fun searchChatRoom(
+        title: String?,
+        regionCode: Int?
+    ): BaseResult<ChatSearchResponse>
+
+    suspend fun getJoinedChatRoom(): BaseResult<ChatSearchResponse>
 
     suspend fun leaveChatRoom()
 }

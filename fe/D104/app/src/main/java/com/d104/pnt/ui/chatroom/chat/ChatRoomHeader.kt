@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.d104.pnt.domain.model.ChatRoomData
 import com.d104.pnt.domain.model.ChatsData
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
@@ -85,22 +86,5 @@ fun ChatRoomHeader(
                 }
             }
         }
-    }
-}
-
-@Preview
-@Composable
-fun PreviewChatRoomHeader() {
-    ChatRoomHeader(
-        modifier = Modifier,
-        roomData = ChatsData(
-            1,
-            "진평동 빡겜 추격전 진평동 빡겜 추격전 진평동 빡겜 추격전 진평동 빡겜 추격전",
-            "날이 많이 추우니 장갑 꼭 챙겨오세요",
-            30,
-            25
-        ),
-    ) {
-
     }
 }

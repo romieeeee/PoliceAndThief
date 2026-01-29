@@ -1,10 +1,11 @@
 package com.d104.pnt.data.repository
 
 import com.d104.pnt.data.remote.api.ChatApiService
-import com.d104.pnt.data.remote.model.response.ChatCreateRequest
+import com.d104.pnt.data.remote.model.request.ChatCreateRequest
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
 import com.d104.pnt.data.remote.model.response.ChatRoomResponse
 import com.d104.pnt.data.remote.model.response.JoinChatRoomResponse
+import com.d104.pnt.data.remote.model.response.ChatSearchResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,7 +48,7 @@ class ChatRepositoryImpl @Inject constructor(
      */
     override suspend fun createChatRoom(
         title: String,
-        regionCode: Long,
+        regionCode: Int,
         description: String,
         maxMembers: Int
     ): BaseResult<ChatCreateResponse> {
@@ -81,6 +82,21 @@ class ChatRepositoryImpl @Inject constructor(
             }
         ) {
             chatApiService.joinChatRoom(chatRoomId)
+        }
+    }
+
+    override suspend fun searchChatRoom(
+        title: String?,
+        regionCode: Int?
+    ): BaseResult<ChatSearchResponse> {
+        return safeApiCall {
+            chatApiService.getFilteredChatRoom(title, regionCode)
+        }
+    }
+
+    override suspend fun getJoinedChatRoom(): BaseResult<ChatSearchResponse> {
+        return safeApiCall {
+            chatApiService.getJoinedChatRoom()
         }
     }
 

@@ -1,15 +1,17 @@
 package com.d104.pnt.data.remote.api
 
 import com.d104.pnt.data.remote.model.response.BaseResponse
-import com.d104.pnt.data.remote.model.response.ChatCreateRequest
+import com.d104.pnt.data.remote.model.request.ChatCreateRequest
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
 import com.d104.pnt.data.remote.model.response.ChatRoomResponse
 import com.d104.pnt.data.remote.model.response.JoinChatRoomResponse
+import com.d104.pnt.data.remote.model.response.ChatSearchResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ChatApiService {
     /**
@@ -44,4 +46,13 @@ interface ChatApiService {
     suspend fun connectChatRoom(
         @Path("id") chatRoomId: Long
     ): Response<BaseResponse<Unit>>
+
+    @GET("chats")
+    suspend fun getFilteredChatRoom(
+        @Query("title") title: String?,
+        @Query("regionCode") regionCode: Int?,
+    ): Response<BaseResponse<ChatSearchResponse>>
+
+    @GET("chats/me/rooms")
+    suspend fun getJoinedChatRoom(): Response<BaseResponse<ChatSearchResponse>>
 }

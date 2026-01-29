@@ -178,7 +178,7 @@ fun MainScreen(
                     onRoleSelected = { role: GameRole ->
                         navController.navigate(Routes.buildGameIntro(role.name))
                     },
-                    onBackPressed = { navController.popBackStack() }
+                    onBackPressed = { navController.popBackStack() },
                 )
             }
 

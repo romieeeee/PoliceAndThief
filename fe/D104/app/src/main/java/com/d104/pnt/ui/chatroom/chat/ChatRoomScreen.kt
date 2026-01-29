@@ -42,7 +42,7 @@ fun ChatRoomScreen(
                 ChatRoomHeader(
                     modifier = Modifier.fillMaxWidth(),
                     roomData = ChatsData(
-                        id = info.chatRoomId.toInt(),
+                        id = info.chatRoomId,
                         title = info.title,
                         description = info.description,
                         maxMember = info.maxMembers,

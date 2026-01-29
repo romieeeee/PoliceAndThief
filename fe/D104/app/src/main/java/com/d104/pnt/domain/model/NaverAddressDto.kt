@@ -13,7 +13,8 @@ data class Status(
 
 data class NaverResult(
     val name: String, // region type (legalcode, admcode 등)
-    val region: Region
+    val region: Region,
+    val code: Code
 )
 
 data class Region(
@@ -36,4 +37,10 @@ data class Center(
     val crs: String,
     val x: Float,
     val y: Float
+)
+
+data class Code(
+    val id: String,
+    val type: String,
+    val mappingId: String
 )

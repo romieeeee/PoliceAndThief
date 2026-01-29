@@ -26,7 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
@@ -37,10 +39,13 @@ import com.d104.pnt.ui.theme.*
 
 @Composable
 fun PixelDropdown(
+    modifier: Modifier = Modifier,
+    highlighted: Boolean = false,
     items: List<String>,
     selectedItem: String,
     onItemSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
+    label: String, // 1. 라벨을 외부에서 받도록 수정
+    enabled: Boolean = true, // 2. 활성화 여부 추가 (기본값 true) ,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val density = LocalDensity.current
@@ -54,29 +59,31 @@ fun PixelDropdown(
             buttonWidth = coordinates.size.width
             buttonHeight = coordinates.size.height
         }
+        .alpha(if (enabled) 1f else 0.3f)
     ) {
         // 1. 드롭다운 박스
         PixelContainer(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Max)
-                .clickable { isExpanded = !isExpanded },
-            backgroundColor = TextPrimary,
+                .clickable(enabled = enabled) { isExpanded = !isExpanded },
+            backgroundColor = if (highlighted) ButtonPrimary else TextPrimary,
             borderColor = BorderDefault,
             cornerSize = 10f,   // 작은 모서리
-            innerVerticalPadding = 15,
+            innerVerticalPadding = 10,
+            innerHorizontalPadding = 10
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                val displayText = if (selectedItem.isEmpty()) label else selectedItem
                 Text(
-                    text = "지역 - ${selectedItem}",
+                    text = displayText,
                     style = MaterialTheme.typography.labelLarge,
-                    color = BorderDefault
+                    color = if (highlighted) TextPrimary else BorderDefault
 
                 )
 
@@ -91,7 +98,7 @@ fun PixelDropdown(
         }
 
         // 2. 팝업 리스트 (열렸을 때만 보임)
-        if (isExpanded) {
+        if (isExpanded && enabled) {
             // Popup을 사용하여 다른 UI 위에 띄움
             Popup(
                 alignment = Alignment.TopStart,
@@ -104,9 +111,10 @@ fun PixelDropdown(
                     modifier = Modifier
                         .width(popupWidthDp) // 버튼 너비와 맞춤
                         .heightIn(max = 200.dp), // 드롭다운 리스트 높이
-                    backgroundColor = TextPrimary,
+                    backgroundColor = if (highlighted) ButtonPrimary else TextPrimary,
                     borderColor = BorderDefault,
-                    cornerSize = 10f
+                    cornerSize = 10f,
+                    innerHorizontalPadding = 4
                 ) {
                     LazyColumn(
                         modifier = Modifier
@@ -114,6 +122,7 @@ fun PixelDropdown(
                         itemsIndexed(items) { index, item ->
                             PixelDropdownItem(
                                 text = item,
+                                highlighted = highlighted,
                                 isSelected = item == selectedItem,
                                 onClick = {
                                     onItemSelected(item)
@@ -131,26 +140,5 @@ fun PixelDropdown(
                 }
             }
         }
-    }
-}
-
-// 프리뷰
-@Preview(showBackground = true, backgroundColor = 0xFF0D0F18, heightDp = 300)
-@Composable
-fun PerviewDropdown() {
-    val regions = listOf("서울", "인천", "대구", "부산", "대전", "광주", "울산", "세종",)
-    var selectedRegion by remember { mutableStateOf(regions[0]) }
-
-    Box(
-        modifier = Modifier
-            .padding(20.dp)
-            .width(200.dp) // 미리보기용 너비 제한
-    ) {
-        PixelDropdown(
-            items = regions,
-            selectedItem = selectedRegion,
-            onItemSelected = { selectedRegion = it },
-            modifier = Modifier.fillMaxWidth()
-        )
     }
 }

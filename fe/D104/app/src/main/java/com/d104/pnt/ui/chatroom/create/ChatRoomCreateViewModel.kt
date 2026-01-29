@@ -41,7 +41,8 @@ class ChatRoomCreateViewModel @Inject constructor(
     val currentAddress: StateFlow<GeoLocationInfo> = _currentAddress.asStateFlow()
 
     private val _createChatRoomStats = MutableStateFlow<UiState<ChatCreateResponse>>(UiState.Idle)
-    val createChatRoomStats: StateFlow<UiState<ChatCreateResponse>> = _createChatRoomStats.asStateFlow()
+    val createChatRoomStats: StateFlow<UiState<ChatCreateResponse>> =
+        _createChatRoomStats.asStateFlow()
 
     private val _joinRoomState = MutableStateFlow<JoinRoomState>(JoinRoomState.Idle)
     val joinRoomState: StateFlow<JoinRoomState> = _joinRoomState.asStateFlow()
@@ -82,6 +83,13 @@ class ChatRoomCreateViewModel @Inject constructor(
                 )
                 _currentAddress.value = address
             }
+            if (_currentAddress.value.major != "세종특별자치시") {
+                _currentAddress.value = GeoLocationInfo(
+                    major = _currentAddress.value.major,
+                    middle = _currentAddress.value.middle,
+                    code = _currentAddress.value.code / 10000 * 10000
+                )
+            }
         }
     }
 
@@ -105,7 +113,7 @@ class ChatRoomCreateViewModel @Inject constructor(
             // 채팅방 생성!!
             when (val result = chatRepository.createChatRoom(
                 title.value,
-                1110000L,
+                _currentAddress.value.code,
                 description.value,
                 maxMember.value
             )) {
@@ -117,6 +125,7 @@ class ChatRoomCreateViewModel @Inject constructor(
                     // ️참여 → 연결 → 소켓 입장
                     joinChatRoomSequence(chatRoomId)
                 }
+
                 is BaseResult.Error -> {
                     _createChatRoomStats.value = UiState.Error(result.error.message)
                     Timber.Forest.e("❌ 채팅방 생성 실패: ${result.error.message}")
@@ -124,6 +133,7 @@ class ChatRoomCreateViewModel @Inject constructor(
             }
         }
     }
+
     private fun joinChatRoomSequence(chatRoomId: Long) {
         viewModelScope.launch {
             _joinRoomState.value = JoinRoomState.Loading
@@ -143,12 +153,14 @@ class ChatRoomCreateViewModel @Inject constructor(
                             // 4️⃣ 소켓 입장
                             joinChatRoomViaSocket(chatRoomId)
                         }
+
                         is BaseResult.Error -> {
                             Timber.Forest.e("❌ HTTP 연결 실패: ${connectResult.error.message}")
                             _joinRoomState.value = JoinRoomState.Error(connectResult.error.message)
                         }
                     }
                 }
+
                 is BaseResult.Error -> {
                     Timber.Forest.e("❌ HTTP 참여 실패: ${joinResult.error.message}")
                     _joinRoomState.value = JoinRoomState.Error(joinResult.error.message)

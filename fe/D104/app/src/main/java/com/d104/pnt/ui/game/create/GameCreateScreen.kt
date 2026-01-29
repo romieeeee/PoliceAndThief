@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
+import com.d104.pnt.data.remote.model.request.Location
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.ui.component.GoogleMaps
@@ -101,18 +102,6 @@ fun GameCreateScreen(
                         )
 
                         Spacer(modifier = Modifier.height(20.dp))
-
-                        SectionTitle(text = "게임 이름 설정")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        PixelInputField(
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = "방 이름을 입력하세요",
-                            borderColor = DialogBorderColor,
-                            value = gameName,
-                            onValueChange = { viewModel.updateGameName(it) }
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
 
                         SectionTitle(text = "맵 설정 & 감옥 설정")
                         Spacer(modifier = Modifier.height(8.dp))
@@ -216,8 +205,8 @@ fun GameCreateScreen(
                         ) {
                             RoundedButton(
                                 text = "취소",
-                                onClick = { // 디버그 때문에 잠깐 주석 처리
-//                                    LocationRepository.DismissCreateGame()
+                                onClick = {
+                                    viewModel.dismissCreateGame()
                                     onCancel()
                                 },
                                 containerColor = Color.White,
@@ -226,7 +215,34 @@ fun GameCreateScreen(
 
                             RoundedButton(
                                 text = "확인",
-                                onClick = { onConfirm() },
+                                onClick = {
+                                    val polyPoint = polygonPoints.map {
+                                        Location(
+                                            lat = it.latitude,
+                                            lng = it.longitude
+                                        )
+                                    }
+                                    if (viewModel.isValid(
+                                        playerCount = totalPlayers,
+                                        timeLimit = gameTime,
+                                        policeCount = policeCount,
+                                        thiefCount = thiefCount,
+                                        polygon = polyPoint
+                                    )) {
+                                        viewModel.createGameRoom(
+                                            playerCount = totalPlayers,
+                                            timeLimit = gameTime,
+                                            policeCount = policeCount,
+                                            thiefCount = thiefCount,
+                                            prison = Location(
+                                                lat = prisonLocation!!.latitude,
+                                                lng = prisonLocation!!.longitude
+                                            ),
+                                            polygon = polyPoint
+                                        )
+                                        onConfirm()
+                                    }
+                                          },
                                 containerColor = Color.White,
                                 modifier = Modifier.weight(1f)
                             )
