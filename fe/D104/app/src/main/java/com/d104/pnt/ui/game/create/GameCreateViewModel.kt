@@ -8,7 +8,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d104.pnt.data.remote.model.request.Location
+import com.d104.pnt.data.remote.model.response.CreateGameRoomResponse
+import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.data.repository.LocationRepository
+import com.d104.pnt.domain.model.common.BaseResult
+import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.util.getSingleLocation
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,7 +26,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class GameCreateViewModel @Inject constructor(
-    private val locationRepository: LocationRepository
+    private val locationRepository: LocationRepository,
+    private val gameRoomRepository: GameRoomRepository,
 ) : ViewModel() {
     val userLocation = locationRepository.currentLocation
     val polygonPoints = locationRepository.polygonPoints
@@ -72,6 +78,10 @@ class GameCreateViewModel @Inject constructor(
         if (_thiefCount.value < _missionCount.value) _missionCount.value = _thiefCount.value
     }
 
+    fun dismissCreateGame() {
+        locationRepository.dismissCreateGame()
+    }
+
     // 화면 진입 시 호출할 함수
     fun setDefaultSettings(context: Context) {
         viewModelScope.launch {
@@ -93,5 +103,36 @@ class GameCreateViewModel @Inject constructor(
         }
     }
 
+    private val _gameRoomState = MutableStateFlow<UiState<CreateGameRoomResponse>>(UiState.Idle)
+    val gameRoomState: StateFlow<UiState<CreateGameRoomResponse>> = _gameRoomState.asStateFlow()
 
+    fun createGameRoom(
+        playerCount: Int,
+        timeLimit: Int,
+        policeCount: Int,
+        thiefCount: Int,
+        prison: Location,
+        polygon: List<Location>
+    ) {
+        viewModelScope.launch {
+            _gameRoomState.value = UiState.Loading
+            when (val result = gameRoomRepository.createGameRoom(
+                playerCount,
+                timeLimit,
+                policeCount,
+                thiefCount,
+                prison,
+                polygon
+            )) {
+                is BaseResult.Success -> {
+                    _gameRoomState.value = UiState.Success(result.data)
+                    Timber.d("GameRoomCreate: ${result.data}")
+                }
+                is BaseResult.Error -> {
+                    _gameRoomState.value = UiState.Error(result.error.message)
+                    Timber.d("GameRoomCreate Error: ${result.error.message}")
+                }
+            }
+        }
+    }
 }

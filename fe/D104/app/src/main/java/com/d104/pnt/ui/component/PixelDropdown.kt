@@ -38,12 +38,12 @@ import com.d104.pnt.ui.theme.*
 
 @Composable
 fun PixelDropdown(
+    modifier: Modifier = Modifier,
     items: List<String>,
     selectedItem: String,
     onItemSelected: (String) -> Unit,
     label: String, // 1. 라벨을 외부에서 받도록 수정
-    enabled: Boolean = true, // 2. 활성화 여부 추가 (기본값 true)
-    modifier: Modifier = Modifier,
+    enabled: Boolean = true, // 2. 활성화 여부 추가 (기본값 true) ,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
     val density = LocalDensity.current
@@ -63,12 +63,12 @@ fun PixelDropdown(
         PixelContainer(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(IntrinsicSize.Max)
                 .clickable(enabled = enabled) { isExpanded = !isExpanded },
             backgroundColor = TextPrimary,
             borderColor = BorderDefault,
             cornerSize = 10f,   // 작은 모서리
-            innerVerticalPadding = 15,
+            innerVerticalPadding = 10,
+            innerHorizontalPadding = 10
         ) {
             Row(
                 modifier = Modifier

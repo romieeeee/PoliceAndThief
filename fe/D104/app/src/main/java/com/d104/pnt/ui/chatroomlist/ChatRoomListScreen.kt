@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
@@ -139,7 +140,6 @@ fun ChatRoomListHeader(
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .padding(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // 왼쪽 버튼
         PixelButtonCode(
@@ -153,21 +153,28 @@ fun ChatRoomListHeader(
             textColor = TextPrimary
         )
 
+        Spacer(modifier = Modifier.width(12.dp))
+
         // 시/도 드롭다운
         PixelDropdown(
             items = majors,
             selectedItem = selectedMajor,
             onItemSelected = onMajorSelected,
-            modifier = Modifier.weight(1f),
-            label = "시/도"
+            modifier = Modifier
+                .weight(1f)
+                .height(40.dp),
+            label = "시|도"
         )
+        Spacer(modifier = Modifier.width(4.dp))
         // 시/군/구 드롭다운
         PixelDropdown(
             items = middles,
             selectedItem = selectedMiddle,
             onItemSelected = onMiddleSelected,
-            modifier = Modifier.weight(1f),
-            label = "시/군/구"
+            modifier = Modifier
+                .weight(1f)
+                .height(40.dp),
+            label = "시|군|구"
         )
     }
 }

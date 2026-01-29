@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
+import com.d104.pnt.data.remote.model.request.Location
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.ui.component.GoogleMaps
@@ -216,8 +217,8 @@ fun GameCreateScreen(
                         ) {
                             RoundedButton(
                                 text = "취소",
-                                onClick = { // 디버그 때문에 잠깐 주석 처리
-//                                    LocationRepository.DismissCreateGame()
+                                onClick = {
+                                    viewModel.dismissCreateGame()
                                     onCancel()
                                 },
                                 containerColor = Color.White,
@@ -226,7 +227,18 @@ fun GameCreateScreen(
 
                             RoundedButton(
                                 text = "확인",
-                                onClick = { onConfirm() },
+                                onClick = {
+                                    val polyPoint = polygonPoints.map { Location(lat = it.latitude, lng = it.longitude) }
+                                    viewModel.createGameRoom(
+                                        playerCount = totalPlayers,
+                                        timeLimit = gameTime,
+                                        policeCount = policeCount,
+                                        thiefCount = thiefCount,
+                                        prison = Location(lat = prisonLocation!!.latitude, lng = prisonLocation!!.longitude),
+                                        polygon = polyPoint
+                                    )
+                                    onConfirm()
+                                          },
                                 containerColor = Color.White,
                                 modifier = Modifier.weight(1f)
                             )
