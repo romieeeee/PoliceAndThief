@@ -21,4 +21,7 @@ interface ChatApiService {
         @Query("title") title: String?,
         @Query("regionCode") regionCode: Int?,
     ): Response<BaseResponse<ChatSearchResponse>>
+
+    @GET("chats/me/rooms")
+    suspend fun getJoinedChatRoom(): Response<BaseResponse<ChatSearchResponse>>
 }

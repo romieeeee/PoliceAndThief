@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.d104.pnt.ui.theme.*
@@ -16,6 +17,7 @@ import com.d104.pnt.ui.theme.*
 @Composable
 fun PixelDropdownItem(
     text: String,
+    highlighted: Boolean = false,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -23,13 +25,15 @@ fun PixelDropdownItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .background(if (isSelected) NeutralColor else TextPrimary) // 선택된 항목 회색 표시
+            .background(if (isSelected) NeutralColor
+            else { if (highlighted) ButtonHighlight else TextPrimary }) // 선택된 항목 회색 표시
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge,
-            color = if (isSelected) TextPrimary else BorderDefault,
+            color = if (isSelected) TextPrimary
+            else { if (highlighted) TextPrimary else BorderDefault },
             fontSize = 14.sp,
         )
     }
