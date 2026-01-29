@@ -13,7 +13,9 @@ public class GameResultResponse {
     private String winner; // "POLICE" | "THIEF"
     private OffsetDateTime endedAt;
     private TotalStats stats; // 총 게임 스탯(모든 유저들이 쌓은 스탯)
-    private MvpResponse mvp; // mvp 선정
+    private MvpResponse mvp;          // MVP (이긴 팀 1등)
+    private MvpResponse winningSecond; // 이긴 팀 2등
+    private MvpResponse losingFirst;   // 진 팀 1등
 
     @Getter
     @Builder
