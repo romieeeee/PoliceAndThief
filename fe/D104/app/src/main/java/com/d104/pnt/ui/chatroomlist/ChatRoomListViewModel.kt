@@ -3,13 +3,16 @@ package com.d104.pnt.ui.chatroomlist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.response.ChatSearchResponse
+import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.ChatRepository
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.data.source.local.RegionCodeManager
 import com.d104.pnt.domain.model.ChatRoomData
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
+import com.d104.pnt.util.SocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -20,7 +23,9 @@ import javax.inject.Inject
 class ChatRoomListViewModel @Inject constructor(
     private val regionManager: RegionCodeManager,
     private val locationRepository: LocationRepository,
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val authRepository: AuthRepository,
+    private val socketManager: SocketManager
 ): ViewModel() {
     // 1. 시/도 목록 (변하지 않음)
     val majorList = regionManager.majorRegions
@@ -134,6 +139,77 @@ class ChatRoomListViewModel @Inject constructor(
 
         }
     }
+
+    fun joinChatRoomFromList(
+        chatRoomId: Long,
+        onSuccess: () -> Unit
+    ) {
+        viewModelScope.launch {
+            Timber.d("📋 리스트에서 채팅방 입장 시도: $chatRoomId")
+
+            // 1️⃣ HTTP 참여
+            when (val joinResult = chatRepository.joinChatRoom(chatRoomId)) {
+                is BaseResult.Success -> {
+                    Timber.d("✅ HTTP 참여 성공")
+
+                    // 2️⃣ HTTP 연결
+                    when (val connectResult = chatRepository.connectChatRoom(chatRoomId)) {
+                        is BaseResult.Success -> {
+                            Timber.d("✅ HTTP 연결 성공")
+
+                            // 3️⃣ 소켓 입장
+                            joinChatRoomViaSocket(chatRoomId.toInt(), onSuccess)
+                        }
+                        is BaseResult.Error -> {
+                            Timber.e("❌ HTTP 연결 실패: ${connectResult.error.message}")
+                        }
+                    }
+                }
+                is BaseResult.Error -> {
+                    Timber.e("❌ HTTP 참여 실패: ${joinResult.error.message}")
+                }
+            }
+        }
+    }
+
+    private fun joinChatRoomViaSocket(
+        chatRoomId: Int,
+        onSuccess: () -> Unit
+    ) {
+        viewModelScope.launch {
+            // 소켓 연결 확인
+            if (!socketManager.isConnected()) {
+                authRepository.getAccessToken().collect { token ->
+                    if (token.isNotEmpty()) {
+                        socketManager.connect(token)
+                        kotlinx.coroutines.delay(1000)
+                        joinRoomInternal(chatRoomId, onSuccess)
+                    }
+                    return@collect
+                }
+            } else {
+                joinRoomInternal(chatRoomId, onSuccess)
+            }
+        }
+    }
+
+    private fun joinRoomInternal(
+        chatRoomId: Int,
+        onSuccess: () -> Unit
+    ) {
+        socketManager.joinRoom(chatRoomId.toLong()) { success, message ->
+            // 🔥 메인 스레드로 전환!
+            viewModelScope.launch(Dispatchers.Main) {
+                if (success) {
+                    Timber.d("✅ 소켓 입장 성공: $message")
+                    onSuccess()
+                } else {
+                    Timber.e("❌ 소켓 입장 실패: $message")
+                }
+            }
+        }
+    }
+
 
     enum class ViewMode(val value: String) {
         Me("Me"),

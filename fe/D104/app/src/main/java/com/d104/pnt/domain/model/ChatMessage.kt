@@ -1,11 +1,9 @@
 package com.d104.pnt.domain.model
 
-import java.time.Instant
-
-data class ChatMessage (
+data class ChatMessage(
     val id: Int,
-    val chatRoomId: Int,
-    val memberId: Int,
+    val chatRoomId: Long,
+    val memberId: Long,
     val senderNickname: String,
     val avataUrl: String,
     val content: String,

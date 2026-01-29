@@ -39,7 +39,6 @@ import timber.log.Timber
  * 전체 앱 네비게이션
  * 설정 복귀 시 자동 재확인 처리 개선
  */
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AppNavigation(
@@ -143,6 +142,14 @@ fun AppNavigation(
         }
     }
 
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            currentScreen = AppScreen.Main
+        } else {
+            currentScreen = AppScreen.Intro
+        }
+    }
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         when (currentScreen) {
@@ -151,14 +158,6 @@ fun AppNavigation(
                 IntroScreen(
                     onClick = {
                         currentScreen = AppScreen.Login
-//                        if (isLoggedIn) {
-//                            Timber.d("Navigation: Intro -> Main")
-//
-//                            currentScreen = AppScreen.Main
-//                        } else {
-//                            Timber.d("Navigation: Intro -> Login")
-//                            currentScreen = AppScreen.Login
-//                        }
                     }
                 )
             }
@@ -169,7 +168,7 @@ fun AppNavigation(
                     onLoginSuccess = { id ->
                         memberId = id
                         Timber.d("Login success: $id")
-                        currentScreen = AppScreen.Main
+//                        currentScreen = AppScreen.Main
 
                         // 이미 권한이 있는 상태로 로그인
                         if (PermissionHelper.areEssentialPermissionsGranted(context)) {
@@ -206,7 +205,7 @@ fun AppNavigation(
                     memberId = memberId,
                     navigateToIntro = {
                         Timber.d("Navigation: Main -> Intro (Logout)")
-                        currentScreen = AppScreen.Intro // ⭐ Intro로 변경
+//                        currentScreen = AppScreen.Intro // ⭐ Intro로 변경
                     }
                 )
             }

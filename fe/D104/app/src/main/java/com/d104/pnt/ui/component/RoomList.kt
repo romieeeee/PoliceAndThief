@@ -1,13 +1,13 @@
-package com.d104.pnt.ui.component
+package com.d104.pnt.ui.chatroomlist
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.domain.model.ChatRoomData
+import com.d104.pnt.ui.component.RoomListItem
 
 // 채팅방 리스트 컴포넌트
 @Composable
@@ -16,7 +16,7 @@ fun RoomList(
     onItemClick: (ChatRoomData) -> Unit = {}
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(16.dp), // 리스트 전체 외곽 여백
+        contentPadding = PaddingValues(12.dp), // 리스트 전체 외곽 여백
         verticalArrangement = Arrangement.spacedBy(12.dp) // 아이템 사이 간격
     ) {
         items(rooms) { room ->
