@@ -37,7 +37,6 @@ import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelDropdown
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.PixelInputField
-import com.d104.pnt.ui.component.RoomList
 import com.d104.pnt.ui.theme.BorderDefault
 import com.d104.pnt.ui.theme.ButtonHighlight
 import com.d104.pnt.ui.theme.ButtonPrimary
@@ -47,6 +46,7 @@ import com.d104.pnt.ui.theme.TextPrimary
 @Composable
 fun ChatRoomListScreen(
     navigateToChatCreate: () -> Unit,
+    navigateToChatRoom: (Long) -> Unit,
     viewModel: ChatRoomListViewModel = hiltViewModel()
 ) {
     val majors = viewModel.majorList
@@ -199,7 +199,14 @@ fun ChatRoomListScreen(
                         Box(modifier = Modifier.weight(1f)) {
                             RoomList(
                                 rooms = data.chats,
-                                onItemClick = {}
+                                onItemClick = { room ->
+                                    viewModel.joinChatRoomFromList(
+                                        chatRoomId = room.id,
+                                        onSuccess = {
+                                            navigateToChatRoom(room.id)
+                                        }
+                                    )
+                                }
                             )
                         }
                     }
