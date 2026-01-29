@@ -120,7 +120,15 @@ fun MainScreen(
             composable(Routes.CHAT_CREATE){
                 ChatRoomCreateScreen(
                     onCancel = { navController.popBackStack() },
-                    onConfirm = { "TODO: 채팅방 생성"},
+                    onConfirm = { chatRoomId ->  // 🔥 채팅방 ID 받기
+                        Timber.d("채팅방 생성 완료, ID: $chatRoomId")
+
+                        // 채팅방 화면으로 이동
+                        navController.navigate(Routes.buildChatRoom(chatRoomId)) {
+                            // 생성 화면은 스택에서 제거
+                            popUpTo(Routes.CHAT) { inclusive = false }
+                        }
+                    },
                 )
             }
 
