@@ -7,9 +7,9 @@ import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.ChatRepository
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.data.source.local.RegionCodeManager
-import com.d104.pnt.domain.model.ChatRoomData
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
+import com.d104.pnt.util.socket.ChatSocketManager
 import com.d104.pnt.util.SocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -25,8 +25,8 @@ class ChatRoomListViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
     private val chatRepository: ChatRepository,
     private val authRepository: AuthRepository,
-    private val socketManager: SocketManager
-): ViewModel() {
+    private val chatSocketManager: ChatSocketManager
+) : ViewModel() {
     // 1. 시/도 목록 (변하지 않음)
     val majorList = regionManager.majorRegions
 
@@ -52,6 +52,23 @@ class ChatRoomListViewModel @Inject constructor(
 
     private val _viewMode = MutableStateFlow(ViewMode.Me)
     val viewMode = _viewMode.asStateFlow()
+
+    init {
+        connectSocket()
+        getJoinedChatRoom()
+    }
+
+    private fun connectSocket() {
+        viewModelScope.launch {
+            authRepository.getAccessToken().collect { token ->
+                if (token.isNotEmpty() && !chatSocketManager.isConnected()) {
+                    Timber.d("채팅 소켓 연결 중...")
+                    chatSocketManager.connect(token)
+                }
+                return@collect
+            }
+        }
+    }
 
 
     fun updateSearchQuery(newQuery: String) {
@@ -87,6 +104,7 @@ class ChatRoomListViewModel @Inject constructor(
                     _listState.value = UiState.Success(result.data)
                     Timber.d("chatList: ${result.data}")
                 }
+
                 is BaseResult.Error -> {
                     _listState.value = UiState.Error(result.error.message)
                     Timber.d("error: ${result.error.message}")
@@ -94,6 +112,7 @@ class ChatRoomListViewModel @Inject constructor(
             }
         }
     }
+
     fun initRegion() {
         _selectedMajor.value = ""
         _selectedMiddle.value = ""
@@ -105,7 +124,6 @@ class ChatRoomListViewModel @Inject constructor(
         title: String?,
         regionCode: Int?
     ) {
-        if (_viewMode.value == ViewMode.Me) _viewMode.value = ViewMode.Title
         viewModelScope.launch {
             _listState.value = UiState.Loading
             when (val result = chatRepository.searchChatRoom(title, regionCode)) {
@@ -131,6 +149,7 @@ class ChatRoomListViewModel @Inject constructor(
                     _listState.value = UiState.Success(result.data)
                     Timber.d("chatList: ${result.data}")
                 }
+
                 is BaseResult.Error -> {
                     _listState.value = UiState.Error(result.error.message)
                     Timber.d("error: ${result.error.message}")
@@ -147,24 +166,26 @@ class ChatRoomListViewModel @Inject constructor(
         viewModelScope.launch {
             Timber.d("📋 리스트에서 채팅방 입장 시도: $chatRoomId")
 
-            // 1️⃣ HTTP 참여
+            // 1️. HTTP 참여
             when (val joinResult = chatRepository.joinChatRoom(chatRoomId)) {
                 is BaseResult.Success -> {
                     Timber.d("✅ HTTP 참여 성공")
 
-                    // 2️⃣ HTTP 연결
+                    // 2️. HTTP 연결
                     when (val connectResult = chatRepository.connectChatRoom(chatRoomId)) {
                         is BaseResult.Success -> {
                             Timber.d("✅ HTTP 연결 성공")
 
-                            // 3️⃣ 소켓 입장
-                            joinChatRoomViaSocket(chatRoomId.toInt(), onSuccess)
+                            // 3️. 소켓 입장
+                            joinChatRoomViaSocket(chatRoomId, onSuccess)
                         }
+
                         is BaseResult.Error -> {
                             Timber.e("❌ HTTP 연결 실패: ${connectResult.error.message}")
                         }
                     }
                 }
+
                 is BaseResult.Error -> {
                     Timber.e("❌ HTTP 참여 실패: ${joinResult.error.message}")
                 }
@@ -173,15 +194,15 @@ class ChatRoomListViewModel @Inject constructor(
     }
 
     private fun joinChatRoomViaSocket(
-        chatRoomId: Int,
+        chatRoomId: Long,
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
             // 소켓 연결 확인
-            if (!socketManager.isConnected()) {
+            if (!chatSocketManager.isConnected()) {
                 authRepository.getAccessToken().collect { token ->
                     if (token.isNotEmpty()) {
-                        socketManager.connect(token)
+                        chatSocketManager.connect(token)
                         kotlinx.coroutines.delay(1000)
                         joinRoomInternal(chatRoomId, onSuccess)
                     }
@@ -194,10 +215,10 @@ class ChatRoomListViewModel @Inject constructor(
     }
 
     private fun joinRoomInternal(
-        chatRoomId: Int,
+        chatRoomId: Long,
         onSuccess: () -> Unit
     ) {
-        socketManager.joinRoom(chatRoomId.toLong()) { success, message ->
+        chatSocketManager.joinRoom(chatRoomId) { success, message ->
             // 🔥 메인 스레드로 전환!
             viewModelScope.launch(Dispatchers.Main) {
                 if (success) {

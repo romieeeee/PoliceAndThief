@@ -9,7 +9,7 @@ import com.d104.pnt.data.repository.ChatRepository
 import com.d104.pnt.domain.model.ChatMessage
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.navigation.NavArgs
-import com.d104.pnt.util.SocketManager
+import com.d104.pnt.util.socket.ChatSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,19 +21,17 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ChatRoomViewModel @Inject constructor(
-    private val socketManager: SocketManager,
+    savedStateHandle: SavedStateHandle,
     private val authRepository: AuthRepository,
     private val chatRepository: ChatRepository,
-    savedStateHandle: SavedStateHandle
+    private val chatSocketManager: ChatSocketManager
 ) : ViewModel() {
 
     private val chatRoomId: Long = savedStateHandle.get<Long>(NavArgs.CHAT_ID) ?: 0
 
     // UI에 보여줄 채팅방 정보 상태
-    private val _roomInfo =
-        MutableStateFlow<ChatRoomResponse?>(null)
-    val roomInfo: StateFlow<ChatRoomResponse?> =
-        _roomInfo.asStateFlow()
+    private val _roomInfo = MutableStateFlow<ChatRoomResponse?>(null)
+    val roomInfo: StateFlow<ChatRoomResponse?> = _roomInfo.asStateFlow()
 
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message.asStateFlow()
@@ -50,8 +48,10 @@ class ChatRoomViewModel @Inject constructor(
     init {
         Timber.d("ChatRoomViewModel 초기화 - chatRoomId: $chatRoomId")
 
+        // 1. 채팅방 정보 로드
         fetchRoomInfo()
 
+        // 2. 내 멤버 ID 가져오기
         viewModelScope.launch {
             authRepository.getMemberId().collect { id ->
                 myMemberId.value = id
@@ -59,13 +59,13 @@ class ChatRoomViewModel @Inject constructor(
             }
         }
 
-        // 메시지 리스너 설정
-        setupMessageListeners()
-
-        // 초기 메시지 로드
-        loadInitialMessages()
+        // 3. 소켓 연결 및 채팅방 입장
+        connectToChatRoom()
     }
 
+    /**
+     * 채팅방 정보 API 호출
+     */
     private fun fetchRoomInfo() {
         viewModelScope.launch {
             val result = chatRepository.getChatRoomInfo(chatRoomId)
@@ -84,11 +84,41 @@ class ChatRoomViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 소켓 연결 및 채팅방 입장
+     */
+    private fun connectToChatRoom() {
+        viewModelScope.launch {
+            authRepository.getAccessToken().collect { token ->
+                if (token.isNotEmpty()) {
+                    // 1. 소켓 연결
+                    chatSocketManager.connect(token)
 
-    // 메시지 리스너 설정
-    private fun setupMessageListeners() {
+                    // 2. 콜백 설정
+                    setupChatCallbacks()
+
+                    // 3. 채팅방 입장
+                    chatSocketManager.joinRoom(chatRoomId) { success, message ->
+                        if (success) {
+                            Timber.d("✅ 채팅방 입장 성공: $message")
+                            // 입장 성공 시 초기 메시지 로드
+                            loadInitialMessages()
+                        } else {
+                            Timber.e("❌ 채팅방 입장 실패: $message")
+                        }
+                    }
+                }
+                return@collect
+            }
+        }
+    }
+
+    /**
+     * 채팅 소켓 콜백 설정
+     */
+    private fun setupChatCallbacks() {
         // 새 메시지 수신
-        socketManager.onNewMessage { data ->
+        chatSocketManager.setOnNewMessage { data ->
             val newMessage = parseMessage(data)
             if (newMessage != null) {
                 viewModelScope.launch {
@@ -99,7 +129,7 @@ class ChatRoomViewModel @Inject constructor(
         }
 
         // 이전 메시지 조회 결과
-        socketManager.onPreviousMessages { messages, count ->
+        chatSocketManager.setOnPreviousMessages { messages, count ->
             val parsedMessages = messages.mapNotNull { parseMessage(it) }
             viewModelScope.launch {
                 // 기존 메시지 앞에 추가 (시간순 정렬)
@@ -110,7 +140,7 @@ class ChatRoomViewModel @Inject constructor(
         }
 
         // 동기화 메시지 (재연결 시)
-        socketManager.onSyncMessages { messages, count ->
+        chatSocketManager.setOnSyncMessages { messages, count ->
             val parsedMessages = messages.mapNotNull { parseMessage(it) }
             viewModelScope.launch {
                 _chatMessages.value = _chatMessages.value + parsedMessages
@@ -119,7 +149,9 @@ class ChatRoomViewModel @Inject constructor(
         }
     }
 
-    // JSON → ChatMessage 변환
+    /**
+     * JSON → ChatMessage 변환
+     */
     private fun parseMessage(data: JSONObject): ChatMessage? {
         return try {
             ChatMessage(
@@ -136,32 +168,40 @@ class ChatRoomViewModel @Inject constructor(
         }
     }
 
-    // 초기 메시지 로드 (채팅방 진입 시)
+    /**
+     * 초기 메시지 로드 (채팅방 진입 시)
+     */
     private fun loadInitialMessages() {
         _isLoading.value = true
 
         Timber.d("📜 초기 메시지 로드 시작 - cursor: 0, limit: 50")
 
-        socketManager.loadPreviousMessages(cursor = 0, limit = 50)
+        chatSocketManager.loadPreviousMessages(cursor = 0, limit = 50)
     }
 
-
-    // 더 오래된 메시지 로드 (스크롤 시)
+    /**
+     * 더 오래된 메시지 로드 (스크롤 시)
+     */
     fun loadMoreMessages() {
         if (_isLoading.value) return
 
         val oldestMessageId = _chatMessages.value.firstOrNull()?.id ?: 0
         if (oldestMessageId > 0) {
             _isLoading.value = true
-            socketManager.loadPreviousMessages(cursor = oldestMessageId, limit = 50)
+            chatSocketManager.loadPreviousMessages(cursor = oldestMessageId, limit = 50)
         }
     }
 
+    /**
+     * 입력창 메시지 업데이트
+     */
     fun writeMessage(newMessage: String) {
         _message.value = newMessage
     }
 
-    // 메시지 전송
+    /**
+     * 메시지 전송
+     */
     fun sendMessage() {
         val messageText = _message.value.trim()
 
@@ -171,22 +211,24 @@ class ChatRoomViewModel @Inject constructor(
         }
 
         Timber.d("💬 메시지 전송: $messageText")
-        socketManager.sendChatMessage(messageText)
+        chatSocketManager.sendMessage(messageText)
 
         // 입력창 초기화
         _message.value = ""
+    }
 
-        // 🔥 테스트: 전송 후 2초 뒤 이전 메시지 조회
-        viewModelScope.launch {
-            kotlinx.coroutines.delay(2000)
-            Timber.d("🔄 테스트: 이전 메시지 다시 조회")
-            socketManager.loadPreviousMessages(cursor = 0, limit = 50)
-        }
+    /**
+     * 채팅방 나가기
+     */
+    fun leaveChatRoom() {
+        Timber.d("채팅방 나가기")
+        chatSocketManager.leaveRoom()
     }
 
     override fun onCleared() {
         super.onCleared()
-        socketManager.removeMessageListeners()
+        // 채팅방 나가기
+        chatSocketManager.leaveRoom()
         Timber.d("ChatRoomViewModel cleared")
     }
 }

@@ -79,19 +79,10 @@ fun ChatRoomFooter(
                         painter = painterResource(R.drawable.ic_send),
                         contentDescription = "전송",
                         modifier = Modifier.size(24.dp),
-                        // 비활성 상태일 때 투명도 조절
                         tint = if (isMessageEmpty) Color.Gray else Color.Unspecified
                     )
                 }
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun FooterPreview() {
-    ChatRoomFooter(
-        "", { }, {}
-    )
 }
