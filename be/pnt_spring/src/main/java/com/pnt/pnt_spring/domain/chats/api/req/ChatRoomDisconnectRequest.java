@@ -6,6 +6,6 @@ import lombok.Getter;
 @Getter
 public class ChatRoomDisconnectRequest {
 
-    @NotNull
-    private Long memberId;
+	@NotNull
+	private Long memberId;
 }

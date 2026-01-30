@@ -6,12 +6,12 @@ import lombok.Getter;
 @Getter
 public class ChatRoomUpdateRequest {
 
-    private String title;
+	private String title;
 
-    private Integer regionCode;
+	private Integer regionCode;
 
-    private String description;
+	private String description;
 
-    @Min(1)
-    private Integer maxMembers;
+	@Min(1)
+	private Integer maxMembers;
 }
