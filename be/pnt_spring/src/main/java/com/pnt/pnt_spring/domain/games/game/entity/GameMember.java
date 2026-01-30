@@ -1,6 +1,5 @@
 package com.pnt.pnt_spring.domain.games.game.entity;
 
-import com.pnt.pnt_spring.domain.games.game.enums.GameMemberStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
@@ -59,11 +58,6 @@ public class GameMember extends BaseEntity {
 	@Column(nullable = false)
 	private Boolean ready;
 
-	@Column(length = 10)
-	private GameMemberStatus status;
-
-	private Boolean inGameConnected;
-
     /* =========================
        생성/상태 변경 메서드
        ========================= */
@@ -83,8 +77,6 @@ public class GameMember extends BaseEntity {
 		gm.preferPosition = PreferPosition.ANY;
 		gm.givenPosition = null;
 
-		gm.status = null;
-		gm.inGameConnected = false; // 기본값(컬럼 null 싫으면 false 추천)
 		return gm;
 	}
 
@@ -95,8 +87,6 @@ public class GameMember extends BaseEntity {
 		this.ready = false;
 		this.givenPosition = null;
 
-		this.status = null;
-		this.inGameConnected = false;
 	}
 
 	/** 나가기: 소프트삭제 */
@@ -105,7 +95,6 @@ public class GameMember extends BaseEntity {
 
 		this.ready = false;
 		this.givenPosition = null;
-		this.inGameConnected = false;
 	}
 
 	/** 강퇴: 소프트삭제 */
@@ -114,7 +103,6 @@ public class GameMember extends BaseEntity {
 
 		this.ready = false;
 		this.givenPosition = null;
-		this.inGameConnected = false;
 	}
 
 	/** A안: ready 값을 명시적으로 세팅 */
