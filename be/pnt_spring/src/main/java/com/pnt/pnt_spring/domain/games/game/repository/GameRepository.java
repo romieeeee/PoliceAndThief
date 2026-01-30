@@ -9,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
-import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 
 import jakarta.persistence.LockModeType;
 
@@ -21,7 +20,6 @@ public interface GameRepository extends JpaRepository<Game, Long> {
 
 	// 활성 방만 기준으로 존재 여부
 	boolean existsByRoomCodeAndIsDeletedFalse(String roomCode);
-
 
 	// 시작/설정 변경 등 "게임 1개"를 강하게 잡고 처리할 때
 	@Lock(LockModeType.PESSIMISTIC_WRITE)

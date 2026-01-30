@@ -18,7 +18,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-
 @Tag(name = "Game NEWS", description = "결과 뉴스 관련 API")
 @RestController
 @RequestMapping("/games/news")

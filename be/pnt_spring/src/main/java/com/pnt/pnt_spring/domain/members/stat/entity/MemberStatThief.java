@@ -37,7 +37,7 @@ public class MemberStatThief extends BaseEntity {
 	@JoinColumn(name = "grade_thief_id")
 	private GradeThief gradeThief;
 
-<<<<<<< HEAD
+<<<<<<<HEAD
 	private Integer totalEscapeCount;
 	private Integer totalMissionCount;
 	private Integer longestSurvivalSec;
@@ -59,50 +59,50 @@ public class MemberStatThief extends BaseEntity {
 		int newEscapes = (escapeCount == null) ? 0 : escapeCount;
 		int totalGames = (totalThiefGames == null || totalThiefGames == 0) ? 1 : totalThiefGames; // 0으로 나누기 방지
 =======
-    private Integer totalMissionCount;
-    private Integer longestSurvivalSec;
-    private Integer averageSurvivalSec;
+		private Integer totalMissionCount;
+		private Integer longestSurvivalSec;
+		private Integer averageSurvivalSec;
 
-    public static MemberStatThief createInitial(Member member, GradeThief initialGrade) {
-        return MemberStatThief.builder()
-                .member(member)
-                .gradeThief(initialGrade)// 바늘도둑(ID:1) 객체를 주입받아야 함
-                .totalMissionCount(0)
-                .longestSurvivalSec(0)
-                .averageSurvivalSec(0)
-                .build();
-    }
+		public static MemberStatThief createInitial (Member member, GradeThief initialGrade){
+			return MemberStatThief.builder()
+				.member(member)
+				.gradeThief(initialGrade)// 바늘도둑(ID:1) 객체를 주입받아야 함
+				.totalMissionCount(0)
+				.longestSurvivalSec(0)
+				.averageSurvivalSec(0)
+				.build();
+		}
 
-    public void updateAfterGame(boolean isWin, Integer survivalSec, Integer totalThiefGames) {
-        int currentSurvival = (survivalSec == null) ? 0 : survivalSec;
-        int totalGames = (totalThiefGames == null || totalThiefGames == 0) ? 1 : totalThiefGames; // 0으로 나누기 방지
->>>>>>> backend
+		public void updateAfterGame ( boolean isWin, Integer survivalSec, Integer totalThiefGames){
+			int currentSurvival = (survivalSec == null) ? 0 : survivalSec;
+			int totalGames = (totalThiefGames == null || totalThiefGames == 0) ? 1 : totalThiefGames; // 0으로 나누기 방지
+>>>>>>>backend
 
-		// 1. 평균 생존 시간 계산 (MemberStat에서 가져온 totalThiefGames 사용)
-		// 공식: ((기존 평균 * (현재판수 - 1)) + 이번 생존 시간) / 현재판수
-		int previousAvg = (this.averageSurvivalSec == null) ? 0 : this.averageSurvivalSec;
+			// 1. 평균 생존 시간 계산 (MemberStat에서 가져온 totalThiefGames 사용)
+			// 공식: ((기존 평균 * (현재판수 - 1)) + 이번 생존 시간) / 현재판수
+			int previousAvg = (this.averageSurvivalSec == null) ? 0 : this.averageSurvivalSec;
 
-		// totalGames는 이미 1 증가된 상태로 넘어온다고 가정하므로 (totalGames - 1)이 이전 판수
-		long totalSurvivalTime = ((long)previousAvg * (totalGames - 1)) + currentSurvival;
+			// totalGames는 이미 1 증가된 상태로 넘어온다고 가정하므로 (totalGames - 1)이 이전 판수
+			long totalSurvivalTime = ((long)previousAvg * (totalGames - 1)) + currentSurvival;
 
-		this.averageSurvivalSec = (int)(totalSurvivalTime / totalGames);
+			this.averageSurvivalSec = (int)(totalSurvivalTime / totalGames);
 
-<<<<<<< HEAD
-		// 2. 탈출 횟수 누적
-		this.totalEscapeCount = (this.totalEscapeCount == null ? 0 : this.totalEscapeCount) + newEscapes;
+<<<<<<<HEAD
+			// 2. 탈출 횟수 누적
+			this.totalEscapeCount = (this.totalEscapeCount == null ? 0 : this.totalEscapeCount) + newEscapes;
 
-		// 3. 최대 생존 시간 갱신
+			// 3. 최대 생존 시간 갱신
+			if (this.longestSurvivalSec == null || currentSurvival > this.longestSurvivalSec) {
+				this.longestSurvivalSec = currentSurvival;
+			}
+		}
+=======
+		// 2. 최대 생존 시간 갱신
 		if (this.longestSurvivalSec == null || currentSurvival > this.longestSurvivalSec) {
 			this.longestSurvivalSec = currentSurvival;
 		}
 	}
-=======
-        // 2. 최대 생존 시간 갱신
-        if (this.longestSurvivalSec == null || currentSurvival > this.longestSurvivalSec) {
-            this.longestSurvivalSec = currentSurvival;
-        }
-    }
->>>>>>> backend
+>>>>>>>backend
 
 	public void changeGrade(GradeThief newGrade) {
 		this.gradeThief = newGrade;

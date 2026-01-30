@@ -24,7 +24,8 @@ public class MissionServiceImpl implements MissionService {
 	private final GameMissionRepository gameMissionRepository;
 	private final MissionRepository missionRepository;
 
-<<<<<<< HEAD
+<<<<<<<HEAD
+
 	@Override
 	@Transactional(readOnly = true)
 	public List<MissionResponse> getAllMissions() {
@@ -43,88 +44,87 @@ public class MissionServiceImpl implements MissionService {
 		// 미션 목록 조회
 		List<GameMission> gameMissions = gameMissionRepository.findByGameId(gameId);
 =======
-    // 모든 미션 항목 조회
-    @Override
-    @Transactional(readOnly = true)
-    public List<MissionResponse> getAllMissions() {
-        return missionRepository.findAll().stream()
-                .map(mission -> MissionResponse.builder()
-                        .missionId(mission.getId())
-                        .title(mission.getTitle())
-                        .description(mission.getDescription())
-                        .build())
-                .collect(Collectors.toList());
-    }
+		// 모든 미션 항목 조회
+		@Override
+		@Transactional(readOnly = true)
+		public List<MissionResponse> getAllMissions () {
+			return missionRepository.findAll().stream()
+				.map(mission -> MissionResponse.builder()
+					.missionId(mission.getId())
+					.title(mission.getTitle())
+					.description(mission.getDescription())
+					.build())
+				.collect(Collectors.toList());
+		}
 
-    // 미션 단건 조회
-    @Override
-    @Transactional(readOnly = true)
-    public MissionResponse getMission(Long missionId) {
-        Mission mission = missionRepository.findById(missionId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MISSION_NOT_FOUND));
+		// 미션 단건 조회
+		@Override
+		@Transactional(readOnly = true)
+		public MissionResponse getMission (Long missionId){
+			Mission mission = missionRepository.findById(missionId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.MISSION_NOT_FOUND));
 
-        return MissionResponse.builder()
-                .missionId(mission.getId())
-                .title(mission.getTitle())
-                .description(mission.getDescription())
-                .build();
-    }
+			return MissionResponse.builder()
+				.missionId(mission.getId())
+				.title(mission.getTitle())
+				.description(mission.getDescription())
+				.build();
+		}
 
+		// 인 게임 내 할당된 미션 조회
+		@Override
+		@Transactional(readOnly = true)
+		public List<MissionResponse> getGameAllMissions (Long gameId){
+			// 미션 목록 조회
+			List<GameMission> gameMissions = gameMissionRepository.findByGameId(gameId);
+>>>>>>>backend
 
-    // 인 게임 내 할당된 미션 조회
-    @Override
-    @Transactional(readOnly = true)
-    public List<MissionResponse> getGameAllMissions(Long gameId) {
-        // 미션 목록 조회
-        List<GameMission> gameMissions = gameMissionRepository.findByGameId(gameId);
->>>>>>> backend
+			return gameMissions.stream()
+				.map(gm -> MissionResponse.builder()
+					.missionId(gm.getMission().getId()) // 미션 원본 ID
+					.title(gm.getMission().getTitle())
+					.description(gm.getMission().getDescription())
+					.build())
+				.collect(Collectors.toList());
+		}
 
-		return gameMissions.stream()
-			.map(gm -> MissionResponse.builder()
-				.missionId(gm.getMission().getId()) // 미션 원본 ID
-				.title(gm.getMission().getTitle())
-				.description(gm.getMission().getDescription())
-				.build())
-			.collect(Collectors.toList());
-	}
+<<<<<<<HEAD
+		@Override
+		@Transactional(readOnly = true)
+		public MissionResponse getMissionDetail (Long gameId, Long missionId){
+			// 미션 ID로 단건 조회
+			Mission mission = missionRepository.findById(missionId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.MISSION_NOT_FOUND));
 
-<<<<<<< HEAD
-	@Override
-	@Transactional(readOnly = true)
-	public MissionResponse getMissionDetail(Long gameId, Long missionId) {
-		// 미션 ID로 단건 조회
-		Mission mission = missionRepository.findById(missionId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.MISSION_NOT_FOUND));
+			return MissionResponse.builder()
+				.missionId(mission.getId())
+				.title(mission.getTitle())
+				.description(mission.getDescription())
+				.build();
+		}
 
-		return MissionResponse.builder()
-			.missionId(mission.getId())
-			.title(mission.getTitle())
-			.description(mission.getDescription())
-			.build();
-	}
+		// 미션 제출
+		@Override
+		public Boolean submitMission (Long gameId, Long missionId, Long thiefId){
+			GameMission gameMission = gameMissionRepository.findByGameIdAndMissionId(gameId, missionId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.MISSION_NOT_FOUND));
 
-	// 미션 제출
-	@Override
-	public Boolean submitMission(Long gameId, Long missionId, Long thiefId) {
-		GameMission gameMission = gameMissionRepository.findByGameIdAndMissionId(gameId, missionId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.MISSION_NOT_FOUND));
-
-		return true;
-	}
+			return true;
+		}
 =======
-    // 게임 내 미션 세부항목
-    @Override
-    @Transactional(readOnly = true)
-    public MissionResponse getGameMission(Long gameId, Long missionId) {
-        // 미션 ID로 단건 조회
-        Mission mission = missionRepository.findById(missionId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MISSION_NOT_FOUND));
+		// 게임 내 미션 세부항목
+		@Override
+		@Transactional(readOnly = true)
+		public MissionResponse getGameMission (Long gameId, Long missionId){
+			// 미션 ID로 단건 조회
+			Mission mission = missionRepository.findById(missionId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.MISSION_NOT_FOUND));
 
-        return MissionResponse.builder()
-                .missionId(mission.getId())
-                .title(mission.getTitle())
-                .description(mission.getDescription())
-                .build();
-    }
->>>>>>> backend
-}
+			return MissionResponse.builder()
+				.missionId(mission.getId())
+				.title(mission.getTitle())
+				.description(mission.getDescription())
+				.build();
+		}
+>>>>>>>backend
+	}

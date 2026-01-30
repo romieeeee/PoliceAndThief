@@ -17,7 +17,8 @@ public class GameResultResponse {
 	private MvpResponse winningSecond; // 이긴 팀 2등
 	private MvpResponse losingFirst;   // 진 팀 1등
 
-<<<<<<< HEAD
+<<<<<<<HEAD
+
 	@Getter
 	@Builder
 	public static class TotalStats {
@@ -27,17 +28,19 @@ public class GameResultResponse {
 		private int durationSec;     // 실제 게임 진행 시간(초)s
 	}
 =======
-    @Getter
-    @Builder
-    public static class TotalStats {
-        private int arrests;         // 총 체포 횟수
-        private int missionsCleared; // 완료된 총 미션 수
-        private int durationSec;     // 실제 게임 진행 시간(초)s
-    }
->>>>>>> backend
 
 	@Getter
 	@Builder
+	public static class TotalStats {
+		private int arrests;         // 총 체포 횟수
+		private int missionsCleared; // 완료된 총 미션 수
+		private int durationSec;     // 실제 게임 진행 시간(초)s
+	}
+>>>>>>>backend
+
+	@Getter
+	@Builder
+
 	public static class MvpResponse {
 		private Long memberId;
 		private String nickname;

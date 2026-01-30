@@ -16,7 +16,7 @@ public interface MemberChatRoomRepository extends JpaRepository<MemberChatRoom, 
 	//  join에서 "있으면 복구(isDeleted=false) / 없으면 생성" 할 때 사용
 	Optional<MemberChatRoom> findByChatRoomIdAndMemberId(Long chatRoomId, Long memberId);
 
-    //  (기본) 현재 참여중인지 체크 (is_deleted=false)
+	//  (기본) 현재 참여중인지 체크 (is_deleted=false)
 	// 	 currentMembers++ 중복 방지
 	boolean existsByChatRoomIdAndMemberIdAndIsDeletedFalse(Long chatRoomId, Long memberId);
 
@@ -25,7 +25,6 @@ public interface MemberChatRoomRepository extends JpaRepository<MemberChatRoom, 
 
 	// (목록) 특정 방의 참여자 목록 뽑을 때 유용
 	List<MemberChatRoom> findAllByChatRoomIdAndIsDeletedFalse(Long chatRoomId);
-
 
 	@Query("""
 		    select cr
