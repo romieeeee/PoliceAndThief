@@ -28,7 +28,7 @@ public class S3Service {
 	 * Presigned URL 생성 메서드 (업로드용 - PUT)
 	 * memberId를 받아 경로에 포함시킵니다.
 	 */
-	public PresignedUrlResponse getPresignedPutUrl(String prefix, String fileName, Long memberId) {
+	public PresignedUrlResponse getPresignedPutUrl(String prefix, String contentType, String fileName, Long memberId) {
 		if (fileName == null || fileName.isBlank()) {
 			return null;
 		}
@@ -38,8 +38,8 @@ public class S3Service {
 
 		PutObjectRequest objectRequest = PutObjectRequest.builder()
 			.bucket(bucketName)
-			.key(imageKey) // 생성한 Key 사용
-			.contentType("image/jpeg")
+			.key(imageKey)
+			.contentType(contentType)
 			.build();
 
 		PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
