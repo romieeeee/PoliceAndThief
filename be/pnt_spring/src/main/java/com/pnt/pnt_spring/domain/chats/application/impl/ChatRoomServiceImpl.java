@@ -65,6 +65,8 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 	@Override
 	@Transactional
 	public ChatRoomResponse get(Long memberId, Long chatRoomId) {
+		// TODO: memberId가 해당 채팅방을 조회할 권한이 있는지(참여자만 조회 등) 정책 정해지면 검증
+
 		ChatRoom room = chatRoomRepository.findByIdAndIsDeletedFalse(chatRoomId)
 			.orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
 
@@ -104,6 +106,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 			.orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
 
 		// 2) 방장 권한 체크 (방장만 수정 가능)
+		// ⚠️ 아래 ownerId getter는 프로젝트에 맞게 바꿔주세요.
 		if (room.getOwnerId() == null || !room.getOwnerId().equals(memberId)) {
 			throw new IllegalArgumentException("채팅방 수정 권한이 없습니다.");
 			// 가능하면 Forbidden(403) 계열 커스텀 예외로 바꾸는 게 더 좋음

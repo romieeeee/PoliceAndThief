@@ -32,7 +32,7 @@ public class Game extends BaseEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	// 방장(게임방 생성자)
+	/** 방장(게임방 생성자) */
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "host_member_id", nullable = false)
 	private Member host;
@@ -80,7 +80,7 @@ public class Game extends BaseEntity {
 		return this.host != null && this.host.getId().equals(memberId);
 	}
 
-	// 방장 위임
+	/** 방장 위임 */
 	public void changeHost(Member newHost) {
 		if (newHost == null) {
 			throw new IllegalArgumentException("newHost는 null일 수 없습니다.");
@@ -105,8 +105,9 @@ public class Game extends BaseEntity {
 		this.winTeam = (winTeam == null ? WinTeam.NONE : winTeam);
 	}
 
-	// 방 닫기(삭제 플래그)
+	/** 방 닫기(삭제 플래그) - WAITING에서만 닫도록 제한하고 싶으면 조건 추가하세요 */
 	public void close() {
 		this.isDeleted = true;
+		// updatedAt은 BaseEntity에서 처리하는게 일반적이라 여기서 건드리지 않는 걸 추천
 	}
 }

@@ -12,8 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomSettingUpdateRequest;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomSettingGetResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomSettingUpdateResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomSettingResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomSettingService;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.entity.GameSetting;
@@ -31,15 +30,18 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 
-	private static final GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
 	private final GameRepository gameRepository;
 	private final GameSettingRepository gameSettingRepository;
 	private final GameMemberRepository gameMemberRepository;
 
-	//게임방 설정 조회 (기본값 불러오기)
+	private static final GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
+
+	/**
+	 * 게임방 설정 조회 (기본값 불러오기)
+	 */
 	@Override
 	@Transactional(readOnly = true)
-	public GameRoomSettingGetResponse getSettings(Long actorMemberId, Long roomId) {
+	public GameRoomSettingResponse getSettings(Long actorMemberId, Long roomId) {
 
 		Game game = gameRepository.findByIdAndIsDeletedFalse(roomId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
@@ -47,7 +49,7 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 		GameSetting setting = gameSettingRepository.findByGameIdAndIsDeletedFalse(roomId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
 
-		return new GameRoomSettingGetResponse(
+		return new GameRoomSettingResponse(
 			roomId,
 			game.getStatus().name(),
 			setting.getTimeLimit(),
@@ -55,14 +57,18 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 			setting.getPoliceCount(),
 			setting.getThiefCount(),
 			setting.getCctvInterval(),
+			setting.getMissionCount(),
+			game.getRoomCode(),
 			setting.getPrisonLat(),
 			setting.getPrisonLng()
 		);
 	}
 
-	// 게임방 설정 변경
+	/**
+	 * 게임방 설정 변경
+	 */
 	@Override
-	public GameRoomSettingUpdateResponse updateSettings(Long actorMemberId, Long roomId,
+	public GameRoomSettingResponse updateSettings(Long actorMemberId, Long roomId,
 		GameRoomSettingUpdateRequest req) {
 
 		Game game = gameRepository.findByIdForUpdate(roomId)
@@ -106,12 +112,13 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 			req.getPlayerCount(),
 			req.getPoliceCount(),
 			req.getThiefCount(),
-			req.getCctvInterval()
+			req.getCctvInterval(),
+			req.getMissionCount()
 		);
 
 		setting.updateMap(boundary, prisonLat, prisonLng);
 
-		return new GameRoomSettingUpdateResponse(
+		return new GameRoomSettingResponse(
 			roomId,
 			game.getStatus().name(),
 			setting.getTimeLimit(),
@@ -119,12 +126,16 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 			setting.getPoliceCount(),
 			setting.getThiefCount(),
 			setting.getCctvInterval(),
+			setting.getMissionCount(),
+			game.getRoomCode(),
 			setting.getPrisonLat(),
 			setting.getPrisonLng()
 		);
 	}
 
-	// 게임방 설정 변경
+	/**
+	 * polygon 변환 유틸
+	 */
 	private Polygon toPolygon(List<GameRoomSettingUpdateRequest.LatLng> polygon) {
 		if (polygon == null || polygon.size() < 3) {
 			throw new BusinessException(ErrorCode.VALIDATION_ERROR);

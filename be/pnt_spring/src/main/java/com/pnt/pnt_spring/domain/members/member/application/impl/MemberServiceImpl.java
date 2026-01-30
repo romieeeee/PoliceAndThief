@@ -68,9 +68,16 @@ public class MemberServiceImpl implements MemberService {
 		Member member = memberRepository.findById(memberId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND)); // 혹은 PROFILE_NOT_FOUND
 
+		// TODO: s3 연결
+
+		// 데이터 수정
+
+		// TODO: s3 연결
+
 		// 데이터 수정
 		member.getMemberProfile().updateProfile(request.getNickname(), request.getAvatarUrl());
 
+		// TODO: MongoDB에 최신화 시켜야 할 필요성
 		MemberDoc memberDoc = memberMongoRepository.findByMemberId(memberId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 		memberDoc.update(request.getNickname(), request.getAvatarUrl());

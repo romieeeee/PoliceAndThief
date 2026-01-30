@@ -32,9 +32,8 @@ public class AuthController {
 
 	private final AuthService authService;
 
-<<<<<<<HEAD
-
 	// 회원가입
+	@Operation(summary = "회원가입", description = "회원가입 합니다.")
 	@PostMapping("/signup")
 	public CommonResponse<SignupResponse> signup(@Valid @RequestBody SignupRequest request) {
 		SignupResponse signupResponse = authService.signup(request);
@@ -42,6 +41,7 @@ public class AuthController {
 	}
 
 	// 로그인
+	@Operation(summary = "로그인", description = "유저 로그인을 진행합니다.")
 	@PostMapping("/login")
 	public CommonResponse<LoginResponse> signin(@RequestBody LoginRequest request) {
 		LoginResponse loginResponse = authService.login(request);
@@ -49,92 +49,48 @@ public class AuthController {
 	}
 
 	// 로그아웃
+	@Operation(summary = "로그아웃", description = "유저 액세스 토큰을 만료합니다.")
 	@PostMapping("/logout")
 	public CommonResponse<String> logout(HttpServletRequest request) {
-=======
-		// 회원가입
-		@Operation(summary = "회원가입", description = "회원가입 합니다.")
-		@PostMapping("/signup")
-		public CommonResponse<SignupResponse> signup (@Valid @RequestBody SignupRequest request){
-			SignupResponse signupResponse = authService.signup(request);
-			return new CommonResponse<>(signupResponse, "회원가입에 성공했습니다.", HttpStatus.OK);
+
+		String accessToken = resolveToken(request);
+
+		authService.logout(accessToken);
+
+		return new CommonResponse<>("로그아웃 되었습니다.", "로그아웃 성공", HttpStatus.OK);
+	}
+
+	// 아이디 중복 체크
+	@Operation(summary = "아이디 중복체크", description = "DB내 동일한 아이디가 있는지 확인합니다.")
+	@PostMapping("/duplicate")
+	public CommonResponse<Map<String, Boolean>> checkDuplicate(@RequestBody IdDuplicateRequest request) {
+
+		boolean isDuplicate = authService.checkIdDuplicate(request.getId());
+
+		Map<String, Boolean> responseData = Map.of("duplicated", isDuplicate);
+
+		return new CommonResponse<>(responseData, "아이디 중복 확인 완료", HttpStatus.OK);
+	}
+
+	@Operation(summary = "소셜 로그인", description = "카카오 소셜로그인을 지원합니다.(Provider : KAKAO)")
+	@PostMapping("/social-login")
+	public CommonResponse<LoginResponse> socialLogin(@RequestBody SocialLoginRequest request) {
+		LoginResponse loginResponse = authService.socialLogin(request);
+		return new CommonResponse<>(loginResponse, "소셜 로그인 성공", HttpStatus.OK);
+	}
+
+	private String resolveToken(HttpServletRequest request) {
+		String bearerToken = request.getHeader("Authorization");
+		if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+			return bearerToken.substring(7);
 		}
+		return null; // 혹은 예외 처리
+	}
 
-		// 로그인
-		@Operation(summary = "로그인", description = "유저 로그인을 진행합니다.")
-		@PostMapping("/login")
-		public CommonResponse<LoginResponse> signin (@RequestBody LoginRequest request){
-			LoginResponse loginResponse = authService.login(request);
-			return new CommonResponse<>(loginResponse, "로그인에 성공했습니다.", HttpStatus.OK);
-		}
-
-		// 로그아웃
-		@Operation(summary = "로그아웃", description = "유저 액세스 토큰을 만료합니다.")
-		@PostMapping("/logout")
-		public CommonResponse<String> logout (HttpServletRequest request){
->>>>>>>backend
-
-			String accessToken = resolveToken(request);
-
-			authService.logout(accessToken);
-
-			return new CommonResponse<>("로그아웃 되었습니다.", "로그아웃 성공", HttpStatus.OK);
-		}
-
-<<<<<<<HEAD
-		// 아이디 중복 체크
-		@PostMapping("/duplicate")
-		public CommonResponse<Map<String, Boolean>> checkDuplicate (@RequestBody IdDuplicateRequest request){
-=======
-			// 아이디 중복 체크
-			@Operation(summary = "아이디 중복체크", description = "DB내 동일한 아이디가 있는지 확인합니다.")
-			@PostMapping("/duplicate")
-			public CommonResponse<Map<String, Boolean>> checkDuplicate (@RequestBody IdDuplicateRequest request){
->>>>>>>backend
-
-				boolean isDuplicate = authService.checkIdDuplicate(request.getId());
-
-				Map<String, Boolean> responseData = Map.of("duplicated", isDuplicate);
-
-				return new CommonResponse<>(responseData, "아이디 중복 확인 완료", HttpStatus.OK);
-			}
-
-<<<<<<<HEAD
-			@PostMapping("/social-login")
-			public CommonResponse<LoginResponse> socialLogin (@RequestBody SocialLoginRequest request){
-				LoginResponse loginResponse = authService.socialLogin(request);
-				return new CommonResponse<>(loginResponse, "소셜 로그인 성공", HttpStatus.OK);
-			}
-=======
-			@Operation(summary = "소셜 로그인", description = "카카오 소셜로그인을 지원합니다.(Provider : KAKAO)")
-			@PostMapping("/social-login")
-			public CommonResponse<LoginResponse> socialLogin (@RequestBody SocialLoginRequest request){
-				LoginResponse loginResponse = authService.socialLogin(request);
-				return new CommonResponse<>(loginResponse, "소셜 로그인 성공", HttpStatus.OK);
-			}
->>>>>>>backend
-
-			private String resolveToken (HttpServletRequest request){
-				String bearerToken = request.getHeader("Authorization");
-				if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-					return bearerToken.substring(7);
-				}
-				return null; // 혹은 예외 처리
-			}
-
-<<<<<<<HEAD
-			@PostMapping("/reissue")
-			public CommonResponse<TokenDto> reissue (@RequestBody TokenDto tokenDto){
-				TokenDto newToken = authService.reissue(tokenDto);
-				return new CommonResponse<>(newToken, "토큰이 성공적으로 재발급되었습니다.", HttpStatus.OK);
-			}
-=======
-
-			@Operation(summary = "토큰 재발급", description = "사용자 토큰을 재발급합니다.")
-			@PostMapping("/reissue")
-			public CommonResponse<TokenDto> reissue (@RequestBody TokenDto tokenDto){
-				TokenDto newToken = authService.reissue(tokenDto);
-				return new CommonResponse<>(newToken, "토큰이 성공적으로 재발급되었습니다.", HttpStatus.OK);
-			}
->>>>>>>backend
-		}
+	@Operation(summary = "토큰 재발급", description = "사용자 토큰을 재발급합니다.")
+	@PostMapping("/reissue")
+	public CommonResponse<TokenDto> reissue(@RequestBody TokenDto tokenDto) {
+		TokenDto newToken = authService.reissue(tokenDto);
+		return new CommonResponse<>(newToken, "토큰이 성공적으로 재발급되었습니다.", HttpStatus.OK);
+	}
+}

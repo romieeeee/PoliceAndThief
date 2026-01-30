@@ -62,7 +62,7 @@ public class MemberStatPolice extends BaseEntity {
 
 		// 3. 등급(계급) 변경은 Service에서 계산된 다음 등급 객체를 받아 setter로 변경하거나,
 		//    여기서 로직을 처리할 수도 있지만, Grade Repository 조회가 필요하므로
-		//    Service에서 다음 등급을 찾아서 넘겨주는 방식(changeGrade)을 유지
+		//    Service에서 다음 등급을 찾아서 넘겨주는 방식(changeGrade)을 유지합니다.
 	}
 
 	public void changeGrade(GradePolice newGrade) {
