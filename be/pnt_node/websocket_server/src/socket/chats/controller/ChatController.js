@@ -54,6 +54,8 @@ export class ChatController {
             // 푸시 알림 => 컨슈머에서 채팅방에 접속해 있지 않은 멤버를 확인후 푸시알림
             mq.sendMessage({ chatRoomId, ...payload }, MQConfig.MQ_ALARM);
 
+            console.log("send message = ", resData);
+
             this.io.to(chatRoomId).emit("get message", resData);
         } catch (error) {
             console.error("sendMessage error", error);
@@ -80,7 +82,9 @@ export class ChatController {
             // 데이터 로딩 로직
             const data = await this.chatService.getPrevChat({ chatRoomId, memberId, ...payload });
 
-            this.io.to(chatRoomId).emit("get prev chat", data);
+            console.log("get prev chat = ", data);
+
+            this.io.to(chatRoomId).emit("get prev chat", { items : data, count: data.length });
         } catch (error) {
             console.error("getPrevChat error", error);
             sendError(this.socket, error, "ChatError");
@@ -103,7 +107,9 @@ export class ChatController {
             // 데이터 로딩 로직
             const data = await this.chatService.syncChat({ chatRoomId, memberId, ...payload });
 
-            this.io.to(chatRoomId).emit("get sync chat", data);
+            console.log("sync chat = ", data);
+
+            this.io.to(chatRoomId).emit("get sync chat", { items : data, count: data.length });
         } catch (error) {
             console.error("syncChat error", error);
             sendError(this.socket, error, "ChatError");

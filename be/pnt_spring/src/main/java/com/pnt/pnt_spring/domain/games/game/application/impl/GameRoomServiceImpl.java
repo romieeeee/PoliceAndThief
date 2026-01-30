@@ -1,6 +1,8 @@
 package com.pnt.pnt_spring.domain.games.game.application.impl;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
@@ -21,6 +23,7 @@ import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
 import com.pnt.pnt_spring.domain.games.game.entity.GameSetting;
+import com.pnt.pnt_spring.domain.games.game.entity.GameSkill;
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
@@ -28,6 +31,7 @@ import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
+import com.pnt.pnt_spring.domain.games.game.repository.GameSkillRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
@@ -40,13 +44,15 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class GameRoomServiceImpl implements GameRoomService {
 
-	private static final GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
 	private final GameRepository gameRepository;
 	private final GameMemberRepository gameMemberRepository;
 	private final GameSettingRepository gameSettingRepository;
 	private final MemberRepository memberRepository;
 	private final GameRoomCodeGenerator gameRoomCodeGenerator;
 	private final GameMemberStatRepository gameMemberStatRepository;
+	private final GameSkillRepository gameSkillRepository;
+
+	private static final GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
 
 	@Override
 	public GameRoomCreateResponse createRoom(Long hostMemberId, GameRoomCreateRequest req) {
@@ -90,7 +96,8 @@ public class GameRoomServiceImpl implements GameRoomService {
 			req.getCctvInterval(),
 			boundary,
 			prisonLat,
-			prisonLng
+			prisonLng,
+			0
 		);
 		gameSettingRepository.save(setting);
 
@@ -114,12 +121,11 @@ public class GameRoomServiceImpl implements GameRoomService {
 			throw new BusinessException(ErrorCode.ROOM_ALREADY_STARTED);
 		}
 
-		GameSetting setting = gameSettingRepository.findById(roomId)
+		GameSetting setting = gameSettingRepository.findByGameIdAndIsDeletedFalse(roomId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
 
 		long joined = gameMemberRepository.countByGameIdAndIsDeletedFalse(roomId);
 		if (!joinedEqualsSetting(joined, setting.getPlayerCount())) {
-			// 정원 미충족/초과는 지금 코드 체계상 ROOM_NOT_READY로 묶는게 가장 자연스러움
 			throw new BusinessException(ErrorCode.ROOM_NOT_READY);
 		}
 
@@ -137,22 +143,22 @@ public class GameRoomServiceImpl implements GameRoomService {
 		// 포지션 확정(PreferPosition 반영)
 		assignPositions(setting, members);
 
+		// 경찰 중 랜덤 1명(=경찰청장) 선정 + 스킬 생성 (givenPosition은 POLICE 유지)
+		Long chiefMemberId = assignChiefSkill(game, members);
+
 		// 게임 시작
 		game.start();
 
-		// 3. Stat 생성
+		// Stat 생성
 		for (GameMember member : members) {
 			if (!gameMemberStatRepository.existsByGameMemberId(member.getId())) {
 				GameMemberStat stat = GameMemberStat.create(member);
 				gameMemberStatRepository.save(stat);
 			}
-
-			if (member.getMember().getId().equals(actorMemberId)) {
-				member.setReady(true);
-			}
 		}
 
-		return GameStartResponse.from(game, members);
+		// chiefMemberId 포함해서 반환
+		return GameStartResponse.from(game, members, chiefMemberId);
 	}
 
 	@Override
@@ -162,7 +168,6 @@ public class GameRoomServiceImpl implements GameRoomService {
 		Game game = gameRepository.findByIdAndIsDeletedFalse(roomId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
 
-		// 방장만 의미 있음 → 방장이 아니면 항상 false
 		boolean isHost = game.isHost(actorMemberId);
 
 		GameSetting setting = gameSettingRepository.findById(roomId)
@@ -256,7 +261,7 @@ public class GameRoomServiceImpl implements GameRoomService {
 			.toList();
 
 		// 2) thiefNeed 만큼 도둑 선정: THIEF 선호 → ANY → POLICE(강제 전환)
-		java.util.LinkedHashSet<GameMember> thieves = new java.util.LinkedHashSet<>();
+		LinkedHashSet<GameMember> thieves = new java.util.LinkedHashSet<>();
 
 		for (GameMember gm : preferThief) {
 			if (thieves.size() >= thiefNeed)
@@ -288,4 +293,25 @@ public class GameRoomServiceImpl implements GameRoomService {
 		}
 	}
 
+	private Long assignChiefSkill(Game game, List<GameMember> members) {
+
+		List<GameMember> polices = members.stream()
+			.filter(m -> m.getGivenPosition() == Position.POLICE)
+			.toList();
+
+		if (polices.isEmpty())
+			return null;
+
+		GameMember chief = polices.get(ThreadLocalRandom.current().nextInt(polices.size()));
+
+		Long gameId = game.getId();
+		Long memberId = chief.getMember().getId();
+
+		// 중복 방지
+		if (!gameSkillRepository.existsByGame_IdAndMember_Id(gameId, memberId)) {
+			gameSkillRepository.save(GameSkill.create(game, chief.getMember()));
+		}
+
+		return memberId;
+	}
 }

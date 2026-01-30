@@ -43,4 +43,12 @@ public interface GameMemberStatRepository extends JpaRepository<GameMemberStat, 
 		    ORDER BY s.longestSurvived DESC
 		""")
 	List<GameMemberStat> findThiefMvp(@Param("gameId") Long gameId, Pageable pageable);
+
+	// 특정 게임의 모든 참가자 스탯 조회
+	@Query("SELECT s FROM GameMemberStat s " +
+		"JOIN FETCH s.gameMember gm " +
+		"JOIN FETCH gm.member m " +
+		"JOIN FETCH m.memberProfile " +
+		"WHERE gm.game.id = :gameId")
+	List<GameMemberStat> findAllByGameId(@Param("gameId") Long gameId);
 }

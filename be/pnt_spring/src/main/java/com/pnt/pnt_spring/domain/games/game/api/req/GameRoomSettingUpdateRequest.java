@@ -12,7 +12,7 @@ import lombok.Getter;
 public class GameRoomSettingUpdateRequest {
 
 	@NotNull
-	@Min(1)
+	@Min(2)
 	private Integer playerCount;
 
 	@NotNull
@@ -20,11 +20,11 @@ public class GameRoomSettingUpdateRequest {
 	private Integer timeLimit;
 
 	@NotNull
-	@Min(0)
+	@Min(1)
 	private Integer policeCount;
 
 	@NotNull
-	@Min(0)
+	@Min(1)
 	private Integer thiefCount;
 
 	@NotNull
@@ -34,6 +34,10 @@ public class GameRoomSettingUpdateRequest {
 	@NotNull
 	@Valid
 	private Prison prison;
+
+	@NotNull
+	@Min(0)
+	private Integer missionCount;
 
 	@NotNull
 	@Size(min = 3, message = "polygon은 최소 3개 좌표가 필요합니다.")

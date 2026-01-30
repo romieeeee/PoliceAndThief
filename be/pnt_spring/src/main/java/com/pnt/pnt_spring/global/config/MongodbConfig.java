@@ -9,9 +9,7 @@ import org.springframework.data.mongodb.core.convert.DefaultMongoTypeMapper;
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 
-/**
- * _class 필드 생성방지 config
- */
+//_class 필드 생성방지 config
 @Configuration
 public class MongodbConfig {
 

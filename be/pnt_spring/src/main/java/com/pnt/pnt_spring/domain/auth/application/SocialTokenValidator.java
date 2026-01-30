@@ -22,11 +22,13 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SocialTokenValidator {
 
-	RestTemplate restTemplate = new RestTemplate();
 	@Value("${oauth2.kakao.app-id}")
 	private String kakaoAppId;
+
 	@Value("${oauth2.google.client-id}")
 	private String googleClientId;
+
+	RestTemplate restTemplate = new RestTemplate();
 
 	public String validateAndGetId(String provider, String token) {
 

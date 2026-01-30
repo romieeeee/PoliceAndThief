@@ -80,14 +80,7 @@ public class MemberServiceImpl implements MemberService {
 		// TODO: MongoDB에 최신화 시켜야 할 필요성
 		MemberDoc memberDoc = memberMongoRepository.findByMemberId(memberId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-		try {
-			memberMongoRepository.updateNicknameAndAvatar(memberId,
-				request.getNickname() != null ? request.getNickname() : memberDoc.getNickname(),
-				request.getAvatarUrl() != null ? request.getAvatarUrl() : memberDoc.getAvatarUrl()
-			);
-		} catch (Exception e) {
-			throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
-		}
+		memberDoc.update(request.getNickname(), request.getAvatarUrl());
 
 		// 변경된 정보 반환
 		return MemberProfileUpdateResponse.from(member.getMemberProfile());

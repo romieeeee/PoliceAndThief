@@ -6,10 +6,12 @@ import com.pnt.pnt_spring.domain.games.mission.api.resp.MissionResponse;
 
 public interface MissionService {
 
-	List<MissionResponse> getMissions(Long gameId);
+	List<MissionResponse> getAllMissions();
 
-	MissionResponse getMissionDetail(Long gameId, Long missionId);
+	MissionResponse getMission(Long missionId);
 
-	Boolean submitMission(Long gameId, Long missionId, Long thiefId);
+	List<MissionResponse> getGameAllMissions(Long gameId);
+
+	MissionResponse getGameMission(Long gameId, Long missionId);
 
 }

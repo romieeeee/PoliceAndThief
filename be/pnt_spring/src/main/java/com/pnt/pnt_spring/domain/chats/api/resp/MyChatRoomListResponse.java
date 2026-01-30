@@ -9,14 +9,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+@Getter
 @AllArgsConstructor
-public record MyChatRoomListResponse(List<MyChatRoomInfo> rooms) {
+public class MyChatRoomListResponse {
 
-	public static MyChatRoomListResponse from(List<ChatRoom> rooms) {
-		return new MyChatRoomListResponse(
-			rooms.stream().map(MyChatRoomInfo::from).toList()
-		);
-	}
+	private final List<MyChatRoomInfo> rooms;
 
 	@Getter
 	@Builder
@@ -40,5 +37,11 @@ public record MyChatRoomListResponse(List<MyChatRoomInfo> rooms) {
 				.updatedAt(room.getUpdatedAt())
 				.build();
 		}
+	}
+
+	public static MyChatRoomListResponse from(List<ChatRoom> rooms) {
+		return new MyChatRoomListResponse(
+			rooms.stream().map(MyChatRoomInfo::from).toList()
+		);
 	}
 }

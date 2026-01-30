@@ -51,7 +51,7 @@ public class ChatRoomModerationServiceImpl implements ChatRoomModerationService 
 		MemberChatRoom mcr = memberChatRoomRepository.findByChatRoomIdAndMemberId(chatRoomId, targetMemberId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.CHAT_ROOM_MEMBER_NOT_FOUND));
 
-		if (!!mcr.isDeleted()) {
+		if (!Boolean.FALSE.equals(mcr.isDeleted())) {
 			// 이미 나간 상태/삭제 상태면 “강퇴” 대신 밴만 걸지, 에러칠지 정책 선택
 			// 여기선 밴만 걸 수 있게 그대로 진행해도 됨.
 		} else {

@@ -52,6 +52,9 @@ public enum ErrorCode {
 	// 프로필/상태
 	PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, 2, "프로필 정보를 찾을 수 없습니다."),
 
+	// 등급
+	GRADE_NOT_FOUND(HttpStatus.NOT_FOUND, 2, "등급을 찾을 수 없습니다."),
+
 	// =========================
 	// ROOM / MATCHING (3xxx)
 	// =========================
