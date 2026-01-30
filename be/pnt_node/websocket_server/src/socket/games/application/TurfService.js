@@ -40,27 +40,28 @@ export class TurfService {
      *  policeId: number, lat: number, lng: number
      * }
      */
-    checkNearPolice = async (thiefPoint, polices) => {
-        const thiefPt = turf.point(thiefPoint);
+    checkNearPolice = (thiefPoint, polices) => { // async 제거 (필요없다면)
+        const thiefPt = turf.point(thiefPoint); // [lng, lat]
 
-        const resData = {
-            isNearPolice: false,
-            policeId: 0,
-            distance: 15,
-        };
+        let resData = null; // 결과가 없을 때 null을 주는 것이 더 명확함
+        let minDistance = 15; // 최대 감지 거리
 
-        for (const policePoint of polices) {
-            const policePt = turf.point([policePoint.lat, policePoint.lng]);
-
+        for (const police of polices) {
+            // 순서 주의: [lng, lat]
+            const policePt = turf.point([police.lng, police.lat]);
             const distance = turf.distance(thiefPt, policePt, { units: 'meters' });
 
-            if (distance <= 15 && distance < resData.distance) {
-                resData.isNearPolice = true;
-                resData.policeId = policePoint.policeId;
-                resData.distance = distance;
+            // 거리 조건 확인
+            if (distance <= 15 && distance < minDistance) {
+                minDistance = distance;
+                resData = {
+                    isNearPolice: true,
+                    policeId: police.policeId,
+                    distance: distance,
+                };
             }
         }
 
-        return resData.isNearPolice ? resData : false;
+        return resData || false; // 찾았으면 객체, 못 찾았으면 false
     }
 }
