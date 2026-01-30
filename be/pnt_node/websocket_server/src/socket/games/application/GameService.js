@@ -41,10 +41,11 @@ export class GameService {
 
         try {
             // thief 상태 변경 (TRANSFER)
+            
             await this.gameMemberService.updateMemberStatus(gameId, thiefId, GameMemberStatus.TRANSFER, { transaction: t });
 
             // police 스탯 업데이트 (체포 횟수 증가)
-            // await this.gameMemberStatService.updateArrestCount(policeId, { transaction: t });
+            await this.gameMemberStatService.updateArrestCount(policeId, { transaction: t });
 
             await t.commit();
             return true;
