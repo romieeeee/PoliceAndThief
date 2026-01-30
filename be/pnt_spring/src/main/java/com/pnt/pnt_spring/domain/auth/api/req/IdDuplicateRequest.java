@@ -6,5 +6,5 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class IdDuplicateRequest {
-    private String id;
+	private String id;
 }

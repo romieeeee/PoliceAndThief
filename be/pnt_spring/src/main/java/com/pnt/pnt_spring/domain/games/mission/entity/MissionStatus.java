@@ -7,10 +7,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum MissionStatus {
 
-    IN_PROGRESS("IN_PROGRESS", "진행중"),
-    SUCCESS("SUCCESS", "성공");
+	IN_PROGRESS("IN_PROGRESS", "진행중"),
+	SUCCESS("SUCCESS", "성공");
 
-    private final String key;
-    private final String title;
+	private final String key;
+	private final String title;
 
 }

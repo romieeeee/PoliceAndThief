@@ -6,7 +6,7 @@ import lombok.Data;
 @AllArgsConstructor
 @Data
 public class ApiBody<T> {
-    private T data;
-    private String message;
-    private Integer code;
+	private T data;
+	private String message;
+	private Integer code;
 }

@@ -6,6 +6,6 @@ import lombok.Getter;
 @Getter
 public class GameRoomReadyRequest {
 
-    @NotNull
-    private Boolean ready;
+	@NotNull
+	private Boolean ready;
 }

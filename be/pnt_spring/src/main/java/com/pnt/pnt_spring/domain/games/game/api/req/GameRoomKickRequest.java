@@ -6,8 +6,8 @@ import lombok.Getter;
 @Getter
 public class GameRoomKickRequest {
 
-    @NotNull
-    private Long targetMemberId;
+	@NotNull
+	private Long targetMemberId;
 
-    private String reason; // optional
+	private String reason; // optional
 }
