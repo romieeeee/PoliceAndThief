@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Tag(name = "Game Mission API", description = "게임 미션 관련 API")
+@Tag(name = "Game Mission", description = "게임 미션 관련 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/games")

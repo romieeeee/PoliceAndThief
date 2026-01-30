@@ -5,11 +5,14 @@ import com.pnt.pnt_spring.domain.games.news.api.resp.GameNewsResponse;
 import com.pnt.pnt_spring.domain.games.news.application.Impl.GameNewsServiceImpl;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+
+@Tag(name = "Game NEWS", description = "결과 뉴스 관련 API")
 @RestController
 @RequestMapping("/games/news")
 @RequiredArgsConstructor
