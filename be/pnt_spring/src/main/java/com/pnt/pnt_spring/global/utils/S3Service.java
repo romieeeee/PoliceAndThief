@@ -33,18 +33,34 @@ public class S3Service {
 	 * Presigned URL 생성 메서드 (업로드용 - PUT)
 	 * memberId를 받아 경로에 포함시킵니다.
 	 */
-	public PresignedUrlResponse getPresignedPutUrl(String prefix, String contentType, String fileName, Long memberId) {
+	public PresignedUrlResponse getPresignedPutUrl(String prefix, String fileName, Long memberId) {
 		if (fileName == null || fileName.isBlank()) {
 			return null;
 		}
 
-		// 서버에서 UUID를 포함한 최종 경로(Key) 생성
-		String imageKey = prefix + "/" + memberId + "/" + UUID.randomUUID() + "_" + fileName;
+		// 1. 확장자 추출 (예: image.png -> .png)
+		String extension = "";
+		int dotIndex = fileName.lastIndexOf(".");
+		if (dotIndex > 0) {
+			extension = fileName.substring(dotIndex).toLowerCase(); // .png, .jpg 등
+		} else {
+			extension = ".jpg"; // 확장자가 없으면 기본값 jpg 부여
+		}
+
+		// 2. Content-Type 자동 결정
+		String contentType = "image/jpeg"; // 기본값
+		if (extension.equals(".png")) {
+			contentType = "image/png";
+		}
+
+		// 3. 서버에서 파일명 완전 생성 (UUID + 확장자)
+		// 결과 예시: profiles/1/550e8400-e29b-41d4_originalFileName.jpg
+		String key = prefix + "/" + memberId + "/" + UUID.randomUUID() + extension;
 
 		PutObjectRequest objectRequest = PutObjectRequest.builder()
 			.bucket(bucketName)
-			.key(imageKey)
-			.contentType(contentType)
+			.key(key)
+			.contentType(contentType) // 서버가 결정한 타입 적용
 			.build();
 
 		PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
@@ -54,10 +70,9 @@ public class S3Service {
 
 		String presignedUrl = s3Presigner.presignPutObject(presignRequest).url().toString();
 
-		// URL과 Key를 함께 반환
 		return PresignedUrlResponse.builder()
 			.presignedUrl(presignedUrl)
-			.imageKey(imageKey)
+			.imageKey(key)
 			.build();
 	}
 
