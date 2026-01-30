@@ -17,10 +17,6 @@ public class GameResultRequest {
 	private WinTeam winTeam; // "POLICE" or "THIEF"
 	private List<MemberStat> memberStats;
 
-	// 게임 좌표 정보 추가(감옥 위치로)
-	private Double latitude;
-	private Double longitude;
-
 	@Getter
 	@NoArgsConstructor
 	@ToString
