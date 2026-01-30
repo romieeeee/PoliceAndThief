@@ -18,15 +18,12 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.BuildConfig
 import com.d104.pnt.R
-import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
-import com.d104.pnt.domain.model.PlayerLocation
+import com.d104.pnt.domain.model.PlayerData
 import com.d104.pnt.ui.theme.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMapOptions
@@ -48,7 +45,7 @@ import com.google.maps.android.compose.rememberMarkerState
 fun GoogleMaps(
     modifier: Modifier,
     currentLocation: LatLng = LatLng(37.56681969564895, 126.97864094105321 ),
-    playerLocations: List<PlayerLocation> = emptyList(),
+    playerLocations: List<PlayerData> = emptyList(),
     prisonLocation: LatLng? = null,
     inGameMinimap: Boolean = false,
     isPreview: Boolean = true,
@@ -115,8 +112,8 @@ fun GoogleMaps(
     ) {
         if (inGameMinimap && isPreview) { // 인게임 뷰
             PixelMarker(
-                position = LatLng(currentLocation.latitude, currentLocation.longitude),
-                status = "ME"
+                location = LatLng(currentLocation.latitude, currentLocation.longitude),
+                position = "ME"
             )
             Polygon( // 구역 밖을 표시하기 위한 폴리곤
                 points = listOf(
@@ -141,27 +138,15 @@ fun GoogleMaps(
             }
             if (role == GameRole.POLICE) {
                 // 여러 마커 테스트용 더미 멤버아이디, 더미 플레이어
-                val MY_MEMBER_ID = 100
+                val MY_MEMBER_ID = 100L
                 playerLocations.toList().forEach {
-                    if (it.member_id != MY_MEMBER_ID) {
-                        val playerStatus = when (it.position) { // position 1은 경찰, 2는 도둑 가정
-                            1 -> "POLICE"
-                            else -> {
-                                when (it.status) {
-                                    1 -> "THIEF" // 1은 드러난 도둑, 2, 3은 체포된 도둑
-                                    2 -> "ARRESTED"  // 0은 숨어있는 도둑이라고 가정
-                                    3 -> "PRISONER"
-                                    else -> "HIDE"
-                                }
-                            }
-                        }
-                        if (playerStatus != "HIDE") {
+                    if (it.memberId != MY_MEMBER_ID) {
+                        if (it.status != "THIEF") {
                             PixelMarker(
-                                position = LatLng(it.latitude, it.longitude),
-                                status = playerStatus
+                                location = LatLng(it.lat, it.lng),
+                                position = it.position
                             )
                         }
-                        Log.d("PlayerLocations", "${it.member_id} : $playerStatus")
                     }
                 }
             }
