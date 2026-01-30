@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomMemberInfoResponse;
-import com.pnt.pnt_spring.domain.chats.api.resp.MyChatRoomListResponse;
+import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomResponse;
 import com.pnt.pnt_spring.domain.chats.application.ChatRoomMemberQueryService;
 import com.pnt.pnt_spring.domain.chats.entity.ChatRoom;
 import com.pnt.pnt_spring.domain.chats.entity.MemberChatRoom;
@@ -85,8 +85,8 @@ public class ChatRoomMemberQueryServiceImpl implements ChatRoomMemberQueryServic
 	}
 
 	@Override
-	public MyChatRoomListResponse myJoinedRooms(Long memberId) {
-		var rooms = memberChatRoomRepository.findMyJoinedChatRooms(memberId);
-		return MyChatRoomListResponse.from(rooms);
+	public List<ChatRoomResponse> myJoinedRooms(Long memberId) {
+		List<ChatRoom> rooms = memberChatRoomRepository.findMyJoinedChatRooms(memberId);
+		return rooms.stream().map(ChatRoomResponse::from).toList();
 	}
 }

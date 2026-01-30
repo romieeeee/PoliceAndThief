@@ -15,21 +15,6 @@ public class LoginResponse {
 	private String refreshToken;
 	private LoginMemberInfo member;
 
-	// 응답 객체 생성
-	public static LoginResponse of(TokenDto tokenDto, Member member, MemberProfile profile) {
-		return LoginResponse.builder()
-			.accessToken(tokenDto.getAccessToken())
-			.refreshToken(tokenDto.getRefreshToken())
-			.member(LoginMemberInfo.builder()
-				.memberId(member.getId())
-				.id(member.getLoginId())
-				.nickname(profile.getNickname())
-				.avatarUrl(profile.getAvatarUrl())
-				.role("USER")
-				.build())
-			.build();
-	}
-
 	@Getter
 	@Builder
 	public static class LoginMemberInfo {
@@ -38,5 +23,20 @@ public class LoginResponse {
 		private String nickname;
 		private String avatarUrl;
 		private String role;
+	}
+
+	// 응답 객체 생성
+	public static LoginResponse of(TokenDto tokenDto, Member member, MemberProfile profile) {
+		return LoginResponse.builder()
+				.accessToken(tokenDto.getAccessToken())
+				.refreshToken(tokenDto.getRefreshToken())
+				.member(LoginMemberInfo.builder()
+						.memberId(member.getId())
+						.id(member.getLoginId())
+						.nickname(profile.getNickname())
+						.avatarUrl(profile.getAvatarUrl())
+						.role("USER")
+						.build())
+				.build();
 	}
 }

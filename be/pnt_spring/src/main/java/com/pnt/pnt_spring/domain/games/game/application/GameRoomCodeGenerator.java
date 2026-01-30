@@ -12,9 +12,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class GameRoomCodeGenerator {
 
-	private static final String CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 헷갈리는 문자 제거
 	private final GameRepository gameRepository;
 	private final SecureRandom random = new SecureRandom();
+	private static final String CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 헷갈리는 문자 제거
 
 	public String generateUniqueCode() {
 		for (int i = 0; i < 30; i++) {

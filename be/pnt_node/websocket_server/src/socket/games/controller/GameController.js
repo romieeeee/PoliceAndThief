@@ -70,6 +70,8 @@ export class GameController {
                 memberId: this.socket.data.memberId,
             }
 
+            await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
+
             // gameSetting에서 참여자 수 들고오기
             // isGaneConnected true로 변경 => 변경이 됐는지 안됐는지 판별하여 
             // 게임 시작 시간 db에 저장

@@ -23,6 +23,8 @@ import com.pnt.pnt_spring.domain.auth.api.resp.SignupResponse;
 import com.pnt.pnt_spring.domain.auth.application.AuthService;
 import com.pnt.pnt_spring.domain.auth.application.SocialTokenValidator;
 import com.pnt.pnt_spring.domain.auth.jwt.JwtTokenProvider;
+import com.pnt.pnt_spring.domain.games.game.repository.GradePoliceRepository;
+import com.pnt.pnt_spring.domain.games.game.repository.GradeThiefRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberAuthProvider;
 import com.pnt.pnt_spring.domain.members.member.entity.MemberProfile;
@@ -32,6 +34,12 @@ import com.pnt.pnt_spring.domain.members.member.repository.MemberAuthProviderRep
 import com.pnt.pnt_spring.domain.members.member.repository.MemberProfileRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import com.pnt.pnt_spring.domain.members.member.repository.mongo.MemberMongoRepository;
+import com.pnt.pnt_spring.domain.members.stat.entity.GradePolice;
+import com.pnt.pnt_spring.domain.members.stat.entity.GradeThief;
+import com.pnt.pnt_spring.domain.members.stat.entity.MemberStatPolice;
+import com.pnt.pnt_spring.domain.members.stat.entity.MemberStatThief;
+import com.pnt.pnt_spring.domain.members.stat.repository.MemberStatPoliceRepository;
+import com.pnt.pnt_spring.domain.members.stat.repository.MemberStatThiefRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
 
@@ -50,6 +58,11 @@ public class AuthServiceImpl implements AuthService {
 	private final MemberMongoRepository memberMongoRepository;
 	private final SocialTokenValidator socialTokenValidator;
 	private final MemberAuthProviderRepository memberAuthProviderRepository;
+
+	private final GradeThiefRepository gradeThiefRepository;
+	private final GradePoliceRepository gradePoliceRepository;
+	private final MemberStatThiefRepository memberStatThiefRepository;
+	private final MemberStatPoliceRepository memberStatPoliceRepository;
 
 	@Transactional
 	public SignupResponse signup(SignupRequest request) {
@@ -72,32 +85,36 @@ public class AuthServiceImpl implements AuthService {
 
 		// Member 엔터티 생성 및 저장
 		Member member = Member.builder()
-			.loginId(request.getId())
-			.password(passwordEncoder.encode(request.getPassword()))
-			.email(StringUtils.isBlank(request.getEmail()) ? null : request.getEmail())
-			.birth(request.getBirth())
-			.role(MemberRole.USER) // 일반 회원가입 시 유저 권한 부여
-			.build();
+				.loginId(request.getId())
+				.password(passwordEncoder.encode(request.getPassword()))
+				.email(StringUtils.isBlank(request.getEmail()) ? null : request.getEmail())
+				.birth(request.getBirth())
+				.role(MemberRole.USER) // 일반 회원가입 시 유저 권한 부여
+				.build();
 
 		memberRepository.save(member);
 
 		// MemberProfile 엔터티 생성 및 저장
 		MemberProfile memberProfile = MemberProfile.builder()
-			.member(member)
-			.nickname(request.getNickname())
-			.avatarUrl(request.getAvatarUrl())
-			.build();
+				.member(member)
+				.nickname(request.getNickname())
+				.avatarUrl(request.getAvatarUrl())
+				.build();
 
 		memberProfileRepository.save(memberProfile);
 
 		// mongodb에 member 정보 저장.
 		MemberDoc memberDoc = MemberDoc.builder()
-			.memberId(member.getId())
-			.nickname(memberProfile.getNickname())
-			.avatarUrl(memberProfile.getAvatarUrl())
-			.build();
+				.memberId(member.getId())
+				.nickname(memberProfile.getNickname())
+				.avatarUrl(memberProfile.getAvatarUrl())
+				.build();
 
 		memberMongoRepository.save(memberDoc);
+
+		// 초기 등급 및 스탯 부여
+
+		initMemberStats(member);
 
 		return SignupResponse.from(member, memberProfile);
 	}
@@ -111,7 +128,7 @@ public class AuthServiceImpl implements AuthService {
 
 		// 유저 조회
 		Member member = memberRepository.findByLoginId(request.getId())
-			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
 		// 패스워드 검사
 		if (!passwordEncoder.matches(request.getPassword(), member.getPassword())) {
@@ -120,14 +137,13 @@ public class AuthServiceImpl implements AuthService {
 
 		// 프로필 조회
 		MemberProfile memberProfile = memberProfileRepository.findByMember(member)
-			.orElseThrow(() -> new BusinessException(ErrorCode.PROFILE_NOT_FOUND));
+				.orElseThrow(() -> new BusinessException(ErrorCode.PROFILE_NOT_FOUND));
 
 		// 인증 객체 생성 (DB에 저장된 Role 사용)
 		Authentication authentication = new UsernamePasswordAuthenticationToken(
-			member.getLoginId(),
-			null,
-			List.of(new SimpleGrantedAuthority(member.getRole().getKey()))
-		);
+				member.getLoginId(),
+				null,
+				List.of(new SimpleGrantedAuthority(member.getRole().getKey())));
 
 		// JWT 발급
 		TokenDto tokenDto = jwtTokenProvider.generateToken(authentication, member.getId());
@@ -136,11 +152,10 @@ public class AuthServiceImpl implements AuthService {
 		// RT(Key - String) : loginId(Value - String)
 		ValueOperations<String, String> valueOperations = redisTemplate.opsForValue();
 		valueOperations.set(
-			"RT:" + member.getLoginId(),
-			tokenDto.getRefreshToken(),
-			tokenDto.getRefreshTokenExpiresIn(),
-			TimeUnit.MILLISECONDS
-		);
+				"RT:" + member.getLoginId(),
+				tokenDto.getRefreshToken(),
+				tokenDto.getRefreshTokenExpiresIn(),
+				TimeUnit.MILLISECONDS);
 
 		// 응답 반환
 		return LoginResponse.of(tokenDto, member, memberProfile);
@@ -179,8 +194,8 @@ public class AuthServiceImpl implements AuthService {
 
 		// 기존 가입 여부 확인
 		MemberAuthProvider authProvider = memberAuthProviderRepository
-			.findByProviderAndProviderUserKey(provider, providerId)
-			.orElse(null);
+				.findByProviderAndProviderUserKey(provider, providerId)
+				.orElse(null);
 
 		Member member;
 
@@ -190,34 +205,37 @@ public class AuthServiceImpl implements AuthService {
 
 			// Member 생성 (빌더 패턴 활용)
 			member = Member.builder()
-				.loginId(socialLoginId)
-				.password(UUID.randomUUID().toString()) // 비밀번호는 랜덤 처리
-				.email(socialLoginId + "@social.user") // 이메일 없을 경우 임시 처리
-				.role(MemberRole.USER)
-				.build();
+					.loginId(socialLoginId)
+					.password(UUID.randomUUID().toString()) // 비밀번호는 랜덤 처리
+					.email(socialLoginId + "@social.user") // 이메일 없을 경우 임시 처리
+					.role(MemberRole.USER)
+					.build();
 			memberRepository.save(member);
 
 			// MemberProfile 생성
 			MemberProfile memberProfile = MemberProfile.builder()
-				.member(member)
-				.nickname("User_" + providerId.substring(0, 5))
-				.avatarUrl("default")
-				.build();
+					.member(member)
+					.nickname("User_" + providerId.substring(0, 5))
+					.avatarUrl("default")
+					.build();
 			memberProfileRepository.save(memberProfile);
 
 			authProvider = MemberAuthProvider.builder()
-				.member(member)
-				.provider(provider)
-				.providerUserKey(providerId)
-				.build();
+					.member(member)
+					.provider(provider)
+					.providerUserKey(providerId)
+					.build();
 			memberAuthProviderRepository.save(authProvider);
 
 			MemberDoc memberDoc = MemberDoc.builder()
-				.memberId(member.getId())
-				.nickname(memberProfile.getNickname())
-				.avatarUrl(memberProfile.getAvatarUrl())
-				.build();
+					.memberId(member.getId())
+					.nickname(memberProfile.getNickname())
+					.avatarUrl(memberProfile.getAvatarUrl())
+					.build();
 			memberMongoRepository.save(memberDoc);
+
+			// 초기 등급 및 스탯 부여
+			initMemberStats(member);
 
 		} else {
 			// 기존 회원이면 정보 로드
@@ -226,24 +244,22 @@ public class AuthServiceImpl implements AuthService {
 
 		// JWT 발급 및 로그인
 		Authentication authentication = new UsernamePasswordAuthenticationToken(
-			member.getLoginId(),
-			null,
-			List.of(new SimpleGrantedAuthority(member.getRole().getKey()))
-		);
+				member.getLoginId(),
+				null,
+				List.of(new SimpleGrantedAuthority(member.getRole().getKey())));
 
 		TokenDto tokenDto = jwtTokenProvider.generateToken(authentication, member.getId());
 
 		// Redis에 Refresh Token 저장
 		redisTemplate.opsForValue().set(
-			"RT:" + member.getLoginId(),
-			tokenDto.getRefreshToken(),
-			tokenDto.getRefreshTokenExpiresIn(),
-			TimeUnit.MILLISECONDS
-		);
+				"RT:" + member.getLoginId(),
+				tokenDto.getRefreshToken(),
+				tokenDto.getRefreshTokenExpiresIn(),
+				TimeUnit.MILLISECONDS);
 
 		// 프로필 조회 (Lazy Loading 이슈 방지용 조회)
 		MemberProfile memberProfile = memberProfileRepository.findByMember(member)
-			.orElseThrow(() -> new BusinessException(ErrorCode.PROFILE_NOT_FOUND));
+				.orElseThrow(() -> new BusinessException(ErrorCode.PROFILE_NOT_FOUND));
 
 		return LoginResponse.of(tokenDto, member, memberProfile);
 	}
@@ -271,26 +287,42 @@ public class AuthServiceImpl implements AuthService {
 		// 새로운 토큰 생성을 위해 Member 정보 조회
 		// (토큰의 정보보다 DB의 최신 정보를 기준으로 권한 등을 다시 담는 것이 안전함)
 		Member member = memberRepository.findByLoginId(loginId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
 		Authentication authentication = new UsernamePasswordAuthenticationToken(
-			member.getLoginId(),
-			null,
-			List.of(new SimpleGrantedAuthority(member.getRole().getKey()))
-		);
+				member.getLoginId(),
+				null,
+				List.of(new SimpleGrantedAuthority(member.getRole().getKey())));
 
 		// 새로운 토큰 발급
 		TokenDto newTokenDto = jwtTokenProvider.generateToken(authentication, member.getId());
 
 		// Redis에 새로운 Refresh Token 저장 (RTR: Refresh Token Rotation 적용 시)
 		redisTemplate.opsForValue().set(
-			"RT:" + loginId,
-			newTokenDto.getRefreshToken(),
-			newTokenDto.getRefreshTokenExpiresIn(),
-			TimeUnit.MILLISECONDS
-		);
+				"RT:" + loginId,
+				newTokenDto.getRefreshToken(),
+				newTokenDto.getRefreshTokenExpiresIn(),
+				TimeUnit.MILLISECONDS);
 
 		return newTokenDto;
+	}
+
+	private void initMemberStats(Member member) {
+		// 1. 도둑 초기 세팅
+		GradeThief initialThiefGrade = gradeThiefRepository.findById(1L)
+				.orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+						"도둑 초기 등급(ID:1) 데이터가 없습니다. DB 초기화를 확인하세요."));
+
+		MemberStatThief thiefStat = MemberStatThief.createInitial(member, initialThiefGrade);
+		memberStatThiefRepository.save(thiefStat);
+
+		// 2. 경찰 초기 세팅
+		GradePolice initialPoliceGrade = gradePoliceRepository.findById(1L)
+				.orElseThrow(() -> new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR,
+						"경찰 초기 등급(ID:1) 데이터가 없습니다. DB 초기화를 확인하세요."));
+
+		MemberStatPolice policeStat = MemberStatPolice.createInitial(member, initialPoliceGrade);
+		memberStatPoliceRepository.save(policeStat);
 	}
 
 }

@@ -43,6 +43,9 @@ public class GameMemberStat extends BaseEntity {
 	@Column(name = "arrest_count")
 	private Integer arrestCount = 0;
 
+	@Column(name = "escape_count")
+	private Integer escapeCount = 0;
+
 	@Column(name = "longest_survived")
 	private Integer longestSurvived = 0;
 
@@ -55,6 +58,21 @@ public class GameMemberStat extends BaseEntity {
 		this.longestSurvived = 0;
 	}
 
+	public static GameMemberStat create(GameMember gameMember) {
+		GameMemberStat stat = new GameMemberStat();
+		stat.gameMember = gameMember;
+		stat.position = gameMember.getGivenPosition().toStatPosition();
+		stat.walk = 0;
+		stat.arrestCount = 0;
+		stat.longestSurvived = 0;
+		return stat;
+	}
+
+	// 생존 시간 업데이트 메서드 추가
+	public void updateLongestSurvived(int survivalSec) {
+		this.longestSurvived = survivalSec;
+	}
+
 	@Builder
 	public GameMemberStat(GameMember gameMember, Position position, Integer walk, Integer arrestCount,
 		Integer longestSurvived) {
@@ -63,16 +81,6 @@ public class GameMemberStat extends BaseEntity {
 		this.walk = walk;
 		this.arrestCount = arrestCount;
 		this.longestSurvived = longestSurvived;
-	}
-
-	public static GameMemberStat create(GameMember gameMember) {
-		GameMemberStat stat = new GameMemberStat();
-		stat.gameMember = gameMember;
-		stat.position = gameMember.getGivenPosition();
-		stat.walk = 0;
-		stat.arrestCount = 0;
-		stat.longestSurvived = 0;
-		return stat;
 	}
 
 	// 스탯 초기화 설정
@@ -84,11 +92,6 @@ public class GameMemberStat extends BaseEntity {
 			.arrestCount(0)
 			.longestSurvived(0)
 			.build();
-	}
-
-	// 생존 시간 업데이트 메서드 추가
-	public void updateLongestSurvived(int survivalSec) {
-		this.longestSurvived = survivalSec;
 	}
 
 	// 결과 업데이트
