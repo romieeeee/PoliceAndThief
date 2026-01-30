@@ -85,7 +85,7 @@ const expiredChannel = async (message, pubClient, chatIo, roomIo, gameIo) => {
         }
 
         const gameTimer = await redisClient.getGameTimer(gameId);
-        const gameSetting = await gameController.gameSettingService.findGameSetting(gameId);
+        const gameSetting = await redisClient.getGameSetting(gameId);
 
         if (gameTimer && gameSetting) {
             const cctvInterval = gameSetting.cctvInterval || 60;
@@ -107,21 +107,23 @@ const chatDisconnect = async (memberId, roomId, chatIo) => {
 // => 비정상 로직이니까 만약 아무도 없다면 방 삭제
 // => 이거는 그냥 api 호출하면 됨.
 const roomDisconnect = async (memberId, roomId, roomIo) => {
+    const accessToken = await redisClient.getAccessToken(memberId);
     await redisClient.deleteKeys("room", roomId, memberId);
+    await redisClient.deleteAccessToken(memberId);
 
-    const response = await axios.delete(`${process.env.SPRING_API_URL}/spring/rooms/${roomId}/members/me`, {
+    const response = await axios.delete(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/members/me`, {
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${this.socket.data.accessToken}`
+            "Authorization": `Bearer ${accessToken}`
         }
     });
 
     if (response.status !== 200) {
         // 에러 처리 해야함. => 이건 무식한 방법이긴 한데 어쩔 수 없다. 유저가 이미 소켓을 끊은 상황이기때문에... => mq 넣는것 말고는 방법이 없는것 같다.
-        await axios.delete(`${process.env.SPRING_API_URL}/spring/rooms/${roomId}/members/me`, {
+        await axios.delete(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/members/me`, {
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.socket.data.accessToken}`
+                "Authorization": `Bearer ${accessToken}`
             }
         });
     }

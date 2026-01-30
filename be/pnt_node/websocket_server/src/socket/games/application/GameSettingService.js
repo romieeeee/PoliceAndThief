@@ -5,7 +5,6 @@ export class GameSettingService {
 
     findGameSetting = async (gameId) => {
         return await GameSetting.findOne({
-            attributes: ["gameId", "boundaryGeo", "prisonLat", "prisonLng", "timeLimit", "policeCount", "thiefCount", "playerCount"],
             where: { gameId: gameId, isDeleted: false }
         });
     }

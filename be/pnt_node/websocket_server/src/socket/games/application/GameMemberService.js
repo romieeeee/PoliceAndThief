@@ -17,7 +17,7 @@ export class GameMemberService {
         return res;
     }
 
-    updateMemberStatus = async (gameId, memberId, status, options = {}) => {
+    updateMemberStatus = async (gameId, memberId, status) => {
         const location = await this.redisClient.getLocation(memberId, gameId);
 
         if (!location) {
@@ -52,6 +52,7 @@ export class GameMemberService {
             include: [
                 {
                     model: Member,
+                    attributes: ["id"],
                     include: [
                         {
                             model: MemberProfile,

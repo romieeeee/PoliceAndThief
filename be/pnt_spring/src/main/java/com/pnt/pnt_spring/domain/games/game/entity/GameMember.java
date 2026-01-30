@@ -25,10 +25,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(
-	name = "game_member",
-	uniqueConstraints = @UniqueConstraint(columnNames = {"game_id", "member_id"})
-)
+@Table(name = "game_member", uniqueConstraints = @UniqueConstraint(columnNames = { "game_id", "member_id" }))
 public class GameMember extends BaseEntity {
 
 	@Id
@@ -64,9 +61,11 @@ public class GameMember extends BaseEntity {
 
 	private Boolean inGameConnected;
 
-    /* =========================
-       생성/상태 변경 메서드
-       ========================= */
+	/*
+	 * =========================
+	 * 생성/상태 변경 메서드
+	 * =========================
+	 */
 
 	public static GameMember join(Game game, Member member) {
 		if (game == null)

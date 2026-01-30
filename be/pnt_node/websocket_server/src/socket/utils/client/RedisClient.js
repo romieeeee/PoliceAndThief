@@ -58,6 +58,22 @@ export class RedisClient {
         await this.pubClient.set(infoKey, roomId, "EX", 60);
     }
 
+    setAccessToken = async (memberId, accessToken) => {
+        const infoKey = `websocket:access:token:${memberId}`;
+        await this.pubClient.set(infoKey, accessToken, "EX", 60 * 5);
+    }
+
+    getAccessToken = async (memberId) => {
+        const infoKey = `websocket:access:token:${memberId}`;
+        const accessToken = await this.pubClient.get(infoKey);
+        return accessToken;
+    }
+
+    deleteAccessToken = async (memberId) => {
+        const infoKey = `websocket:access:token:${memberId}`;
+        await this.pubClient.del(infoKey);
+    }
+
 
     /**
      * 게임 관련 레디스 캐시
@@ -232,7 +248,7 @@ export class RedisClient {
             console.warn(`[RedisClient] Invalid duration for CctvTimer: ${time}. Defaulting to 60s.`);
             return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", 60);
         }
-        return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", duration);
+        return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", duration * 60);
     }
 
     deleteCctvTimer = async (gameId) => {
