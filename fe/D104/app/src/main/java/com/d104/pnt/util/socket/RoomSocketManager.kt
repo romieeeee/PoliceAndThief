@@ -50,7 +50,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
         on(EVENT_GET_UPDATE_ROOM_INFO) { args ->
             try {
                 val data = args[0] as JSONObject
-                Timber.d("🏠 방 설정 업데이트: $data")
+                Timber.d("방 설정 업데이트: $data")
                 onRoomInfoUpdated?.invoke(data)
             } catch (e: Exception) {
                 Timber.e(e, "방 설정 업데이트 파싱 실패")
@@ -64,7 +64,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
                 val roomId = data.getLong("roomId")
                 val memberId = data.getLong("memberId")
                 val isReady = data.getBoolean("isReady")
-                Timber.d("✅ Ready 상태 업데이트: memberId=$memberId, isReady=$isReady")
+                Timber.d("Ready 상태 업데이트: memberId=$memberId, isReady=$isReady")
                 onReadyUpdated?.invoke(roomId, memberId, isReady)
             } catch (e: Exception) {
                 Timber.e(e, "Ready 상태 업데이트 파싱 실패")
@@ -78,7 +78,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
                 val roomId = data.getLong("roomId")
                 val memberId = data.getLong("memberId")
                 val preferPosition = data.getString("preferPosition")
-                Timber.d("🎯 선호 포지션 업데이트: memberId=$memberId, position=$preferPosition")
+                Timber.d("선호 포지션 업데이트: memberId=$memberId, position=$preferPosition")
                 onPositionUpdated?.invoke(roomId, memberId, preferPosition)
             } catch (e: Exception) {
                 Timber.e(e, "선호 포지션 업데이트 파싱 실패")
@@ -89,7 +89,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
         on(EVENT_GET_NOW_READY_INFO) { args ->
             try {
                 val data = args[0] as JSONArray
-                Timber.d("📋 Ready 정보 리스트: $data")
+                Timber.d("Ready 정보 리스트: $data")
                 onReadyInfoReceived?.invoke(data)
             } catch (e: Exception) {
                 Timber.e(e, "Ready 정보 리스트 파싱 실패")
@@ -100,7 +100,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
         on(EVENT_GET_NOW_ROOM_INFO) { args ->
             try {
                 val data = args[0] as JSONObject
-                Timber.d("🏠 전체 방 정보 수신: ${data.optJSONObject("room")?.optString("roomCode")}")
+                Timber.d("전체 방 정보 수신: ${data.optJSONObject("room")?.optString("roomCode")}")
                 onFullRoomInfoReceived?.invoke(data)
             } catch (e: Exception) {
                 Timber.e(e, "전체 방 정보 파싱 실패")
@@ -112,7 +112,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
             try {
                 val data = args[0] as JSONObject
                 val memberId = data.getLong("memberId")
-                Timber.d("👋 멤버 강퇴됨: memberId=$memberId")
+                Timber.d("멤버 강퇴됨: memberId=$memberId")
                 onMemberKicked?.invoke(memberId)
             } catch (e: Exception) {
                 Timber.e(e, "멤버 강퇴 파싱 실패")
@@ -124,7 +124,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
             try {
                 val data = args[0] as JSONObject
                 val memberId = data.getLong("memberId")
-                Timber.d("👋 멤버 퇴장: memberId=$memberId")
+                Timber.d("멤버 퇴장: memberId=$memberId")
                 onMemberLeft?.invoke(memberId)
             } catch (e: Exception) {
                 Timber.e(e, "멤버 퇴장 파싱 실패")
@@ -180,7 +180,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
         polygon: List<Pair<Double, Double>>
     ) {
         val roomId = currentRoomId ?: run {
-            Timber.e("❌ roomId가 없어서 방 설정 업데이트 불가")
+            Timber.e("roomId가 없어서 방 설정 업데이트 불가")
             return
         }
 
@@ -214,7 +214,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
      */
     fun updateReady(ready: Boolean) {
         val roomId = currentRoomId ?: run {
-            Timber.e("❌ roomId가 없어서 Ready 상태 업데이트 불가")
+            Timber.e("roomId가 없어서 Ready 상태 업데이트 불가")
             return
         }
 
@@ -231,12 +231,12 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
      */
     fun updatePosition(preferPosition: String) {
         val roomId = currentRoomId ?: run {
-            Timber.e("❌ roomId가 없어서 포지션 업데이트 불가")
+            Timber.e("roomId가 없어서 포지션 업데이트 불가")
             return
         }
 
         if (preferPosition != "POLICE" && preferPosition != "THIEF") {
-            Timber.e("❌ 잘못된 포지션: $preferPosition")
+            Timber.e("잘못된 포지션: $preferPosition")
             return
         }
 
@@ -253,7 +253,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
      */
     fun requestReadyInfo(roomId: Long = currentRoomId ?: 0) {
         if (roomId == 0L) {
-            Timber.e("❌ roomId가 없어서 Ready 정보 요청 불가")
+            Timber.e("roomId가 없어서 Ready 정보 요청 불가")
             return
         }
 
@@ -269,7 +269,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
      */
     fun requestRoomInfo(roomId: Long = currentRoomId ?: 0) {
         if (roomId == 0L) {
-            Timber.e("❌ roomId가 없어서 방 정보 요청 불가")
+            Timber.e("roomId가 없어서 방 정보 요청 불가")
             return
         }
 
@@ -285,7 +285,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
      */
     fun kickMember(targetMemberId: Long, reason: String) {
         val roomId = currentRoomId ?: run {
-            Timber.e("❌ roomId가 없어서 멤버 강퇴 불가")
+            Timber.e("roomId가 없어서 멤버 강퇴 불가")
             return
         }
 
@@ -303,7 +303,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
      */
     fun leaveRoom() {
         val roomId = currentRoomId ?: run {
-            Timber.e("❌ roomId가 없어서 방 나가기 불가")
+            Timber.e("roomId가 없어서 방 나가기 불가")
             return
         }
 
