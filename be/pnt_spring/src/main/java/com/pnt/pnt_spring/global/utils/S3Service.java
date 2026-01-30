@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.pnt.pnt_spring.global.api.response.PresignedUrlResponse;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -17,6 +18,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class S3Service {
@@ -92,11 +94,8 @@ public class S3Service {
 				.build();
 
 			s3Client.deleteObject(deleteRequest);
-			// 필요하다면 로그 추가: log.info("S3 파일 삭제 완료: {}", path);
-
 		} catch (Exception e) {
-			// 삭제 실패가 전체 로직을 망가뜨리면 안 되므로 에러 로그만 남김
-			// log.error("S3 파일 삭제 중 오류 발생: {}", e.getMessage());
+			log.error("S3 파일 삭제 중 오류 발생: {}", e.getMessage());
 		}
 	}
 }
