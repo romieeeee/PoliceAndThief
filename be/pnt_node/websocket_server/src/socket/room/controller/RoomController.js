@@ -169,10 +169,11 @@ export class RoomController {
 
             console.log("update access token", this.socket.data.accessToken);
 
-            this.socket.emit("get update access token", data.accessToken);
+            this.socket.emit("get update access token", { "accessToken": data.accessToken });
         } catch (error) {
             sendError(this.socket, error, "RoomError");
         }
+
     }
 
     updateRoomMap = async (data) => {

@@ -26,7 +26,7 @@ public class JwtExceptionFilter extends OncePerRequestFilter {
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-		throws ServletException, IOException {
+			throws ServletException, IOException {
 		try {
 			// 다음 필터를 실행하라고 명령
 			filterChain.doFilter(request, response);
@@ -50,9 +50,9 @@ public class JwtExceptionFilter extends OncePerRequestFilter {
 		response.setCharacterEncoding("UTF-8");
 
 		// 공통 응답 포맷 생성
-		CommonResponse<Object> commonResponse = new CommonResponse<>(null, errorCode.getMessage(), errorCode);
+		CommonResponse<?> commonResponse = new CommonResponse<>(null, errorCode.getMessage(), errorCode);
 
 		// JSON 변환 후 응답 쓰기
-		response.getWriter().write(objectMapper.writeValueAsString(commonResponse));
+		response.getWriter().write(objectMapper.writeValueAsString(commonResponse.getBody()));
 	}
 }
