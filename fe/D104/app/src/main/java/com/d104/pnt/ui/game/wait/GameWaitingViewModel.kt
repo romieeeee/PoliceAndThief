@@ -313,19 +313,3 @@ class GameWaitingViewModel @Inject constructor(
         pollingJob?.cancel()
     }
 }
-
-data class GameRoomInfoState(
-    val roomCode: String = "",
-    val maxCount: Int = 0,
-    val policeCount: Int = 0,
-    val thiefCount: Int = 0,
-    val timeLimit: Int = 0,
-    val missionCount: Int = 5,
-    val cctvCycle: Int = 10,
-    val prison: Location? = null,
-    val polygon: List<Location>? = null
-)
-
-sealed interface GameWaitingUiEvent {
-    data class NavigateToHome(val message: String? = null) : GameWaitingUiEvent
-}

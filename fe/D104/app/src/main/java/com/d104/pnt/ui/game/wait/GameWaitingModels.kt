@@ -1,0 +1,30 @@
+package com.d104.pnt.ui.game.wait
+
+import com.d104.pnt.data.remote.model.request.Location
+import com.d104.pnt.domain.model.GameRole
+
+data class WaitingPlayer(
+    val id: Long,
+    val nickname: String,
+    val role: GameRole,
+    val isReady: Boolean = false,
+    val isChangingRole: Boolean = false,
+    val profileUrl: String? = null
+)
+
+data class GameRoomInfoState(
+    val roomCode: String = "",
+    val maxCount: Int = 0,
+    val policeCount: Int = 0,
+    val thiefCount: Int = 0,
+    val timeLimit: Int = 0,
+    val missionCount: Int = 5,
+    val cctvCycle: Int = 10,
+    val prison: Location? = null,
+    val polygon: List<Location>? = null
+)
+
+// UI 이벤트 정의
+sealed interface GameWaitingUiEvent {
+    data class NavigateToHome(val message: String? = null) : GameWaitingUiEvent
+}
