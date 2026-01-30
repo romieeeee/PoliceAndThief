@@ -35,11 +35,19 @@ class AuthTokenInterceptor @Inject constructor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val path = request.url.encodedPath
+        val noAuthHeader = request.header("X-No-Auth")
 
         // 공개 URL이면 토큰 추가하지 않음
         if (PUBLIC_URLS.any { path.contains(it) }) {
             Timber.d("Public URL, skipping token: $path")
             return chain.proceed(request)
+        }
+
+        if (noAuthHeader != null) {
+            val newRequest = request.newBuilder()
+                .removeHeader("X-No-Auth")
+                .build()
+            return chain.proceed(newRequest)
         }
 
         // 토큰 읽기
