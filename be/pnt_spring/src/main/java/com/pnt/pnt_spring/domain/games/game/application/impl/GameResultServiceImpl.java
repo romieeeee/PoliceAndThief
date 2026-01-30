@@ -95,7 +95,6 @@ public class GameResultServiceImpl implements GameResultService {
         List<GameMemberStat> policeStats = new ArrayList<>();
         List<GameMemberStat> thiefStats = new ArrayList<>();
         int totalArrests = 0;
-        int totalEscapes = 0;
 
         for (GameMemberStat stat : allStats) {
             if (stat.getPosition() == Position.POLICE) {
@@ -106,7 +105,6 @@ public class GameResultServiceImpl implements GameResultService {
 
             // 전체 통계 합산
             if (stat.getArrestCount() != null) totalArrests += stat.getArrestCount();
-            if (stat.getEscapeCount() != null) totalEscapes += stat.getEscapeCount();
         }
 
         // 3. 정렬 (경찰: 체포수 내림차순, 도둑: 생존시간 내림차순) - triggerAiNewsGeneration과 동일 로직
@@ -143,7 +141,6 @@ public class GameResultServiceImpl implements GameResultService {
                 .losingFirst(toMvpResponse(losingFirstStat, "패배팀 1위"))
                 .stats(GameResultResponse.TotalStats.builder()
                         .arrests(totalArrests)
-                        .escapes(totalEscapes)
                         .missionsCleared(0) // 미션 완료 수는 별도 집계 필요 (현재는 0)
                         .durationSec(durationSec)
                         .build())
@@ -289,7 +286,6 @@ public class GameResultServiceImpl implements GameResultService {
             thiefStat.updateAfterGame(
                     isWin,  // 이겼는지 졌는지
                     gameStat.getLongestSurvived(),
-                    gameStat.getEscapeCount(),
                     memberStat.getThiefGame() // MemberStat에서 가져온 총 도둑 판수 전달
             );
 

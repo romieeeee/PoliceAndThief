@@ -5,6 +5,8 @@ import com.pnt.pnt_spring.domain.auth.api.resp.LoginResponse;
 import com.pnt.pnt_spring.domain.auth.api.resp.SignupResponse;
 import com.pnt.pnt_spring.domain.auth.application.AuthService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+@Tag(name = "Auth", description = "회원관리 API")
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -24,6 +27,7 @@ public class AuthController {
     private final AuthService authService;
 
     // 회원가입
+    @Operation(summary = "회원가입", description = "회원가입 합니다.")
     @PostMapping("/signup")
     public CommonResponse<SignupResponse> signup(@Valid @RequestBody SignupRequest request) {
         SignupResponse signupResponse = authService.signup(request);
@@ -31,6 +35,7 @@ public class AuthController {
     }
 
     // 로그인
+    @Operation(summary = "로그인", description = "유저 로그인을 진행합니다.")
     @PostMapping("/login")
     public CommonResponse<LoginResponse> signin(@RequestBody LoginRequest request){
         LoginResponse loginResponse = authService.login(request);
@@ -38,6 +43,7 @@ public class AuthController {
     }
 
     // 로그아웃
+    @Operation(summary = "로그아웃", description = "유저 액세스 토큰을 만료합니다.")
     @PostMapping("/logout")
     public CommonResponse<String> logout(HttpServletRequest request){
 
@@ -49,6 +55,7 @@ public class AuthController {
     }
 
     // 아이디 중복 체크
+    @Operation(summary = "아이디 중복체크", description = "DB내 동일한 아이디가 있는지 확인합니다.")
     @PostMapping("/duplicate")
     public CommonResponse<Map<String, Boolean>> checkDuplicate(@RequestBody IdDuplicateRequest request) {
 
@@ -59,6 +66,7 @@ public class AuthController {
         return new CommonResponse<>(responseData, "아이디 중복 확인 완료", HttpStatus.OK);
     }
 
+    @Operation(summary = "소셜 로그인", description = "카카오 소셜로그인을 지원합니다.(Provider : KAKAO)")
     @PostMapping("/social-login")
     public CommonResponse<LoginResponse> socialLogin(@RequestBody SocialLoginRequest request) {
         LoginResponse loginResponse = authService.socialLogin(request);
@@ -73,6 +81,8 @@ public class AuthController {
         return null; // 혹은 예외 처리
     }
 
+
+    @Operation(summary = "토큰 재발급", description = "사용자 토큰을 재발급합니다.")
     @PostMapping("/reissue")
     public CommonResponse<TokenDto> reissue(@RequestBody TokenDto tokenDto) {
         TokenDto newToken = authService.reissue(tokenDto);
