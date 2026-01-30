@@ -173,6 +173,7 @@ export class RoomController {
         } catch (error) {
             sendError(this.socket, error, "RoomError");
         }
+        
     }
 
     updateRoomMap = async (data) => {
