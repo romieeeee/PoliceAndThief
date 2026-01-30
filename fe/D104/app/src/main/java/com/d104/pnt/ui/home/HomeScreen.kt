@@ -46,8 +46,9 @@ fun HomeScreen(
     goToGameCreate: () -> Unit,
     navigateToGameRoom: (Long) -> Unit,
     navigateToIntro: () -> Unit,
-    viewModel: HomeViewModel = hiltViewModel()
-) {
+    viewModel: HomeViewModel = hiltViewModel(),
+
+    ) {
     val context = LocalContext.current
     var showJoinDialog by remember { mutableStateOf(false) }
     val joinCode by viewModel.joinCode.collectAsStateWithLifecycle()
@@ -56,15 +57,15 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is HomeViewModel.HomeUiEvent.NavigateToIntro -> {
+                is HomeUiEvent.NavigateToIntro -> {
                     navigateToIntro()
                 }
 
-                is HomeViewModel.HomeUiEvent.ShowMessage -> {
+                is HomeUiEvent.ShowMessage -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
 
-                is HomeViewModel.HomeUiEvent.ShowError -> {
+                is HomeUiEvent.ShowError -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
             }
@@ -154,8 +155,6 @@ fun JoinGameDialog(
     joinCode: String,
     onUpdateCode: (String) -> Unit
 ) {
-    var code by remember { mutableStateOf("") }
-
     PixelContainer(
         modifier = Modifier.width(320.dp),
         backgroundColor = TextPrimary,

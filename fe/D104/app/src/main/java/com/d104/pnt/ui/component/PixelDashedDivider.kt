@@ -15,16 +15,15 @@ import com.d104.pnt.ui.theme.*
 @Composable
 fun PixelDashedDivider(
     color: Color = BorderDefault,
-    thickness: Dp = 2.dp, // 선 두께
-    dashLength: Dp = 4.dp, // 점 길이
-    gapLength: Dp = 4.dp   // 점 사이 간격
+    thickness: Dp = 2.dp,
+    dashLength: Dp = 4.dp,
+    gapLength: Dp = 4.dp
 ) {
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
             .height(thickness)
     ) {
-        // 점선 효과 정의 (점 길이, 간격)
         val pathEffect = PathEffect.dashPathEffect(
             floatArrayOf(dashLength.toPx(), gapLength.toPx()),
             0f

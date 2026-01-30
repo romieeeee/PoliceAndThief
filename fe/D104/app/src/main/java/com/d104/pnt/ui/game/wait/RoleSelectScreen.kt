@@ -3,6 +3,7 @@ package com.d104.pnt.ui.game.wait
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,7 +23,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.GameRole
-import com.d104.pnt.domain.model.GameRole.POLICE
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.theme.DarkBackground
 import timber.log.Timber
@@ -64,15 +64,37 @@ fun RoleSelectScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 RoleCard(
-                    role = POLICE,
+                    role = GameRole.POLICE,
                     modifier = Modifier.weight(1f),
-                    onClick = { onRoleSelected(POLICE) }
+                    onClick = { onRoleSelected(GameRole.POLICE) }
                 )
                 RoleCard(
                     role = GameRole.THIEF,
                     modifier = Modifier.weight(1f),
                     onClick = { onRoleSelected(GameRole.THIEF) }
                 )
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            PixelContainer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { /* TODO: 랜덤 선택하도록 해야하는데? */ },
+                backgroundColor = DarkBackground,
+                borderColor = Color.White,
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "상관없음",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier,
+                        color = Color.White
+                    )
+                }
             }
         }
     }

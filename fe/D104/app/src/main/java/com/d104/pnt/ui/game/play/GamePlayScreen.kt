@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +37,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.service.location.LocationService
@@ -49,10 +51,7 @@ import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieScreen
 import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
-import com.d104.pnt.util.getSingleLocation
 import com.google.android.gms.maps.model.LatLng
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun GamePlayScreen(
@@ -70,25 +69,22 @@ fun GamePlayScreen(
     val areaPoints = viewModel.polygonPoints.collectAsStateWithLifecycle().value
     val prisonLocation = viewModel.prisonLocation.collectAsState().value
 
-    // TODO: 나중에 서비스 시작 부분을 게임 시작에 진입하는 시점으로 바꿔야함
     DisposableEffect(Unit) {
-        val serviceIntent = Intent(context, LocationService::class.java).apply{
+        val serviceIntent = Intent(context, LocationService::class.java).apply {
             putExtra(LocationService.EXTRA_GAME_MODE, true)
         }
 
-        // 2. 서비스 시작 (안드로이드 버전에 따른 분기 처리)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // 포그라운드 서비스는 반드시 startForegroundService로 시작해야 함
             context.startForegroundService(serviceIntent)
         } else {
             context.startService(serviceIntent)
         }
 
-        // 2. [이탈 시] 서비스 종료
         onDispose {
             context.stopService(serviceIntent)
         }
     }
+
     // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
     LaunchedEffect(Unit) {
         viewModel.setDefaultArea(context)
@@ -274,7 +270,7 @@ fun GamePlayScreen(
                 }
             }
 
-        } else{
+        } else {
             WalkieBottomSheet {
                 WalkieTalkieScreen(
                     gameId = "1f",

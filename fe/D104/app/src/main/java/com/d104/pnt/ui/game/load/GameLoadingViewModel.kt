@@ -12,21 +12,13 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
-/**
- * 역할별 카운트다운 및 게임 시작 준비
- *
- * SavedStateHandle을 사용하여 Navigation argument로 role을 받음
- *
- * Navigation route: "game_loading/{role}"
- * 예: navController.navigate("game_loading/POLICE")
- */
 @HiltViewModel
 class GameLoadingViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     companion object {
-        private const val KEY_ROLE = "role" // Navigation argument 키 (NavArgs.ROLE과 동일해야 함)
+        private const val KEY_ROLE = "role"
         private const val TOTAL_SECONDS = 5
     }
 
@@ -75,10 +67,12 @@ class GameLoadingViewModel @Inject constructor(
                 GameRole.POLICE -> "도둑들의 위치를 파악하세요"
                 GameRole.THIEF -> "은신 장소를 찾으세요"
             }
+
             _remainingTime.value > 10 -> when (role) {
                 GameRole.POLICE -> "팀원들과 협력하세요"
                 GameRole.THIEF -> "경찰의 포위망을 조심하세요"
             }
+
             else -> "곧 게임이 시작됩니다!"
         }
     }

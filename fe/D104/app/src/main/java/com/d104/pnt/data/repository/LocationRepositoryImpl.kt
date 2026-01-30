@@ -4,9 +4,10 @@ import android.content.Context
 import android.location.Location
 import com.d104.pnt.BuildConfig
 import com.d104.pnt.data.remote.api.NaverApiService
+import com.d104.pnt.data.source.local.RegionCodeManager
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GeoLocationInfo
-import com.d104.pnt.domain.model.PlayerLocation
+import com.d104.pnt.domain.model.PlayerData
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.PolyUtil
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -21,15 +22,14 @@ import javax.inject.Singleton
 @Singleton
 class LocationRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val naverApiService: NaverApiService
+    private val naverApiService: NaverApiService,
+    private val regionCodeManager: RegionCodeManager
 ) : LocationRepository {
-    // 내부 수정용 MutableStateFlow
     private val _currentLocation = MutableStateFlow<Location?>(null)
     private val _polygonPoints = MutableStateFlow<List<LatLng>>(emptyList())
     private val _prisonLocation = MutableStateFlow<LatLng?>(null)
-    private val _playerLocations = MutableStateFlow<List<PlayerLocation>>(emptyList())
+    private val _playerLocations = MutableStateFlow<List<PlayerData>>(emptyList())
 
-    // 인터페이스 구현 (외부 공개용)
     override val currentLocation = _currentLocation.asStateFlow()
     override val polygonPoints = _polygonPoints.asStateFlow()
     override val prisonLocation = _prisonLocation.asStateFlow()
@@ -40,7 +40,7 @@ class LocationRepositoryImpl @Inject constructor(
         _currentLocation.value = location
     }
 
-    override fun updatePlayerLocation(locations: List<PlayerLocation>) {
+    override fun updatePlayerLocation(locations: List<PlayerData>) {
         _playerLocations.value = locations
     }
 
@@ -57,12 +57,10 @@ class LocationRepositoryImpl @Inject constructor(
     }
 
     override fun addPointToList(targetList: MutableList<DraggableLatLng>, newPoint: LatLng) {
-        // 내부 private 함수 활용
         val insertIndex = getInsertionIndex(newPoint, targetList.map { it.position })
         targetList.add(insertIndex, DraggableLatLng(position = newPoint))
     }
 
-    // 이 함수는 인터페이스에 없고 내부에서만 쓰이므로 private 유지
     private fun getInsertionIndex(point: LatLng, points: List<LatLng>): Int {
         var minDistance = Double.MAX_VALUE
         var insertIndex = points.size
@@ -103,14 +101,15 @@ class LocationRepositoryImpl @Inject constructor(
         _prisonLocation.value = null
     }
 
-    override suspend fun getAddressFromLatLng(latitude: Double, longitude: Double): GeoLocationInfo {
+    override suspend fun getAddressFromLatLng(
+        latitude: Double,
+        longitude: Double
+    ): GeoLocationInfo {
         return withContext(Dispatchers.IO) {
             try {
-                // local.properties에 저장한 키 가져오기
                 val clientId = BuildConfig.CLIENT_ID
                 val clientSecret = BuildConfig.CLIENT_SECRET
 
-                // ⭐️ 네이버는 "경도,위도" 문자열로 보냄
                 val coords = "$longitude,$latitude"
 
                 val response = naverApiService.getAddress(
@@ -120,12 +119,14 @@ class LocationRepositoryImpl @Inject constructor(
                 )
 
                 if (response.results.isNotEmpty()) {
-                    // results[0]은 보통 legalcode(법정동) 또는 admcode(행정동) 중 첫 번째 것
                     val region = response.results[0].region
+                    val fullCode = response.results[0].code.id
+                    val code = fullCode.take(8).toInt()
 
                     return@withContext GeoLocationInfo(
                         major = region.area1.name, // 서울특별시
                         middle = region.area2.name, // 강남구
+                        code = code // 행정동 코드
                     )
                 }
             } catch (e: Exception) {
@@ -135,19 +136,28 @@ class LocationRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun DummyPlayer() {
-        _playerLocations.value = listOf(
-            PlayerLocation(1, 101, 36.106996199409316, 128.41636536008272, 0, 1),
-            PlayerLocation(1, 102, 36.10663643418624, 128.4164977111253, 0, 1),
-            PlayerLocation(1, 100, 36.106996199409316, 128.41636536008272, 0, 1),
-            PlayerLocation(1, 103, 36.106218602970124, 128.4160154777275, 0, 1),
-            PlayerLocation(1, 104, 36.1069317248971, 128.41591167747148, 0, 2),
-            PlayerLocation(1, 105, 36.106888405240205, 128.4159553194928, 3, 2),
-            PlayerLocation(1, 106, 36.10686966460729, 128.41601606002928, 3, 2),
-            PlayerLocation(1, 107, 36.10662012389394, 128.41578115461553, 2, 2),
-            PlayerLocation(1, 108, 36.106996199409316, 128.41636536008272, 0, 2),
-            PlayerLocation(1, 109, 36.10629276353168, 128.4166025880095, 1, 2),
-            PlayerLocation(1, 110, 36.106996199409316, 128.41636536008272, 0, 2),
-        )
+    override fun getRegionCode(major: String, middle: String): Int {
+        val normalizedMajor = when (major) {
+            "서울" -> "서울특별시"
+            "인천" -> "인천광역시"
+            "강원도" -> "강원특별자치도"
+            "경북" -> "경상북도"
+            "경남" -> "경상남도"
+            "전북" -> "전북특별자치도"
+            "전남" -> "전라남도"
+            "충북" -> "충청북도"
+            "충남" -> "충청남도"
+            "제주도" -> "제주특별자치도"
+            "대구" -> "대구광역시"
+            "부산" -> "부산광역시"
+            "광주" -> "광주광역시"
+            "대전" -> "대전광역시"
+            "울산" -> "울산광역시"
+            "세종시" -> "세종특별자치시"
+            else -> major
+        }
+        Timber.d("major: $major, normalizedMajor: $normalizedMajor")
+        val code = regionCodeManager.getRegionCode(normalizedMajor, middle)
+        return code?.toInt() ?: 99999999
     }
 }

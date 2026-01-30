@@ -71,25 +71,6 @@ fun LoginScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        try {
-            val info = context.packageManager.getPackageInfo(
-                context.packageName,
-                PackageManager.GET_SIGNATURES
-            )
-            for (signature in info.signatures!!) {
-                val md = MessageDigest.getInstance("SHA")
-                md.update(signature.toByteArray())
-                val keyHash = Base64.encodeToString(md.digest(), Base64.NO_WRAP)
-                Timber.d("========================================")
-                Timber.d("📱 Current KeyHash: $keyHash")
-                Timber.d("========================================")
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Error getting key hash")
-        }
-    }
-
     Surface(modifier = Modifier.fillMaxSize()) {
 
         // 배경 이미지

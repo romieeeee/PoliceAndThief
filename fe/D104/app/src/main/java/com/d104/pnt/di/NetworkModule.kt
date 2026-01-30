@@ -5,6 +5,8 @@ import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.api.AuthApiService
 import com.d104.pnt.data.remote.api.ProfileApiService
 import com.d104.pnt.data.remote.api.ChatApiService
+import com.d104.pnt.data.remote.api.GameRoomApiService
+import com.d104.pnt.data.remote.api.ImageApiService
 import com.d104.pnt.data.remote.api.NaverApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -48,14 +50,14 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
-        authTokenInterceptor: AuthTokenInterceptor  // Hilt가 자동 주입!
+        authTokenInterceptor: AuthTokenInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(Constants.CONNECT_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(Constants.READ_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(Constants.WRITE_TIMEOUT, TimeUnit.SECONDS)
             .addInterceptor(loggingInterceptor)
-            .addInterceptor(authTokenInterceptor)  // JWT Token 자동 추가!
+            .addInterceptor(authTokenInterceptor)
             .build()
     }
 
@@ -66,7 +68,7 @@ object NetworkModule {
         gson: Gson
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(Constants.BASE_URL)
+            .baseUrl(Constants.SPRING_SERVER_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
@@ -90,14 +92,27 @@ object NetworkModule {
         return retrofit.create(ChatApiService::class.java)
     }
 
+    // 역 지오코딩 관련
     @Provides
     @Singleton
     fun provideNaverApiService(): NaverApiService {
         return Retrofit.Builder()
-            // ⭐️ 네이버 클라우드 API 주소
+            // 네이버 클라우드 API 주소
             .baseUrl("https://maps.apigw.ntruss.com/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(NaverApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGameRoomApiService(retrofit: Retrofit): GameRoomApiService {
+        return retrofit.create(GameRoomApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideImageApiService(retrofit: Retrofit): ImageApiService {
+        return retrofit.create(ImageApiService::class.java)
     }
 }

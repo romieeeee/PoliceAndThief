@@ -23,16 +23,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.d104.pnt.domain.model.ChatsData
-import com.d104.pnt.ui.theme.*
+import com.d104.pnt.domain.model.ChatRoomData
+import com.d104.pnt.ui.theme.BorderDefault
+import com.d104.pnt.ui.theme.TextPrimary
+import com.d104.pnt.ui.theme.TextSecondary
 
-// 단일 채팅방 아이템 컴포넌트
 @Composable
 fun RoomListItem(
-    data: ChatsData,
-    onJoinClick: (ChatsData) -> Unit = {}
+    data: ChatRoomData,
+    onJoinClick: (ChatRoomData) -> Unit = {}
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
@@ -40,8 +40,8 @@ fun RoomListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { isExpanded = !isExpanded },
-        backgroundColor = TextPrimary, // 배경색
-        borderColor = BorderDefault  // 테두리색
+        backgroundColor = TextPrimary,
+        borderColor = BorderDefault
     ) {
         Column(
             modifier = Modifier
@@ -56,7 +56,7 @@ fun RoomListItem(
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    Row (
+                    Row(
                         modifier = Modifier,
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -78,9 +78,8 @@ fun RoomListItem(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp)) // 제목과 설명 사이 간격
+                    Spacer(modifier = Modifier.height(4.dp))
 
-                    // 설명 텍스트
                     Text(
                         text = data.description,
                         style = MaterialTheme.typography.bodyMedium,
@@ -91,7 +90,6 @@ fun RoomListItem(
                 }
 
 
-                // 2. 우측 화살표 영역
                 if (!isExpanded) {
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
@@ -99,8 +97,7 @@ fun RoomListItem(
                         tint = BorderDefault,
                         modifier = Modifier.size(28.dp)
                     )
-                }
-                else{
+                } else {
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowUp,
                         contentDescription = "더보기",
@@ -109,6 +106,7 @@ fun RoomListItem(
                     )
                 }
             }
+
             // 확장되면 입장 버튼 보이게
             if (isExpanded) {
                 Spacer(
@@ -126,7 +124,7 @@ fun RoomListItem(
                             .weight(0.3f),
                         text = "입장",
                         fontSize = 16,
-                        onClick = { onJoinClick(data) }, // TODO: 버튼 클릭 시 입장 로직 수행
+                        onClick = { onJoinClick(data) },
                         mainColor = TextPrimary,
                         pixelSize = 3.dp,
                         blockHeight = 12,
@@ -136,17 +134,4 @@ fun RoomListItem(
             }
         }
     }
-}
-
-@Preview
-@Composable
-fun previewRoomListItem(){
-    val room =  ChatsData(
-        2,
-        "강남역 상습 탈옥범 잡을 마동석 같은 강력계 형사 모집중",
-        "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
-        25,
-        17
-    )
-    RoomListItem(data = room)
 }
