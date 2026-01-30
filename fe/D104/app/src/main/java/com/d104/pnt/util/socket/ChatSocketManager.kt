@@ -14,6 +14,7 @@ import javax.inject.Singleton
 class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
 
     private var currentChatRoomId: Long? = null
+    fun getCurrentChatRoomId(): Long? = currentChatRoomId
 
     companion object {
         // Request Events (req)
@@ -35,6 +36,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
     private var onNewMessage: ((JSONObject) -> Unit)? = null
     private var onPreviousMessages: ((List<JSONObject>, Int) -> Unit)? = null
     private var onSyncMessages: ((List<JSONObject>, Int) -> Unit)? = null
+    private var onReconnected: ((Long) -> Unit)? = null
 
     override fun setupCustomListeners() {
         // 채팅방 입장 확인
@@ -144,11 +146,21 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
 
     override fun onReconnect(data: JSONObject) {
         super.onReconnect(data)
-        val chatRoomId = data.optLong("chatRoomId")
-        if (chatRoomId > 0) {
-            currentChatRoomId = chatRoomId
-            Timber.d("재연결 - 채팅방 재입장: chatRoomId=$chatRoomId")
-            // 재연결 시 놓친 메시지 동기화는 필요시 수동으로 호출
+        // 서버가 재연결 성공 시 데이터를 준다면 사용하고,
+        // 아니라면 기존에 들고 있던 currentChatRoomId를 활용합니다.
+        val roomId = data.optLong("chatRoomId", currentChatRoomId ?: 0)
+
+        if (roomId > 0) {
+            currentChatRoomId = roomId
+            Timber.d("🔄 소켓 재연결 감지 - 방 재입장 시도: chatRoomId=$roomId")
+
+            // 1. 먼저 방에 다시 입장 (서버 세션 복구)
+            joinRoom(roomId) { success, message ->
+                if (success) {
+                    // 2. 입장 성공 후 ViewModel에 재연결 & 동기화 준비 완료 알림
+                    onReconnected?.invoke(roomId)
+                }
+            }
         }
     }
 
@@ -211,7 +223,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
         }
 
         val data = JSONObject().apply {
-//            put("cursor", cursor)
+            put("cursor", if (cursor == -1) JSONObject.NULL else cursor)
             put("limit", limit)
         }
 
@@ -272,11 +284,17 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
         onSyncMessages = callback
     }
 
+    fun setOnReconnected(callback: (chatRoomId: Long) -> Unit) {
+        onReconnected = callback
+    }
+
+
     private fun clearCallbacks() {
         onJoinedRoom = null
         onNewMessage = null
         onPreviousMessages = null
         onSyncMessages = null
+        onReconnected = null
     }
 
     override fun removeAllListeners() {

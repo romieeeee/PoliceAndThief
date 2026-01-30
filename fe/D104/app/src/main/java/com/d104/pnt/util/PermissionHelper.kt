@@ -191,7 +191,7 @@ object PermissionHelper {
         Timber.d("=== Permission Status ===")
         PermissionType.values().forEach { type ->
             val granted = isPermissionGranted(context, type)
-            val status = if (granted) "✅ GRANTED" else "❌ DENIED"
+            val status = if (granted) "GRANTED" else "DENIED"
             Timber.d("${type.name}: $status")
         }
         Timber.d("========================")
