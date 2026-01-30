@@ -6,10 +6,10 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class GameRoomMemberItem {
-    private Long memberId;
-    private String nickname;
-    private String role;              // POLICE / THIEF / UNDECIDED
-    private boolean isHost;
-    private boolean isReady;
-    private String profileImageUrl;   // avatarUrl
+	private Long memberId;
+	private String nickname;
+	private String role;              // POLICE / THIEF / UNDECIDED
+	private boolean isHost;
+	private boolean isReady;
+	private String profileImageUrl;   // avatarUrl
 }

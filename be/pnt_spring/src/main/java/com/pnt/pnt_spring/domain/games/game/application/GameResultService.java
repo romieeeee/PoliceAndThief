@@ -7,10 +7,10 @@ import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 
 public interface GameResultService {
 
-    void saveGameResult(GameResultRequest request);
+	void saveGameResult(GameResultRequest request);
 
-    GameResultResponse getGameResult(Long gameId);
+	GameResultResponse getGameResult(Long gameId);
 
-    Long calculateSurvivalTime(Game game, GameMember member);
+	Long calculateSurvivalTime(Game game, GameMember member);
 
 }

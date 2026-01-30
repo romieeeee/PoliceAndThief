@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class MissionResponse {
-    private Long missionId;
-    private String title;
-    private String description;
+	private Long missionId;
+	private String title;
+	private String description;
 }
