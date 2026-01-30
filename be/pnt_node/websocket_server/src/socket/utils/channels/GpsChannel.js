@@ -18,12 +18,17 @@ export class GpsChannel {
 
                 const gameId = parseInt(roomId);
 
+                const startTime = await this.redisClient.getGameTimer(gameId);
+
+                if (!startTime) {
+                    continue;
+                }
+
                 const locations = await this.redisClient.getAllLocations(gameId);
 
                 if (locations.length === 0) continue;
 
                 // 게임 시작시간
-                const startTime = await this.redisClient.getGameTimer(gameId);
 
                 const data = {
                     gameId: gameId,

@@ -82,7 +82,12 @@ export class RedisClient {
     }
 
     setGameSettingLock = async (gameId, time) => {
-        return await this.pubClient.set(`room:game:setting:lock:${gameId}`, "locked", "NX", "EX", time);
+        const duration = parseInt(time);
+        if (isNaN(duration)) {
+            console.warn(`[RedisClient] Invalid duration for GameSettingLock: ${time}. Defaulting to 3600s.`);
+            return await this.pubClient.set(`room:game:setting:lock:${gameId}`, "locked", "NX", "EX", 5);
+        }
+        return await this.pubClient.set(`room:game:setting:lock:${gameId}`, "locked", "NX", "EX", duration);
     }
 
     deleteGameSettingLock = async (gameId) => {
@@ -110,6 +115,11 @@ export class RedisClient {
      */
     setLocation = async (memberId, gameId, location) => {
         await this.pubClient.hset(this.getLocationKeyString(gameId), memberId, JSON.stringify(location));
+    }
+    
+    getLocation = async (memberId, gameId) => {
+        const location = await this.pubClient.hget(this.getLocationKeyString(gameId), memberId);
+        return JSON.parse(location);
     }
 
     getAllLocations = async (gameId) => {
@@ -196,7 +206,12 @@ export class RedisClient {
 
     // time은 초단위
     setGameTimer = async (gameId, time) => {
-        return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", time);
+        const duration = parseInt(time);
+        if (isNaN(duration)) {
+            console.warn(`[RedisClient] Invalid duration for GameTimer: ${time}. Defaulting to 600s.`);
+            return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", 600);
+        }
+        return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", duration);
     }
 
     getGameTimer = async (gameId) => {
@@ -212,7 +227,12 @@ export class RedisClient {
      * CCTV
      */
     setCctvTimer = async (gameId, time) => {
-        return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", time);
+        const duration = parseInt(time);
+        if (isNaN(duration)) {
+            console.warn(`[RedisClient] Invalid duration for CctvTimer: ${time}. Defaulting to 60s.`);
+            return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", 60);
+        }
+        return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", duration);
     }
 
     deleteCctvTimer = async (gameId) => {
