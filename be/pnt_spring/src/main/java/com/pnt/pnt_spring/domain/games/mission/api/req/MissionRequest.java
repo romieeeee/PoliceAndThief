@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MissionRequest {
 
-    private Long gameId;
-    private Long missionId;
-    private Long thiefId;
+	private Long gameId;
+	private Long missionId;
+	private Long thiefId;
 
 }

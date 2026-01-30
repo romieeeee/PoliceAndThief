@@ -6,15 +6,15 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class GameRoomSettingGetResponse {
-    private Long roomId;
-    private String status;
+	private Long roomId;
+	private String status;
 
-    private Integer timeLimit;
-    private Integer playerCount;
-    private Integer policeCount;
-    private Integer thiefCount;
-    private Integer cctvInterval;
+	private Integer timeLimit;
+	private Integer playerCount;
+	private Integer policeCount;
+	private Integer thiefCount;
+	private Integer cctvInterval;
 
-    private Double prisonLat;
-    private Double prisonLng;
+	private Double prisonLat;
+	private Double prisonLng;
 }

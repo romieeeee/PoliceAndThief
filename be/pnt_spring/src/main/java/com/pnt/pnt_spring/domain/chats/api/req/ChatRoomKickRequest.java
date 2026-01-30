@@ -6,9 +6,9 @@ import lombok.Getter;
 @Getter
 public class ChatRoomKickRequest {
 
-    @NotNull
-    private Long targetMemberId;
+	@NotNull
+	private Long targetMemberId;
 
-    private String reason;
+	private String reason;
 
 }
