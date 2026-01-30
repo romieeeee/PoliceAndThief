@@ -6,7 +6,7 @@ import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomSettingUpdateRespon
 
 public interface GameRoomSettingService {
 
-    GameRoomSettingGetResponse getSettings(Long actorMemberId, Long roomId);
+	GameRoomSettingGetResponse getSettings(Long actorMemberId, Long roomId);
 
-    GameRoomSettingUpdateResponse updateSettings(Long actorMemberId, Long roomId, GameRoomSettingUpdateRequest req);
+	GameRoomSettingUpdateResponse updateSettings(Long actorMemberId, Long roomId, GameRoomSettingUpdateRequest req);
 }

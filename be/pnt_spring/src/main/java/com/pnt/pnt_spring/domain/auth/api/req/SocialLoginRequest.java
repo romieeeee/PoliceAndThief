@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class SocialLoginRequest {
 
-    private String provider; // KAKAO or GOOGLE
-    private String token; // 앱에서 받은 Access Token(Kakao) or ID Token(Google)
+	private String provider; // KAKAO or GOOGLE
+	private String token; // 앱에서 받은 Access Token(Kakao) or ID Token(Google)
 
 }

@@ -1,13 +1,13 @@
 package com.pnt.pnt_spring.domain.games.game.api.resp;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.util.List;
 
 @Getter
 @AllArgsConstructor
 public class GameRoomMemberListResponse {
-    private Long roomId;
-    private List<GameRoomMemberItem> items;
+	private Long roomId;
+	private List<GameRoomMemberItem> items;
 }

@@ -23,7 +23,7 @@ spring:
       mode: always
 
     properties:
-      hibernate :
+      hibernate:
         format_sql: true
 
   data:
@@ -56,7 +56,7 @@ springdoc:
     persistAuthorization: true  # 페이지 새로고침 후에도 Authorization 헤더 유지 여부
     defaultModelsExpandDepth: -1  # 모델 스키마의 기본 펼침 깊이 (-1이면 모델 펼쳐지지 않음)
 
-  paths-to-match:  # OpenAPI 문서에서 포함할 엔드포인트 패턴
+  paths-to-match: # OpenAPI 문서에서 포함할 엔드포인트 패턴
     - /**  # /api로 시작하는 모든 경로 포함
   cache:
     disabled: true  # OpenAPI 문서의 캐싱 비활성화 (기본값: false)
@@ -72,7 +72,7 @@ oauth2:
   kakao:
     app-id: ${KAKAO_APP_ID}
   google:
-      client-id:
+    client-id:
 
 server:
   servlet:

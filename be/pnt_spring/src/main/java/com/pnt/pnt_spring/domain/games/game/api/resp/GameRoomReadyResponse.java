@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class GameRoomReadyResponse {
-    private Long roomId;
-    private Long memberId;
-    private boolean isReady;
+	private Long roomId;
+	private Long memberId;
+	private boolean isReady;
 }

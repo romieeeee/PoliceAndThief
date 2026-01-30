@@ -6,10 +6,10 @@ import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomStartableResponse;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameStartResponse;
 
 public interface GameRoomService {
-    GameRoomCreateResponse createRoom(Long hostMemberId, GameRoomCreateRequest req);
+	GameRoomCreateResponse createRoom(Long hostMemberId, GameRoomCreateRequest req);
 
-    GameStartResponse start(Long actorMemberId, Long roomId);
+	GameStartResponse start(Long actorMemberId, Long roomId);
 
-    GameRoomStartableResponse getStartable(Long actorMemberId, Long roomId);
+	GameRoomStartableResponse getStartable(Long actorMemberId, Long roomId);
 
 }
