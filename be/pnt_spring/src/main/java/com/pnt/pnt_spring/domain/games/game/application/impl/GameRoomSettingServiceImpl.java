@@ -12,8 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomSettingUpdateRequest;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomSettingGetResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomSettingUpdateResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomSettingResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomSettingService;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.entity.GameSetting;
@@ -42,7 +41,7 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 	 */
 	@Override
 	@Transactional(readOnly = true)
-	public GameRoomSettingGetResponse getSettings(Long actorMemberId, Long roomId) {
+	public GameRoomSettingResponse getSettings(Long actorMemberId, Long roomId) {
 
 		Game game = gameRepository.findByIdAndIsDeletedFalse(roomId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
@@ -50,7 +49,7 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 		GameSetting setting = gameSettingRepository.findByGameIdAndIsDeletedFalse(roomId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
 
-		return new GameRoomSettingGetResponse(
+		return new GameRoomSettingResponse(
 			roomId,
 			game.getStatus().name(),
 			setting.getTimeLimit(),
@@ -58,6 +57,8 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 			setting.getPoliceCount(),
 			setting.getThiefCount(),
 			setting.getCctvInterval(),
+			setting.getMissionCount(),
+			game.getRoomCode(),
 			setting.getPrisonLat(),
 			setting.getPrisonLng()
 		);
@@ -67,7 +68,7 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 	 * 게임방 설정 변경
 	 */
 	@Override
-	public GameRoomSettingUpdateResponse updateSettings(Long actorMemberId, Long roomId,
+	public GameRoomSettingResponse updateSettings(Long actorMemberId, Long roomId,
 		GameRoomSettingUpdateRequest req) {
 
 		Game game = gameRepository.findByIdForUpdate(roomId)
@@ -111,12 +112,13 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 			req.getPlayerCount(),
 			req.getPoliceCount(),
 			req.getThiefCount(),
-			req.getCctvInterval()
+			req.getCctvInterval(),
+			req.getMissionCount()
 		);
 
 		setting.updateMap(boundary, prisonLat, prisonLng);
 
-		return new GameRoomSettingUpdateResponse(
+		return new GameRoomSettingResponse(
 			roomId,
 			game.getStatus().name(),
 			setting.getTimeLimit(),
@@ -124,6 +126,8 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 			setting.getPoliceCount(),
 			setting.getThiefCount(),
 			setting.getCctvInterval(),
+			setting.getMissionCount(),
+			game.getRoomCode(),
 			setting.getPrisonLat(),
 			setting.getPrisonLng()
 		);

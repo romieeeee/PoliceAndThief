@@ -96,7 +96,8 @@ public class GameRoomServiceImpl implements GameRoomService {
 			req.getCctvInterval(),
 			boundary,
 			prisonLat,
-			prisonLng
+			prisonLng,
+			0
 		);
 		gameSettingRepository.save(setting);
 
