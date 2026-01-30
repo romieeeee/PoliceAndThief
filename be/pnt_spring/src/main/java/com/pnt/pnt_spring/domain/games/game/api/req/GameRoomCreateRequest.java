@@ -32,6 +32,10 @@ public class GameRoomCreateRequest {
 	private Integer cctvInterval;
 
 	@NotNull
+	@Min(0)
+	private Integer missionCount;
+
+	@NotNull
 	@Valid
 	private Prison prison;
 

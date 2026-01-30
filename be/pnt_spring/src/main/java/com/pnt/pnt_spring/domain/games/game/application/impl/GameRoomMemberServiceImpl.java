@@ -25,6 +25,7 @@ import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
+import com.pnt.pnt_spring.global.utils.S3Service;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,6 +38,7 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
 	private final GameMemberRepository gameMemberRepository;
 	private final GameSettingRepository gameSettingRepository;
 	private final MemberRepository memberRepository;
+	private final S3Service s3Service;
 
 	@Override
 	public GameRoomJoinResponse joinRoom(Long memberId, GameRoomJoinRequest req) {
@@ -141,8 +143,24 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
 		gameRepository.findById(roomId)
 			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 방입니다."));
 
-		List<GameRoomMemberItem> items = gameMemberRepository.findRoomMemberItems(roomId);
-		return new GameRoomMemberListResponse(roomId, items);
+		List<GameRoomMemberItem> rawItems = gameMemberRepository.findRoomMemberItems(roomId);
+
+		List<GameRoomMemberItem> responseItems = rawItems.stream()
+			.map(item -> {
+				String storedKey = item.getAvatarUrl();
+				String signedUrl = s3Service.getPresignedGetUrl(storedKey);
+				return GameRoomMemberItem.builder()
+					.memberId(item.getMemberId())
+					.nickname(item.getNickname())
+					.role(item.getRole())
+					.isHost(item.isHost())
+					.isReady(item.isReady())
+					.avatarUrl(signedUrl)
+					.build();
+			})
+			.toList();
+
+		return new GameRoomMemberListResponse(roomId, responseItems);
 	}
 
 	@Override
