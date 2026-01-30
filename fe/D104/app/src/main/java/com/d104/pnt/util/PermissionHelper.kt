@@ -69,6 +69,13 @@ object PermissionHelper {
             ),
             title = "백그라운드 위치 추적",
             description = "게임 중 지속적인 위치 추적을 위해 필요합니다.",
+        ),
+
+        @RequiresApi(Build.VERSION_CODES.Q)
+        STEP_SENSOR(
+            permissions = arrayOf(Manifest.permission.ACTIVITY_RECOGNITION),
+            title = "걸음 수 측정",
+            description = "게임 중 걸음 수를 측정하기 위해 필요합니다."
         );
 
         /**
@@ -154,13 +161,25 @@ object PermissionHelper {
     fun areEssentialPermissionsGranted(
         context: Context = BaseApplication.getContext()
     ): Boolean {
-        return arePermissionsGranted(
-            context,
-            PermissionType.LOCATION,
-            PermissionType.CAMERA,
-            PermissionType.AUDIO,
-            PermissionType.NOTIFICATION
-        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return arePermissionsGranted(
+                context,
+                PermissionType.LOCATION,
+                PermissionType.CAMERA,
+                PermissionType.AUDIO,
+                PermissionType.NOTIFICATION,
+                PermissionType.STEP_SENSOR
+            )
+        }
+        else {
+            return arePermissionsGranted(
+                context,
+                PermissionType.LOCATION,
+                PermissionType.CAMERA,
+                PermissionType.AUDIO,
+                PermissionType.NOTIFICATION,
+            )
+        }
     }
 
     /**
