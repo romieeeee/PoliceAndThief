@@ -18,6 +18,7 @@ import com.pnt.pnt_spring.domain.members.stat.api.resp.MemberThiefResponse;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import com.pnt.pnt_spring.global.api.response.PresignedUrlResponse;
 import com.pnt.pnt_spring.global.utils.S3Service;
+import com.pnt.pnt_spring.global.utils.SecurityUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -65,11 +66,10 @@ public class MemberController {
 
 	@Operation(summary = "S3 업로드 URL 발급", description = "이미지 업로드를 위한 Presigned URL과 저장될 Key를 반환합니다.")
 	@GetMapping("/{id}/presigned-url")
-	public CommonResponse<PresignedUrlResponse> getPresignedUrl(
-		@PathVariable("id") Long memberId,
-		@RequestParam String fileName,
-		@RequestParam String contentType) {
-		PresignedUrlResponse response = s3Service.getPresignedPutUrl("profiles", fileName, contentType, memberId);
+	public CommonResponse<PresignedUrlResponse> getPresignedUrl(@RequestParam String fileName) {
+		Long currentMemberId = SecurityUtils.currentMemberId();
+		PresignedUrlResponse response = s3Service.getPresignedPutUrl("profiles", fileName, currentMemberId);
+
 		return new CommonResponse<>(response, "업로드 URL 발급 완료", HttpStatus.OK);
 	}
 
