@@ -14,7 +14,7 @@ interface ProfileRepository {
     /**
      * 프로필 수정
      */
-    suspend fun updateProfile(memberId: Long, nickname: String, avatarUrl: String): BaseResult<ProfileResponse>
+    suspend fun updateProfile(memberId: Long, nickname: String, imageKey: String): BaseResult<ProfileResponse>
 
     /**
      * 도둑 스탯 조회
