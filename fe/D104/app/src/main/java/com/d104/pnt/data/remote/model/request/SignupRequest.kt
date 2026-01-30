@@ -1,6 +1,7 @@
 package com.d104.pnt.data.remote.model.request
 
 import com.google.gson.annotations.SerializedName
+
 /**
  * 회원가입 요청
  */
@@ -22,7 +23,6 @@ data class SignupRequest(
 /**
  * 아이디 중복 체크 요청
  */
-
 data class CheckDuplicateRequest(
     val id: String,
 )

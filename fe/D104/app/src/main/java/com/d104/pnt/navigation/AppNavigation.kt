@@ -3,7 +3,6 @@ package com.d104.pnt.navigation
 import android.app.Activity
 import android.os.Build
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -39,7 +38,6 @@ import timber.log.Timber
  * 전체 앱 네비게이션
  * 설정 복귀 시 자동 재확인 처리 개선
  */
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AppNavigation(
@@ -65,12 +63,23 @@ fun AppNavigation(
 
     // 필요한 필수 권한 목록
     val neededPermissions = remember {
-        listOf(
-            PermissionHelper.PermissionType.CAMERA,
-            PermissionHelper.PermissionType.LOCATION,
-            PermissionHelper.PermissionType.AUDIO,
-            PermissionHelper.PermissionType.NOTIFICATION
-        ).filter { it.isRequired() }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            listOf(
+                PermissionHelper.PermissionType.CAMERA,
+                PermissionHelper.PermissionType.LOCATION,
+                PermissionHelper.PermissionType.AUDIO,
+                PermissionHelper.PermissionType.NOTIFICATION,
+                PermissionHelper.PermissionType.STEP_SENSOR
+            ).filter { it.isRequired() }
+        }
+        else {
+            listOf(
+                PermissionHelper.PermissionType.CAMERA,
+                PermissionHelper.PermissionType.LOCATION,
+                PermissionHelper.PermissionType.AUDIO,
+                PermissionHelper.PermissionType.NOTIFICATION
+            ).filter { it.isRequired() }
+        }
     }
 
     // 모든 권한을 하나의 리스트로 합침
@@ -136,10 +145,19 @@ fun AppNavigation(
                         Toast.LENGTH_LONG
                     ).show()
                 }
+
                 is AuthEventBus.AuthEvent.Unauthorized -> {
                     currentScreen = AppScreen.Intro
                 }
             }
+        }
+    }
+
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            currentScreen = AppScreen.Main
+        } else {
+            currentScreen = AppScreen.Intro
         }
     }
 
@@ -151,14 +169,6 @@ fun AppNavigation(
                 IntroScreen(
                     onClick = {
                         currentScreen = AppScreen.Login
-//                        if (isLoggedIn) {
-//                            Timber.d("Navigation: Intro -> Main")
-//
-//                            currentScreen = AppScreen.Main
-//                        } else {
-//                            Timber.d("Navigation: Intro -> Login")
-//                            currentScreen = AppScreen.Login
-//                        }
                     }
                 )
             }
@@ -169,7 +179,7 @@ fun AppNavigation(
                     onLoginSuccess = { id ->
                         memberId = id
                         Timber.d("Login success: $id")
-                        currentScreen = AppScreen.Main
+//                        currentScreen = AppScreen.Main
 
                         // 이미 권한이 있는 상태로 로그인
                         if (PermissionHelper.areEssentialPermissionsGranted(context)) {
@@ -206,7 +216,7 @@ fun AppNavigation(
                     memberId = memberId,
                     navigateToIntro = {
                         Timber.d("Navigation: Main -> Intro (Logout)")
-                        currentScreen = AppScreen.Intro // ⭐ Intro로 변경
+//                        currentScreen = AppScreen.Intro // ⭐ Intro로 변경
                     }
                 )
             }

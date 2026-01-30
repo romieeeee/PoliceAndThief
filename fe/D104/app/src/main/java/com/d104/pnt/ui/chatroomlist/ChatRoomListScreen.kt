@@ -1,6 +1,5 @@
 package com.d104.pnt.ui.chatroomlist
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,19 +31,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d104.pnt.domain.model.ChatRoomData
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelDropdown
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.component.RoomList
-import com.d104.pnt.ui.theme.*
-import timber.log.Timber
+import com.d104.pnt.ui.theme.BorderDefault
+import com.d104.pnt.ui.theme.ButtonHighlight
+import com.d104.pnt.ui.theme.ButtonPrimary
+import com.d104.pnt.ui.theme.TextPrimary
 
 @Composable
 fun ChatRoomListScreen(
     navigateToChatCreate: () -> Unit,
+    navigateToChatRoom: (Long) -> Unit,
     viewModel: ChatRoomListViewModel = hiltViewModel()
 ) {
     val majors = viewModel.majorList
@@ -58,11 +60,13 @@ fun ChatRoomListScreen(
     val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
     val searchText by viewModel.searchQuery.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        viewModel.getJoinedChatRoom()
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DeepDark)
             .padding(16.dp)
             .statusBarsPadding() // 상태바 겹침 방지
     ) {
@@ -125,12 +129,13 @@ fun ChatRoomListScreen(
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            PixelIconButton (
+            PixelIconButton(
                 modifier = Modifier.size(48.dp),
                 mainColor = ButtonPrimary,
                 borderColor = ButtonHighlight,
                 onClick = {
-                    val code = if (viewModel.searchRegionQuery.value != -1) viewModel.searchRegionQuery.value else null
+                    val code =
+                        if (viewModel.searchRegionQuery.value != -1) viewModel.searchRegionQuery.value else null
                     if (searchMode && searchText != "") {
                         viewModel.searchChatRoom(viewModel.searchQuery.value, code)
                     }
@@ -154,9 +159,10 @@ fun ChatRoomListScreen(
             is UiState.Success -> {
                 val data = (uiState as UiState.Success).data
                 if (data.chats.isEmpty()) {
-                    Box(modifier = Modifier
-                        .weight(1f)
-                        .align(Alignment.CenterHorizontally)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .align(Alignment.CenterHorizontally)
                     ) {
                         Text(
                             text = "검색 결과가 없습니다.",
@@ -165,16 +171,23 @@ fun ChatRoomListScreen(
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
-                }
-                else {
+                } else {
                     Box(modifier = Modifier.weight(1f)) {
                         RoomList(
                             rooms = data.chats,
-                            onItemClick = {}
+                            onItemClick = { room ->
+                                viewModel.joinChatRoomFromList(
+                                    chatRoomId = room.id,
+                                    onSuccess = {
+                                        navigateToChatRoom(room.id)
+                                    }
+                                )
+                            }
                         )
                     }
                 }
             }
+
             is UiState.Error -> {}
         }
     }
@@ -196,6 +209,7 @@ fun ChatRoomListHeader(
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .padding(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         // 왼쪽 버튼
         PixelButtonCode(
@@ -203,7 +217,7 @@ fun ChatRoomListHeader(
             text = "참여 중인 채팅방",
             fontSize = 14,
             onClick = onJoinedRoomClicked,
-            mainColor = if (viewMode == ChatRoomListViewModel.ViewMode.Me)ButtonPrimary else TextPrimary,
+            mainColor = if (viewMode == ChatRoomListViewModel.ViewMode.Me) ButtonPrimary else TextPrimary,
             pixelSize = 3.dp,
             blockHeight = 14,
             textColor = if (viewMode == ChatRoomListViewModel.ViewMode.Me) TextPrimary else BorderDefault

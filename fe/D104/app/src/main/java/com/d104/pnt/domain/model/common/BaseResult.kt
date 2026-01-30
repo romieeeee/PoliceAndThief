@@ -1,7 +1,5 @@
 package com.d104.pnt.domain.model.common
 
-import com.d104.pnt.data.model.common.ApiError
-
 /**
  * Repository 레이어의 공통 Result 타입
  *

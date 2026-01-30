@@ -64,6 +64,7 @@ class ProfileViewModel @Inject constructor(
                     _profileState.value = UiState.Success(result.data)
                     Timber.d("프로필 조회 성공")
                 }
+
                 is BaseResult.Error -> {
                     _profileState.value = UiState.Error(result.error.message)
                     Timber.e("프로필 조회 실패: ${result.error.message}")
@@ -86,6 +87,7 @@ class ProfileViewModel @Inject constructor(
                     _profileState.value = UiState.Success(result.data)
                     Timber.d("프로필 수정 성공")
                 }
+
                 is BaseResult.Error -> {
                     Timber.e("프로필 수정 실패: ${result.error.message}")
                 }

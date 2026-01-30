@@ -1,10 +1,22 @@
 package com.d104.pnt.ui.profile
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,6 +50,7 @@ fun ProfileScreen(
                     CircularProgressIndicator(color = Color.White)
                 }
             }
+
             is UiState.Success -> {
                 val currentProfile = state.data
 
@@ -45,7 +58,8 @@ fun ProfileScreen(
                     profile = currentProfile,
                     onLogoutClick = { /* 로그아웃 */ },
                     onUpdateNickname = { newName ->
-                        val safeAvatarUrl = if (currentProfile.avatarUrl.isNullOrBlank()) "DEFAULT" else currentProfile.avatarUrl
+                        val safeAvatarUrl =
+                            if (currentProfile.avatarUrl.isNullOrBlank()) "DEFAULT" else currentProfile.avatarUrl
 
                         viewModel.updateProfile(
                             nickname = newName,
@@ -57,6 +71,7 @@ fun ProfileScreen(
                     }
                 )
             }
+
             is UiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
@@ -65,6 +80,7 @@ fun ProfileScreen(
                     )
                 }
             }
+
             else -> {} // Idle
         }
 
@@ -86,11 +102,13 @@ fun ProfileScreen(
                                 else -> "DEFAULT"
                             }
                         }
+
                         is AvatarImage.Gallery -> selectedImage.uri.toString()
                     }
 
                     val currentNickname = (profileState as? UiState.Success)?.data?.nickname
-                    val safeNickname = if (currentNickname.isNullOrBlank()) "이름 없음" else currentNickname
+                    val safeNickname =
+                        if (currentNickname.isNullOrBlank()) "이름 없음" else currentNickname
 
                     viewModel.updateProfile(
                         nickname = safeNickname,
@@ -110,10 +128,26 @@ fun ProfileContent(
     onUpdateAvatar: () -> Unit = {}
 ) {
     // 안전한 데이터 추출
-    val wins = try { profile.stat?.wins ?: 0 } catch (e: Exception) { 0 }
-    val totalGames = try { profile.stat?.totalGames ?: 0 } catch (e: Exception) { 0 }
-    val policeGrade = try { profile.stat?.policeGrade ?: "Unranked" } catch (e: Exception) { "Unranked" }
-    val thiefGrade = try { profile.stat?.thiefGrade ?: "Unranked" } catch (e: Exception) { "Unranked" }
+    val wins = try {
+        profile.stat?.wins ?: 0
+    } catch (e: Exception) {
+        0
+    }
+    val totalGames = try {
+        profile.stat?.totalGames ?: 0
+    } catch (e: Exception) {
+        0
+    }
+    val policeGrade = try {
+        profile.stat?.policeGrade ?: "Unranked"
+    } catch (e: Exception) {
+        "Unranked"
+    }
+    val thiefGrade = try {
+        profile.stat?.thiefGrade ?: "Unranked"
+    } catch (e: Exception) {
+        "Unranked"
+    }
 
     Column(
         modifier = Modifier.fillMaxSize(),
