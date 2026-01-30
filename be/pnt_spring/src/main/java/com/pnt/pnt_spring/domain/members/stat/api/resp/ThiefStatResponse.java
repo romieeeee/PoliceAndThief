@@ -32,7 +32,6 @@ public class ThiefStatResponse { // 별도 파일로 독립
         }
 
         return ThiefStatResponse.builder()
-                .escapeCount(stat.getTotalEscapeCount()) // getter 이름 수정됨
                 .averageSurvivalTimeSec(stat.getAverageSurvivalSec())
                 .missionClearCount(stat.getTotalMissionCount())
                 .longestSurvivalSec(stat.getLongestSurvivalSec())
