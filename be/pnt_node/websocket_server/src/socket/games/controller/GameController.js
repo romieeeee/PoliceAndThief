@@ -344,46 +344,6 @@ export class GameController {
         }
     }
 
-    /**
-     * {
-        "gameId": 10,
-        "policeId": 1,
-        "thiefId": 2,
-        "lat": 35.0,
-        "lng": 129.0,
-    } 
-     */
-    /**
-     * 게임인포 동기화
-     * 게임 timer는 get gps에서 계산해서 보내주므로 여기서는 계산하지 않음
-     * need: 체포상태, 미션 상태
-     * 
-     * req : {
-     *  gameId: 10
-     * }
-     * 
-     * res : {
-     *  gameId: 10,
-     *  status: "IN_GAME" || "ENDED",
-     *  members: [
-     *    {
-     *      memberId: 1,
-     *      position: "POLICE",
-     *      status: "FREE" || "PRISON" || "TRANSFER",
-     *    },
-     *  ],
-     *  missions: [
-     *    {
-     *      "id" : "gameMissionId", 
-     *       "missionId": "missionId" ,
-     *       "gameId": "gameId", 
-     *       "status": "SUCCESS" || "IN_PROGRESS", 
-     *       "completedAt": "completedAt", 
-     *       "completedBy": "completedBy"
-     *    },
-     *  ],
-     * }
-     */
     syncGameInfo = async (payload) => {
         try {
             const { gameId } = payload;
@@ -494,24 +454,15 @@ export class GameController {
         }
     }
 
-    /**
-     * 스킬 사용
-     * { 
-     *  "gameId": 1,
-     *  "policeId": 1
-     * }
-     */
-    /**
-     * 스킬 사용
-     * { 
-     *  "gameId": 1,
-     *  "policeId": 1
-     * }
-     */
+
     postSkillUse = async (payload) => {
         try {
+            let { gameId, policeId } = payload;
+
+            policeId = parseInt(policeId) || parseInt(this.socket.data.memberId);
+            gameId = parseInt(gameId);
+
             console.log("postSkillUse", payload);
-            const { gameId, policeId } = payload;
 
             // 게임 스킬 정보 조회
             const skill = await this.gameSkillService.findGameSkill(parseInt(gameId), parseInt(policeId));
