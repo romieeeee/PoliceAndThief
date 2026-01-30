@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.pnt.pnt_spring.domain.members.member.api.req.MemberProfileUpdateRequest;
@@ -15,6 +16,8 @@ import com.pnt.pnt_spring.domain.members.member.application.MemberService;
 import com.pnt.pnt_spring.domain.members.stat.api.resp.MemberPoliceResponse;
 import com.pnt.pnt_spring.domain.members.stat.api.resp.MemberThiefResponse;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
+import com.pnt.pnt_spring.global.api.response.PresignedUrlResponse;
+import com.pnt.pnt_spring.global.utils.S3Service;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 public class MemberController {
 
 	private final MemberService memberService;
+	private final S3Service s3Service;
 
 	@Operation(summary = "멤버 프로필 조회", description = "멤버 ID를 받아 멤버 프로필을 조회합니다.")
 	@GetMapping("/{id}")
@@ -57,6 +61,15 @@ public class MemberController {
 		@RequestBody MemberProfileUpdateRequest request) {
 		MemberProfileUpdateResponse response = memberService.updateProfile(memberId, request);
 		return new CommonResponse<>(response, "프로필 수정 완료", HttpStatus.OK);
+	}
+
+	@Operation(summary = "S3 업로드 URL 발급", description = "이미지 업로드를 위한 Presigned URL과 저장될 Key를 반환합니다.")
+	@GetMapping("/{id}/presigned-url")
+	public CommonResponse<PresignedUrlResponse> getPresignedUrl(
+		@PathVariable("id") Long memberId,
+		@RequestParam String fileName) {
+		PresignedUrlResponse response = s3Service.getPresignedPutUrl("profiles", fileName, memberId);
+		return new CommonResponse<>(response, "업로드 URL 발급 완료", HttpStatus.OK);
 	}
 
 }
