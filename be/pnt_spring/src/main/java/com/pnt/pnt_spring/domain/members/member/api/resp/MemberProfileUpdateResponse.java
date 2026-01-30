@@ -6,9 +6,11 @@ import com.pnt.pnt_spring.domain.members.member.entity.MemberProfile;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Builder
+@Setter
 public class MemberProfileUpdateResponse {
 	private Long memberId;
 	private String nickname;
