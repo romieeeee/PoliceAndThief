@@ -97,7 +97,7 @@ public class GameRoomServiceImpl implements GameRoomService {
 			boundary,
 			prisonLat,
 			prisonLng,
-			0
+			req.getMissionCount()
 		);
 		gameSettingRepository.save(setting);
 

@@ -72,6 +72,10 @@ dependencies {
 
     // 유효성 검사
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // AWS SDK (S3)
+    implementation platform('software.amazon.awssdk:bom:2.21.1')
+    implementation 'software.amazon.awssdk:s3'
 }
 
 tasks.named('test') {

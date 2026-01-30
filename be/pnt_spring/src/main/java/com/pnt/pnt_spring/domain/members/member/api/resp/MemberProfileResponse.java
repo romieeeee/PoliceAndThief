@@ -7,9 +7,11 @@ import com.pnt.pnt_spring.domain.members.stat.api.resp.MemberStatResponse;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 @Builder
 @Getter
+@Setter
 public class MemberProfileResponse {
 
 	private Long memberId;
