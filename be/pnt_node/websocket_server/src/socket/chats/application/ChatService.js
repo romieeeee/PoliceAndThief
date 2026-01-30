@@ -68,7 +68,7 @@ export class ChatService {
             chatRoomId: payload.chatRoomId
         };
 
-        if (payload.cursor) {
+        if (payload.cursor && payload.cursor !== 0) {
             matchStage._id = { $lt: payload.cursor };
         }
 
