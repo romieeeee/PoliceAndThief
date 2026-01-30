@@ -74,26 +74,35 @@ public class MemberServiceImpl implements MemberService {
 	@Override
 	@Transactional
 	public MemberProfileUpdateResponse updateProfile(Long memberId, MemberProfileUpdateRequest request) {
-		// 프로필 조회
 		Member member = memberRepository.findById(memberId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND)); // 혹은 PROFILE_NOT_FOUND
+			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-		// TODO: s3 연결
+		String oldAvatarKey = member.getMemberProfile().getAvatarUrl();
+		String newAvatarKey = request.getAvatarUrl();
 
-		// 데이터 수정
+		member.getMemberProfile().updateProfile(request.getNickname(), newAvatarKey);
 
-		// TODO: s3 연결
-
-		// 데이터 수정
-		member.getMemberProfile().updateProfile(request.getNickname(), request.getAvatarUrl());
-
-		// TODO: MongoDB에 최신화 시켜야 할 필요성
 		MemberDoc memberDoc = memberMongoRepository.findByMemberId(memberId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-		memberDoc.update(request.getNickname(), request.getAvatarUrl());
+		memberDoc.update(request.getNickname(), newAvatarKey);
 
-		// 변경된 정보 반환
-		return MemberProfileUpdateResponse.from(member.getMemberProfile());
+		if (oldAvatarKey != null && !oldAvatarKey.isBlank() && !oldAvatarKey.equals(newAvatarKey)) {
+			// "기본 이미지"가 있다면 그것은 삭제하면 안 됨 (예: "profiles/default.png")
+			if (!isDefaultImage(oldAvatarKey)) {
+				s3Service.deleteFile(oldAvatarKey);
+			}
+		}
+
+		String viewableUrl = s3Service.getPresignedGetUrl(newAvatarKey);
+		MemberProfileUpdateResponse response = MemberProfileUpdateResponse.from(member.getMemberProfile());
+		response.setAvatarUrl(viewableUrl);
+
+		return response;
+	}
+
+	// 헬퍼 메서드 (예시)
+	private boolean isDefaultImage(String key) {
+		return "profiles/default.png".equals(key);
 	}
 
 }

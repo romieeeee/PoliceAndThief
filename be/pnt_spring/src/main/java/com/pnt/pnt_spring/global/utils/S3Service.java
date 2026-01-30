@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import com.pnt.pnt_spring.global.api.response.PresignedUrlResponse;
 
 import lombok.RequiredArgsConstructor;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -20,8 +22,9 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 public class S3Service {
 
 	private final S3Presigner s3Presigner;
+	private final S3Client s3Client;
 
-	@Value("${AWS_S3_BUCKET_NAME}")
+	@Value("${cloud.aws.s3.bucket}")
 	private String bucketName;
 
 	/**
@@ -71,5 +74,29 @@ public class S3Service {
 			.build();
 
 		return s3Presigner.presignGetObject(presignRequest).url().toString();
+	}
+
+	/**
+	 * S3 파일 삭제 메서드
+	 * @param path (Key) 삭제할 파일의 경로 (예: profiles/1/uuid_image.jpg)
+	 */
+	public void deleteFile(String path) {
+		if (path == null || path.isBlank()) {
+			return;
+		}
+
+		try {
+			DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+				.bucket(bucketName)
+				.key(path)
+				.build();
+
+			s3Client.deleteObject(deleteRequest);
+			// 필요하다면 로그 추가: log.info("S3 파일 삭제 완료: {}", path);
+
+		} catch (Exception e) {
+			// 삭제 실패가 전체 로직을 망가뜨리면 안 되므로 에러 로그만 남김
+			// log.error("S3 파일 삭제 중 오류 발생: {}", e.getMessage());
+		}
 	}
 }
