@@ -147,8 +147,9 @@ fun MainScreen(
 
                 ChatRoomScreen(
                     modifier = Modifier.fillMaxSize(),
-                    onBackPressed = { navController.popBackStack() }
-                )
+                    onBackPressed = {
+                        navController.popBackStack(Routes.CHAT, inclusive = false)
+                    })
             }
 
             // ===== 게임 대기방 =====
