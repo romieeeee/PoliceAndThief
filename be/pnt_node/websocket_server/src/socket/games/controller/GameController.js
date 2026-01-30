@@ -54,10 +54,28 @@ export class GameController {
     joinRoom = async (payload) => {
         try {
             const gameId = payload.gameId;
+            const memberId = this.socket.data.memberId;
 
             await this.gameService.findGame(payload.gameId, GameStatus.IN_GAME);
-            const gameMember = await this.gameMemberService.findMemberGame(payload.gameId, this.socket.data.memberId);
             
+            const location = await this.redisClient.getLocation(this.socket.data.memberId);
+            if (!location) {
+                const locationData = {
+                lat: 0,
+                lng: 0,
+                memberId: this.socket.data.memberId, // 클라이언트 편의를 위해 포함
+                gameId: payload.gameId,
+                walk: 0,
+                longestSurvived: 0,
+                position: null,
+                status: null,
+                penalty: 0,
+                isConnected: true,
+                timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
+                }
+            
+                await this.redisClient.setLocation(this.socket.data.memberId, locationData);
+            }
             await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
 
             this.socket.join(gameId);
@@ -103,15 +121,6 @@ export class GameController {
      * 경계선 벗어남
      *  - 패널티 부여 및 초과시 체포
      * 
-     * {
-     *   "gameId": 10,
-     *   "lat": 35.0,
-     *   "lng": 129.0,
-     *   "walk: 1 (걸음수),
-     *   "longestSurvived" : 1 (초단위)
-     * }
-     */
-    /**
      * redis에 게임 설정을 저장
      * redis에 게임 타이머를 저장
      * 게임 시작 시간을 db에 저장
@@ -209,10 +218,9 @@ export class GameController {
 
             const memberId = this.socket.data.memberId; // 미들웨어에서 가져온 ID
             const gameMember = await this.gameMemberService.findMemberGame(gameId, memberId);
-            const position = gameMember.givenPosition;
+            const position = gameMember.position;
             const status = gameMember.status;
             const penalty = await this.redisClient.getPenalty(memberId, gameId) || 0;
-
 
             const locationData = {
                 lat,
@@ -258,7 +266,7 @@ export class GameController {
             }
 
 
-            if (!isInBoundary && gameMember.givenPosition === GameMemberPosition.THIEF) {
+            if (!isInBoundary && position === GameMemberPosition.THIEF) {
                 const res = {
                     gameId: gameId,
                     memberId: memberId,
@@ -346,7 +354,7 @@ export class GameController {
             const { gameId } = payload;
 
             const game = await this.gameService.findGame(gameId);
-            const gameMembers = await this.gameMemberService.findMembersWithProfileByGameId(gameId);
+            const gameMembers = await this.gameMemberService.findAllByGameId(gameId);
             const gameMissions = await this.gameMissionService.findAllByGameId(gameId);
 
             const res = {
