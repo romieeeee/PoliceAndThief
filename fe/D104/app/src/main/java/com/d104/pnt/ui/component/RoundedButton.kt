@@ -18,7 +18,7 @@ fun RoundedButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     containerColor: Color,
-    contentColor: Color = Color.White,
+    textColor: Color = Color.Black,
     enabled: Boolean = true,
     cornerRadius: Dp = 12.dp
 ) {
@@ -29,9 +29,9 @@ fun RoundedButton(
         shape = RoundedCornerShape(cornerRadius),
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
-            contentColor = contentColor,
+            contentColor = textColor,
             disabledContainerColor = containerColor.copy(alpha = 0.4f),
-            disabledContentColor = contentColor.copy(alpha = 0.6f)
+            disabledContentColor = textColor.copy(alpha = 0.6f)
         ),
         contentPadding = PaddingValues(
             horizontal = 10.dp,
@@ -41,7 +41,7 @@ fun RoundedButton(
         Text(
             text = text,
             style = MaterialTheme.typography.titleSmall,
-            color = Color.Black
+            color = textColor
         )
     }
 }
