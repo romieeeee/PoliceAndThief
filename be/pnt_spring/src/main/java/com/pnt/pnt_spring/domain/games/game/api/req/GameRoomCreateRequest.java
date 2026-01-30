@@ -32,12 +32,12 @@ public class GameRoomCreateRequest {
 	private Integer cctvInterval;
 
 	@NotNull
-	@Valid
-	private Prison prison;
-
-	@NotNull
 	@Min(0)
 	private Integer missionCount;
+
+	@NotNull
+	@Valid
+	private Prison prison;
 
 	@NotNull
 	@Size(min = 3, message = "polygon은 최소 3개 좌표가 필요합니다.")
