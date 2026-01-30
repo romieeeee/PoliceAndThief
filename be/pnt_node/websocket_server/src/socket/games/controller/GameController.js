@@ -652,7 +652,7 @@ export class GameController {
 
             this.socket.data.accessToken = data.accessToken;
 
-            this.socket.emit("get update access token", data.accessToken);
+            this.socket.emit("get update access token", { "accessToken": data.accessToken });
         } catch (error) {
             sendError(this.socket, error, "GameError");
         }
