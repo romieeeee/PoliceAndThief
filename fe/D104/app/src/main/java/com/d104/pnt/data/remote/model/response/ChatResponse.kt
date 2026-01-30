@@ -3,6 +3,9 @@ package com.d104.pnt.data.remote.model.response
 import com.d104.pnt.domain.model.ChatRoomData
 import com.google.gson.annotations.SerializedName
 
+/**
+ * 채팅방 생성 응답
+ */
 data class ChatCreateResponse(
     @SerializedName("id")
     val chatRoomId: Long,

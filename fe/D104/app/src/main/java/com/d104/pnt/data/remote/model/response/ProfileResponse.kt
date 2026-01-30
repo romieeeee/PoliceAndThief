@@ -2,6 +2,9 @@ package com.d104.pnt.data.remote.model.response
 
 import com.google.gson.annotations.SerializedName
 
+/**
+ * 프로필 조회 응답
+ */
 data class ProfileResponse(
     @SerializedName("avatarUrl")
     val avatarUrl: String?,

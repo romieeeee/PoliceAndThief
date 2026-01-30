@@ -10,8 +10,8 @@ import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.GeoLocationInfo
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
-import com.d104.pnt.util.SocketManager
 import com.d104.pnt.util.getSingleLocation
+import com.d104.pnt.util.socket.ChatSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,9 +25,10 @@ import javax.inject.Inject
 class ChatRoomCreateViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
     private val chatRepository: ChatRepository,
-    private val socketManager: SocketManager,
+    private val chatSocketManager: ChatSocketManager,
     private val authRepository: AuthRepository
 ) : ViewModel() {
+
     private val _title = MutableStateFlow("")
     val title: StateFlow<String> = _title.asStateFlow()
 
@@ -46,7 +47,6 @@ class ChatRoomCreateViewModel @Inject constructor(
 
     private val _joinRoomState = MutableStateFlow<JoinRoomState>(JoinRoomState.Idle)
     val joinRoomState: StateFlow<JoinRoomState> = _joinRoomState.asStateFlow()
-
 
     sealed class JoinRoomState {
         object Idle : JoinRoomState()
@@ -71,7 +71,9 @@ class ChatRoomCreateViewModel @Inject constructor(
         }
     }
 
-    // 위치 정보를 가져오면서 주소도 같이 업데이트
+    /**
+     * 위치 정보를 가져오면서 주소도 같이 업데이트
+     */
     fun getLocationInfo(context: Context) {
         viewModelScope.launch {
             val location = context.getSingleLocation()
@@ -93,6 +95,9 @@ class ChatRoomCreateViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 입력 유효성 검사
+     */
     fun isValid(): Boolean {
         if (title.value.isEmpty()) {
             return false
@@ -110,7 +115,7 @@ class ChatRoomCreateViewModel @Inject constructor(
         viewModelScope.launch {
             _createChatRoomStats.value = UiState.Loading
 
-            // 채팅방 생성!!
+            // 1️⃣ 채팅방 생성 API 호출
             when (val result = chatRepository.createChatRoom(
                 title.value,
                 _currentAddress.value.code,
@@ -120,83 +125,106 @@ class ChatRoomCreateViewModel @Inject constructor(
                 is BaseResult.Success -> {
                     _createChatRoomStats.value = UiState.Success(result.data)
                     val chatRoomId = result.data.chatRoomId
-                    Timber.Forest.d("1️⃣ 채팅방 생성 성공: $chatRoomId")
+                    Timber.d("1️⃣ 채팅방 생성 성공: $chatRoomId")
 
-                    // ️참여 → 연결 → 소켓 입장
+                    // 2️⃣ 참여 → 연결 → 소켓 입장
                     joinChatRoomSequence(chatRoomId)
                 }
 
                 is BaseResult.Error -> {
                     _createChatRoomStats.value = UiState.Error(result.error.message)
-                    Timber.Forest.e("❌ 채팅방 생성 실패: ${result.error.message}")
+                    Timber.e("❌ 채팅방 생성 실패: ${result.error.message}")
                 }
             }
         }
     }
 
+    /**
+     * 채팅방 참여 → 연결 → 소켓 입장 순차 처리
+     */
     private fun joinChatRoomSequence(chatRoomId: Long) {
         viewModelScope.launch {
             _joinRoomState.value = JoinRoomState.Loading
 
             // 2️⃣ HTTP 참여
-            Timber.Forest.d("2️⃣ HTTP 참여 시도: $chatRoomId")
+            Timber.d("2️⃣ HTTP 참여 시도: $chatRoomId")
             when (val joinResult = chatRepository.joinChatRoom(chatRoomId)) {
                 is BaseResult.Success -> {
-                    Timber.Forest.d("✅ HTTP 참여 성공")
+                    Timber.d("✅ HTTP 참여 성공")
 
                     // 3️⃣ HTTP 연결
-                    Timber.Forest.d("3️⃣ HTTP 연결 시도: $chatRoomId")
+                    Timber.d("3️⃣ HTTP 연결 시도: $chatRoomId")
                     when (val connectResult = chatRepository.connectChatRoom(chatRoomId)) {
                         is BaseResult.Success -> {
-                            Timber.Forest.d("✅ HTTP 연결 성공")
+                            Timber.d("✅ HTTP 연결 성공")
 
                             // 4️⃣ 소켓 입장
                             joinChatRoomViaSocket(chatRoomId)
                         }
 
                         is BaseResult.Error -> {
-                            Timber.Forest.e("❌ HTTP 연결 실패: ${connectResult.error.message}")
+                            Timber.e("❌ HTTP 연결 실패: ${connectResult.error.message}")
                             _joinRoomState.value = JoinRoomState.Error(connectResult.error.message)
                         }
                     }
                 }
 
                 is BaseResult.Error -> {
-                    Timber.Forest.e("❌ HTTP 참여 실패: ${joinResult.error.message}")
+                    Timber.e("❌ HTTP 참여 실패: ${joinResult.error.message}")
                     _joinRoomState.value = JoinRoomState.Error(joinResult.error.message)
                 }
             }
         }
     }
 
+    /**
+     * 4️⃣ 소켓을 통한 채팅방 입장
+     */
     private fun joinChatRoomViaSocket(chatRoomId: Long) {
-        Timber.Forest.d("4️⃣ 소켓 입장 시도: $chatRoomId")
+        Timber.d("4️⃣ 소켓 입장 시도: $chatRoomId")
 
         viewModelScope.launch {
-            if (!socketManager.isConnected()) {
+            // 소켓이 연결되어 있지 않으면 먼저 연결
+            if (!chatSocketManager.isConnected()) {
                 authRepository.getAccessToken().collect { token ->
                     if (token.isNotEmpty()) {
-                        socketManager.connect(token)
+                        Timber.d("소켓 연결 중...")
+                        chatSocketManager.connect(token)
+
+                        // 연결 대기 (소켓 연결 완료까지 잠시 대기)
                         delay(1000)
+
+                        // 채팅방 입장
                         joinRoomInternal(chatRoomId)
                     }
                     return@collect
                 }
             } else {
+                // 이미 연결되어 있으면 바로 입장
                 joinRoomInternal(chatRoomId)
             }
         }
     }
 
+    /**
+     * 실제 채팅방 소켓 입장 처리
+     */
     private fun joinRoomInternal(chatRoomId: Long) {
-        socketManager.joinRoom(chatRoomId) { success, message ->
+        chatSocketManager.joinRoom(chatRoomId) { success, message ->
             if (success) {
-                Timber.Forest.d("✅ 소켓 입장 성공: $message")
+                Timber.d("✅ 소켓 입장 성공: $message")
                 _joinRoomState.value = JoinRoomState.Success(chatRoomId, message)
             } else {
-                Timber.Forest.e("❌ 소켓 입장 실패: $message")
+                Timber.e("❌ 소켓 입장 실패: $message")
                 _joinRoomState.value = JoinRoomState.Error(message)
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // 소켓 연결은 유지 (다음 화면에서 사용할 수 있음)
+        // 필요시 명시적으로 disconnect 호출
+        Timber.d("ChatRoomCreateViewModel cleared")
     }
 }
