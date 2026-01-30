@@ -4,6 +4,8 @@ import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
@@ -74,6 +76,23 @@ public class GameResultServiceImpl implements GameResultService {
 
 		game.end(request.getWinTeam());
 
+		// 요청에 포함된 생존/참여 멤버 ID 추출
+		Set<Long> requestMemberIds = request.getMemberStats().stream()
+			.map(GameResultRequest.MemberStat::getGameMemberId)
+			.collect(Collectors.toSet());
+
+		List<GameMember> allMembers = gameMemberRepository.findAllByGameId(request.getGameId());
+
+		// 요청에 없는 멤버는 이탈 처리(isDeleted = true)
+		for (GameMember member : allMembers) {
+			if (!requestMemberIds.contains(member.getId())) {
+				// GameMember.leave() 메서드가 isDeleted = true 처리 및 상태 초기화를 수행함
+				member.leave();
+				log.info("Member {} excluded from game result (marked as deleted)", member.getId());
+			}
+		}
+
+		// 결과에 포함된 멤버들의 스탯 업데이트
 		for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
 			GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(statReq.getGameMemberId())
 				.orElseGet(() -> {

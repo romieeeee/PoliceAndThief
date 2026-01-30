@@ -13,7 +13,7 @@ spring:
   jpa:
     database: postgresql
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: true
     # data.sql 로드
     defer-datasource-initialization: true
