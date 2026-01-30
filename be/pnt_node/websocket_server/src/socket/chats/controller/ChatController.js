@@ -20,16 +20,17 @@ export class ChatController {
             console.log("join room = ", chatRoomId, "member = ", this.socket.data.memberId);
             await this.chatRoomService.findChatRoom(chatRoomId);
             await this.chatRoomService.findMemberChatRoom(chatRoomId, this.socket.data.memberId);
+            const strChatRoomId = String(chatRoomId);
 
-            this.socket.join(chatRoomId);
-            this.socket.data.chatRoomId = chatRoomId;
+            this.socket.join(strChatRoomId);
+            this.socket.data.chatRoomId = strChatRoomId;
 
             const data = {
                 "message": "joined room",
                 "chatRoomId": chatRoomId
             }
 
-            this.io.to(chatRoomId).emit("get join room", data);
+            this.io.to(strChatRoomId).emit("get join room", data);
         } catch (error) {
             console.error("joinRoom error", error);
             sendError(this.socket, error, "ChatError");
@@ -44,6 +45,7 @@ export class ChatController {
 
             payload.memberId = this.socket.data.memberId;
             const chatRoomId = this.socket.data.chatRoomId;
+            const strChatRoomId = String(chatRoomId);
 
             if (!chatRoomId) {
                 throw { code: 400, message: "ChatRoomId is missing in socket data" };
@@ -52,11 +54,9 @@ export class ChatController {
             const resData = await this.chatService.save({ chatRoomId, ...payload });
 
             // 푸시 알림 => 컨슈머에서 채팅방에 접속해 있지 않은 멤버를 확인후 푸시알림
-            mq.sendMessage({ chatRoomId, ...payload }, MQConfig.MQ_ALARM);
+            mq.sendMessage({ chatRoomId: strChatRoomId, ...payload }, MQConfig.MQ_ALARM);
 
-            console.log("send message = ", resData);
-
-            this.io.to(chatRoomId).emit("get message", resData);
+            this.io.to(strChatRoomId).emit("get message", resData);
         } catch (error) {
             console.error("sendMessage error", error);
             sendError(this.socket, error, "ChatError");
@@ -77,15 +77,14 @@ export class ChatController {
                 throw { code: 400, message: "ChatRoomId is missing in socket data" };
             }
 
-            console.log("memberId = ", memberId, "chatRoomId = ", chatRoomId);
+            const strChatRoomId = String(chatRoomId);
+
             console.log("get prev chat", payload);
 
             // 데이터 로딩 로직
-            const data = await this.chatService.getPrevChat({ chatRoomId, memberId, ...payload });
+            const data = await this.chatService.getPrevChat({ chatRoomId: strChatRoomId, memberId, ...payload });
 
-            console.log("get prev chat = ", data);
-
-            this.io.to(chatRoomId).emit("get prev chat", data);
+            this.io.to(strChatRoomId).emit("get prev chat", data);
         } catch (error) {
             console.error("getPrevChat error", error);
             sendError(this.socket, error, "ChatError");
@@ -105,12 +104,12 @@ export class ChatController {
                 throw { code: 400, message: "ChatRoomId is missing in socket data" };
             }
 
+            const strChatRoomId = String(chatRoomId);
+
             // 데이터 로딩 로직
-            const data = await this.chatService.syncChat({ chatRoomId, memberId, ...payload });
+            const data = await this.chatService.syncChat({ chatRoomId: strChatRoomId, memberId, ...payload });
 
-            console.log("sync chat = ", data);
-
-            this.io.to(chatRoomId).emit("get sync chat", data);
+            this.io.to(strChatRoomId).emit("get sync chat", data);
         } catch (error) {
             console.error("syncChat error", error);
             sendError(this.socket, error, "ChatError");
