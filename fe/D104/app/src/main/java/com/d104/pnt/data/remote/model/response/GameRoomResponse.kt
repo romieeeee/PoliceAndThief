@@ -10,7 +10,7 @@ data class CreateGameRoomResponse(
     val roomCode: String,
 
     @SerializedName("status")
-    val status: String,
+    val status: String?,
 )
 
 data class GameRoomSettingsResponse(
@@ -21,7 +21,7 @@ data class GameRoomSettingsResponse(
     val roomCode: String,
 
     @SerializedName("status")
-    val status: String,
+    val status: String?,
 
     @SerializedName("timeLimit")
     val timeLimit: Int,
@@ -37,6 +37,9 @@ data class GameRoomSettingsResponse(
 
     @SerializedName("cctvInterval")
     val cctvInterval: Int,
+
+    @SerializedName("missionCount")
+    val missionCount: Int,
 
     @SerializedName("prisonLat")
     val prisonLat: Double,

@@ -10,6 +10,7 @@ import com.d104.pnt.data.remote.model.response.GameMemberListResponse
 import com.d104.pnt.data.remote.model.response.GameRoomSettingsResponse
 import retrofit2.Response
 import retrofit2.http.*
+import com.d104.pnt.data.remote.model.request.UpdateRoomSettingsRequest
 
 interface GameRoomApiService {
     /**
@@ -76,5 +77,14 @@ interface GameRoomApiService {
     @DELETE("rooms/{roomId}/members/me")
     suspend fun leaveRoom(
         @Path("roomId") roomId: Long
+    ): Response<BaseResponse<Unit>>
+
+    /**
+     * 방 설정 변경 API
+     */
+    @PATCH("rooms/{roomId}/settings")
+    suspend fun updateRoomSettings(
+        @Path("roomId") roomId: Long,
+        @Body request: UpdateRoomSettingsRequest
     ): Response<BaseResponse<Unit>>
 }

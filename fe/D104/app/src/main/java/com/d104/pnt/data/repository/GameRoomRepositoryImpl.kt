@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
+import com.d104.pnt.data.remote.model.request.UpdateRoomSettingsRequest
+import timber.log.Timber
 
 class GameRoomRepositoryImpl @Inject constructor(
     private val apiService: GameRoomApiService,
@@ -29,17 +31,21 @@ class GameRoomRepositoryImpl @Inject constructor(
         playerCount: Int,
         timeLimit: Int,
         cctvInterval: Int,
+        missionCount: Int,
         policeCount: Int,
         thiefCount: Int,
         prison: Location,
         polygon: List<Location>
     ): BaseResult<CreateGameRoomResponse> {
+        Timber.d("GameCreateRequest: 인원=$playerCount, 미션=$missionCount, 감옥=${prison.lat},${prison.lng}")
         return safeApiCall(
             onSuccess = { createGameRoomResponse ->
-                joinCreatedGameRoom(
+                updateLocalGameRoom(
                     roomId = createGameRoomResponse.roomId,
                     roomCode = createGameRoomResponse.roomCode,
-                    status = createGameRoomResponse.status,
+                    status = createGameRoomResponse.status ?: "WAITING",
+                    prison = prison,
+                    polygon = polygon
                 )
             }
         ) {
@@ -48,6 +54,7 @@ class GameRoomRepositoryImpl @Inject constructor(
                     playerCount,
                     timeLimit,
                     cctvInterval,
+                    missionCount,
                     policeCount,
                     thiefCount,
                     prison,
@@ -60,10 +67,10 @@ class GameRoomRepositoryImpl @Inject constructor(
     override suspend fun joinGameRoom(roomCode: String): BaseResult<CreateGameRoomResponse> {
         return safeApiCall(
             onSuccess = { response ->
-                joinCreatedGameRoom(
+                updateLocalGameRoom(
                     roomId = response.roomId,
                     roomCode = response.roomCode,
-                    status = response.status
+                    status = response.status ?: "WAITING"
                 )
             }
         ) {
@@ -71,18 +78,24 @@ class GameRoomRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun joinCreatedGameRoom(
+    override suspend fun updateLocalGameRoom(
         roomId: Long,
         roomCode: String,
-        status: String
+        status: String,
+        prison: Location?,
+        polygon: List<Location>?
     ) {
+        val prisonLatLng = if (prison != null) LatLng(prison.lat, prison.lng) else LatLng(0.0, 0.0)
+
+        val polygonLatLng = polygon?.map { LatLng(it.lat, it.lng) } ?: emptyList()
+
         val roomData = CurrentGameRoomData(
             roomId = roomId,
             roomCode = roomCode,
             status = status,
             timeLimit = 0,
             cctvFrequency = 0,
-            missionCount = 0,
+            missionCount = 5,
             playerCount = 0,
             maxPlayerCount = 0,
             myMemberId = 0,
@@ -91,8 +104,9 @@ class GameRoomRepositoryImpl @Inject constructor(
             thiefCount = 0,
             missionCompleteCount = 0,
             preferPosition = "",
-            prison = LatLng(0.0, 0.0),
-            polygon = emptyList(),
+
+            prison = prisonLatLng,
+            polygon = polygonLatLng
         )
         _currentGameRoom.value = roomData
     }
@@ -123,5 +137,33 @@ class GameRoomRepositoryImpl @Inject constructor(
 
     override suspend fun leaveRoom(roomId: Long): BaseResult<Unit> {
         return safeApiCall { apiService.leaveRoom(roomId) }
+    }
+
+    override suspend fun updateRoomSettings(
+        roomId: Long,
+        playerCount: Int,
+        timeLimit: Int,
+        cctvInterval: Int,
+        policeCount: Int,
+        thiefCount: Int,
+        missionCount: Int,
+        prison: Location?,
+        polygon: List<Location>?
+    ): BaseResult<Unit> {
+        return safeApiCall {
+            apiService.updateRoomSettings(
+                roomId = roomId,
+                request = UpdateRoomSettingsRequest(
+                    playerCount = playerCount,
+                    timeLimit = timeLimit,
+                    cctvInterval = cctvInterval,
+                    policeCount = policeCount,
+                    thiefCount = thiefCount,
+                    missionCount = missionCount,
+                    prison = prison,
+                    polygon = polygon
+                )
+            )
+        }
     }
 }

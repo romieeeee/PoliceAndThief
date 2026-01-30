@@ -40,8 +40,7 @@ import com.d104.pnt.ui.theme.PixelFont
 fun GameSettingsDialog(
     initialState: GameRoomInfoState,
     onDismiss: () -> Unit,
-    onUpdateSettings: (Int, Int, Int, Int, Int) -> Unit,
-    onDisbandRoom: () -> Unit // 방 해체하기
+    onUpdateSettings: (Int, Int, Int, Int, Int) -> Unit
 ) {
     var totalPlayers by remember { mutableStateOf(initialState.maxCount.coerceAtLeast(5)) }
     var gameTime by remember { mutableStateOf(initialState.timeLimit.coerceAtLeast(5)) }
@@ -202,26 +201,6 @@ fun GameSettingsDialog(
                         textColor = Color.Black,
                         modifier = Modifier.weight(1f)
                     )
-                }
-
-                // 방 없애기 버튼 오른쪽 정렬
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.CenterEnd // 오른쪽 정렬
-                ) {
-                    TextButton(
-                        onClick = onDisbandRoom,
-                        // 패딩을 살짝 줘서 터치 영역 확보 및 위치 조정
-                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
-                    ) {
-                        Text(
-                            text = "방 없애기",
-                            fontFamily = PixelFont,
-                            color = Color(0xFFFF5252),
-                            fontSize = 14.sp,
-                            textDecoration = TextDecoration.Underline
-                        )
-                    }
                 }
             }
         }

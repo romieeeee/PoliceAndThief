@@ -9,14 +9,16 @@ data class CreateGameRoomRequest(
     val timeLimit: Int,
     @SerializedName("cctvInterval")
     val cctvInterval: Int,
+    @SerializedName("missionCount")
+    val missionCount: Int,
     @SerializedName("policeCount")
     val policeCount: Int,
     @SerializedName("thiefCount")
     val thiefCount: Int,
     @SerializedName("prison")
-    val prison: Location,
+    val prison: Location?,
     @SerializedName("polygon")
-    val polygon: List<Location>
+    val polygon: List<Location>?
 )
 
 data class Location(

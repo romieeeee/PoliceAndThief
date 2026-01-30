@@ -228,6 +228,13 @@ fun GameCreateScreen(
                                             lng = it.longitude
                                         )
                                     }
+
+                                    val closedPolygon = if (polyPoint.isNotEmpty()) {
+                                        polyPoint + polyPoint.first()
+                                    } else {
+                                        polyPoint
+                                    }
+
                                     val isValid = viewModel.isValid(
                                         playerCount = totalPlayers,
                                         timeLimit = gameTime,
@@ -235,46 +242,26 @@ fun GameCreateScreen(
                                         thiefCount = thiefCount,
                                         polygon = polyPoint
                                     )
-                                    Log.d("TEST_CLICK", "유효성 검사 결과: $isValid")
-                                    Log.d("TEST_CLICK", "폴리곤 점 개수: ${polyPoint.size}")
-                                    Log.d("TEST_CLICK", "인원: $totalPlayers, 시간: $gameTime")
-                                    // ------------------------
 
                                     if (isValid) {
                                         viewModel.createGameRoom(
                                             playerCount = totalPlayers,
                                             timeLimit = gameTime,
                                             cctvInterval = cctvCycle,
-                                            policeCount = policeCount,
-                                            thiefCount = thiefCount,
-                                            prison = Location(prisonLocation!!.latitude, prisonLocation!!.longitude),
-                                            polygon = polyPoint
-                                        )
-                                    } else {
-                                        // 실패 시 토스트라도 띄워서 알려주면 좋습니다.
-                                        // Toast.makeText(context, "설정 조건을 확인해주세요 (맵 영역 등)", Toast.LENGTH_SHORT).show()
-                                    }
-                                    if (viewModel.isValid(
-                                        playerCount = totalPlayers,
-                                        timeLimit = gameTime,
-                                        policeCount = policeCount,
-                                        thiefCount = thiefCount,
-                                        polygon = polyPoint
-                                    )) {
-                                        viewModel.createGameRoom(
-                                            playerCount = totalPlayers,
-                                            timeLimit = gameTime,
-                                            cctvInterval = cctvCycle,
+                                            missionCount = missionCount,
                                             policeCount = policeCount,
                                             thiefCount = thiefCount,
                                             prison = Location(
                                                 lat = prisonLocation!!.latitude,
                                                 lng = prisonLocation!!.longitude
                                             ),
-                                            polygon = polyPoint
+                                            polygon = closedPolygon
                                         )
+                                    } else {
+
                                     }
-                                          },
+                                },
+
                                 containerColor = Color.White,
                                 modifier = Modifier.weight(1f)
                             )
@@ -287,7 +274,7 @@ fun GameCreateScreen(
     if (showMapPopup) {
         MapSettingDialog (
             modifier = Modifier,
-            onDismiss = { showMapPopup = false }, // 닫기 버튼이나 뒤로가기 시 닫힘
+            onDismiss = { showMapPopup = false },
             onConfirm = { showMapPopup = false }
         )
     }

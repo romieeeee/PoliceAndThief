@@ -1,5 +1,6 @@
 package com.d104.pnt.ui.game.wait
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,6 +48,9 @@ import com.d104.pnt.ui.theme.PixelFont
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 
 // UI 테스트용 더미 데이터
 data class WaitingPlayer(
@@ -63,7 +67,8 @@ fun GameWaitingScreen(
     roomId: Long,
     onStartGame: (Long, GameRole) -> Unit = { _, _ -> },
     viewModel: GameWaitingViewModel = hiltViewModel(),
-    onBackPressed: () -> Boolean = { false }
+    onBackPressed: () -> Boolean = { false },
+    onNavigateHome: () -> Unit = { }
 ) {
     // ViewModel 상태 구독
     val players by viewModel.players.collectAsStateWithLifecycle()
@@ -71,14 +76,35 @@ fun GameWaitingScreen(
     val isHost by viewModel.isHost.collectAsStateWithLifecycle()
     val isMeReady by viewModel.isMeReady.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
+
     var showSettingsDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is GameWaitingUiEvent.NavigateToHome -> {
+                    if (!onBackPressed()) {
+                        onNavigateHome()
+                    }
+                }
+            }
+        }
+    }
 
     // 게임 시작 성공 시 화면 이동 처리
     LaunchedEffect(uiState) {
-        if (uiState is UiState.Success) {
-            // TODO: 게임 시작 시 내 역할 정보가 필요하다면 여기서 players에서 찾아 넘기거나,
-            // API 응답으로 게임 ID를 받아야 할 수도 있습니다.
-            onStartGame(roomId, GameRole.POLICE)
+        when (uiState) {
+            is UiState.Success -> {
+                // 게임 시작 성공 시
+                onStartGame(roomId, GameRole.POLICE)
+            }
+            is UiState.Error -> {
+
+            }
+            else -> {}
         }
     }
 
@@ -99,7 +125,7 @@ fun GameWaitingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(vertical = 32.dp, horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 상단 헤더(인원수, 시간, 환경설정)
@@ -110,7 +136,8 @@ fun GameWaitingScreen(
                 timeLeft = "${roomInfo.timeLimit}:00",
                 isHost = isHost,
 
-                onSettingsClick = { showSettingsDialog = true }
+                onSettingsClick = { showSettingsDialog = true },
+                onLeaveClick = { viewModel.leaveRoom() }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -118,6 +145,7 @@ fun GameWaitingScreen(
             // 맵 + 인원 + 리스트
             UnifiedWaitingInfoCard(
                 players = players,
+                myMemberId = myMemberId,
                 policeCount = policeCount,
                 thiefCount = thiefCount,
                 modifier = Modifier
@@ -196,11 +224,6 @@ fun GameWaitingScreen(
                 onDismiss = { showSettingsDialog = false },
                 onUpdateSettings = { total, time, mission, cctv, police ->
                     viewModel.updateRoomSettings(total, time, mission, cctv, police)
-                },
-                onDisbandRoom = {
-                    viewModel.disbandRoom()
-                    showSettingsDialog = false
-                    onBackPressed()
                 }
             )
         }
@@ -215,7 +238,8 @@ fun WaitingHeaderSection(
     maxCount: Int,
     timeLeft: String,
     isHost: Boolean,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onLeaveClick: () -> Unit
 ) {
     PixelContainer(
         modifier = Modifier.fillMaxWidth(),
@@ -232,20 +256,34 @@ fun WaitingHeaderSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // 1. 왼쪽: 방 코드
-            Text(
-                text = roomCode,
-                fontFamily = PixelFont,
-                color = AccentYellow,
-                fontSize = 20.sp, // 조금 크게 강조
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "방 나가기",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clickable { onLeaveClick() }
+                )
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Text(
+                    text = roomCode,
+                    fontFamily = FontFamily.Default,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    color = AccentYellow,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
 
             // 2. 오른쪽: 인원 + 시간 + 설정 아이콘 묶음
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp) // 아이템 간 간격
+                horizontalArrangement = Arrangement.spacedBy(10.dp) // 아이템 간 간격
             ) {
                 // 인원수
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -303,6 +341,7 @@ fun WaitingHeaderSection(
 @Composable
 fun UnifiedWaitingInfoCard(
     players: List<WaitingPlayer>,
+    myMemberId: Long,
     policeCount: Int,
     thiefCount: Int,
     modifier: Modifier = Modifier,
@@ -355,7 +394,10 @@ fun UnifiedWaitingInfoCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(players) { player ->
-                    PlayerSlotCard(player = player)
+                    PlayerSlotCard(
+                        player = player,
+                        isMe = (player.id == myMemberId)
+                    )
                 }
             }
 
@@ -425,28 +467,29 @@ fun RoleCountInfo(policeCount: Int, thiefCount: Int) {
 
 // 참가자 슬롯 카드
 @Composable
-fun PlayerSlotCard(player: WaitingPlayer) {
-    // 테두리 색상 결정:
-    // 1. 역할 변경 중 -> 빨간색
-    // 2. 준비 완료 -> 연두색
-    // 3. 그 외 -> 회색
+fun PlayerSlotCard(
+    player: WaitingPlayer,
+    isMe: Boolean
+) {
     val borderColor = when {
-        player.isChangingRole -> Color(0xFFFF5252) // 빨간색 (에러/변경 느낌)
-        player.isReady -> Color(0xFF76FF03) // 연두색 (준비 완료)
-        else -> Color(0xFF8D90B3) // 기본 회색
+        player.isChangingRole -> Color(0xFFFF5252)
+        player.isReady -> Color(0xFF76FF03)
+        else -> Color(0xFF8D90B3)
     }
 
-    // 아이콘 결정:
-    // 역할 변경 중 -> "?"
-    // 그 외 -> 역할에 따른 이모지
+    val cardBackgroundColor = if (isMe) Color(0xFFE3F2FD) else Color.White
+
+    val nicknameColor = if (isMe) Color(0xFF1565C0) else Color.Black // 나는 파란색 닉네임
+    val nicknameWeight = if (isMe) FontWeight.Bold else FontWeight.Normal
+
     val roleIcon = if (player.isChangingRole) "?" else if (player.role == GameRole.POLICE) "👮" else "🕵️"
 
     PixelContainer(
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp),
-        backgroundColor = Color.White,
-        borderColor = borderColor, // ✅ 동적 테두리 색상
+        backgroundColor = cardBackgroundColor,
+        borderColor = borderColor,
         borderWidth = 5f,
         cornerSize = 8f
     ) {
@@ -466,7 +509,8 @@ fun PlayerSlotCard(player: WaitingPlayer) {
             Text(
                 text = player.nickname,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.Black,
+                color = nicknameColor,
+                fontWeight = nicknameWeight,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
@@ -475,7 +519,6 @@ fun PlayerSlotCard(player: WaitingPlayer) {
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // ✅ 동적 아이콘 (👮 / 🕵️ / ?)
             Text(
                 text = roleIcon,
                 fontSize = 18.sp,
@@ -484,10 +527,4 @@ fun PlayerSlotCard(player: WaitingPlayer) {
             )
         }
     }
-}
-
-@Preview
-@Composable
-fun PreviewGameWaitingScreen() {
-    GameWaitingScreen(roomId = 1)
 }
