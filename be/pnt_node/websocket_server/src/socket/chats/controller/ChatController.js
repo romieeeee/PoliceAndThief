@@ -77,12 +77,15 @@ export class ChatController {
                 throw { code: 400, message: "ChatRoomId is missing in socket data" };
             }
 
+            console.log("memberId = ", memberId, "chatRoomId = ", chatRoomId);
+            console.log("get prev chat", payload);
+
             // 데이터 로딩 로직
             const data = await this.chatService.getPrevChat({ chatRoomId, memberId, ...payload });
 
             console.log("get prev chat = ", data);
 
-            this.io.to(chatRoomId).emit("get prev chat", { items : data, count: data.length });
+            this.io.to(chatRoomId).emit("get prev chat", data);
         } catch (error) {
             console.error("getPrevChat error", error);
             sendError(this.socket, error, "ChatError");
@@ -107,13 +110,18 @@ export class ChatController {
 
             console.log("sync chat = ", data);
 
-            this.io.to(chatRoomId).emit("get sync chat", { items : data, count: data.length });
+            this.io.to(chatRoomId).emit("get sync chat", data);
         } catch (error) {
             console.error("syncChat error", error);
             sendError(this.socket, error, "ChatError");
         }
     }
 
+    /**
+     * 사용자 요청에 의한 채팅방 나가기 -> api 로 disconnect 호출
+     * 
+     * 웹소켓 연결 끊김 -> expiredChannel 에서 처리
+     */
     disconnect = async () => {
         const memberId = this.socket.data.memberId;
         const chatRoomId = this.socket.data.chatRoomId;

@@ -29,17 +29,15 @@ public class ChatRoomModerationController {
 	@Operation(summary = "채팅방 강퇴")
 	@PostMapping("/{chatRoomId}/kick")
 	public CommonResponse<Void> kick(
-		@PathVariable Long chatRoomId,
-		@Valid @RequestBody ChatRoomKickRequest req
-	) {
+			@PathVariable Long chatRoomId,
+			@Valid @RequestBody ChatRoomKickRequest req) {
 		Long actorMemberId = SecurityUtils.currentMemberId();
 
 		moderationService.kickAndBan3Days(
-			actorMemberId,
-			chatRoomId,
-			req.getTargetMemberId(),
-			req.getReason()
-		);
+				actorMemberId,
+				chatRoomId,
+				req.getTargetMemberId(),
+				req.getReason());
 
 		return new CommonResponse<>(null, "강퇴 처리 성공", HttpStatus.OK);
 	}
