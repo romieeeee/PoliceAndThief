@@ -23,26 +23,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-//        try {
-//            val info = packageManager.getPackageInfo(
-//                packageName,
-//                PackageManager.GET_SIGNATURES
-//            )
-//            for (signature in info.signatures!!) {
-//                val md = MessageDigest.getInstance("SHA")
-//                md.update(signature.toByteArray())
-//                val keyHash = Base64.encodeToString(md.digest(), Base64.NO_WRAP)
-//                Timber.d("========================================")
-//                Timber.d("📱 Current KeyHash: $keyHash")
-//                Timber.d("📱 Package: $packageName")
-//                Timber.d("📱 Kakao Native Key: ${BuildConfig.KAKAO_NATIVE_APP_KEY}")
-//                Timber.d("========================================")
-//            }
-//        } catch (e: Exception) {
-//            Timber.e(e, "Error getting key hash")
-//        }
-
-
         setContent {
             D104Theme {
                 Surface(modifier = Modifier.fillMaxSize()) {

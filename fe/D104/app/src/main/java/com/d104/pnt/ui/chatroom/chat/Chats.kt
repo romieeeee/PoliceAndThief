@@ -32,22 +32,21 @@ fun Chats(
 ) {
     val listState = rememberLazyListState()
 
-    // 새 메시지 올 때 자동 스크롤 (맨 아래로)
+    // 새 메시지 올 때 맨 아래로 스크롤 (reverseLayout=true면 index 0이 맨 아래)
     LaunchedEffect(chatMessages.size) {
         if (chatMessages.isNotEmpty()) {
-            listState.animateScrollToItem(chatMessages.size - 1)
+            listState.animateScrollToItem(0)  // reverseLayout=true일 때 0이 맨 아래
         }
     }
 
-    // 스크롤 맨 위에 도달했는지 감지 (이전 메시지 로드용)
+    // 맨 위 도달 감지 (reverseLayout=true일 때 가장 오래된 메시지)
     val shouldLoadMore by remember {
         derivedStateOf {
-            val firstVisibleItem = listState.layoutInfo.visibleItemsInfo.firstOrNull()
-            firstVisibleItem?.index == 0 && chatMessages.isNotEmpty() && !isLoading
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+            lastVisibleItem?.index == chatMessages.size - 1 && chatMessages.isNotEmpty() && !isLoading
         }
     }
 
-    // 맨 위 도달 시 이전 메시지 로드
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore) {
             Timber.d("스크롤 맨 위 도달 - 이전 메시지 로드")
@@ -61,26 +60,12 @@ fun Chats(
                 .fillMaxSize()
                 .background(DarkBackground),
             state = listState,
-            reverseLayout = false,
             contentPadding = PaddingValues(
                 horizontal = 16.dp,
                 vertical = 8.dp
             ),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom)
         ) {
-            // 로딩 인디케이터 (맨 위)
-            if (isLoading && chatMessages.isNotEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-            }
-
-            // 메시지 리스트
             items(
                 items = chatMessages,
                 key = { it.id }
@@ -89,6 +74,18 @@ fun Chats(
                     message = chatMessage,
                     isMe = chatMessage.memberId == myMemberId
                 )
+            }
+
+            // 로딩 인디케이터 (맨 위)
+            if (isLoading && chatMessages.isNotEmpty()) {
+                item(key = "loading_indicator") {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
             }
         }
     }
