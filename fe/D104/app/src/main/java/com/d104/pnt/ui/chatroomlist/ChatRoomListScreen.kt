@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,31 +62,12 @@ fun ChatRoomListScreen(
     val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
     val searchText by viewModel.searchQuery.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        viewModel.getJoinedChatRoom()
+    }
 
     Scaffold(
         containerColor = DeepDark,
-        floatingActionButton = {
-            Box(
-                modifier = Modifier.padding(end = 16.dp, bottom = 64.dp)
-            ) {
-                PixelIconButton(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .navigationBarsPadding(),
-                    mainColor = ButtonPrimary,
-                    borderColor = ButtonHighlight,
-                    onClick = navigateToChatCreate
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "채팅방 만들기",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-            }
-        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -234,7 +216,7 @@ fun ChatRoomListHeader(
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .padding(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         // 왼쪽 버튼
         PixelButtonCode(
