@@ -19,14 +19,14 @@ import com.google.maps.android.compose.MarkerState
 
 @Composable
 fun PixelMarker(
-    position: LatLng,
-    status: String,
+    location: LatLng,
+    position: String,
 ){
     MarkerComposable(
-        state = MarkerState(position = position),
+        state = MarkerState(position = location),
         onClick = { true }
     ) {
-        when(status){
+        when(position){
             "ME" -> Image(
                 painter = painterResource(id = R.drawable.map_marker_green),
                 contentDescription = "픽셀 커스텀 마커",
@@ -42,12 +42,12 @@ fun PixelMarker(
                 contentDescription = "픽셀 커스텀 마커",
                 modifier = Modifier.size(20.dp)
             )
-            "ARRESTED" -> Image(
+            "TRANSFER" -> Image(
                 painter = painterResource(id = R.drawable.map_marker_gray),
                 contentDescription = "픽셀 커스텀 마커",
                 modifier = Modifier.size(20.dp)
             )
-            "PRISONER" -> Image(
+            "PRISON" -> Image(
                 painter = painterResource(id = R.drawable.map_marker_gray),
                 contentDescription = "픽셀 커스텀 마커",
                 modifier = Modifier.size(20.dp)

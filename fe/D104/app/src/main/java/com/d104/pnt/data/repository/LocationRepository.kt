@@ -3,7 +3,7 @@ package com.d104.pnt.data.repository
 import android.location.Location
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GeoLocationInfo
-import com.d104.pnt.domain.model.PlayerLocation
+import com.d104.pnt.domain.model.PlayerData
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.StateFlow
 
@@ -11,12 +11,12 @@ interface LocationRepository {
     val currentLocation: StateFlow<Location?>
     val polygonPoints: StateFlow<List<LatLng>>
     val prisonLocation: StateFlow<LatLng?>
-    val playerLocations: StateFlow<List<PlayerLocation>>
+    val playerLocations: StateFlow<List<PlayerData>>
 
     // 업데이트하는 함수
     fun updateCurrentLocation(location: Location)
 
-    fun updatePlayerLocation(locations: List<PlayerLocation>)
+    fun updatePlayerLocation(locations: List<PlayerData>)
 
     // 바뀐 포인트 저장
     fun setPolygonPoints(points: List<LatLng>)
@@ -35,7 +35,4 @@ interface LocationRepository {
     suspend fun getAddressFromLatLng(latitude: Double, longitude: Double): GeoLocationInfo
 
     fun getRegionCode(major: String, middle: String): Int
-
-    // TODO: 더미 데이터 셋팅 지울것
-    fun DummyPlayer()
 }
