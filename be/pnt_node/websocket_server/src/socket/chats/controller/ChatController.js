@@ -54,8 +54,6 @@ export class ChatController {
             // 푸시 알림 => 컨슈머에서 채팅방에 접속해 있지 않은 멤버를 확인후 푸시알림
             mq.sendMessage({ chatRoomId, ...payload }, MQConfig.MQ_ALARM);
 
-            console.log("send message = ", resData);
-
             this.io.to(chatRoomId).emit("get message", resData);
         } catch (error) {
             console.error("sendMessage error", error);
@@ -77,10 +75,10 @@ export class ChatController {
                 throw { code: 400, message: "ChatRoomId is missing in socket data" };
             }
 
+            console.log("get prev chat", payload);
+
             // 데이터 로딩 로직
             const data = await this.chatService.getPrevChat({ chatRoomId, memberId, ...payload });
-
-            console.log("get prev chat = ", data);
 
             this.io.to(chatRoomId).emit("get prev chat", { items : data, count: data.length });
         } catch (error) {
@@ -105,8 +103,6 @@ export class ChatController {
             // 데이터 로딩 로직
             const data = await this.chatService.syncChat({ chatRoomId, memberId, ...payload });
 
-            console.log("sync chat = ", data);
-
             this.io.to(chatRoomId).emit("get sync chat", { items : data, count: data.length });
         } catch (error) {
             console.error("syncChat error", error);
@@ -114,6 +110,11 @@ export class ChatController {
         }
     }
 
+    /**
+     * 사용자 요청에 의한 채팅방 나가기 -> api 로 disconnect 호출
+     * 
+     * 웹소켓 연결 끊김 -> expiredChannel 에서 처리
+     */
     disconnect = async () => {
         const memberId = this.socket.data.memberId;
         const chatRoomId = this.socket.data.chatRoomId;

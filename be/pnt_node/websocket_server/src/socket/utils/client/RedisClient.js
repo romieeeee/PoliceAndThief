@@ -116,6 +116,11 @@ export class RedisClient {
     setLocation = async (memberId, gameId, location) => {
         await this.pubClient.hset(this.getLocationKeyString(gameId), memberId, JSON.stringify(location));
     }
+    
+    getLocation = async (memberId, gameId) => {
+        const location = await this.pubClient.hget(this.getLocationKeyString(gameId), memberId);
+        return JSON.parse(location);
+    }
 
     getAllLocations = async (gameId) => {
         const locations = await this.pubClient.hgetall(this.getLocationKeyString(gameId));

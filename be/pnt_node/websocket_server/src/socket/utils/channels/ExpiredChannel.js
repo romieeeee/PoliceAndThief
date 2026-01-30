@@ -101,7 +101,7 @@ const chatDisconnect = async (memberId, roomId, chatIo) => {
 
     console.log("user_left", { memberId, roomId });
 
-    chatIo.to(roomId).emit("user left", { memberId });
+    chatIo.to(roomId).emit("get user left", { roomId: roomId, memberId: memberId });
 }
 
 // => 비정상 로직이니까 만약 아무도 없다면 방 삭제
@@ -126,7 +126,7 @@ const roomDisconnect = async (memberId, roomId, roomIo) => {
         });
     }
     console.log("user_left", { memberId, roomId });
-    roomIo.to(roomId).emit("user left", { memberId });
+    roomIo.to(roomId).emit("get user left", { roomId: roomId, memberId: memberId });
 }
 
 // => 비정상 로직이니까 만약 아무도 없다면 방 삭제 => 연쇄로 다 삭제.
@@ -144,7 +144,7 @@ const gameDisconnect = async (memberId, roomId, gameIo) => {
     // RedisClient를 사용하여 위치 정보 및 패널티 정보 삭제
     await redisClient.deleteLocation(memberId, roomId);
 
-    gameIo.to(roomId).emit("user left", { memberId });
+    gameIo.to(roomId).emit("get user left", { roomId: roomId, memberId: memberId });
 }
 
 
