@@ -38,8 +38,7 @@ public class ChatRoomController {
 	@Operation(summary = "채팅방 생성")
 	@PostMapping
 	public CommonResponse<ChatRoomResponse> create(
-		@RequestBody @Valid ChatRoomCreateRequest req
-	) {
+			@RequestBody @Valid ChatRoomCreateRequest req) {
 		Long memberId = SecurityUtils.currentMemberId();
 		ChatRoomResponse data = chatRoomService.create(memberId, req);
 		return new CommonResponse<>(data, "채팅방 생성 성공", HttpStatus.CREATED);
@@ -58,9 +57,8 @@ public class ChatRoomController {
 	@Operation(summary = "채팅방 목록 조회")
 	@GetMapping
 	public CommonResponse<ChatRoomListResponse> list(
-		@RequestParam(required = false) Integer regionCode,
-		@RequestParam(required = false) String title
-	) {
+			@RequestParam(required = false) Integer regionCode,
+			@RequestParam(required = false) String title) {
 		Long memberId = SecurityUtils.currentMemberId();
 		List<ChatRoomResponse> rooms = chatRoomService.list(memberId, regionCode, title);
 		ChatRoomListResponse data = ChatRoomListResponse.from(rooms);
@@ -71,9 +69,8 @@ public class ChatRoomController {
 	@Operation(summary = "채팅방 수정")
 	@PatchMapping("/{id}")
 	public CommonResponse<ChatRoomResponse> update(
-		@PathVariable Long id,
-		@RequestBody @Valid ChatRoomUpdateRequest req
-	) {
+			@PathVariable Long id,
+			@RequestBody @Valid ChatRoomUpdateRequest req) {
 		Long memberId = SecurityUtils.currentMemberId();
 		ChatRoomResponse data = chatRoomService.update(memberId, id, req);
 		return new CommonResponse<>(data, "채팅방 수정 성공", HttpStatus.OK);

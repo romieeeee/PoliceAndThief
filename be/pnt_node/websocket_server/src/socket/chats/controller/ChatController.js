@@ -77,6 +77,8 @@ export class ChatController {
                 throw { code: 400, message: "ChatRoomId is missing in socket data" };
             }
 
+            console.log("get prev chat", payload);
+
             // 데이터 로딩 로직
             const data = await this.chatService.getPrevChat({ chatRoomId, memberId, ...payload });
 
@@ -114,6 +116,11 @@ export class ChatController {
         }
     }
 
+    /**
+     * 사용자 요청에 의한 채팅방 나가기 -> api 로 disconnect 호출
+     * 
+     * 웹소켓 연결 끊김 -> expiredChannel 에서 처리
+     */
     disconnect = async () => {
         const memberId = this.socket.data.memberId;
         const chatRoomId = this.socket.data.chatRoomId;

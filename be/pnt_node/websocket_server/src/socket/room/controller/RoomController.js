@@ -28,35 +28,6 @@ export class RoomController {
         this.socket.join(roomId);
     }
 
-    /**
-     *   "path": { "id": 1 },
-     *   "playerCount": 1,
-     *   "timeLimit": 1,
-     *   "policeCount": 0,
-     *   "thiefCount": 0,
-     *   "prison": {
-     *      "lat": 0,
-     *      "lng": 0
-     *   },
-     *   "polygon": [
-     *      {
-     *          "lat": 0,
-     *          "lng": 0
-     *      },
-     *      {
-     *          "lat": 0,
-     *          "lng": 0
-     *      },
-     *      {
-     *          "lat": 0,
-     *          "lng": 0
-     *      },
-     *      {
-     *          "lat": 0,
-     *          "lng": 0
-     *      }
-     *   ]
-     */
     updateRoomInfo = async (data) => {
         const { roomId } = data;
 
@@ -150,16 +121,10 @@ export class RoomController {
     disconnect = async (data) => {
         const { roomId } = data;
 
-        const response = await axios.post(`${process.env.SPRING_API_URL}/spring/rooms/${roomId}/disconnect`, data, {
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.socket.data.accessToken}`
-            }
-        });
-
         this.socket.data.isIntentionalExit = true; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
 
-        this.io.to(roomId).emit("get disconnect", response.data);
+        this.io.to(roomId).emit("get disconnect", {"message" : "사용자가 방을 나갔습니다."});
+        this.io.to(roomId).emit("get user left", {roomId: roomId, memberId : this.socket.data.memberId});
     }
 
 }

@@ -5,11 +5,13 @@ import { GameMemberStatService } from "./GameMemberStatService.js";
 import { GameMemberStatus } from "../../../global/db/sequelize/status/GameMemberStatus.js";
 import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemberPosition.js";
 import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
+import { RedisClient } from "../../utils/client/RedisClient.js";
 
 export class GameService {
     constructor() {
         this.gameMemberService = new GameMemberService();
         this.gameMemberStatService = new GameMemberStatService();
+        this.redisClient = new RedisClient();
     }
 
     findGame = async (gameId, status) => {
@@ -62,11 +64,14 @@ export class GameService {
             return false;
         }
 
-        const gameMembers = await this.gameMemberService.findAllByGameId(gameId);
+        const gameMembers = await this.redisClient.getAllLocations(gameId);
         
 
         const thiefMembers = gameMembers
-            .filter(member => member.givenPosition === GameMemberPosition.THIEF && member.status === GameMemberStatus.FREE);
+            .filter(member => member.position === GameMemberPosition.THIEF && 
+                member.status === GameMemberStatus.FREE &&
+                member.inGameConnected === true
+            );
         
         console.log("thiefMembers", thiefMembers.length);
         console.log('thiefMembers', thiefMembers);

@@ -28,15 +28,15 @@ public class LoginResponse {
 	// 응답 객체 생성
 	public static LoginResponse of(TokenDto tokenDto, Member member, MemberProfile profile) {
 		return LoginResponse.builder()
-			.accessToken(tokenDto.getAccessToken())
-			.refreshToken(tokenDto.getRefreshToken())
-			.member(LoginMemberInfo.builder()
-				.memberId(member.getId())
-				.id(member.getLoginId())
-				.nickname(profile.getNickname())
-				.avatarUrl(profile.getAvatarUrl())
-				.role("USER")
-				.build())
-			.build();
+				.accessToken(tokenDto.getAccessToken())
+				.refreshToken(tokenDto.getRefreshToken())
+				.member(LoginMemberInfo.builder()
+						.memberId(member.getId())
+						.id(member.getLoginId())
+						.nickname(profile.getNickname())
+						.avatarUrl(profile.getAvatarUrl())
+						.role("USER")
+						.build())
+				.build();
 	}
 }
