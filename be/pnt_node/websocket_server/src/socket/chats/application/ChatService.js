@@ -19,17 +19,23 @@ export class ChatService {
         const data = await chatModel.save();
 
         const member = await members.findOne({ memberId: chat.memberId }).exec();
-        
+
         data.member = member;
 
         return this.parseChat(data);
     }
 
     getAggregationPipeline(matchStage, sortVariable, limit) {
-        return [
+        const pipeline = [
             { $match: matchStage },
             { $sort: { _id: sortVariable } },
-            { $limit: limit },
+        ];
+
+        if (limit !== null && limit !== undefined) {
+            pipeline.push({ $limit: limit });
+        }
+
+        pipeline.push(
             {
                 $lookup: {
                     from: "members",
@@ -55,7 +61,9 @@ export class ChatService {
                     member: "$memberInfo"
                 }
             }
-        ];
+        );
+
+        return pipeline;
     }
 
     // {chatRoomId, cursor, limit}
