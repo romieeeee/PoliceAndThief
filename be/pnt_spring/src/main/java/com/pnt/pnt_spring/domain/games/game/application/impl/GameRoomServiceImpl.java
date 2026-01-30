@@ -44,7 +44,6 @@ import lombok.RequiredArgsConstructor;
 @Transactional
 public class GameRoomServiceImpl implements GameRoomService {
 
-	private static final GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
 	private final GameRepository gameRepository;
 	private final GameMemberRepository gameMemberRepository;
 	private final GameSettingRepository gameSettingRepository;
@@ -52,6 +51,8 @@ public class GameRoomServiceImpl implements GameRoomService {
 	private final GameRoomCodeGenerator gameRoomCodeGenerator;
 	private final GameMemberStatRepository gameMemberStatRepository;
 	private final GameSkillRepository gameSkillRepository;
+
+	private static final GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
 
 	@Override
 	public GameRoomCreateResponse createRoom(Long hostMemberId, GameRoomCreateRequest req) {
@@ -95,7 +96,8 @@ public class GameRoomServiceImpl implements GameRoomService {
 			req.getCctvInterval(),
 			boundary,
 			prisonLat,
-			prisonLng
+			prisonLng,
+			0
 		);
 		gameSettingRepository.save(setting);
 

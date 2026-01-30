@@ -23,11 +23,21 @@ public class GameStartResponse {
 	private GameStatus status;     // IN_GAME
 	private OffsetDateTime startTime;
 
-	// 시작과 동시에 확정된 역할(포지션)
+	/** 시작과 동시에 확정된 역할(포지션) */
 	private List<MemberPosition> members;
 
-	// 경찰청장(=스킬 보유 경찰) memberId
+	/** 경찰청장(=스킬 보유 경찰) memberId */
 	private Long chiefMemberId;
+
+	@Getter
+	@Builder
+	@NoArgsConstructor
+	@AllArgsConstructor
+	public static class MemberPosition {
+		private Long memberId;
+		private String nickname;
+		private Position givenPosition;
+	}
 
 	public static GameStartResponse from(Game game, List<GameMember> members, Long chiefMemberId) {
 		return GameStartResponse.builder()
@@ -57,15 +67,5 @@ public class GameStartResponse {
 			return profile.getNickname();
 		}
 		return m.getLoginId(); // 없으면 loginId fallback
-	}
-
-	@Getter
-	@Builder
-	@NoArgsConstructor
-	@AllArgsConstructor
-	public static class MemberPosition {
-		private Long memberId;
-		private String nickname;
-		private Position givenPosition;
 	}
 }

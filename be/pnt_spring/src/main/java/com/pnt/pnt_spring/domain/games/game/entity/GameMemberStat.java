@@ -27,19 +27,25 @@ import lombok.NoArgsConstructor;
 	uniqueConstraints = @UniqueConstraint(columnNames = "game_member_id"))
 public class GameMemberStat extends BaseEntity {
 
-	@Column(name = "escape_count")
-	private final Integer escapeCount = 0;
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
+
 	@OneToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "game_member_id", nullable = false)
 	private GameMember gameMember;
+
 	@Enumerated(EnumType.STRING)
 	private Position position;
+
 	private Integer walk = 0;
+
 	@Column(name = "arrest_count")
 	private Integer arrestCount = 0;
+
+	@Column(name = "escape_count")
+	private Integer escapeCount = 0;
+
 	@Column(name = "longest_survived")
 	private Integer longestSurvived = 0;
 
@@ -52,16 +58,6 @@ public class GameMemberStat extends BaseEntity {
 		this.longestSurvived = 0;
 	}
 
-	@Builder
-	public GameMemberStat(GameMember gameMember, Position position, Integer walk, Integer arrestCount,
-		Integer longestSurvived) {
-		this.gameMember = gameMember;
-		this.position = position;
-		this.walk = walk;
-		this.arrestCount = arrestCount;
-		this.longestSurvived = longestSurvived;
-	}
-
 	public static GameMemberStat create(GameMember gameMember) {
 		GameMemberStat stat = new GameMemberStat();
 		stat.gameMember = gameMember;
@@ -70,6 +66,21 @@ public class GameMemberStat extends BaseEntity {
 		stat.arrestCount = 0;
 		stat.longestSurvived = 0;
 		return stat;
+	}
+
+	// 생존 시간 업데이트 메서드 추가
+	public void updateLongestSurvived(int survivalSec) {
+		this.longestSurvived = survivalSec;
+	}
+
+	@Builder
+	public GameMemberStat(GameMember gameMember, Position position, Integer walk, Integer arrestCount,
+		Integer longestSurvived) {
+		this.gameMember = gameMember;
+		this.position = position;
+		this.walk = walk;
+		this.arrestCount = arrestCount;
+		this.longestSurvived = longestSurvived;
 	}
 
 	// 스탯 초기화 설정
@@ -81,11 +92,6 @@ public class GameMemberStat extends BaseEntity {
 			.arrestCount(0)
 			.longestSurvived(0)
 			.build();
-	}
-
-	// 생존 시간 업데이트 메서드 추가
-	public void updateLongestSurvived(int survivalSec) {
-		this.longestSurvived = survivalSec;
 	}
 
 	// 결과 업데이트

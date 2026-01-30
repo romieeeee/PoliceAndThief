@@ -1,11 +1,10 @@
-package com.pnt.pnt_spring.domain.members.report.application.impl;
+package com.pnt.pnt_spring.domain.members.report.application;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pnt.pnt_spring.domain.members.report.api.req.ReportRequest;
 import com.pnt.pnt_spring.domain.members.report.api.resp.ReportResponse;
-import com.pnt.pnt_spring.domain.members.report.application.ReportService;
 import com.pnt.pnt_spring.domain.members.report.entity.Report;
 import com.pnt.pnt_spring.domain.members.report.repository.ReportRepository;
 

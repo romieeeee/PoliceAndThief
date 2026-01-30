@@ -29,7 +29,9 @@ public class GameRoomController {
 
 	private final GameRoomService gameRoomService;
 
-	//게임방 생성
+	/**
+	 * 게임방 생성
+	 */
 	@Operation(summary = "게임방 생성")
 	@PostMapping
 	public CommonResponse<GameRoomCreateResponse> createRoom(

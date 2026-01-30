@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class GameRoomSettingGetResponse {
+public class GameRoomSettingResponse {
 	private Long roomId;
 	private String status;
 
@@ -14,6 +14,8 @@ public class GameRoomSettingGetResponse {
 	private Integer policeCount;
 	private Integer thiefCount;
 	private Integer cctvInterval;
+	private Integer missionCount;
+	private String roomCode;
 
 	private Double prisonLat;
 	private Double prisonLng;

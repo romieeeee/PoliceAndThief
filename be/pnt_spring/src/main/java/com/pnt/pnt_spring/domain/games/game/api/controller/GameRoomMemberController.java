@@ -35,7 +35,9 @@ public class GameRoomMemberController {
 
 	private final GameRoomMemberService gameRoomMemberService;
 
-	// 게임방 참여 (roomCode로 입장)
+	/**
+	 * 게임방 참여 (roomCode로 입장)
+	 */
 	@Operation(summary = "게임방 참여")
 	@PostMapping("/join")
 	public CommonResponse<GameRoomJoinResponse> join(
@@ -63,7 +65,9 @@ public class GameRoomMemberController {
 		);
 	}
 
-	// 게임방 멤버 목록 조회
+	/**
+	 * 게임방 멤버 목록 조회
+	 */
 	@Operation(summary = "게임방 멤버 목록 조회")
 	@GetMapping("/{roomId}/members")
 	public CommonResponse<GameRoomMemberListResponse> getMembers(@PathVariable Long roomId) {
@@ -76,7 +80,9 @@ public class GameRoomMemberController {
 		);
 	}
 
-	// 준비 상태 변경 (토글)
+	/**
+	 * 준비 상태 변경 (토글)
+	 */
 	@Operation(summary = "게임방 준비 상태 변경")
 	@PatchMapping("/{roomId}/ready")
 	public CommonResponse<GameRoomReadyResponse> ready(
@@ -93,7 +99,9 @@ public class GameRoomMemberController {
 		);
 	}
 
-	// 플레이 역할(포지션) 선택
+	/**
+	 * 플레이 역할(포지션) 선택
+	 */
 	@Operation(summary = "플레이 역할 선택")
 	@PostMapping("/{roomId}/position")
 	public CommonResponse<GameRoomPositionResponse> pickPosition(

@@ -12,6 +12,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -49,19 +50,19 @@ public class Member extends BaseEntity {
 	@Enumerated(EnumType.STRING)
 	private MemberRole role;
 
-	@OneToOne(mappedBy = "member", cascade = CascadeType.ALL)
+	@OneToOne(mappedBy = "member", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	private MemberProfile memberProfile;
 
-	@OneToOne(mappedBy = "member", cascade = CascadeType.ALL)
+	@OneToOne(mappedBy = "member", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	private MemberAuthProvider memberAuthProvider;
 
-	@OneToOne(mappedBy = "member", cascade = CascadeType.ALL)
+	@OneToOne(mappedBy = "member", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	private MemberStat memberStat;
 
-	@OneToOne(mappedBy = "member")
+	@OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
 	private MemberStatPolice memberStatPolice;
 
-	@OneToOne(mappedBy = "member")
+	@OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
 	private MemberStatThief memberStatThief;
 
 }

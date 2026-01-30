@@ -19,7 +19,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-	//  1) 비즈니스 예외
+	/**
+	 * 1) 비즈니스 예외
+	 */
 	@ExceptionHandler(BusinessException.class)
 	public CommonResponse<Void> handleBusinessException(BusinessException e, HttpServletRequest req) {
 		ErrorCode code = e.getErrorCode();
@@ -35,7 +37,9 @@ public class GlobalExceptionHandler {
 		return new CommonResponse<>(null, e.getMessage(), code);
 	}
 
-	//  2) @Valid 검증 실패
+	/**
+	 * 2) @Valid 검증 실패
+	 */
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public CommonResponse<Void> handleMethodArgumentNotValid(MethodArgumentNotValidException e,
 		HttpServletRequest req) {
@@ -51,7 +55,9 @@ public class GlobalExceptionHandler {
 		return new CommonResponse<>(null, message, ErrorCode.VALIDATION_ERROR);
 	}
 
-	//3) 바인딩 실패
+	/**
+	 * 3) 바인딩 실패
+	 */
 	@ExceptionHandler(BindException.class)
 	public CommonResponse<Void> handleBindException(BindException e, HttpServletRequest req) {
 		String message = e.getBindingResult()
@@ -68,7 +74,9 @@ public class GlobalExceptionHandler {
 			ErrorCode.INVALID_REQUEST);
 	}
 
-	// JSON 파싱 실패, 타입 오류 (깨진 JSON 등)
+	/**
+	 * 추가 1) JSON 파싱 실패, 타입 오류 (깨진 JSON 등)
+	 */
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public CommonResponse<Void> handleMessageNotReadable(HttpMessageNotReadableException e,
 		HttpServletRequest req) {
@@ -80,7 +88,10 @@ public class GlobalExceptionHandler {
 			ErrorCode.INVALID_REQUEST);
 	}
 
-	// PathVariable / RequestParam 타입 불일치
+	/**
+	 *  PathVariable / RequestParam 타입 불일치
+	 * 예: /members/abc (id는 Long이어야 함)
+	 */
 	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
 	public CommonResponse<Void> handleTypeMismatch(MethodArgumentTypeMismatchException e,
 		HttpServletRequest req) {
@@ -95,7 +106,9 @@ public class GlobalExceptionHandler {
 			ErrorCode.INVALID_REQUEST);
 	}
 
-	// 잘못된 HTTP Method
+	/**
+	 * 4) 잘못된 HTTP Method
+	 */
 	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
 	public CommonResponse<Void> handleMethodNotSupported(HttpRequestMethodNotSupportedException e,
 		HttpServletRequest req) {
@@ -106,6 +119,9 @@ public class GlobalExceptionHandler {
 			ErrorCode.METHOD_NOT_ALLOWED);
 	}
 
+	/**
+	 * 5) 마지막 캐치
+	 */
 	@ExceptionHandler(Exception.class)
 	public CommonResponse<Void> handleUnexpected(Exception e, HttpServletRequest req) {
 		log.error("[Unexpected] {} {} -> {}", req.getMethod(), req.getRequestURI(), e.getMessage(), e);

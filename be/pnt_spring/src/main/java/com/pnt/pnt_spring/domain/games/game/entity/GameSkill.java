@@ -34,7 +34,7 @@ public class GameSkill extends BaseEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	// FK 컬럼명 고정
+	// FK 컬럼명 고정(이미 스키마 있으면 안전)
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "member_id", nullable = false)
 	private Member member;

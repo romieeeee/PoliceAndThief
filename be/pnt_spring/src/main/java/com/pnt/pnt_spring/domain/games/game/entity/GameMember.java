@@ -88,7 +88,7 @@ public class GameMember extends BaseEntity {
 		return gm;
 	}
 
-	// 재입장: 소프트삭제 복구 + 상태 초기화(정책)
+	/** 재입장: 소프트삭제 복구 + 상태 초기화(정책) */
 	public void rejoin() {
 		this.isDeleted = false;
 
@@ -99,7 +99,7 @@ public class GameMember extends BaseEntity {
 		this.inGameConnected = false;
 	}
 
-	// 나가기: 소프트삭제
+	/** 나가기: 소프트삭제 */
 	public void leave() {
 		this.isDeleted = true;
 
@@ -108,7 +108,7 @@ public class GameMember extends BaseEntity {
 		this.inGameConnected = false;
 	}
 
-	// 강퇴: 소프트삭제
+	/** 강퇴: 소프트삭제 */
 	public void kick() {
 		this.isDeleted = true;
 
@@ -117,6 +117,7 @@ public class GameMember extends BaseEntity {
 		this.inGameConnected = false;
 	}
 
+	/** A안: ready 값을 명시적으로 세팅 */
 	public void setReady(boolean ready) {
 		this.ready = ready;
 	}
