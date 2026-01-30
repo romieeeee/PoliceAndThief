@@ -44,7 +44,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
                 val message = response.optString("message", "")
                 val roomId = response.optLong("chatRoomId", 0)
 
-                Timber.d("💬 채팅방 입장: message=$message, chatRoomId=$roomId")
+                Timber.d("채팅방 입장: message=$message, chatRoomId=$roomId")
 
                 if (message == "joined room" && roomId > 0) {
                     onJoinedRoom?.invoke(roomId, "채팅방에 입장하였습니다.")
@@ -60,7 +60,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
         on(EVENT_GET_MESSAGE) { args ->
             try {
                 val data = args[0] as JSONObject
-                Timber.d("💬 새 메시지 수신: $data")
+                Timber.d("새 메시지 수신: $data")
                 onNewMessage?.invoke(data)
             } catch (e: Exception) {
                 Timber.e(e, "메시지 파싱 실패")
@@ -70,7 +70,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
         // 이전 메시지 수신
         on(EVENT_GET_PREV_CHAT) { args ->
             try {
-                Timber.d("📜 실제 서버 응답: ${args[0]}")
+                Timber.d("실제 서버 응답: ${args[0]}")
 
                 val messageList = mutableListOf<JSONObject>()
                 val items = args[0]
@@ -81,6 +81,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
                             messageList.add(items.getJSONObject(i))
                         }
                     }
+
                     is JSONObject -> {
                         if (items.has("items")) {
                             val innerItems = items.opt("items")
@@ -94,7 +95,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
                 }
 
                 val count = messageList.size
-                Timber.d("📜 이전 메시지 수신: ${count}개")
+                Timber.d("이전 메시지 수신: ${count}개")
                 onPreviousMessages?.invoke(messageList, count)
 
             } catch (e: Exception) {
@@ -106,7 +107,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
         // 동기화 메시지 수신
         on(EVENT_GET_SYNC_CHAT) { args ->
             try {
-                Timber.d("🔄 실제 동기화 응답: ${args[0]}")
+                Timber.d("실제 동기화 응답: ${args[0]}")
 
                 val messageList = mutableListOf<JSONObject>()
                 val items = args[0]
@@ -117,6 +118,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
                             messageList.add(items.getJSONObject(i))
                         }
                     }
+
                     is JSONObject -> {
                         if (items.has("items")) {
                             val innerItems = items.opt("items")
@@ -130,7 +132,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
                 }
 
                 val count = messageList.size
-                Timber.d("🔄 동기화 메시지 수신: ${count}개")
+                Timber.d("동기화 메시지 수신: ${count}개")
                 onSyncMessages?.invoke(messageList, count)
 
             } catch (e: Exception) {
@@ -145,7 +147,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
         val chatRoomId = data.optLong("chatRoomId")
         if (chatRoomId > 0) {
             currentChatRoomId = chatRoomId
-            Timber.d("🔄 재연결 - 채팅방 재입장: chatRoomId=$chatRoomId")
+            Timber.d("재연결 - 채팅방 재입장: chatRoomId=$chatRoomId")
             // 재연결 시 놓친 메시지 동기화는 필요시 수동으로 호출
         }
     }
@@ -167,7 +169,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
             put("chatRoomId", chatRoomId)
         }
 
-        Timber.d("📤 채팅방 입장 요청: $data")
+        Timber.d("채팅방 입장 요청: $data")
         emit(EVENT_POST_JOIN_ROOM, data)
 
         // 콜백 등록
@@ -185,16 +187,17 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
      */
     fun sendMessage(content: String, type: String = "TEXT") {
         val roomId = currentChatRoomId ?: run {
-            Timber.e("❌ chatRoomId가 없어서 메시지 전송 불가")
+            Timber.e("chatRoomId가 없어서 메시지 전송 불가")
             return
         }
 
         val data = JSONObject().apply {
+            put("chatRoomId", roomId)
             put("content", content)
             put("type", type)
         }
 
-        Timber.d("💬 채팅 메시지 전송: $data")
+        Timber.d("채팅 메시지 전송: $data")
         emit(EVENT_POST_MESSAGE, data)
     }
 
@@ -203,16 +206,16 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
      */
     fun loadPreviousMessages(cursor: Int, limit: Int = 50) {
         val roomId = currentChatRoomId ?: run {
-            Timber.e("❌ chatRoomId가 없어서 이전 메시지 조회 불가")
+            Timber.e("chatRoomId가 없어서 이전 메시지 조회 불가")
             return
         }
 
         val data = JSONObject().apply {
-            put("cursor", cursor)
+//            put("cursor", cursor)
             put("limit", limit)
         }
 
-        Timber.d("📜 이전 메시지 조회: $data")
+        Timber.d("이전 메시지 조회: $data")
         emit(EVENT_POST_PREV_CHAT, data)
     }
 
@@ -221,7 +224,7 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
      */
     fun syncMessages(cursor: Int) {
         val roomId = currentChatRoomId ?: run {
-            Timber.e("❌ chatRoomId가 없어서 메시지 동기화 불가")
+            Timber.e("chatRoomId가 없어서 메시지 동기화 불가")
             return
         }
 
@@ -229,25 +232,25 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
             put("cursor", cursor)
         }
 
-        Timber.d("🔄 메시지 동기화: $data")
+        Timber.d("메시지 동기화: $data")
         emit(EVENT_POST_SYNC_CHAT, data)
     }
+
 
     /**
      * 채팅방 나가기
      */
     fun leaveRoom() {
         if (currentChatRoomId == null) {
-            Timber.e("❌ chatRoomId가 없어서 채팅방 나가기 불가")
+            Timber.e("chatRoomId가 없어서 채팅방 나가기 불가")
             return
         }
 
-        Timber.d("🔌 채팅방 나가기")
+        Timber.d("채팅방 나가기")
 
-        val data = JSONObject() // 빈 데이터
+        val data = JSONObject()
         emit(EVENT_POST_DISCONNECT, data)
 
-        // 연결 해제
         disconnect()
     }
 
@@ -282,31 +285,5 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
         off(EVENT_GET_MESSAGE)
         off(EVENT_GET_PREV_CHAT)
         off(EVENT_GET_SYNC_CHAT)
-    }
-
-    // ==================== Legacy Methods (기존 코드 호환성) ====================
-
-    /**
-     * @deprecated setOnNewMessage 사용 권장
-     */
-    @Deprecated("Use setOnNewMessage instead", ReplaceWith("setOnNewMessage(handler)"))
-    fun onNewMessage(handler: (JSONObject) -> Unit) {
-        setOnNewMessage(handler)
-    }
-
-    /**
-     * @deprecated setOnPreviousMessages 사용 권장
-     */
-    @Deprecated("Use setOnPreviousMessages instead", ReplaceWith("setOnPreviousMessages(handler)"))
-    fun onPreviousMessages(handler: (List<JSONObject>, Int) -> Unit) {
-        setOnPreviousMessages(handler)
-    }
-
-    /**
-     * @deprecated setOnSyncMessages 사용 권장
-     */
-    @Deprecated("Use setOnSyncMessages instead", ReplaceWith("setOnSyncMessages(handler)"))
-    fun onSyncMessages(handler: (List<JSONObject>, Int) -> Unit) {
-        setOnSyncMessages(handler)
     }
 }
