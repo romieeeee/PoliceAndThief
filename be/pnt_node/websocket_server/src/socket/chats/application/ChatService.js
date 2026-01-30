@@ -98,6 +98,8 @@ export class ChatService {
             _id: { $gt: payload.cursor }
         };
 
+        console.log("matchStage", matchStage);
+
         const pipeline = this.getAggregationPipeline(matchStage, 1, payload.limit);
         const chats = await chatEntity.aggregate(pipeline);
 

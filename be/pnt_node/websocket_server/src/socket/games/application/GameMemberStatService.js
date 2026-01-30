@@ -17,13 +17,12 @@ export class GameMemberStatService {
         return res;
     }
 
-    updateArrestCount = async (gameMemberId, options = {}) => {
+    updateArrestCount = async (gameMemberId) => {
         const res = await GameMemberStat.update({ arrestCount: literal('arrest_count + 1') }, {
             where: {
                 gameMemberId: gameMemberId,
                 isDeleted: false
-            },
-            ...options
+            }
         });
 
         if (!res) {

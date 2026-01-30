@@ -95,6 +95,7 @@ public enum ErrorCode {
 	CHAT_ROOM_FORBIDDEN(HttpStatus.FORBIDDEN, 5, "채팅방 권한이 없습니다."),
 	CHAT_ROOM_BANNED(HttpStatus.FORBIDDEN, 5, "강퇴(밴) 상태로 재입장할 수 없습니다."),
 	CHAT_ROOM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, 5, "채팅방 멤버가 아닙니다."),
+	CHAT_ROOM_CREATE_INVALIDATE(HttpStatus.BAD_REQUEST, 5, "잘못된 채팅방 생성 요청입니다."),
 
 	// =========================
 	// NEWS (6xxx)

@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 import chatSocketServer from "./chats/server/ChatSocketServer.js";
 import gameSocketServer from "./games/server/GameSocketServer.js";
+import roomSocketServer from "./room/server/RoomSocketServer.js";
 
 
 import redisDB from "../global/db/redis/RedisDB.js";
@@ -21,10 +22,12 @@ export const socketServer = async (httpServer) => {
     const chatIo = io.of("/chat");
     const readyRoomIo = io.of("/readyRoom");
     const gameIo = io.of("/game");
+    const roomIo = io.of("/room");
 
-    const redisEvent = new RedisEvent(chatIo, readyRoomIo, gameIo);
+    const redisEvent = new RedisEvent(chatIo, roomIo, gameIo);
     await redisEvent.listen();
 
     chatSocketServer(chatIo, pubClient);
     gameSocketServer(gameIo, pubClient);
+    roomSocketServer(roomIo, pubClient);
 } 

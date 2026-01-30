@@ -2,6 +2,8 @@ package com.pnt.pnt_spring.domain.chats.application.impl;
 
 import java.util.List;
 
+import com.pnt.pnt_spring.global.api.code.ErrorCode;
+import com.pnt.pnt_spring.global.exception.BusinessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +30,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 	public ChatRoomResponse create(Long memberId, ChatRoomCreateRequest req) {
 
 		if (req.getMaxMembers() < 2) {
-			throw new IllegalArgumentException("최대 인원은 2명 이상이어야 합니다.");
+			throw new BusinessException(ErrorCode.CHAT_ROOM_CREATE_INVALIDATE, "최대 인원은 2명 이상이어야 합니다.");
 		}
 
 		// 1) 채팅방 생성(ownerId 포함)

@@ -11,6 +11,7 @@ import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
 import { GameMissionService } from "../application/GameMissionService.js";
 import { TurfService } from "../application/TurfService.js";
 import { MQConfig } from "../../../global/mq/MQConfig.js";
+import { JwtResolver, resolveInController } from "../../../global/auth/JwtResolver.js";
 import axios from "axios";
 
 
@@ -54,10 +55,28 @@ export class GameController {
     joinRoom = async (payload) => {
         try {
             const gameId = payload.gameId;
+            const memberId = this.socket.data.memberId;
 
             await this.gameService.findGame(payload.gameId, GameStatus.IN_GAME);
-            const gameMember = await this.gameMemberService.findMemberGame(payload.gameId, this.socket.data.memberId);
-            
+
+            const location = await this.redisClient.getLocation(this.socket.data.memberId);
+            if (!location) {
+                const locationData = {
+                    lat: 0,
+                    lng: 0,
+                    memberId: this.socket.data.memberId, // 클라이언트 편의를 위해 포함
+                    gameId: payload.gameId,
+                    walk: 0,
+                    longestSurvived: 0,
+                    position: null,
+                    status: null,
+                    penalty: 0,
+                    isConnected: true,
+                    timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
+                }
+
+                await this.redisClient.setLocation(this.socket.data.memberId, locationData);
+            }
             await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
 
             this.socket.join(gameId);
@@ -103,15 +122,6 @@ export class GameController {
      * 경계선 벗어남
      *  - 패널티 부여 및 초과시 체포
      * 
-     * {
-     *   "gameId": 10,
-     *   "lat": 35.0,
-     *   "lng": 129.0,
-     *   "walk: 1 (걸음수),
-     *   "longestSurvived" : 1 (초단위)
-     * }
-     */
-    /**
      * redis에 게임 설정을 저장
      * redis에 게임 타이머를 저장
      * 게임 시작 시간을 db에 저장
@@ -139,7 +149,7 @@ export class GameController {
                 return;
             }
 
-            const isMine = await this.redisClient.setGameSettingLock(integerGameId, 5);
+            const isMine = await this.redisClient.setGameSettingLock(integerGameId, 60);
 
             if (!isMine) {
                 return;
@@ -209,10 +219,9 @@ export class GameController {
 
             const memberId = this.socket.data.memberId; // 미들웨어에서 가져온 ID
             const gameMember = await this.gameMemberService.findMemberGame(gameId, memberId);
-            const position = gameMember.givenPosition;
+            const position = gameMember.position;
             const status = gameMember.status;
             const penalty = await this.redisClient.getPenalty(memberId, gameId) || 0;
-
 
             const locationData = {
                 lat,
@@ -258,7 +267,7 @@ export class GameController {
             }
 
 
-            if (!isInBoundary && gameMember.givenPosition === GameMemberPosition.THIEF) {
+            if (!isInBoundary && position === GameMemberPosition.THIEF) {
                 const res = {
                     gameId: gameId,
                     memberId: memberId,
@@ -346,7 +355,7 @@ export class GameController {
             const { gameId } = payload;
 
             const game = await this.gameService.findGame(gameId);
-            const gameMembers = await this.gameMemberService.findMembersWithProfileByGameId(gameId);
+            const gameMembers = await this.gameMemberService.findAllByGameId(gameId);
             const gameMissions = await this.gameMissionService.findAllByGameId(gameId);
 
             const res = {
@@ -376,7 +385,7 @@ export class GameController {
             const thief = await this.gameMemberService.findMemberGame(gameId, thiefId);
 
             // 도둑이 아닐때 체포 실패
-            if (thief.givenPosition !== GameMemberPosition.THIEF) {
+            if (thief.position !== GameMemberPosition.THIEF) {
                 const res = {
                     gameId: gameId,
                     policeId: policeId,
@@ -407,7 +416,7 @@ export class GameController {
 
             const police = await this.gameMemberService.findMemberGame(gameId, policeId);
 
-            if (police.givenPosition !== GameMemberPosition.POLICE) {
+            if (police.position !== GameMemberPosition.POLICE) {
                 const res = {
                     gameId: gameId,
                     policeId: policeId,
@@ -538,7 +547,23 @@ export class GameController {
             // 게임 종료 처리 => spring boot에 요청을 보내야함.
             const gameMembers = await redisClient.getAllLocations(gameId);
 
-            
+            let res = await axios.post(`${process.env.SPRING_BOOT_URL}/api/games/result`, {
+                gameId: gameId,
+                winnerPosition: winnerPosition,
+                gameMembers: gameMembers
+            });
+
+            if (res.data.code !== 200) {
+                console.log("game end failed", res.data);
+                io.to(gameId).emit("get end game", {
+                    gameId: gameId,
+                    winnerPosition: null,
+                    message: "게임이 종료에 실패하였습니다.",
+                    reason: "SERVER_ERROR",
+                    code: 500
+                });
+                return;
+            }
 
             // 게임 종료 알림
             io.to(gameId).emit("get end game", {
@@ -546,13 +571,25 @@ export class GameController {
                 winnerPosition: winnerPosition,
                 message: winnerPosition === GameMemberPosition.THIEF
                     ? "시간이 모두 소진되었습니다. 게임이 종료되었습니다."
-                    : "모든 도둑이 잡혔습니다. 게임이 종료되었습니다."
+                    : "모든 도둑이 잡혔습니다. 게임이 종료되었습니다.",
+                reason: null,
+                code: 200
             });
         } catch (error) {
             console.error("gameEnd error", error);
             if (this.socket) {
                 sendError(this.socket, error, "GameError");
             }
+        }
+    }
+
+    retryEndGame = async (payload) => {
+        try {
+            const { gameId, winnerPosition } = payload;
+            await this.gameEnd(this.io, this.redisClient, gameId, winnerPosition);
+        } catch (error) {
+            console.error("retryEndGame error", error);
+            sendError(this.socket, error, "GameError");
         }
     }
 
@@ -575,15 +612,18 @@ export class GameController {
 
             // 사용자의 게임 스탯 업데이트
             // api 호출
-            if (position === GameMemberPosition.THIEF) {
-                await this.gameMemberService.updateThiefStats(gameId, memberId, walk, longestSurvived);
-            } else {
-                await this.gameMemberService.updatePoliceStats(gameId, memberId, walk);
-            }
+            const member = await this.redisClient.getMember(gameId, memberId);
+            member.position = position;
+            member.walk = walk;
+            member.longestSurvived = longestSurvived;
+            await this.redisClient.setMember(gameId, memberId, member);
+
+            const res = await axios.post(`${process.env.SPRING_BOOT_URL}/api/games/${gameId}/result`, member);
 
             // 사용자의 게임 캐시 삭제
             await this.redisClient.deleteGameCachesByMemberId(memberId, gameId);
 
+            this.io.to(gameId).emit("get end game after", res.data);
         } catch (error) {
             console.error("postGameEndAfter error", error);
             sendError(this.socket, error, "GameError");
@@ -600,6 +640,20 @@ export class GameController {
             });
         } catch (error) {
             console.error("gameReset error", error);
+            sendError(this.socket, error, "GameError");
+        }
+    }
+
+    postUpdateAccessToken = async (data) => {
+        try {
+            const accessToken = data.accessToken;
+
+            resolveInController(accessToken);
+
+            this.socket.data.accessToken = data.accessToken;
+
+            this.socket.emit("get update access token", { "accessToken": data.accessToken });
+        } catch (error) {
             sendError(this.socket, error, "GameError");
         }
     }

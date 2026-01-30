@@ -9,14 +9,7 @@ export class GameMemberService {
     }
 
     findMemberGame = async (gameId, memberId) => {
-        const res = await GameMember.findOne({
-            where: {
-                gameId: gameId,
-                memberId: memberId,
-                ready: true,
-                isDeleted: false
-            }
-        });
+        const res = JSON.parse(await this.redisClient.getLocation(memberId, gameId));
 
         if (!res) {
             this.makeError("NotFoundException", "유저의 게임 접속 정보를 찾을 수 없습니다.", 404);
@@ -24,20 +17,16 @@ export class GameMemberService {
         return res;
     }
 
-    updateMemberStatus = async (gameId, memberId, status, options = {}) => {
-        const res = await GameMember.update({ status: status }, {
-            where: {
-                gameId: gameId,
-                memberId: memberId,
-                isDeleted: false
-            },
-            ...options
-        });
+    updateMemberStatus = async (gameId, memberId, status) => {
+        const location = await this.redisClient.getLocation(memberId, gameId);
 
-        if (!res) {
+        if (!location) {
             this.makeError("NotFoundException", "유저의 게임 접속 정보를 찾을 수 없습니다.", 404);
         }
-        return res;
+
+        location.status = status;
+        await this.redisClient.setLocation(memberId, gameId, location);
+        return location;
     }
 
     findAllByGameId = async (gameId) => {
@@ -63,6 +52,7 @@ export class GameMemberService {
             include: [
                 {
                     model: Member,
+                    attributes: ["id"],
                     include: [
                         {
                             model: MemberProfile,
