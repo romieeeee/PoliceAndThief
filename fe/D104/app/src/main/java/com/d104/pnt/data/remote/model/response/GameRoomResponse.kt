@@ -5,8 +5,10 @@ import com.google.gson.annotations.SerializedName
 data class CreateGameRoomResponse(
     @SerializedName("roomId")
     val roomId: Long,
+
     @SerializedName("roomCode")
     val roomCode: String,
+
     @SerializedName("status")
     val status: String,
 )
@@ -37,10 +39,10 @@ data class GameRoomSettingsResponse(
     val cctvInterval: Int,
 
     @SerializedName("prisonLat")
-    val prisonLat: Int,
+    val prisonLat: Double,
 
     @SerializedName("prisonLng")
-    val prisonLng: Int,
+    val prisonLng: Double,
 )
 
 data class GameMemberListResponse(

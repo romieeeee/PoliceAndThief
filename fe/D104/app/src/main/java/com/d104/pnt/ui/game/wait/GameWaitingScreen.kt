@@ -44,6 +44,9 @@ import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.theme.AccentYellow
 import com.d104.pnt.ui.theme.PixelFont
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 // UI 테스트용 더미 데이터
 data class WaitingPlayer(
@@ -68,6 +71,7 @@ fun GameWaitingScreen(
     val isHost by viewModel.isHost.collectAsStateWithLifecycle()
     val isMeReady by viewModel.isMeReady.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showSettingsDialog by remember { mutableStateOf(false) }
 
     // 게임 시작 성공 시 화면 이동 처리
     LaunchedEffect(uiState) {
@@ -102,10 +106,11 @@ fun GameWaitingScreen(
             WaitingHeaderSection(
                 roomCode = roomInfo.roomCode,
                 currentCount = players.size,
-                maxCount = 30,
-                timeLeft = "30:00",
+                maxCount = roomInfo.maxCount,
+                timeLeft = "${roomInfo.timeLimit}:00",
                 isHost = isHost,
-                onSettingsClick = { /* TODO: 설정 다이얼로그 띄우기 */ }
+
+                onSettingsClick = { showSettingsDialog = true }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -183,6 +188,21 @@ fun GameWaitingScreen(
                 )
             }
             Spacer(modifier = Modifier.height(60.dp))
+        }
+
+        if (showSettingsDialog) {
+            GameSettingsDialog(
+                initialState = roomInfo,
+                onDismiss = { showSettingsDialog = false },
+                onUpdateSettings = { total, time, mission, cctv, police ->
+                    viewModel.updateRoomSettings(total, time, mission, cctv, police)
+                },
+                onDisbandRoom = {
+                    viewModel.disbandRoom()
+                    showSettingsDialog = false
+                    onBackPressed()
+                }
+            )
         }
     }
 }

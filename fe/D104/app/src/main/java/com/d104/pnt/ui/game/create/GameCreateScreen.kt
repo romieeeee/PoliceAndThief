@@ -59,14 +59,13 @@ fun GameCreateScreen(
     var showMapPopup by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        // ViewModel에게 Context를 줘서 위치를 가져오고 저장하게 시킴
         viewModel.setDefaultSettings(context)
     }
 
     LaunchedEffect(gameRoomState) {
         if (gameRoomState is UiState.Success) {
             val roomId = (gameRoomState as UiState.Success).data.roomId
-            onConfirm(roomId) // 성공한 방 번호를 MainScreen으로 전달
+            onConfirm(roomId)
         }
     }
 
@@ -134,8 +133,7 @@ fun GameCreateScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clickable { showMapPopup = true }
-                            )// 여기서 클릭 감지 -> 팝업 띄우기
+                                    .clickable { showMapPopup = true })
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))

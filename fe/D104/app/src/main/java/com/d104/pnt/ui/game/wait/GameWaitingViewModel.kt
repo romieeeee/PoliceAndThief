@@ -76,21 +76,31 @@ class GameWaitingViewModel @Inject constructor(
     // 방 설정 조회
     private fun loadRoomSettings() {
         viewModelScope.launch {
+            // [1] 요청 시작 로그
+            Timber.d("RoomSettings: 설정 로드 시작 (RoomId: $roomId)")
+
             when (val result = gameRoomRepository.getRoomSettings(roomId)) {
                 is BaseResult.Success -> {
                     val data = result.data
 
+                    // [2] 서버 응답값 로그 (수정됨: 있는 데이터만 찍기)
+                    Timber.d("RoomSettings: 서버 응답 -> 인원=${data.playerCount}, 시간=${data.timeLimit}")
+
                     _roomInfo.value = GameRoomInfoState(
-                        roomCode = data.roomCode, // <-- 여기를 수정했습니다!
+                        roomCode = "", // 서버에 없으므로 일단 빈칸 (나중에 수정)
                         maxCount = data.playerCount,
                         policeCount = data.policeCount,
                         thiefCount = data.thiefCount,
-                        timeLimit = data.timeLimit
+                        timeLimit = data.timeLimit,
+                        cctvCycle = data.cctvInterval,
+                        missionCount = 5 // 서버에 없으므로 5로 고정
                     )
                 }
                 is BaseResult.Error -> {
-                    Timber.e("방 설정 로드 실패: ${result.error.message}")
-                    _uiState.value = UiState.Error(result.error.message)
+                    // [3] 에러 로그
+                    // (error.message가 null일 수도 있으니 안전하게 toString() 사용)
+                    Timber.e("RoomSettings: 실패! 원인 -> ${result.error.toString()}")
+                    _uiState.value = UiState.Error(result.error.message ?: "알 수 없는 오류")
                 }
             }
         }
@@ -103,11 +113,9 @@ class GameWaitingViewModel @Inject constructor(
                 val items = result.data.items
                 val currentMemberId = myMemberId.value
 
-                // 🔍 디버깅용 로그 추가
                 Timber.d("CheckHost: 내 ID=$currentMemberId")
 
                 val uiPlayers = items.map { item ->
-                    // 🔍 멤버 정보 로그
                     if (item.host) {
                         Timber.d("CheckHost: 방장 발견! ID=${item.memberId}, 닉네임=${item.nickname}")
                     }
@@ -208,6 +216,36 @@ class GameWaitingViewModel @Inject constructor(
         }
     }
 
+    // 방 설정 변경
+    fun updateRoomSettings(maxCount: Int, timeLimit: Int, missionCount: Int, cctvCycle: Int, policeCount: Int) {
+        val current = _roomInfo.value
+
+        val safeMaxCount = maxCount.coerceAtLeast(5)
+        val safePoliceCount = policeCount.coerceIn(1, safeMaxCount - 1)
+
+        _roomInfo.value = current.copy(
+            maxCount = safeMaxCount,
+            timeLimit = timeLimit,
+            missionCount = missionCount,
+            cctvCycle = cctvCycle,
+            policeCount = safePoliceCount,
+            thiefCount = safeMaxCount - safePoliceCount
+        )
+
+        // TODO: 추후 API가 개발되면 여기서 PUT 요청을 보내야 합니다.
+    }
+
+    // 방 해체하기
+    fun disbandRoom() {
+        viewModelScope.launch {
+            // TODO: 백엔드 API 나오면 연결 (DELETE /rooms/{roomId})
+            Timber.d("방 해체 요청: RoomId=$roomId")
+
+            // 임시: 그냥 방 나가기 처리
+            leaveRoom()
+        }
+    }
+
     // 방 나가기
     fun leaveRoom() {
         viewModelScope.launch {
@@ -227,5 +265,7 @@ data class GameRoomInfoState(
     val maxCount: Int = 0,
     val policeCount: Int = 0,
     val thiefCount: Int = 0,
-    val timeLimit: Int = 0
+    val timeLimit: Int = 0,
+    val missionCount: Int = 5,
+    val cctvCycle: Int = 10
 )
