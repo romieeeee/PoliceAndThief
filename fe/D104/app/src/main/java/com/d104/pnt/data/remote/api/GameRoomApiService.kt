@@ -3,6 +3,7 @@ package com.d104.pnt.data.remote.api
 import com.d104.pnt.data.remote.model.request.ChangePositionRequest
 import com.d104.pnt.data.remote.model.request.CreateGameRoomRequest
 import com.d104.pnt.data.remote.model.request.JoinGameRoomRequest
+import com.d104.pnt.data.remote.model.request.KickRequest
 import com.d104.pnt.data.remote.model.request.ToggleReadyRequest
 import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.data.remote.model.response.CreateGameRoomResponse
@@ -86,5 +87,11 @@ interface GameRoomApiService {
     suspend fun updateRoomSettings(
         @Path("roomId") roomId: Long,
         @Body request: UpdateRoomSettingsRequest
+    ): Response<BaseResponse<Unit>>
+
+    @POST("rooms/{roomId}/members/kick")
+    suspend fun kickPlayer(
+        @Path("roomId") roomId: Long,
+        @Body request: KickRequest
     ): Response<BaseResponse<Unit>>
 }

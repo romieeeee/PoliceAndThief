@@ -166,4 +166,10 @@ class GameRoomRepositoryImpl @Inject constructor(
             )
         }
     }
+
+    override suspend fun kickPlayer(roomId: Long, targetMemberId: Long, reason: String): BaseResult<Unit> {
+        return safeApiCall {
+            apiService.kickPlayer(roomId, com.d104.pnt.data.remote.model.request.KickRequest(targetMemberId, reason))
+        }
+    }
 }

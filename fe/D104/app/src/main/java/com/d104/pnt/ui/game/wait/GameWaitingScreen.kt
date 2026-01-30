@@ -51,8 +51,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.ui.window.Dialog
+import com.d104.pnt.ui.component.UserProfileCard
+import androidx.compose.foundation.interaction.MutableInteractionSource
 
-// UI 테스트용 더미 데이터
 data class WaitingPlayer(
     val id: Long,
     val nickname: String,
@@ -68,9 +81,8 @@ fun GameWaitingScreen(
     onStartGame: (Long, GameRole) -> Unit = { _, _ -> },
     viewModel: GameWaitingViewModel = hiltViewModel(),
     onBackPressed: () -> Boolean = { false },
-    onNavigateHome: () -> Unit = { }
+    onNavigateHome: (String?) -> Unit = { }
 ) {
-    // ViewModel 상태 구독
     val players by viewModel.players.collectAsStateWithLifecycle()
     val roomInfo by viewModel.roomInfo.collectAsStateWithLifecycle()
     val isHost by viewModel.isHost.collectAsStateWithLifecycle()
@@ -78,27 +90,32 @@ fun GameWaitingScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
 
+    var selectedPlayerId by remember { mutableStateOf<Long?>(null) }
+    var dismissedPlayerId by remember { mutableStateOf<Long?>(null) }
+    var lastDismissTime by remember { mutableLongStateOf(0L) }
     var showSettingsDialog by remember { mutableStateOf(false) }
 
+    var infoDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
+    var kickDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
+
     val context = LocalContext.current
+
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is GameWaitingUiEvent.NavigateToHome -> {
                     if (!onBackPressed()) {
-                        onNavigateHome()
+                        onNavigateHome(event.message)
                     }
                 }
             }
         }
     }
 
-    // 게임 시작 성공 시 화면 이동 처리
     LaunchedEffect(uiState) {
         when (uiState) {
             is UiState.Success -> {
-                // 게임 시작 성공 시
                 onStartGame(roomId, GameRole.POLICE)
             }
             is UiState.Error -> {
@@ -108,7 +125,6 @@ fun GameWaitingScreen(
         }
     }
 
-    // 기존 UI 로직 (그대로 유지하되, 데이터 소스만 교체)
     val policeCount = players.count { it.role == GameRole.POLICE && !it.isChangingRole }
     val thiefCount = players.count { it.role == GameRole.THIEF && !it.isChangingRole }
     val isAllReady = players.isNotEmpty() && players.all { it.isReady && !it.isChangingRole }
@@ -128,7 +144,7 @@ fun GameWaitingScreen(
                 .padding(vertical = 32.dp, horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 상단 헤더(인원수, 시간, 환경설정)
+            // 인원수, 시간, 환경설정
             WaitingHeaderSection(
                 roomCode = roomInfo.roomCode,
                 currentCount = players.size,
@@ -142,15 +158,44 @@ fun GameWaitingScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 맵 + 인원 + 리스트
+            // 맵, 인원, 리스트
             UnifiedWaitingInfoCard(
                 players = players,
                 myMemberId = myMemberId,
                 policeCount = policeCount,
                 thiefCount = thiefCount,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                isHost = isHost,
+                selectedPlayerId = selectedPlayerId,
+                onPlayerClick = { player ->
+                    val now = System.currentTimeMillis()
+                    val isJustDismissed = (dismissedPlayerId == player.id) && (now - lastDismissTime < 300)
+
+                    if (!isJustDismissed) {
+                        selectedPlayerId = if (selectedPlayerId == player.id) null else player.id
+                    }
+                },
+                onMenuDismiss = {
+                    dismissedPlayerId = selectedPlayerId
+                    lastDismissTime = System.currentTimeMillis()
+                    selectedPlayerId = null
+                },
+                onInfoClick = { player ->
+                    // 메뉴 닫고
+                    dismissedPlayerId = selectedPlayerId
+                    lastDismissTime = System.currentTimeMillis()
+                    selectedPlayerId = null
+
+                    // 다이얼로그 타겟 설정
+                    infoDialogTarget = player
+                },
+                onKickClick = { player ->
+                    dismissedPlayerId = selectedPlayerId
+                    lastDismissTime = System.currentTimeMillis()
+                    selectedPlayerId = null
+
+                    kickDialogTarget = player
+                },
+                modifier = Modifier.fillMaxWidth().weight(1f),
                 onChangeRole = { viewModel.changeRole() }
             )
 
@@ -158,13 +203,11 @@ fun GameWaitingScreen(
 
             // 준비 버튼
             if (isHost) {
-                // 방장
-                // 모두 준비되면 흰색, 아니면 회색
                 val buttonColor = if (isAllReady) Color.White else Color.Gray
                 val borderColor = if (isAllReady) Color.Black else Color.DarkGray
 
                 PixelIconButton(
-                    onClick = { if (isAllReady) viewModel.startGame() }, // 준비 안되면 클릭 무시
+                    onClick = { if (isAllReady) viewModel.startGame() },
                     modifier = Modifier.fillMaxWidth(),
                     mainColor = buttonColor,
                     borderColor = borderColor,
@@ -216,6 +259,24 @@ fun GameWaitingScreen(
                 )
             }
             Spacer(modifier = Modifier.height(60.dp))
+        }
+
+        if (infoDialogTarget != null) {
+            PlayerInfoDialog(
+                player = infoDialogTarget!!,
+                onDismiss = { infoDialogTarget = null }
+            )
+        }
+
+        if (kickDialogTarget != null) {
+            KickConfirmDialog(
+                player = kickDialogTarget!!,
+                onDismiss = { kickDialogTarget = null },
+                onConfirm = { reason ->
+                    viewModel.kickPlayer(kickDialogTarget!!.id, reason)
+                    kickDialogTarget = null
+                }
+            )
         }
 
         if (showSettingsDialog) {
@@ -280,10 +341,9 @@ fun WaitingHeaderSection(
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            // 2. 오른쪽: 인원 + 시간 + 설정 아이콘 묶음
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp) // 아이템 간 간격
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 // 인원수
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -319,7 +379,7 @@ fun WaitingHeaderSection(
                     )
                 }
 
-                // 설정 아이콘
+                // 설정
                 if (isHost) {
                     Icon(
                         imageVector = Icons.Default.Settings,
@@ -330,7 +390,6 @@ fun WaitingHeaderSection(
                             .clickable { onSettingsClick() }
                     )
                 } else {
-                    // 아이콘 자리만큼 공간 확보하거나 생략 (여기선 생략)
                 }
             }
         }
@@ -344,6 +403,12 @@ fun UnifiedWaitingInfoCard(
     myMemberId: Long,
     policeCount: Int,
     thiefCount: Int,
+    isHost: Boolean,
+    selectedPlayerId: Long?,
+    onPlayerClick: (WaitingPlayer) -> Unit,
+    onMenuDismiss: () -> Unit,
+    onInfoClick: (WaitingPlayer) -> Unit,
+    onKickClick: (WaitingPlayer) -> Unit,
     modifier: Modifier = Modifier,
     onChangeRole: () -> Unit
 ) {
@@ -359,7 +424,7 @@ fun UnifiedWaitingInfoCard(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // 상단: 맵 프리뷰 및 인원수 정보
+            // 맵 프리뷰 및 인원수 정보
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -383,7 +448,7 @@ fun UnifiedWaitingInfoCard(
                 )
             }
 
-            // 하단: 참가자 리스트
+            // 참가자 리스트
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier
@@ -396,7 +461,19 @@ fun UnifiedWaitingInfoCard(
                 items(players) { player ->
                     PlayerSlotCard(
                         player = player,
-                        isMe = (player.id == myMemberId)
+                        isMe = (player.id == myMemberId),
+                        isHost = isHost,
+                        showMenu = (player.id == selectedPlayerId),
+                        onClick = { onPlayerClick(player) },
+                        onDismissMenu = onMenuDismiss,
+                        onInfoClick = {
+                            onMenuDismiss()
+                            onInfoClick(player)
+                        },
+                        onKickClick = {
+                            onMenuDismiss()
+                            onKickClick(player)
+                        }
                     )
                 }
             }
@@ -469,62 +546,338 @@ fun RoleCountInfo(policeCount: Int, thiefCount: Int) {
 @Composable
 fun PlayerSlotCard(
     player: WaitingPlayer,
-    isMe: Boolean
+    isMe: Boolean,
+    isHost: Boolean,
+    showMenu: Boolean,
+    onClick: () -> Unit,
+    onDismissMenu: () -> Unit,
+    onInfoClick: () -> Unit,
+    onKickClick: () -> Unit
 ) {
+    // 테두리 및 배경색 로직
     val borderColor = when {
         player.isChangingRole -> Color(0xFFFF5252)
         player.isReady -> Color(0xFF76FF03)
         else -> Color(0xFF8D90B3)
     }
-
     val cardBackgroundColor = if (isMe) Color(0xFFE3F2FD) else Color.White
-
-    val nicknameColor = if (isMe) Color(0xFF1565C0) else Color.Black // 나는 파란색 닉네임
+    val nicknameColor = if (isMe) Color(0xFF1565C0) else Color.Black
     val nicknameWeight = if (isMe) FontWeight.Bold else FontWeight.Normal
-
     val roleIcon = if (player.isChangingRole) "?" else if (player.role == GameRole.POLICE) "👮" else "🕵️"
 
+    Box {
+        PixelContainer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .clickable { onClick() },
+            backgroundColor = cardBackgroundColor,
+            borderColor = borderColor,
+            borderWidth = 5f,
+            cornerSize = 8f
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFFFF59D))
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Text(
+                    text = player.nickname,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = nicknameColor,
+                    fontWeight = nicknameWeight,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Text(
+                    text = roleIcon,
+                    fontSize = 18.sp,
+                    fontWeight = if (player.isChangingRole) FontWeight.Bold else FontWeight.Normal,
+                    color = if (player.isChangingRole) Color.Red else Color.Black
+                )
+            }
+        }
+
+        if (showMenu) {
+            PlayerActionMenu(
+                isHost = isHost,
+                isTargetMe = isMe,
+                onDismiss = onDismissMenu,
+                onInfoClick = onInfoClick,
+                onKickClick = onKickClick
+            )
+        }
+    }
+}
+
+// 메뉴 클릭 시
+@Composable
+fun PlayerActionMenu(
+    isHost: Boolean,
+    isTargetMe: Boolean,
+    onDismiss: () -> Unit,
+    onInfoClick: () -> Unit,
+    onKickClick: () -> Unit
+) {
+    val density = LocalDensity.current
+
+    val yOffset = remember(density) {
+        with(density) { (48.dp + 4.dp).roundToPx() }
+    }
+
+    Popup(
+        alignment = Alignment.TopCenter,
+        offset = IntOffset(0, yOffset),
+        onDismissRequest = onDismiss
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            MenuButton(
+                text = "정보 확인",
+                textColor = Color.Black,
+                onClick = onInfoClick
+            )
+
+            if (isHost && !isTargetMe) {
+                MenuButton(
+                    text = "강퇴하기",
+                    textColor = Color(0xFFFF5252),
+                    onClick = onKickClick
+                )
+            }
+        }
+    }
+}
+
+// 메뉴 버튼
+@Composable
+fun MenuButton(
+    text: String,
+    textColor: Color,
+    onClick: () -> Unit
+) {
     PixelContainer(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp),
-        backgroundColor = cardBackgroundColor,
-        borderColor = borderColor,
-        borderWidth = 5f,
+        modifier = Modifier.width(140.dp),
+        backgroundColor = Color(0xFFD4E3FF),
+        borderColor = Color(0xFF6591E9),
+        borderWidth = 8f,
         cornerSize = 8f
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClick
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
+            Text(
+                text = text,
+                fontFamily = PixelFont,
+                color = textColor,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+@Composable
+fun PlayerInfoDialog(
+    player: WaitingPlayer,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+        ) {
+            UserProfileCard(
+                nickname = player.nickname,
+                avatarUrl = player.profileUrl,
+
+                // 🚧 [TODO] 나중에 실제 유저의 등급 데이터로 연결해야 합니다.
+                policeGrade = "순경",
+                thiefGrade = "바늘도둑",
+
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+fun KickConfirmDialog(
+    player: WaitingPlayer,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val reasons = listOf("욕설", "폭행", "비매너", "구역 이탈", "기타")
+    var selectedReason by remember { mutableStateOf("욕설") }
+
+    Dialog(onDismissRequest = onDismiss) {
+        PixelContainer(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            backgroundColor = Color(0xFF2D3242),
+            borderColor = Color(0xFF8D90B3),
+            borderWidth = 4f,
+            cornerSize = 16f
+        ) {
+            Column(
                 modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFFFF59D))
-            )
-            Spacer(modifier = Modifier.width(12.dp))
+                    .fillMaxWidth()
+                    .padding(vertical = 24.dp, horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 타이틀
+                Text(
+                    text = "정말 강퇴하시겠습니까?",
+                    fontFamily = PixelFont,
+                    color = AccentYellow,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
 
-            Text(
-                text = player.nickname,
-                style = MaterialTheme.typography.bodySmall,
-                color = nicknameColor,
-                fontWeight = nicknameWeight,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f)
-            )
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.width(12.dp))
+                // 대상 닉네임
+                Text(
+                    text = player.nickname,
+                    fontFamily = PixelFont,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center
+                )
 
-            Text(
-                text = roleIcon,
-                fontSize = 18.sp,
-                fontWeight = if (player.isChangingRole) FontWeight.Bold else FontWeight.Normal,
-                color = if (player.isChangingRole) Color.Red else Color.Black
-            )
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // 사유 선택 섹션
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "강퇴 사유",
+                        fontFamily = PixelFont,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    ReasonButtonRow(reasons.subList(0, 3), selectedReason) { selectedReason = it }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    ReasonButtonRow(reasons.subList(3, 5), selectedReason) { selectedReason = it }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // 강퇴하기 / 취소
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        PixelIconButton(
+                            onClick = { onConfirm(selectedReason) },
+                            modifier = Modifier.fillMaxWidth(),
+                            mainColor = Color.White,
+                            borderColor = Color.Black,
+                            pixelSize = 3.dp,
+                            blockHeight = 12,
+                            content = {
+                                Text(
+                                    text = "강퇴하기",
+                                    fontFamily = PixelFont,
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            }
+                        )
+                    }
+
+                    Box(modifier = Modifier.weight(1f)) {
+                        PixelIconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.fillMaxWidth(),
+                            mainColor = Color.White,
+                            borderColor = Color.Black,
+                            pixelSize = 3.dp,
+                            blockHeight = 12,
+                            content = {
+                                Text(
+                                    text = "취소",
+                                    fontFamily = PixelFont,
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ReasonButtonRow(
+    items: List<String>,
+    selectedItem: String,
+    onSelect: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items.forEach { reason ->
+            val isSelected = (reason == selectedItem)
+            val bgColor = if (isSelected) Color(0xFFD84315) else Color(0xFF37474F)
+            val borderColor = if (isSelected) Color(0xFFFFCC80) else Color(0xFF78909C)
+
+            Box(modifier = Modifier.weight(1f)) {
+                PixelIconButton(
+                    onClick = { onSelect(reason) },
+                    modifier = Modifier.fillMaxWidth(),
+                    mainColor = bgColor,
+                    borderColor = borderColor,
+                    pixelSize = 2.dp,
+                    blockHeight = 10,
+                    content = {
+                        Text(
+                            text = reason,
+                            fontFamily = PixelFont,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                )
+            }
+        }
+
+        if (items.size < 3) {
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

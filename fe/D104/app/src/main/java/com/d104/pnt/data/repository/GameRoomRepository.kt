@@ -51,4 +51,7 @@ interface GameRoomRepository{
         prison: Location?,
         polygon: List<Location>?
     ): BaseResult<Unit>
+
+    suspend fun kickPlayer(roomId: Long, targetMemberId: Long, reason: String): BaseResult<Unit>
+
 }

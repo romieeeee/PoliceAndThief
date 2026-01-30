@@ -48,6 +48,7 @@ import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import com.d104.pnt.ui.component.KickedNoticeDialog
 
 @Composable
 fun MainScreen(
@@ -94,7 +95,20 @@ fun MainScreen(
                 .windowInsetsPadding(WindowInsets.navigationBars)
         ) {
             // ===== BottomNav 탭 =====
-            composable(Routes.HOME) {
+            composable(Routes.HOME) { backStackEntry ->
+
+                val savedStateHandle = backStackEntry.savedStateHandle
+                val kickMessage = savedStateHandle.get<String>("kick_message")
+
+                if (kickMessage != null) {
+                    KickedNoticeDialog(
+                        reason = kickMessage,
+                        onConfirm = {
+                            savedStateHandle.remove<String>("kick_message")
+                        }
+                    )
+                }
+
                 HomeScreen(
                     goToGameCreate = {
                         navController.navigate(Routes.GAME_CREATE)
@@ -157,7 +171,16 @@ fun MainScreen(
                             popUpTo(Routes.HOME)
                         }
                     },
-                    onBackPressed = { navController.popBackStack() }
+                    onBackPressed = { navController.popBackStack() },
+
+                    onNavigateHome = { message ->
+                        if (message != null) {
+                            navController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.set("kick_message", message)
+                        }
+                        navController.popBackStack()
+                    }
                 )
             }
 

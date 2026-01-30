@@ -125,8 +125,13 @@ class GameWaitingViewModel @Inject constructor(
             is BaseResult.Success -> {
                 val items = result.data.items
                 val currentMemberId = myMemberId.value
+                val isMeInList = items.any { it.memberId == currentMemberId }
 
-                Timber.d("CheckHost: 내 ID=$currentMemberId")
+                if (currentMemberId != 0L && !isMeInList) {
+                    pollingJob?.cancel()
+                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome(message = "강퇴되었습니다!"))
+                    return
+                }
 
                 val uiPlayers = items.map { item ->
                     if (item.host) {
@@ -160,10 +165,12 @@ class GameWaitingViewModel @Inject constructor(
             }
             is BaseResult.Error -> {
                 Timber.e("멤버 조회 실패: ${result.error.message}")
+
+                pollingJob?.cancel()
+                _uiEvent.emit(GameWaitingUiEvent.NavigateToHome(message = "강퇴되었거나 방 연결이 끊어졌습니다."))
             }
         }
     }
-
     private fun startPolling() {
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
@@ -273,19 +280,29 @@ class GameWaitingViewModel @Inject constructor(
     // 방 나가기
     fun leaveRoom() {
         viewModelScope.launch {
-            Timber.d("Room: 방 나가기 요청 (RoomId: $roomId)")
             pollingJob?.cancel()
 
             val result = gameRoomRepository.leaveRoom(roomId)
 
             when (result) {
                 is BaseResult.Success -> {
-                    Timber.d("Room: 방 나가기 성공 -> 홈으로 이동")
-                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome)
+                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome())
                 }
                 is BaseResult.Error -> {
-                    Timber.e("Room: 방 나가기 실패 ${result.error.message}")
-                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome)
+                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome())
+                }
+            }
+        }
+    }
+
+    fun kickPlayer(targetMemberId: Long, reason: String) {
+        viewModelScope.launch {
+            val result = gameRoomRepository.kickPlayer(roomId, targetMemberId, reason)
+
+            when (result) {
+                is BaseResult.Success -> { }
+                is BaseResult.Error -> {
+                    _uiState.value = UiState.Error(message = result.error.message ?: "강퇴 실패")
                 }
             }
         }
@@ -310,5 +327,5 @@ data class GameRoomInfoState(
 )
 
 sealed interface GameWaitingUiEvent {
-    object NavigateToHome : GameWaitingUiEvent
+    data class NavigateToHome(val message: String? = null) : GameWaitingUiEvent
 }
