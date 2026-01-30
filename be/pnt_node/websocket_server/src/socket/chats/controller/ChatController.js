@@ -80,7 +80,7 @@ export class ChatController {
             // 데이터 로딩 로직
             const data = await this.chatService.getPrevChat({ chatRoomId, memberId, ...payload });
 
-            this.io.to(chatRoomId).emit("get prev chat", { items : data, count: data.length });
+            this.io.to(chatRoomId).emit("get prev chat", data);
         } catch (error) {
             console.error("getPrevChat error", error);
             sendError(this.socket, error, "ChatError");
@@ -103,7 +103,7 @@ export class ChatController {
             // 데이터 로딩 로직
             const data = await this.chatService.syncChat({ chatRoomId, memberId, ...payload });
 
-            this.io.to(chatRoomId).emit("get sync chat", { items : data, count: data.length });
+            this.io.to(chatRoomId).emit("get sync chat", data);
         } catch (error) {
             console.error("syncChat error", error);
             sendError(this.socket, error, "ChatError");
