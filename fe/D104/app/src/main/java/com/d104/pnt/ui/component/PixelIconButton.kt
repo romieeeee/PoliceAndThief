@@ -53,7 +53,7 @@ fun PixelIconButton(
                 indication = null // 리플 제거
             ) { onClick() }
     ) {
-        // 1. 그림자 레이어
+        // 그림자 레이어
         FiveLayerPixelShape(
             color = shadowVisibility,
             pixelUnit = pixelSize,
@@ -61,7 +61,7 @@ fun PixelIconButton(
             modifier = Modifier.offset(x = pixelSize, y = pixelSize)
         )
 
-        // 2. 테두리(배경색) 레이어
+        // 테두리(배경색) 레이어
         FiveLayerPixelShape(
             color = borderColor,
             pixelUnit = pixelSize,
@@ -69,7 +69,7 @@ fun PixelIconButton(
             modifier = Modifier.offset(x = pressOffset, y = pressOffset)
         )
 
-        // 3. 메인 컬러 레이어
+        // 메인 컬러 레이어
         Box(
             modifier = Modifier
                 .fillMaxSize()

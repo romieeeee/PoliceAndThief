@@ -10,7 +10,6 @@ import com.d104.pnt.data.source.local.RegionCodeManager
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.util.socket.ChatSocketManager
-import com.d104.pnt.util.SocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -131,6 +130,7 @@ class ChatRoomListViewModel @Inject constructor(
                     _listState.value = UiState.Success(result.data)
                     Timber.d("chatList: ${result.data}")
                 }
+
                 is BaseResult.Error -> {
                     _listState.value = UiState.Error(result.error.message)
                     Timber.d("error: ${result.error.message}")
@@ -164,30 +164,30 @@ class ChatRoomListViewModel @Inject constructor(
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
-            Timber.d("📋 리스트에서 채팅방 입장 시도: $chatRoomId")
+            Timber.d("리스트에서 채팅방 입장 시도: $chatRoomId")
 
             // 1️. HTTP 참여
             when (val joinResult = chatRepository.joinChatRoom(chatRoomId)) {
                 is BaseResult.Success -> {
-                    Timber.d("✅ HTTP 참여 성공")
+                    Timber.d("HTTP 참여 성공")
 
                     // 2️. HTTP 연결
                     when (val connectResult = chatRepository.connectChatRoom(chatRoomId)) {
                         is BaseResult.Success -> {
-                            Timber.d("✅ HTTP 연결 성공")
+                            Timber.d("HTTP 연결 성공")
 
                             // 3️. 소켓 입장
                             joinChatRoomViaSocket(chatRoomId, onSuccess)
                         }
 
                         is BaseResult.Error -> {
-                            Timber.e("❌ HTTP 연결 실패: ${connectResult.error.message}")
+                            Timber.e("HTTP 연결 실패: ${connectResult.error.message}")
                         }
                     }
                 }
 
                 is BaseResult.Error -> {
-                    Timber.e("❌ HTTP 참여 실패: ${joinResult.error.message}")
+                    Timber.e("HTTP 참여 실패: ${joinResult.error.message}")
                 }
             }
         }
@@ -219,13 +219,12 @@ class ChatRoomListViewModel @Inject constructor(
         onSuccess: () -> Unit
     ) {
         chatSocketManager.joinRoom(chatRoomId) { success, message ->
-            // 🔥 메인 스레드로 전환!
             viewModelScope.launch(Dispatchers.Main) {
                 if (success) {
-                    Timber.d("✅ 소켓 입장 성공: $message")
+                    Timber.d("소켓 입장 성공: $message")
                     onSuccess()
                 } else {
-                    Timber.e("❌ 소켓 입장 실패: $message")
+                    Timber.e("소켓 입장 실패: $message")
                 }
             }
         }

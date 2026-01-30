@@ -13,7 +13,7 @@ import javax.inject.Inject
 @HiltViewModel
 class GamePlayViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
-): ViewModel() {
+) : ViewModel() {
     val userLocation = locationRepository.currentLocation
     val polygonPoints = locationRepository.polygonPoints
     val prisonLocation = locationRepository.prisonLocation

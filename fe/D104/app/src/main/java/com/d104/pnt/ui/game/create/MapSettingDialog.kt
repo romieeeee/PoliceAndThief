@@ -20,12 +20,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.ui.component.GoogleMaps
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
-import com.d104.pnt.ui.theme.*
+import com.d104.pnt.ui.theme.DarkSurface
+import com.d104.pnt.ui.theme.DialogBorderColor
+import com.d104.pnt.ui.theme.TextPrimary
 import com.google.android.gms.maps.model.LatLng
 
 @Composable
@@ -52,15 +53,15 @@ fun MapSettingDialog(
     Dialog(
         onDismissRequest = onDismiss,
     ) {
-        PixelContainer (
+        PixelContainer(
             modifier = Modifier,
             backgroundColor = DarkSurface,
             borderColor = DialogBorderColor,
         ) {
-            Scaffold (
+            Scaffold(
                 modifier = Modifier,
                 topBar = {
-                    Text (
+                    Text(
                         modifier = Modifier.padding(10.dp),
                         text = "경기 구역 수정",
                         style = MaterialTheme.typography.titleLarge,
@@ -102,7 +103,7 @@ fun MapSettingDialog(
                     }
                 }
             ) { paddingValues ->
-                Column (
+                Column(
                     modifier = Modifier
                         .padding(paddingValues)
                         .fillMaxWidth(),
@@ -113,13 +114,15 @@ fun MapSettingDialog(
                             modifier = Modifier.weight(1f),
                             currentLocation = LatLng(
                                 userLocation!!.latitude,
-                                userLocation!!.longitude),
+                                userLocation!!.longitude
+                            ),
                             inGameMinimap = false,
                             isPreview = false,
                             polygonPoints = tempPolygonPoints,
                             onPointChange = { index, newPos ->
                                 if (index in tempPolygonPoints.indices) {
-                                    tempPolygonPoints[index] = tempPolygonPoints[index].copy(position = newPos)
+                                    tempPolygonPoints[index] =
+                                        tempPolygonPoints[index].copy(position = newPos)
                                 }
                             },
                             onPointDelete = { index ->

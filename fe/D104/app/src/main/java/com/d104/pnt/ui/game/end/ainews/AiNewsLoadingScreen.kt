@@ -3,9 +3,21 @@ package com.d104.pnt.ui.game.end.ainews
 import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,7 +38,6 @@ import kotlinx.coroutines.delay
 @Composable
 fun AiNewsLoadingScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
-        // 배경 이미지
         Image(
             painter = painterResource(id = R.drawable.img_waitingroom),
             contentDescription = "방송 대기실 배경",
@@ -35,13 +46,13 @@ fun AiNewsLoadingScreen() {
                 .fillMaxSize()
                 .offset(y = (-50).dp)
         )
-        // 배경 명도 조절(어둡게)
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.4f))
         )
-        // 아나운서, 멘트
+
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -115,11 +126,4 @@ fun TypewriterText(texts: List<String>) {
         fontSize = 20.sp,
         lineHeight = 30.sp
     )
-}
-
-
-@Preview
-@Composable
-fun AiNewsLoadingPreview() {
-    AiNewsLoadingScreen()
 }

@@ -2,11 +2,24 @@ package com.d104.pnt.ui.game.end
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -20,7 +33,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
-import com.d104.pnt.ui.theme.*
+import com.d104.pnt.ui.theme.AccentRed
+import com.d104.pnt.ui.theme.AccentYellow
+import com.d104.pnt.ui.theme.DarkSurface
+import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
 fun ReportDialog(
@@ -117,7 +133,9 @@ fun ReportDialog(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Canvas(modifier = Modifier.fillMaxWidth().height(2.dp)) {
+                        Canvas(modifier = Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)) {
                             drawLine(
                                 color = Color.White,
                                 start = Offset(0f, 0f),

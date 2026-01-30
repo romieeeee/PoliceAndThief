@@ -44,10 +44,7 @@ fun PermissionDeniedDialog(
 ) {
     val context = LocalContext.current
 
-    Dialog(onDismissRequest = {
-
-    }
-    ) {
+    Dialog(onDismissRequest = { }) {
         Card(
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth(),

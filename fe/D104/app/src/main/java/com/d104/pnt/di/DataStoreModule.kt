@@ -14,9 +14,6 @@ import javax.inject.Singleton
 
 /**
  * DataStore 의존성 제공 모듈
- *
- * 제공하는 의존성:
- * - DataStore<Preferences> (사용자 인증 정보 저장소)
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -27,11 +24,6 @@ object DataStoreModule {
         name = Constants.PREF_NAME
     )
 
-    /**
-     * DataStore 제공
-     *
-     * Repository나 다른 클래스에서 주입받아 사용
-     */
     @Provides
     @Singleton
     fun provideDataStore(

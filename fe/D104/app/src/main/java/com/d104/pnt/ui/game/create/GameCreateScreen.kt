@@ -1,9 +1,17 @@
 package com.d104.pnt.ui.game.create
 
+//import com.d104.pnt.ui.component.PixelButtonCode
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
@@ -12,7 +20,12 @@ import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,12 +37,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.data.remote.model.request.Location
-import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.ui.component.GoogleMaps
-//import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
-import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.component.RoundedButton
 import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.DialogBorderColor
@@ -58,7 +68,6 @@ fun GameCreateScreen(
 
     var showMapPopup by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        // ViewModel에게 Context를 줘서 위치를 가져오고 저장하게 시킴
         viewModel.setDefaultSettings(context)
     }
 
@@ -223,12 +232,13 @@ fun GameCreateScreen(
                                         )
                                     }
                                     if (viewModel.isValid(
-                                        playerCount = totalPlayers,
-                                        timeLimit = gameTime,
-                                        policeCount = policeCount,
-                                        thiefCount = thiefCount,
-                                        polygon = polyPoint
-                                    )) {
+                                            playerCount = totalPlayers,
+                                            timeLimit = gameTime,
+                                            policeCount = policeCount,
+                                            thiefCount = thiefCount,
+                                            polygon = polyPoint
+                                        )
+                                    ) {
                                         viewModel.createGameRoom(
                                             playerCount = totalPlayers,
                                             timeLimit = gameTime,
@@ -242,7 +252,7 @@ fun GameCreateScreen(
                                         )
                                         onConfirm()
                                     }
-                                          },
+                                },
                                 containerColor = Color.White,
                                 modifier = Modifier.weight(1f)
                             )
@@ -253,9 +263,9 @@ fun GameCreateScreen(
         }
     }
     if (showMapPopup) {
-        MapSettingDialog (
+        MapSettingDialog(
             modifier = Modifier,
-            onDismiss = { showMapPopup = false }, // 닫기 버튼이나 뒤로가기 시 닫힘
+            onDismiss = { showMapPopup = false },
             onConfirm = { showMapPopup = false }
         )
     }

@@ -23,7 +23,6 @@ fun ChatRoomScreen(
     onBackPressed: () -> Unit,
     viewModel: ChatRoomViewModel = hiltViewModel()
 ) {
-    // ViewModel에서 상태 가져오기
     val message by viewModel.message.collectAsStateWithLifecycle()
     val chatMessages by viewModel.chatMessages.collectAsStateWithLifecycle()
     val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()

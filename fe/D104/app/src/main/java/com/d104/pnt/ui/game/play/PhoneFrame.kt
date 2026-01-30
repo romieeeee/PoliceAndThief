@@ -18,8 +18,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,9 +26,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
-import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.ui.component.GoogleMaps
@@ -59,7 +55,6 @@ fun PhoneFrame(
         contentAlignment = Alignment.Center
     ) {
 
-        // 1. 휴대폰 프레임 이미지
         Image(
             painter = painterResource(R.drawable.phone),
             contentDescription = null,
@@ -67,12 +62,11 @@ fun PhoneFrame(
             contentScale = ContentScale.Crop
         )
 
-        // 2. 디스플레이 영역 (정확히 맞춘 영역)
         Box(
             modifier = Modifier
-                .fillMaxWidth(0.773f)          // 정확한 가로 비율
-                .aspectRatio(593f / 874f)      // 실제 디스플레이 비율
-                .offset(y = (-38).dp)          // 아래 설명
+                .fillMaxWidth(0.773f)
+                .aspectRatio(593f / 874f)
+                .offset(y = (-38).dp)
                 .background(Color.Black),
             contentAlignment = Alignment.Center
         ) {
@@ -84,6 +78,7 @@ fun PhoneFrame(
                     areaPoints = areaPoints,
                     prisonLocation = prisonLocation
                 )
+
                 CAMERA -> CameraScanScreen(onScanSuccess)
                 THIEF_LIST -> ThiefListScreen()
             }

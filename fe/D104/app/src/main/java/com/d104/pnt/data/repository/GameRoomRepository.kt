@@ -6,11 +6,13 @@ import com.d104.pnt.domain.model.CurrentGameRoomData
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.StateFlow
 
-interface GameRoomRepository{
+interface GameRoomRepository {
 
     fun getCurrentGameRoom(): StateFlow<CurrentGameRoomData?>
 
-    // 게임 방 생성
+    /**
+     * 게임방 생성
+     */
     suspend fun createGameRoom(
         playerCount: Int,
         timeLimit: Int,
@@ -20,7 +22,10 @@ interface GameRoomRepository{
         polygon: List<Location>
     ): BaseResult<CreateGameRoomResponse>
 
-    suspend fun joinCreatedGameRoom(
+    /**
+     * 게임방 정보 저장
+     */
+    suspend fun updateLocalGameRoom(
         roomId: Long,
         roomCode: String,
         status: String

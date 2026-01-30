@@ -50,7 +50,7 @@ fun Chats(
     // 맨 위 도달 시 이전 메시지 로드
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore) {
-            Timber.d("📜 스크롤 맨 위 도달 - 이전 메시지 로드")
+            Timber.d("스크롤 맨 위 도달 - 이전 메시지 로드")
             onLoadMore()
         }
     }

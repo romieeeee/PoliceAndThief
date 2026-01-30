@@ -53,11 +53,6 @@ class AuthRepositoryImpl @Inject constructor(
         provider: String,
         token: String
     ): BaseResult<LoginResponse> {
-        Timber.d("=== Social Login Request ===")
-        Timber.d("Provider: $provider")
-        Timber.d("Token (first 50 chars): ${token.take(50)}...")
-        Timber.d("==========================")
-
         return safeApiCall(
             onSuccess = { response ->
                 saveLoginData(
@@ -66,16 +61,6 @@ class AuthRepositoryImpl @Inject constructor(
                     userId = response.member.id,
                     memberId = response.member.memberId
                 )
-
-                Timber.d(
-                    """
-                    accessToken = ${response.accessToken}
-                    userId = ${response.member.id}
-                    memberId = ${response.member.memberId}
-                """.trimIndent()
-                )
-
-                Timber.d("✅ Social login data saved successfully")
             }
         ) {
             apiService.socialLogin(SocialLoginRequest(provider, token))

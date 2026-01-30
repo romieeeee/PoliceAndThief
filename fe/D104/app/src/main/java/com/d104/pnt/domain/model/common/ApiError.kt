@@ -1,4 +1,4 @@
-package com.d104.pnt.data.model.common
+package com.d104.pnt.domain.model.common
 
 /**
  * API 에러 정보를 담는 클래스
@@ -35,6 +35,7 @@ data class ApiError(
                     404 -> ErrorType.NOT_FOUND
                     else -> ErrorType.CLIENT
                 }
+
                 in 500..599 -> ErrorType.SERVER
                 else -> ErrorType.UNKNOWN
             }

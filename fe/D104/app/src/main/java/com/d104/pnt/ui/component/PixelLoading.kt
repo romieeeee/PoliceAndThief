@@ -1,8 +1,16 @@
 package com.d104.pnt.ui.component
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -12,13 +20,11 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.foundation.background
-import com.d104.pnt.R
-import androidx.compose.ui.unit.sp
-import com.d104.pnt.ui.theme.PixelFont
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.d104.pnt.R
+import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
 fun PixelLoading(
@@ -33,7 +39,7 @@ fun PixelLoading(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = LinearEasing)  // 숫자 커질수록 느리게 회전
+            animation = tween(1200, easing = LinearEasing)
         ),
         label = "loading_angle"
     )
@@ -64,22 +70,4 @@ fun PixelLoading(
         }
     }
 
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PixelLoadingPreview() {
-    Box(
-        modifier = Modifier
-            .size(200.dp)
-            .background(Color.Black),
-        contentAlignment = Alignment.Center
-    ) {
-        PixelLoading(
-            size = 32,
-            message = "Loading...",
-            fontSize = 10.sp,
-            textColor = Color.White
-        )
-    }
 }

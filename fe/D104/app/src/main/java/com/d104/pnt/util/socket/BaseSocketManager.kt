@@ -59,25 +59,25 @@ abstract class BaseSocketManager(
     private fun setupBaseListeners() {
         socket?.apply {
             on(Socket.EVENT_CONNECT) {
-                Timber.d("[$namespace] ✅ 서버에 연결되었습니다.")
+                Timber.d("[$namespace] 서버에 연결되었습니다.")
                 isManualDisconnect = false
                 onConnect()
             }
 
             on(Socket.EVENT_DISCONNECT) { args ->
-                Timber.d("[$namespace] ❌ 서버 연결이 끊어졌습니다: ${args.firstOrNull()}")
+                Timber.d("[$namespace] 서버 연결이 끊어졌습니다: ${args.firstOrNull()}")
                 onDisconnect()
             }
 
             on(Socket.EVENT_CONNECT_ERROR) { args ->
-                Timber.e("[$namespace] 🔴 연결 에러: ${args.firstOrNull()}")
+                Timber.e("[$namespace] 연결 에러: ${args.firstOrNull()}")
                 onError(args.firstOrNull()?.toString() ?: "Unknown error")
             }
 
             on(EVENT_RECONNECT) { args ->
                 try {
                     val data = args[0] as JSONObject
-                    Timber.d("[$namespace] 🔄 재연결됨: $data")
+                    Timber.d("[$namespace] 재연결됨: $data")
                     onReconnect(data)
                 } catch (e: Exception) {
                     Timber.e(e, "[$namespace] 재연결 데이터 파싱 실패")
@@ -89,7 +89,7 @@ abstract class BaseSocketManager(
                     val error = args[0] as JSONObject
                     val message = error.getString("message")
                     val code = error.getInt("code")
-                    Timber.e("[$namespace] ❌ Socket Error: $message (code: $code)")
+                    Timber.e("[$namespace] Socket Error: $message (code: $code)")
                     onError("$message (code: $code)")
                 } catch (e: Exception) {
                     Timber.e(e, "[$namespace] 에러 파싱 실패")
@@ -135,7 +135,7 @@ abstract class BaseSocketManager(
      * 정상 연결 해제
      */
     fun disconnect() {
-        Timber.d("[$namespace] 🔌 소켓 연결 종료")
+        Timber.d("[$namespace] 소켓 연결 종료")
         isManualDisconnect = true
 
         socket?.let {
@@ -173,11 +173,11 @@ abstract class BaseSocketManager(
      */
     protected fun emit(event: String, data: JSONObject) {
         if (!isConnected()) {
-            Timber.e("[$namespace] ❌ 소켓이 연결되어 있지 않습니다.")
+            Timber.e("[$namespace] 소켓이 연결되어 있지 않습니다.")
             return
         }
         socket?.emit(event, data)
-        Timber.d("[$namespace] 📤 이벤트 전송: $event - $data")
+        Timber.d("[$namespace] 이벤트 전송: $event - $data")
     }
 
     /**
@@ -185,7 +185,7 @@ abstract class BaseSocketManager(
      */
     protected fun on(event: String, handler: (Array<Any>) -> Unit) {
         socket?.on(event) { args ->
-            Timber.d("[$namespace] 📥 이벤트 수신: $event")
+            Timber.d("[$namespace] 이벤트 수신: $event")
             handler(args)
         }
     }
@@ -195,7 +195,7 @@ abstract class BaseSocketManager(
      */
     protected fun once(event: String, handler: (Array<Any>) -> Unit) {
         socket?.once(event) { args ->
-            Timber.d("[$namespace] 📥 이벤트 수신 (once): $event")
+            Timber.d("[$namespace] 이벤트 수신 (once): $event")
             handler(args)
         }
     }
@@ -205,6 +205,6 @@ abstract class BaseSocketManager(
      */
     protected fun off(event: String) {
         socket?.off(event)
-        Timber.d("[$namespace] 🔕 이벤트 리스너 제거: $event")
+        Timber.d("[$namespace] 이벤트 리스너 제거: $event")
     }
 }

@@ -148,8 +148,7 @@ fun MissionBottomSheet(
                                 end = 60.dp,
                                 bottom = 32.dp
                             )
-                            .systemBarsPadding()
-                        ,
+                            .systemBarsPadding(),
                         verticalArrangement = Arrangement.Top,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {

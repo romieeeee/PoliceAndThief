@@ -48,7 +48,7 @@ fun HomeScreen(
     navigateToIntro: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 
-) {
+    ) {
     val context = LocalContext.current
     var showJoinDialog by remember { mutableStateOf(false) }
     val joinCode by viewModel.joinCode.collectAsStateWithLifecycle()

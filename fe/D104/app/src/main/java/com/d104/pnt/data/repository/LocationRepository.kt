@@ -13,26 +13,53 @@ interface LocationRepository {
     val prisonLocation: StateFlow<LatLng?>
     val playerLocations: StateFlow<List<PlayerData>>
 
-    // 업데이트하는 함수
+    /**
+     * 최근 위치 업데이트
+     */
     fun updateCurrentLocation(location: Location)
 
+    /**
+     * 플레이어 위치 업데이트
+     */
     fun updatePlayerLocation(locations: List<PlayerData>)
 
-    // 바뀐 포인트 저장
+    /**
+     * 폴리곤 포인트 저장
+     */
     fun setPolygonPoints(points: List<LatLng>)
 
+    /**
+     * 폴리곤 포인트 삭제
+     */
     fun deletePolygonPoint(targetList: MutableList<DraggableLatLng>, index: Int): Boolean
 
+    /**
+     * 리스트에 포인트 추가
+     */
     fun addPointToList(targetList: MutableList<DraggableLatLng>, newPoint: LatLng)
 
-    // [NEW] 기준 위치를 받아 기본 사각형(정사각형) 생성 후 저장
+    /**
+     * 기준 위치를 받아 기본 사각형(정사각형) 생성 후 저장
+     */
     fun createDefaultPolygon(center: Location)
 
+    /**
+     * 감옥 위치 지정
+     */
     fun setPrisonLocation(location: LatLng?)
 
+    /**
+     * 방 생성 취소 시 정보 초기화
+     */
     fun dismissCreateGame()
 
+    /**
+     * 경도 위도 -> 주소 정보 반환
+     */
     suspend fun getAddressFromLatLng(latitude: Double, longitude: Double): GeoLocationInfo
 
+    /**
+     * 행정 지역명을 지역 코드로 변환
+     */
     fun getRegionCode(major: String, middle: String): Int
 }

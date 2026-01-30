@@ -21,7 +21,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.domain.model.ChatMessage
 import com.d104.pnt.ui.component.PixelContainer
-import com.d104.pnt.ui.theme.*
+import com.d104.pnt.ui.theme.BorderDefault
+import com.d104.pnt.ui.theme.ButtonHighlight
+import com.d104.pnt.ui.theme.DarkBackground
+import com.d104.pnt.ui.theme.NeutralColor
+import com.d104.pnt.ui.theme.TextDisabled
+import com.d104.pnt.ui.theme.TextPrimary
+import com.d104.pnt.ui.theme.TextSecondary
 
 @Composable
 fun ChatBubble(
@@ -81,63 +87,5 @@ fun ChatBubble(
                 )
             }
         }
-    }
-}
-
-// 디버그용 프리뷰
-@Preview(showBackground = true, backgroundColor = 0xFF1A1A2E)
-@Composable
-fun PreviewChats() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(DarkBackground)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        ChatBubble(
-            message = ChatMessage(
-                id = 1,
-                chatRoomId = 1,
-                memberId = 1,
-                senderNickname = "인동 대도",
-                avataUrl = "",
-                content = "2/5일 ㅇㅇ공원 근처에서 경도하실분!",
-            ),
-            isMe = false
-        )
-        ChatBubble(
-            message = ChatMessage(
-                id = 2,
-                chatRoomId = 1,
-                memberId = 2,
-                senderNickname = "런닝맨",
-                avataUrl = "",
-                content = "ㅇㅇ공원에서 할거고 경찰은 뿅망치 사용, 도둑은 빨간색 스티커 옷에 앞뒤로 붙이고 할 예정입니다",
-            ),
-            isMe = false
-        )
-        ChatBubble(
-            message = ChatMessage(
-                id = 3,
-                chatRoomId = 1,
-                memberId = 3,
-                senderNickname = "우사인 홈즈",
-                avataUrl = "",
-                content = "저 그날 시간 돼요! 몇시에 할 예정인가요?",
-            ),
-            isMe = true
-        )
-        ChatBubble(
-            message = ChatMessage(
-                id = 4,
-                chatRoomId = 1,
-                memberId = 1,
-                senderNickname = "인동 대도",
-                avataUrl = "",
-                content = "오후 3시!",
-            ),
-            isMe = false
-        )
     }
 }

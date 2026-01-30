@@ -48,8 +48,9 @@ class RegionCodeManager @Inject constructor(
             e.printStackTrace()
         }
     }
+
     private fun shortenMajor(major: String): String {
-        val shortedMajor = when(major) {
+        val shortedMajor = when (major) {
             "서울특별시" -> "서울"
             "인천광역시" -> "인천"
             "강원특별자치도" -> "강원도"

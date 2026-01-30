@@ -25,13 +25,11 @@ class LocationRepositoryImpl @Inject constructor(
     private val naverApiService: NaverApiService,
     private val regionCodeManager: RegionCodeManager
 ) : LocationRepository {
-    // 내부 수정용 MutableStateFlow
     private val _currentLocation = MutableStateFlow<Location?>(null)
     private val _polygonPoints = MutableStateFlow<List<LatLng>>(emptyList())
     private val _prisonLocation = MutableStateFlow<LatLng?>(null)
     private val _playerLocations = MutableStateFlow<List<PlayerData>>(emptyList())
 
-    // 인터페이스 구현 (외부 공개용)
     override val currentLocation = _currentLocation.asStateFlow()
     override val polygonPoints = _polygonPoints.asStateFlow()
     override val prisonLocation = _prisonLocation.asStateFlow()
@@ -59,12 +57,10 @@ class LocationRepositoryImpl @Inject constructor(
     }
 
     override fun addPointToList(targetList: MutableList<DraggableLatLng>, newPoint: LatLng) {
-        // 내부 private 함수 활용
         val insertIndex = getInsertionIndex(newPoint, targetList.map { it.position })
         targetList.add(insertIndex, DraggableLatLng(position = newPoint))
     }
 
-    // 이 함수는 인터페이스에 없고 내부에서만 쓰이므로 private 유지
     private fun getInsertionIndex(point: LatLng, points: List<LatLng>): Int {
         var minDistance = Double.MAX_VALUE
         var insertIndex = points.size
@@ -105,14 +101,15 @@ class LocationRepositoryImpl @Inject constructor(
         _prisonLocation.value = null
     }
 
-    override suspend fun getAddressFromLatLng(latitude: Double, longitude: Double): GeoLocationInfo {
+    override suspend fun getAddressFromLatLng(
+        latitude: Double,
+        longitude: Double
+    ): GeoLocationInfo {
         return withContext(Dispatchers.IO) {
             try {
-                // local.properties에 저장한 키 가져오기
                 val clientId = BuildConfig.CLIENT_ID
                 val clientSecret = BuildConfig.CLIENT_SECRET
 
-                // ⭐️ 네이버는 "경도,위도" 문자열로 보냄
                 val coords = "$longitude,$latitude"
 
                 val response = naverApiService.getAddress(
@@ -140,7 +137,7 @@ class LocationRepositoryImpl @Inject constructor(
     }
 
     override fun getRegionCode(major: String, middle: String): Int {
-        val normalizedMajor = when(major) {
+        val normalizedMajor = when (major) {
             "서울" -> "서울특별시"
             "인천" -> "인천광역시"
             "강원도" -> "강원특별자치도"

@@ -9,7 +9,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.delay
 
 @Composable
@@ -35,12 +34,4 @@ fun GameTimer(
         color = Color(0xFFFFE082), // 살짝 노란 픽셀 숫자
         style = MaterialTheme.typography.titleLarge
     )
-}
-
-@Preview
-@Composable
-fun TimerPreview() {
-    GameTimer {
-
-    }
 }

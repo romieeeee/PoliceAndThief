@@ -76,6 +76,7 @@ class ChatRoomViewModel @Inject constructor(
                     _roomInfo.value = info
                     Timber.d("채팅방 정보 로드 성공: ${info.title}")
                 }
+
                 is BaseResult.Error -> {
                     val apiError = result.error
                     Timber.e("채팅방 정보 로드 실패: ${apiError.message} (코드: ${apiError.code})")
@@ -100,11 +101,11 @@ class ChatRoomViewModel @Inject constructor(
                     // 3. 채팅방 입장
                     chatSocketManager.joinRoom(chatRoomId) { success, message ->
                         if (success) {
-                            Timber.d("✅ 채팅방 입장 성공: $message")
+                            Timber.d("채팅방 입장 성공: $message")
                             // 입장 성공 시 초기 메시지 로드
                             loadInitialMessages()
                         } else {
-                            Timber.e("❌ 채팅방 입장 실패: $message")
+                            Timber.e("채팅방 입장 실패: $message")
                         }
                     }
                 }
@@ -123,7 +124,7 @@ class ChatRoomViewModel @Inject constructor(
             if (newMessage != null) {
                 viewModelScope.launch {
                     _chatMessages.value = _chatMessages.value + newMessage
-                    Timber.d("💬 새 메시지 추가: ${newMessage.content}")
+                    Timber.d("새 메시지 추가: ${newMessage.content}")
                 }
             }
         }
@@ -135,7 +136,7 @@ class ChatRoomViewModel @Inject constructor(
                 // 기존 메시지 앞에 추가 (시간순 정렬)
                 _chatMessages.value = parsedMessages + _chatMessages.value
                 _isLoading.value = false
-                Timber.d("📜 이전 메시지 로드 완료: ${count}개")
+                Timber.d("이전 메시지 로드 완료: ${count}개")
             }
         }
 
@@ -144,7 +145,7 @@ class ChatRoomViewModel @Inject constructor(
             val parsedMessages = messages.mapNotNull { parseMessage(it) }
             viewModelScope.launch {
                 _chatMessages.value = _chatMessages.value + parsedMessages
-                Timber.d("🔄 동기화 메시지 추가: ${count}개")
+                Timber.d("동기화 메시지 추가: ${count}개")
             }
         }
     }
@@ -174,7 +175,7 @@ class ChatRoomViewModel @Inject constructor(
     private fun loadInitialMessages() {
         _isLoading.value = true
 
-        Timber.d("📜 초기 메시지 로드 시작 - cursor: 0, limit: 50")
+        Timber.d("초기 메시지 로드 시작 - cursor: 0, limit: 50")
 
         chatSocketManager.loadPreviousMessages(cursor = 0, limit = 50)
     }
@@ -210,7 +211,7 @@ class ChatRoomViewModel @Inject constructor(
             return
         }
 
-        Timber.d("💬 메시지 전송: $messageText")
+        Timber.d("메시지 전송: $messageText")
         chatSocketManager.sendMessage(messageText)
 
         // 입력창 초기화

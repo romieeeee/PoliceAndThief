@@ -2,15 +2,6 @@ package com.d104.pnt.domain.model.common
 
 /**
  * UI 상태를 나타내는 Sealed Class
- * 사용 예시:
- * private val _loginState = MutableStateFlow<UiState<LoginResponse>>(UiState.Idle)
- *
- * when (loginState) {
- *     is UiState.Idle -> // 초기 상태
- *     is UiState.Loading -> // 로딩 중
- *     is UiState.Success -> // 성공
- *     is UiState.Error -> // 에러
- * }
  */
 sealed class UiState<out T> {
     /**

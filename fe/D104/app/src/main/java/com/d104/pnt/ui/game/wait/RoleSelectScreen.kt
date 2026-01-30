@@ -22,7 +22,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.R
-import com.d104.pnt.domain.model.CurrentGameRoomData
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.theme.DarkBackground
@@ -78,7 +77,7 @@ fun RoleSelectScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            PixelContainer (
+            PixelContainer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { /* TODO: 랜덤 선택하도록 해야하는데? */ },
