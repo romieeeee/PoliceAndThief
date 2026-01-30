@@ -53,6 +53,7 @@ class ChatRoomListViewModel @Inject constructor(
     val viewMode = _viewMode.asStateFlow()
 
     init {
+        setupGlobalChatCallbacks()
         connectSocket()
         getJoinedChatRoom()
     }
@@ -69,6 +70,18 @@ class ChatRoomListViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 전역 채팅 콜백 설정 (앱 전체에서 사용)
+     * reconnect 이벤트는 여기서만 처리
+     */
+    private fun setupGlobalChatCallbacks() {
+        // 재연결 처리만 여기서
+        chatSocketManager.setOnReconnected { chatRoomId ->
+            Timber.d("전역: 재연결됨 chatRoomId=$chatRoomId")
+            // 재연결 시 특별한 처리가 필요하면 여기서
+            // 개별 ViewModel의 콜백도 동작함
+        }
+    }
 
     fun updateSearchQuery(newQuery: String) {
         _searchQuery.value = newQuery
