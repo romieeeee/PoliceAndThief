@@ -1,17 +1,17 @@
 package com.pnt.pnt_spring.domain.games.mission.application;
 
-import com.pnt.pnt_spring.domain.games.mission.api.resp.MissionResponse;
-
 import java.util.List;
+
+import com.pnt.pnt_spring.domain.games.mission.api.resp.MissionResponse;
 
 public interface MissionService {
 
-    List<MissionResponse> getAllMissions();
+	List<MissionResponse> getAllMissions();
 
-    List<MissionResponse> getMissions(Long gameId);
+	List<MissionResponse> getMissions(Long gameId);
 
-    MissionResponse getMissionDetail(Long gameId, Long missionId);
+	MissionResponse getMissionDetail(Long gameId, Long missionId);
 
-    Boolean submitMission(Long gameId, Long missionId, Long thiefId);
+	Boolean submitMission(Long gameId, Long missionId, Long thiefId);
 
 }

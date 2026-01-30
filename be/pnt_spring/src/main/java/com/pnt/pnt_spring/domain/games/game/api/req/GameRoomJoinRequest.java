@@ -6,6 +6,6 @@ import lombok.Getter;
 @Getter
 public class GameRoomJoinRequest {
 
-    @NotBlank(message = "roomCode는 필수입니다.")
-    private String roomCode;
+	@NotBlank(message = "roomCode는 필수입니다.")
+	private String roomCode;
 }
