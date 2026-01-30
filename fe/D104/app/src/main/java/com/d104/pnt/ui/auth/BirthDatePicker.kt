@@ -39,7 +39,6 @@ fun BirthDatePicker(
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // 1. 초기 날짜 계산 (리컴포지션 시 재계산 방지)
     val initialDate = remember(value) {
         try {
             if (value.isNotEmpty()) {
@@ -65,7 +64,7 @@ fun BirthDatePicker(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    snappedDateRef.set(initialDate) // 열릴 때 초기값 세팅
+                    snappedDateRef.set(initialDate)
                     showDatePicker = true
                 }
         ) {
@@ -90,7 +89,6 @@ fun BirthDatePicker(
                 )
             },
             text = {
-                // key를 사용하여 다이얼로그가 열릴 때마다 내부 상태를 안정적으로 초기화
                 key(showDatePicker) {
                     WheelDatePicker(
                         startDate = initialDate,

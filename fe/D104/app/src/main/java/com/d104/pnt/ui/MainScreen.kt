@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -34,7 +33,8 @@ import com.d104.pnt.navigation.BottomNavBar
 import com.d104.pnt.navigation.BottomNavItem
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.navigation.Routes
-import com.d104.pnt.ui.chatroom.ChatRoomCreateScreen
+import com.d104.pnt.ui.chatroom.chat.ChatRoomScreen
+import com.d104.pnt.ui.chatroom.create.ChatRoomCreateScreen
 import com.d104.pnt.ui.chatroomlist.ChatRoomListScreen
 import com.d104.pnt.ui.game.create.GameCreateScreen
 import com.d104.pnt.ui.game.end.GameResultScreen
@@ -122,19 +122,27 @@ fun MainScreen(
 
             composable(Routes.CHAT) {
                 ChatRoomListScreen(
-//                    navigateToChatRoom = { chatId ->
-//                        navController.navigate(Routes.buildChatRoom(chatId))
-//                    }
+                    navigateToChatRoom = { chatRoomId ->
+                        navController.navigate(Routes.buildChatRoom(chatRoomId))
+                    },
                     navigateToChatCreate = {
                         navController.navigate(Routes.CHAT_CREATE)
                     }
                 )
             }
 
-            composable(Routes.CHAT_CREATE){
+            composable(Routes.CHAT_CREATE) {
                 ChatRoomCreateScreen(
                     onCancel = { navController.popBackStack() },
-                    onConfirm = { "TODO: 채팅방 생성"},
+                    onConfirm = { chatRoomId ->
+                        Timber.d("채팅방 생성 완료, ID: $chatRoomId")
+
+                        // 채팅방 화면으로 이동
+                        navController.navigate(Routes.buildChatRoom(chatRoomId)) {
+                            // 생성 화면은 스택에서 제거
+                            popUpTo(Routes.CHAT) { inclusive = false }
+                        }
+                    },
                 )
             }
 
@@ -150,10 +158,11 @@ fun MainScreen(
                 )
             ) { backStackEntry ->
                 val chatId = backStackEntry.arguments?.getLong(NavArgs.CHAT_ID) ?: 0L
-//                ChatRoomScreen(
-//                    chatId = chatId,
-//                    onBackPressed = { navController.popBackStack() }
-//                )
+
+                ChatRoomScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    onBackPressed = { navController.popBackStack() }
+                )
             }
 
             // ===== 게임 대기방 =====

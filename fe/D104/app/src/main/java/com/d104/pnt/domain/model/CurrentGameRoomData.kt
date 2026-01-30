@@ -3,14 +3,13 @@ package com.d104.pnt.domain.model
 import com.google.android.gms.maps.model.LatLng
 
 data class CurrentGameRoomData(
-    // Room ID
     val roomId: Long,
     val roomCode: String,
 
     // Info
     val status: String,
     val timeLimit: Int,
-//    val timeLeft: Int, // 남은시간...?
+//    val timeLeft: Int,
     val cctvFrequency: Int,
     val missionCount: Int,
     val playerCount: Int,

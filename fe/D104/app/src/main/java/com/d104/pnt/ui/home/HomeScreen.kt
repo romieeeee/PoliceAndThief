@@ -58,12 +58,15 @@ fun HomeScreen(
                 is HomeViewModel.HomeUiEvent.NavigateToIntro -> {
                     navigateToIntro()
                 }
+
                 is HomeViewModel.HomeUiEvent.ShowMessage -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
+
                 is HomeViewModel.HomeUiEvent.ShowError -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
+
                 is HomeViewModel.HomeUiEvent.NavigateToGameRoom -> {
                     showJoinDialog = false
                     navigateToGameRoom(event.roomId)
@@ -92,7 +95,6 @@ fun HomeScreen(
             PixelIconButton(
                 onClick = {
                     showJoinDialog = true
-//                    navigateToGameRoom(1)
                 },
                 modifier = Modifier
                     .fillMaxWidth()

@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.stateIn
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    val authEventBus: AuthEventBus
+    private val authEventBus: AuthEventBus,
 ) : ViewModel() {
 
     val isLoggedIn: StateFlow<Boolean> = authRepository.isLoggedIn()

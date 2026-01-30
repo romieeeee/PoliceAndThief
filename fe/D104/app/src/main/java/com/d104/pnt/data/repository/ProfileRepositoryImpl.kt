@@ -2,9 +2,9 @@ package com.d104.pnt.data.repository
 
 import com.d104.pnt.data.remote.api.ProfileApiService
 import com.d104.pnt.data.remote.model.request.UpdateProfileRequest
+import com.d104.pnt.data.remote.model.response.PoliceStatResponse
 import com.d104.pnt.data.remote.model.response.ProfileResponse
 import com.d104.pnt.data.remote.model.response.ThiefStatResponse
-import com.d104.pnt.data.remote.model.response.PoliceStatResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import javax.inject.Inject
 
@@ -30,7 +30,11 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateProfile(memberId: Long, nickname: String, avatarUrl: String): BaseResult<ProfileResponse> {
+    override suspend fun updateProfile(
+        memberId: Long,
+        nickname: String,
+        avatarUrl: String
+    ): BaseResult<ProfileResponse> {
         return safeApiCall {
             profileApiService.updateProfile(
                 memberId = memberId,

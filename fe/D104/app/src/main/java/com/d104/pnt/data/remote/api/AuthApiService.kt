@@ -15,9 +15,6 @@ import retrofit2.http.POST
 
 interface AuthApiService {
 
-    @GET("api/test")
-    suspend fun test(): Response<BaseResponse<Unit>>
-
     /**
      * 로그인 API
      */

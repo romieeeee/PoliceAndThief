@@ -6,6 +6,7 @@ import com.d104.pnt.data.remote.model.request.CreateGameRoomRequest
 import com.d104.pnt.data.remote.model.request.JoinGameRoomRequest
 import com.d104.pnt.data.remote.model.request.Location
 import com.d104.pnt.data.remote.model.request.ToggleReadyRequest
+import com.d104.pnt.data.remote.model.request.UpdateRoomSettingsRequest
 import com.d104.pnt.data.remote.model.response.CreateGameRoomResponse
 import com.d104.pnt.data.remote.model.response.GameMemberListResponse
 import com.d104.pnt.data.remote.model.response.GameRoomSettingsResponse
@@ -15,9 +16,8 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import javax.inject.Inject
-import com.d104.pnt.data.remote.model.request.UpdateRoomSettingsRequest
 import timber.log.Timber
+import javax.inject.Inject
 
 class GameRoomRepositoryImpl @Inject constructor(
     private val apiService: GameRoomApiService,
@@ -167,9 +167,16 @@ class GameRoomRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun kickPlayer(roomId: Long, targetMemberId: Long, reason: String): BaseResult<Unit> {
+    override suspend fun kickPlayer(
+        roomId: Long,
+        targetMemberId: Long,
+        reason: String
+    ): BaseResult<Unit> {
         return safeApiCall {
-            apiService.kickPlayer(roomId, com.d104.pnt.data.remote.model.request.KickRequest(targetMemberId, reason))
+            apiService.kickPlayer(
+                roomId,
+                com.d104.pnt.data.remote.model.request.KickRequest(targetMemberId, reason)
+            )
         }
     }
 }

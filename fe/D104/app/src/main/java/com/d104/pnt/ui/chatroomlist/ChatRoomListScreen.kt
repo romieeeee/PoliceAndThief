@@ -1,6 +1,5 @@
 package com.d104.pnt.ui.chatroomlist
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,27 +20,32 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d104.pnt.domain.model.ChatRoomData
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelDropdown
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.component.RoomList
-import com.d104.pnt.ui.theme.*
+import com.d104.pnt.ui.theme.BorderDefault
+import com.d104.pnt.ui.theme.ButtonHighlight
+import com.d104.pnt.ui.theme.ButtonPrimary
+import com.d104.pnt.ui.theme.TextPrimary
 
 @Composable
 fun ChatRoomListScreen(
     navigateToChatCreate: () -> Unit,
+    navigateToChatRoom: (Long) -> Unit,
     viewModel: ChatRoomListViewModel = hiltViewModel()
 ) {
     val majors = viewModel.majorList
@@ -50,16 +54,19 @@ fun ChatRoomListScreen(
     val selectedMajor by viewModel.selectedMajor.collectAsStateWithLifecycle()
     val selectedMiddle by viewModel.selectedMiddle.collectAsStateWithLifecycle()
 
-    val searchMode = remember { mutableStateOf(false) }
+    var searchMode by remember { mutableStateOf(false) }
 
     val uiState by viewModel.listState.collectAsStateWithLifecycle()
+    val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
     val searchText by viewModel.searchQuery.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        viewModel.getJoinedChatRoom()
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DeepDark)
             .padding(16.dp)
             .statusBarsPadding() // 상태바 겹침 방지
     ) {
@@ -67,8 +74,12 @@ fun ChatRoomListScreen(
         ChatRoomListHeader(
             majors = majors,
             middles = middles,
+            viewMode = viewMode,
             selectedMajor = selectedMajor,
             selectedMiddle = selectedMiddle,
+            onJoinedRoomClicked = {
+                viewModel.getJoinedChatRoom()
+            },
             onMajorSelected = { newMajor ->
                 viewModel.selectMajor(newMajor)
             },
@@ -87,7 +98,7 @@ fun ChatRoomListScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (!searchMode.value) {
+            if (!searchMode) {
                 PixelIconButton(
                     modifier = Modifier.size(48.dp),
                     mainColor = ButtonPrimary,
@@ -105,7 +116,7 @@ fun ChatRoomListScreen(
                 Spacer(modifier = Modifier.width(10.dp))
             }
 
-            if (searchMode.value) {
+            if (searchMode) {
                 PixelInputField(
                     modifier = Modifier
                         .weight(1f),
@@ -118,15 +129,18 @@ fun ChatRoomListScreen(
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            PixelIconButton (
+            PixelIconButton(
                 modifier = Modifier.size(48.dp),
                 mainColor = ButtonPrimary,
                 borderColor = ButtonHighlight,
                 onClick = {
-                    if (searchMode.value && searchText != "")
-                        viewModel.searchChatRoom(viewModel.searchQuery.value, null)
-                    searchMode.value = !searchMode.value
+                    val code =
+                        if (viewModel.searchRegionQuery.value != -1) viewModel.searchRegionQuery.value else null
+                    if (searchMode && searchText != "") {
+                        viewModel.searchChatRoom(viewModel.searchQuery.value, code)
+                    }
                     viewModel.updateSearchQuery("")
+                    searchMode = !searchMode
                 }
             ) {
                 Icon(
@@ -145,9 +159,10 @@ fun ChatRoomListScreen(
             is UiState.Success -> {
                 val data = (uiState as UiState.Success).data
                 if (data.chats.isEmpty()) {
-                    Box(modifier = Modifier
-                        .weight(1f)
-                        .align(Alignment.CenterHorizontally)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .align(Alignment.CenterHorizontally)
                     ) {
                         Text(
                             text = "검색 결과가 없습니다.",
@@ -156,16 +171,23 @@ fun ChatRoomListScreen(
                             modifier = Modifier.align(Alignment.Center)
                         )
                     }
-                }
-                else {
+                } else {
                     Box(modifier = Modifier.weight(1f)) {
                         RoomList(
                             rooms = data.chats,
-                            onItemClick = {}
+                            onItemClick = { room ->
+                                viewModel.joinChatRoomFromList(
+                                    chatRoomId = room.id,
+                                    onSuccess = {
+                                        navigateToChatRoom(room.id)
+                                    }
+                                )
+                            }
                         )
                     }
                 }
             }
+
             is UiState.Error -> {}
         }
     }
@@ -175,8 +197,10 @@ fun ChatRoomListScreen(
 fun ChatRoomListHeader(
     majors: List<String>,
     middles: List<String>,
+    viewMode: ChatRoomListViewModel.ViewMode,
     selectedMajor: String,
     selectedMiddle: String,
+    onJoinedRoomClicked: () -> Unit,
     onMajorSelected: (String) -> Unit,
     onMiddleSelected: (String) -> Unit
 ) {
@@ -185,17 +209,18 @@ fun ChatRoomListHeader(
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .padding(horizontal = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         // 왼쪽 버튼
         PixelButtonCode(
             modifier = Modifier.weight(1f),
             text = "참여 중인 채팅방",
             fontSize = 14,
-            onClick = { },
-            mainColor = ButtonPrimary,
+            onClick = onJoinedRoomClicked,
+            mainColor = if (viewMode == ChatRoomListViewModel.ViewMode.Me) ButtonPrimary else TextPrimary,
             pixelSize = 3.dp,
             blockHeight = 14,
-            textColor = TextPrimary
+            textColor = if (viewMode == ChatRoomListViewModel.ViewMode.Me) TextPrimary else BorderDefault
         )
 
         Spacer(modifier = Modifier.width(12.dp))
@@ -203,6 +228,7 @@ fun ChatRoomListHeader(
         // 시/도 드롭다운
         PixelDropdown(
             items = majors,
+            highlighted = viewMode == ChatRoomListViewModel.ViewMode.Region,
             selectedItem = selectedMajor,
             onItemSelected = onMajorSelected,
             modifier = Modifier
@@ -214,6 +240,7 @@ fun ChatRoomListHeader(
         // 시/군/구 드롭다운
         PixelDropdown(
             items = middles,
+            highlighted = viewMode == ChatRoomListViewModel.ViewMode.Region,
             selectedItem = selectedMiddle,
             onItemSelected = onMiddleSelected,
             modifier = Modifier

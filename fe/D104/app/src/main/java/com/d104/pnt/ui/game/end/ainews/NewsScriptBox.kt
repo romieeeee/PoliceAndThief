@@ -6,7 +6,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -30,7 +35,8 @@ fun NewsScriptBox(
             // 유저가 스크롤을 하면 자동스크롤이 취소
             try {
                 scrollState.animateScrollTo(scrollState.maxValue)
-            } catch (e: Exception) { }  // 에러를 무시
+            } catch (e: Exception) {
+            }  // 에러를 무시
 
             delay(60)
         }

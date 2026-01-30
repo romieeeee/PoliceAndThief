@@ -8,10 +8,13 @@ import com.d104.pnt.domain.model.CurrentGameRoomData
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.StateFlow
 
-interface GameRoomRepository{
+interface GameRoomRepository {
 
     fun getCurrentGameRoom(): StateFlow<CurrentGameRoomData?>
 
+    /**
+     * 게임방 생성
+     */
     suspend fun createGameRoom(
         playerCount: Int,
         timeLimit: Int,
@@ -23,6 +26,9 @@ interface GameRoomRepository{
         polygon: List<Location>
     ): BaseResult<CreateGameRoomResponse>
 
+    /**
+     * 게임방 정보 저장
+     */
     suspend fun updateLocalGameRoom(
         roomId: Long,
         roomCode: String,
@@ -31,15 +37,14 @@ interface GameRoomRepository{
         polygon: List<Location>? = null
     )
 
+    /**
+     * 게임방 입장
+     */
     suspend fun joinGameRoom(roomCode: String): BaseResult<CreateGameRoomResponse>
 
-    suspend fun getRoomMembers(roomId: Long): BaseResult<GameMemberListResponse>
-    suspend fun getRoomSettings(roomId: Long): BaseResult<GameRoomSettingsResponse>
-    suspend fun toggleReady(roomId: Long, isReady: Boolean): BaseResult<Unit>
-    suspend fun changePosition(roomId: Long, position: String): BaseResult<Unit>
-    suspend fun startGame(roomId: Long): BaseResult<Unit>
-    suspend fun leaveRoom(roomId: Long): BaseResult<Unit>
-
+    /**
+     * 게임방 설정 변경
+     */
     suspend fun updateRoomSettings(
         roomId: Long,
         playerCount: Int,
@@ -52,6 +57,38 @@ interface GameRoomRepository{
         polygon: List<Location>?
     ): BaseResult<Unit>
 
+    /**
+     * 플레이어 강퇴
+     */
     suspend fun kickPlayer(roomId: Long, targetMemberId: Long, reason: String): BaseResult<Unit>
 
+    /**
+     * 게임방 멤버 조회
+     */
+    suspend fun getRoomMembers(roomId: Long): BaseResult<GameMemberListResponse>
+
+    /**
+     * 게임방 설정 조회
+     */
+    suspend fun getRoomSettings(roomId: Long): BaseResult<GameRoomSettingsResponse>
+
+    /**
+     * 준비 상태 변경
+     */
+    suspend fun toggleReady(roomId: Long, isReady: Boolean): BaseResult<Unit>
+
+    /**
+     * 역할 변경
+     */
+    suspend fun changePosition(roomId: Long, position: String): BaseResult<Unit>
+
+    /**
+     * 게임 시작
+     */
+    suspend fun startGame(roomId: Long): BaseResult<Unit>
+
+    /**
+     * 게임방 나가기
+     */
+    suspend fun leaveRoom(roomId: Long): BaseResult<Unit>
 }

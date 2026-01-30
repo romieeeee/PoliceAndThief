@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
-import kotlin.random.Random
 
 @RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
@@ -66,8 +65,8 @@ class SignupViewModel @Inject constructor(
             when {
                 id.isEmpty() -> ""
                 id.length !in 5..12 -> "아이디는 5~12자 이내여야 합니다"
-                !checked -> "아이디 중복 확인을 해주세요"  // 중복 체크를 안 했을 때
-                duplicated -> "이미 사용 중인 아이디입니다" // 체크했는데 중복일 때
+                !checked -> "아이디 중복 확인을 해주세요"
+                duplicated -> "이미 사용 중인 아이디입니다"
                 else -> ""  // 사용 가능
             }
         }.stateIn(
@@ -142,7 +141,6 @@ class SignupViewModel @Inject constructor(
     val signupState: StateFlow<UiState<SignupResponse>> = _signupState.asStateFlow()
 
     // ===== 입력값 업데이트 =====
-
     fun updateId(newId: String) {
         _id.value = newId
         // ID 변경 시 중복 체크 초기화
@@ -255,8 +253,7 @@ class SignupViewModel @Inject constructor(
                     password = _pw.value,
                     passwordConfirm = _pwConfirm.value,
                     nickname = _nickname.value,
-                    email = Random.nextInt(1_000_000)
-                        .toString(), // TODO: 서버 수정 전 임시 수정 후엔 빈 스트링으로 수정
+                    email = "",
                     birth = formattedBirth,
                     avatarUrl = null
                 )) {

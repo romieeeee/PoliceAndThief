@@ -2,14 +2,16 @@ package com.d104.pnt.di
 
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.AuthRepositoryImpl
-import com.d104.pnt.data.repository.ProfileRepository
-import com.d104.pnt.data.repository.ProfileRepositoryImpl
 import com.d104.pnt.data.repository.ChatRepository
 import com.d104.pnt.data.repository.ChatRepositoryImpl
 import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.data.repository.GameRoomRepositoryImpl
+import com.d104.pnt.data.repository.ImageRepository
+import com.d104.pnt.data.repository.ImageRepositoryImpl
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.data.repository.LocationRepositoryImpl
+import com.d104.pnt.data.repository.ProfileRepository
+import com.d104.pnt.data.repository.ProfileRepositoryImpl
 import com.d104.pnt.data.repository.WalkieRepository
 import com.d104.pnt.data.repository.WalkieRepositoryImpl
 import dagger.Binds
@@ -57,4 +59,10 @@ abstract class RepositoryModule {
     abstract fun bindGameRoomRepository(
         impl: GameRoomRepositoryImpl
     ): GameRoomRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindImageRepository(
+        impl: ImageRepositoryImpl
+    ): ImageRepository
 }

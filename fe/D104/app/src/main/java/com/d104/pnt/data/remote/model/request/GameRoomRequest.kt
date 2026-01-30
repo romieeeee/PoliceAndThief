@@ -2,6 +2,9 @@ package com.d104.pnt.data.remote.model.request
 
 import com.google.gson.annotations.SerializedName
 
+/**
+ * 게임 방 생성 요청
+ */
 data class CreateGameRoomRequest(
     @SerializedName("playerCount")
     val playerCount: Int,

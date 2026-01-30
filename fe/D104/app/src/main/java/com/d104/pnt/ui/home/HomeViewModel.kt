@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.domain.model.common.BaseResult
+import com.d104.pnt.util.AuthEventBus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val gameRoomRepository: GameRoomRepository
+    private val gameRoomRepository: GameRoomRepository,
+    private val authEventBus: AuthEventBus
 ) : ViewModel() {
 
     private val _joinCode = MutableStateFlow("")
@@ -55,6 +57,7 @@ class HomeViewModel @Inject constructor(
 
                     _joinCode.value = ""
                 }
+
                 is BaseResult.Error -> {
                     Timber.e("Join Game Failed: ${result.error.message}")
                     _uiEvent.emit(HomeUiEvent.ShowError(result.error.message))
