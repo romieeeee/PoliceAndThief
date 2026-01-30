@@ -48,6 +48,10 @@ const gameSocketServer = (io) => {
 
         socket.on("post disconnect", gameController.disconnect);
 
+        socket.on("post retry end game", gameController.retryEndGame);
+
+        socket.on("post update access token", gameController.postUpdateAccessToken);
+
         socket.on("disconnect", async () => {
             if (socket.data.isIntentionalExit) {
                 console.log("socket의 연결이 정상적으로 끊어졌습니다.");
