@@ -1,8 +1,10 @@
 package com.d104.pnt.data.repository
 
-import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.domain.model.common.ApiError
+import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.domain.model.common.BaseResult
+import com.google.gson.Gson
+import retrofit2.HttpException
 import retrofit2.Response
 import timber.log.Timber
 import java.io.IOException

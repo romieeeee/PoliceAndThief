@@ -39,6 +39,9 @@
     <!-- 진동 -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- 활동감지 (걸음 수 측정) -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
     <application
         android:name=".base.BaseApplication"
         android:allowBackup="true"
