@@ -7,7 +7,7 @@ import com.d104.pnt.data.remote.api.NaverApiService
 import com.d104.pnt.data.source.local.RegionCodeManager
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GeoLocationInfo
-import com.d104.pnt.domain.model.PlayerLocation
+import com.d104.pnt.domain.model.PlayerData
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.PolyUtil
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -29,7 +29,7 @@ class LocationRepositoryImpl @Inject constructor(
     private val _currentLocation = MutableStateFlow<Location?>(null)
     private val _polygonPoints = MutableStateFlow<List<LatLng>>(emptyList())
     private val _prisonLocation = MutableStateFlow<LatLng?>(null)
-    private val _playerLocations = MutableStateFlow<List<PlayerLocation>>(emptyList())
+    private val _playerLocations = MutableStateFlow<List<PlayerData>>(emptyList())
 
     // 인터페이스 구현 (외부 공개용)
     override val currentLocation = _currentLocation.asStateFlow()
@@ -42,7 +42,7 @@ class LocationRepositoryImpl @Inject constructor(
         _currentLocation.value = location
     }
 
-    override fun updatePlayerLocation(locations: List<PlayerLocation>) {
+    override fun updatePlayerLocation(locations: List<PlayerData>) {
         _playerLocations.value = locations
     }
 
@@ -162,21 +162,5 @@ class LocationRepositoryImpl @Inject constructor(
         Timber.d("major: $major, normalizedMajor: $normalizedMajor")
         val code = regionCodeManager.getRegionCode(normalizedMajor, middle)
         return code?.toInt() ?: 99999999
-    }
-
-    override fun DummyPlayer() {
-        _playerLocations.value = listOf(
-            PlayerLocation(1, 101, 36.106996199409316, 128.41636536008272, 0, 1),
-            PlayerLocation(1, 102, 36.10663643418624, 128.4164977111253, 0, 1),
-            PlayerLocation(1, 100, 36.106996199409316, 128.41636536008272, 0, 1),
-            PlayerLocation(1, 103, 36.106218602970124, 128.4160154777275, 0, 1),
-            PlayerLocation(1, 104, 36.1069317248971, 128.41591167747148, 0, 2),
-            PlayerLocation(1, 105, 36.106888405240205, 128.4159553194928, 3, 2),
-            PlayerLocation(1, 106, 36.10686966460729, 128.41601606002928, 3, 2),
-            PlayerLocation(1, 107, 36.10662012389394, 128.41578115461553, 2, 2),
-            PlayerLocation(1, 108, 36.106996199409316, 128.41636536008272, 0, 2),
-            PlayerLocation(1, 109, 36.10629276353168, 128.4166025880095, 1, 2),
-            PlayerLocation(1, 110, 36.106996199409316, 128.41636536008272, 0, 2),
-        )
     }
 }

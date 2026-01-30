@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,7 +47,6 @@ fun ChatRoomListScreen(
     navigateToChatCreate: () -> Unit,
     navigateToChatRoom: (Long) -> Unit,
     viewModel: ChatRoomListViewModel = hiltViewModel()
-
 ) {
     val majors = viewModel.majorList
     val middles by viewModel.middleList.collectAsStateWithLifecycle()
@@ -60,6 +60,9 @@ fun ChatRoomListScreen(
     val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
     val searchText by viewModel.searchQuery.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        viewModel.getJoinedChatRoom()
+    }
 
     Column(
         modifier = Modifier
@@ -206,7 +209,7 @@ fun ChatRoomListHeader(
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .padding(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         // 왼쪽 버튼
         PixelButtonCode(

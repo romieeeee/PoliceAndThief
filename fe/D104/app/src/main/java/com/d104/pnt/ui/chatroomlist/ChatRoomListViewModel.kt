@@ -10,6 +10,7 @@ import com.d104.pnt.data.source.local.RegionCodeManager
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.util.socket.ChatSocketManager
+import com.d104.pnt.util.SocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -130,7 +131,6 @@ class ChatRoomListViewModel @Inject constructor(
                     _listState.value = UiState.Success(result.data)
                     Timber.d("chatList: ${result.data}")
                 }
-
                 is BaseResult.Error -> {
                     _listState.value = UiState.Error(result.error.message)
                     Timber.d("error: ${result.error.message}")
