@@ -6,6 +6,10 @@ import retrofit2.http.Header
 import retrofit2.http.Query
 
 interface NaverApiService {
+
+    /**
+     * 주소 조회 API
+     */
     @GET("map-reversegeocode/v2/gc")
     suspend fun getAddress(
         @Header("x-ncp-apigw-api-key-id") clientId: String,

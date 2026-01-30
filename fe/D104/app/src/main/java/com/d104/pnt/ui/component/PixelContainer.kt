@@ -6,18 +6,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import com.d104.pnt.ui.theme.*
+import com.d104.pnt.ui.theme.BorderDefault
+import com.d104.pnt.ui.theme.TextPrimary
 
 
 @Composable
 fun PixelContainer(
     modifier: Modifier = Modifier,
-    borderWidth: Float = 10f, // 테두리 두께 (픽셀 느낌)
+    borderWidth: Float = 10f, // 테두리 두께
     cornerSize: Float = 20f, // 모서리 깎이는 정도
     backgroundColor: Color = TextPrimary,
     borderColor: Color = BorderDefault,
@@ -40,7 +40,7 @@ fun PixelContainer(
                         lineTo(w - cornerSize + px, px.toFloat())
                     }
                     lineTo(w, h - cornerSize)
-                    for (px in borderWidth.toInt() until cornerSize.toInt()+1 step borderWidth.toInt()){
+                    for (px in borderWidth.toInt() until cornerSize.toInt() + 1 step borderWidth.toInt()) {
                         lineTo(w - px, h - cornerSize + px - borderWidth)
                         lineTo(w - px, h - cornerSize + px)
                     }
@@ -57,17 +57,20 @@ fun PixelContainer(
                     close()
                 }
 
-                // 1. 배경 색칠
+                // 배경 색칠
                 drawPath(path, color = backgroundColor)
 
-                // 2. 테두리 그리기
+                // 테두리 그리기
                 drawPath(
                     path,
                     color = borderColor,
                     style = Stroke(width = borderWidth)
                 )
             }
-            .padding(horizontal = innerHorizontalPadding.dp, vertical = innerVerticalPadding.dp) // 내부 콘텐츠와 테두리 간격
+            .padding(
+                horizontal = innerHorizontalPadding.dp,
+                vertical = innerVerticalPadding.dp
+            ) // 내부 콘텐츠와 테두리 간격
     ) {
         content()
     }

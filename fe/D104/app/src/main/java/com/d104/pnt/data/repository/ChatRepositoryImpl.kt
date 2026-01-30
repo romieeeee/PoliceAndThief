@@ -4,8 +4,8 @@ import com.d104.pnt.data.remote.api.ChatApiService
 import com.d104.pnt.data.remote.model.request.ChatCreateRequest
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
 import com.d104.pnt.data.remote.model.response.ChatRoomResponse
-import com.d104.pnt.data.remote.model.response.JoinChatRoomResponse
 import com.d104.pnt.data.remote.model.response.ChatSearchResponse
+import com.d104.pnt.data.remote.model.response.JoinChatRoomResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,13 +24,9 @@ class ChatRepositoryImpl @Inject constructor(
     override var currentChatRoomMaxMember: Int? = null
     override val currentChatRoomMember = _currentChatRoomMember.asStateFlow()
 
-    /**
-     * 채팅방 단건 조회
-     */
     override suspend fun getChatRoomInfo(chatRoomId: Long): BaseResult<ChatRoomResponse> {
         return safeApiCall(
             onSuccess = { chatRoomResponse ->
-                // 정보를 성공적으로 가져왔을 때 Repository의 상태값들을 업데이트합니다.
                 currentChatRoom = chatRoomResponse.chatRoomId
                 currentChatRoomTitle = chatRoomResponse.title
                 currentChatRoomDescription = chatRoomResponse.description
@@ -43,9 +39,6 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    /**
-     * 채팅방 생성
-     */
     override suspend fun createChatRoom(
         title: String,
         regionCode: Int,
@@ -70,15 +63,12 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    /**
-     * 채팅방 참여
-     */
     override suspend fun joinChatRoom(chatRoomId: Long): BaseResult<JoinChatRoomResponse> {
         return safeApiCall(
             onSuccess = { joinResponse ->
                 // 참여 성공 시 상태 저장
                 currentChatRoom = joinResponse.chatRoomId
-                _currentChatRoomMember.value = null // connect에서 업데이트될 예정
+                _currentChatRoomMember.value = null
             }
         ) {
             chatApiService.joinChatRoom(chatRoomId)
@@ -100,9 +90,6 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    /**
-     * 채팅방 연결
-     */
     override suspend fun connectChatRoom(chatRoomId: Long): BaseResult<Unit> {
         return safeApiCall {
             chatApiService.connectChatRoom(chatRoomId)

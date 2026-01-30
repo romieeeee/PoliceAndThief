@@ -132,7 +132,7 @@ class SocketManager @Inject constructor() {
 
     // 채팅 메시지 보내기
     fun sendChatMessage(content: String) {
-        // 🔥 chatRoomId 확인
+        // chatRoomId 확인
         val roomId = currentChatRoomId
         if (roomId == null) {
             Timber.e("❌ chatRoomId가 없어서 메시지 전송 불가")
@@ -170,7 +170,7 @@ class SocketManager @Inject constructor() {
         }
 
         val data = JSONObject().apply {
-            put("chatRoomId", roomId)  // 🔥 추가!
+            put("chatRoomId", roomId)
             put("cursor", cursor)
             put("limit", limit)
         }
@@ -269,7 +269,7 @@ class SocketManager @Inject constructor() {
         }
     }
 
-    // 🔥 메시지 리스너 전체 해제
+    // 메시지 리스너 전체 해제
     fun removeMessageListeners() {
         socket?.off(EVENT_GET_MESSAGE)
         socket?.off(EVENT_GET_PREV_CHAT)

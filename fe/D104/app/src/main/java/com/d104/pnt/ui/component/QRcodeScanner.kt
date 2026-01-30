@@ -24,7 +24,7 @@ fun QRcodeScanner(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // 1. 바코드 뷰 생성
+    // 바코드 뷰 생성
     val scannerView = remember {
         CompoundBarcodeView(context).apply {
             val formats = listOf(BarcodeFormat.QR_CODE)
@@ -36,6 +36,7 @@ fun QRcodeScanner(
                         onScan(it)
                     }
                 }
+
                 override fun possibleResultPoints(resultPoints: MutableList<ResultPoint>?) {}
             }
             decodeSingle(callback)
@@ -54,7 +55,7 @@ fun QRcodeScanner(
 
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            scannerView.pause() // 컴포저블이 사라질 때 확실히 정지
+            scannerView.pause()
         }
     }
 

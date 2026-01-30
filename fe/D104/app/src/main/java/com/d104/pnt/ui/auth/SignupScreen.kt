@@ -80,9 +80,7 @@ fun SignupScreen(
     val signupState by viewModel.signupState.collectAsStateWithLifecycle()
 
     // 뒤로가기 처리
-    BackHandler {
-        onBack()
-    }
+    BackHandler { onBack() }
 
     // 회원가입 성공 처리
     LaunchedEffect(signupState) {

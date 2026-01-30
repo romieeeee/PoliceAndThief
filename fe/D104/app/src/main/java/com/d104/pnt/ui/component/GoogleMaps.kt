@@ -1,6 +1,5 @@
 package com.d104.pnt.ui.component
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,7 +23,11 @@ import com.d104.pnt.R
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.PlayerData
-import com.d104.pnt.ui.theme.*
+import com.d104.pnt.ui.theme.AreaBoundary
+import com.d104.pnt.ui.theme.InArea
+import com.d104.pnt.ui.theme.OutOfArea
+import com.d104.pnt.ui.theme.PrisonArea
+import com.d104.pnt.ui.theme.PrisonBoundary
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMapOptions
 import com.google.android.gms.maps.model.CameraPosition
@@ -41,10 +44,10 @@ import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 
-@Composable //
+@Composable
 fun GoogleMaps(
     modifier: Modifier,
-    currentLocation: LatLng = LatLng(37.56681969564895, 126.97864094105321 ),
+    currentLocation: LatLng = LatLng(37.56681969564895, 126.97864094105321),
     playerLocations: List<PlayerData> = emptyList(),
     prisonLocation: LatLng? = null,
     inGameMinimap: Boolean = false,
@@ -74,7 +77,6 @@ fun GoogleMaps(
 
             try {
                 val bounds = builder.build()
-                // 미리보기(isPreview)일 때는 여백을 조금 더 줌 (padding: 50)
                 cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 50))
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -86,11 +88,11 @@ fun GoogleMaps(
         modifier = modifier
             .fillMaxSize(),
         uiSettings = MapUiSettings(
-            zoomGesturesEnabled = !inGameMinimap && !isPreview,    // 미니맵이면 false
+            zoomGesturesEnabled = !inGameMinimap && !isPreview,
             scrollGesturesEnabled = !inGameMinimap && !isPreview,
             zoomControlsEnabled = false,
             myLocationButtonEnabled = !inGameMinimap && !isPreview,
-            mapToolbarEnabled = false, // 항상 끄기
+            mapToolbarEnabled = false,
             compassEnabled = false,
             rotationGesturesEnabled = false,
             tiltGesturesEnabled = false
@@ -105,12 +107,11 @@ fun GoogleMaps(
         },
         cameraPositionState = cameraPositionState,
         onMapClick = { latLng ->
-            // 편집모드일 때만 마커 추가함수 실행
             if (!inGameMinimap && !isPreview) onAddPoint(latLng)
             true
         }
     ) {
-        if (inGameMinimap && isPreview) { // 인게임 뷰
+        if (inGameMinimap && isPreview) {
             PixelMarker(
                 location = LatLng(currentLocation.latitude, currentLocation.longitude),
                 position = "ME"
@@ -121,23 +122,22 @@ fun GoogleMaps(
                     LatLng(32.0, 130.0),
                     LatLng(32.0, 125.0),
                     LatLng(39.0, 125.0),
-                    ),
+                ),
                 fillColor = OutOfArea,
                 strokeColor = PrisonBoundary,
                 strokeWidth = 5f,
-                holes = listOf(polygonPoints.map{it.position})
+                holes = listOf(polygonPoints.map { it.position })
             )
             if (prisonLocation != null) {
                 Circle(
                     center = prisonLocation,
                     radius = 20.0,
-                    fillColor = PrisonArea, // 반투명 빨강
+                    fillColor = PrisonArea,
                     strokeColor = PrisonBoundary,
                     strokeWidth = 5f,
                 )
             }
             if (role == GameRole.POLICE) {
-                // 여러 마커 테스트용 더미 멤버아이디, 더미 플레이어
                 val MY_MEMBER_ID = 100L
                 playerLocations.toList().forEach {
                     if (it.memberId != MY_MEMBER_ID) {
@@ -150,31 +150,27 @@ fun GoogleMaps(
                     }
                 }
             }
-        }
-        else if (!inGameMinimap && !isPreview) { // 방장 지도 수정 뷰
+        } else if (!inGameMinimap && !isPreview) { // 방장 지도 수정 뷰
             if (polygonPoints.isNotEmpty() && prisonLocation != null) {
                 Polygon(
                     points = polygonPoints.map { it.position },
-                    fillColor = InArea, // 반투명 초록
+                    fillColor = InArea,
                     strokeColor = AreaBoundary,
                     strokeWidth = 5f
                 )
                 Circle(
                     center = prisonLocation,
                     radius = 20.0,
-                    fillColor = PrisonArea, // 반투명 빨강
+                    fillColor = PrisonArea,
                     strokeColor = PrisonBoundary,
                     strokeWidth = 5f,
                 )
                 polygonPoints.toList().forEachIndexed { index, item ->
                     key(item.id) {
-                        // 마커의 위치 상태 관리
                         val markerState =
                             rememberMarkerState(key = index.toString(), position = item.position)
 
-                        // [핵심] 마커가 움직이면 -> MapSettingDialog에 알림
                         LaunchedEffect(markerState.position) {
-                            // 드래그 중일때만 업데이트
                             if (draggingIndex == index) {
                                 onPointChange(index, markerState.position)
                             }
@@ -188,14 +184,14 @@ fun GoogleMaps(
 
                         MarkerComposable(
                             state = markerState,
-                            draggable = true, // 드래그 가능!
+                            draggable = true,
                             anchor = Offset(0.5f, 0.5f),
                             onClick = {
                                 if (!onPointDelete(index)) {
                                     Toast.makeText(context, "최소 3개의 점이 필요합니다.", Toast.LENGTH_SHORT)
                                         .show()
                                 }
-                                true // true를 반환해야 지도 기본 클릭 동작(카메라 이동 등)을 막음
+                                true
                             }
                         ) {
                             Image(
@@ -208,11 +204,11 @@ fun GoogleMaps(
                         LaunchedEffect(markerState.dragState) {
                             when (markerState.dragState) {
                                 DragState.DRAG -> {
-                                    draggingIndex = index // 드래그 시작
+                                    draggingIndex = index
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                 }
 
-                                DragState.END -> draggingIndex = -1     // 드래그 끝
+                                DragState.END -> draggingIndex = -1
                                 else -> {}
                             }
                         }
@@ -259,35 +255,32 @@ fun GoogleMaps(
                 }
                 MarkerComposable(
                     state = prisonMarkerState,
-                    draggable = true, // 드래그 가능
-                    anchor = Offset(0.5f, 0.5f), // 이미지 중심
+                    draggable = true,
+                    anchor = Offset(0.5f, 0.5f),
                     title = "감옥",
                     onClick = {
-                        // 감옥은 삭제 기능이 없다면 false 반환 (지도 클릭 통과 방지용 true)
                         true
                     }
                 ) {
-                    // 감옥 아이콘 (기존 마커와 구분되게 다른 이미지나 색상 사용 추천)
                     Image(
-                        painter = painterResource(id = R.drawable.map_marker_prison_temp), // 빨간 마커 예시
+                        painter = painterResource(id = R.drawable.map_marker_prison_temp),
                         contentDescription = "감옥",
-                        modifier = Modifier.size(35.dp) // 조금 더 크게
+                        modifier = Modifier.size(35.dp)
                     )
                 }
             }
-        }
-        else if (!inGameMinimap && isPreview) { // 일반 유저 대기방 뷰
+        } else if (!inGameMinimap && isPreview) {
             if (polygonPoints.isNotEmpty() && prisonLocation != null) {
                 Polygon(
                     points = polygonPoints.map { it.position },
-                    fillColor = InArea, // 반투명 초록
+                    fillColor = InArea,
                     strokeColor = AreaBoundary,
                     strokeWidth = 5f
                 )
                 Circle(
                     center = prisonLocation,
                     radius = 20.0,
-                    fillColor = PrisonArea, // 반투명 빨강
+                    fillColor = PrisonArea,
                     strokeColor = PrisonBoundary,
                     strokeWidth = 5f,
                 )

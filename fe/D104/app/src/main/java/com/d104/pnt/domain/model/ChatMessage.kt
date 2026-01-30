@@ -8,6 +8,4 @@ data class ChatMessage(
     val avataUrl: String,
     val content: String,
 //    val createdAt: Instant,
-) {
-
-}
+)

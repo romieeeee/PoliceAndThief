@@ -3,7 +3,6 @@ package com.d104.pnt.navigation
 import android.app.Activity
 import android.os.Build
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -146,6 +145,7 @@ fun AppNavigation(
                         Toast.LENGTH_LONG
                     ).show()
                 }
+
                 is AuthEventBus.AuthEvent.Unauthorized -> {
                     currentScreen = AppScreen.Intro
                 }

@@ -49,14 +49,14 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         loggingInterceptor: HttpLoggingInterceptor,
-        authTokenInterceptor: AuthTokenInterceptor  // Hilt가 자동 주입!
+        authTokenInterceptor: AuthTokenInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(Constants.CONNECT_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(Constants.READ_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(Constants.WRITE_TIMEOUT, TimeUnit.SECONDS)
             .addInterceptor(loggingInterceptor)
-            .addInterceptor(authTokenInterceptor)  // JWT Token 자동 추가!
+            .addInterceptor(authTokenInterceptor)
             .build()
     }
 
@@ -96,14 +96,13 @@ object NetworkModule {
     @Singleton
     fun provideNaverApiService(): NaverApiService {
         return Retrofit.Builder()
-            // ⭐️ 네이버 클라우드 API 주소
+            // 네이버 클라우드 API 주소
             .baseUrl("https://maps.apigw.ntruss.com/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(NaverApiService::class.java)
     }
 
-    // 게임 룸 API
     @Provides
     @Singleton
     fun provideGameRoomApiService(retrofit: Retrofit): GameRoomApiService {

@@ -37,7 +37,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.d104.pnt.util.PermissionHelper.PermissionType
-import com.d104.pnt.util.PermissionHelper.PermissionType.*
+import com.d104.pnt.util.PermissionHelper.PermissionType.AUDIO
+import com.d104.pnt.util.PermissionHelper.PermissionType.CAMERA
+import com.d104.pnt.util.PermissionHelper.PermissionType.LOCATION
+import com.d104.pnt.util.PermissionHelper.PermissionType.NOTIFICATION
 
 /**
  * 필수 권한 설명 다이얼로그
@@ -187,12 +190,16 @@ private fun getPermissionInfo(permissionType: PermissionType): Pair<ImageVector,
     return when (permissionType) {
         CAMERA ->
             Pair(Icons.Default.CameraAlt, Color(0xFF4CAF50))
+
         LOCATION ->
             Pair(Icons.Default.LocationOn, Color(0xFF2196F3))
+
         AUDIO ->
             Pair(Icons.Default.Mic, Color(0xFFFF9800))
+
         NOTIFICATION ->
             Pair(Icons.Default.Notifications, Color(0xFF9C27B0))
+
         else ->
             Pair(Icons.Default.Man, Color.Gray)
     }

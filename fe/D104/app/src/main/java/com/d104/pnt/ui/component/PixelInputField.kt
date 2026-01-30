@@ -65,7 +65,6 @@ fun PixelInputField(
                     }
                 )
 
-                // placeholder를 별도로 배치
                 if (value.isEmpty()) {
                     Text(
                         text = placeholder,

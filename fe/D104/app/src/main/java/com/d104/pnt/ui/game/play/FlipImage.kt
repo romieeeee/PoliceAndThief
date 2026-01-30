@@ -25,8 +25,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.airbnb.lottie.model.content.CircleShape
-import com.google.android.gms.maps.model.Circle
 import kotlinx.coroutines.launch
 
 @Composable
@@ -35,7 +33,7 @@ fun FlipImage(
     backRes: Int,
     size: Dp = 280.dp
 ) {
-    val rotation = remember { Animatable(0f) } // 0 or -180
+    val rotation = remember { Animatable(0f) }
     var isFront by remember { mutableStateOf(true) }
 
     val scope = rememberCoroutineScope()

@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
-import com.d104.pnt.ui.chatroom.create.ChatRoomCreateViewModel
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.component.RoundedButton
@@ -59,19 +58,18 @@ fun ChatRoomCreateScreen(
     val joinRoomState by viewModel.joinRoomState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        // ViewModel에게 Context를 줘서 위치를 가져오고 저장하게 시킴
         viewModel.getLocationInfo(context)
     }
 
     LaunchedEffect(joinRoomState) {
         when (val state = joinRoomState) {
             is ChatRoomCreateViewModel.JoinRoomState.Success -> {
-                Timber.d("✅ 채팅방 입장 완료: ${state.message}")
+                Timber.d("채팅방 입장 완료: ${state.message}")
                 onConfirm(state.chatRoomId)  // 채팅방 ID 전달!
             }
 
             is ChatRoomCreateViewModel.JoinRoomState.Error -> {
-                Timber.e("❌ 채팅방 입장 실패: ${state.message}")
+                Timber.e("채팅방 입장 실패: ${state.message}")
                 Toast.makeText(
                     context,
                     "입장 실패: ${state.message}",

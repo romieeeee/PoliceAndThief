@@ -16,6 +16,7 @@ class GameRoomRepositoryImpl @Inject constructor(
     private val apiService: GameRoomApiService,
 ) : GameRoomRepository, BaseRepository() {
     private val _currentGameRoom = MutableStateFlow<CurrentGameRoomData?>(null)
+
     override fun getCurrentGameRoom(): StateFlow<CurrentGameRoomData?> {
         return _currentGameRoom.asStateFlow()
     }
@@ -30,7 +31,7 @@ class GameRoomRepositoryImpl @Inject constructor(
     ): BaseResult<CreateGameRoomResponse> {
         return safeApiCall(
             onSuccess = { createGameRoomResponse ->
-                joinCreatedGameRoom(
+                updateLocalGameRoom(
                     roomId = createGameRoomResponse.roomId,
                     roomCode = createGameRoomResponse.roomCode,
                     status = createGameRoomResponse.status,
@@ -50,7 +51,7 @@ class GameRoomRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun joinCreatedGameRoom(
+    override suspend fun updateLocalGameRoom(
         roomId: Long,
         roomCode: String,
         status: String

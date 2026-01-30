@@ -9,6 +9,9 @@ import retrofit2.http.POST
 
 interface GameRoomApiService {
 
+    /**
+     * 게임방 생성 API
+     */
     @POST("rooms")
     suspend fun createGameRoom(
         @Body request: CreateGameRoomRequest
