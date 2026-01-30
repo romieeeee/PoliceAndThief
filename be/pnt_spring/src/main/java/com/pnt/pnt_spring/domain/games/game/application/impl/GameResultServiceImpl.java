@@ -118,15 +118,23 @@ public class GameResultServiceImpl implements GameResultService {
 				totalEscapes += stat.getEscapeCount();
 		}
 
+<<<<<<< HEAD
 		// 3. 정렬 (경찰: 체포수 내림차순, 도둑: 생존시간 내림차순) - triggerAiNewsGeneration과 동일 로직
 		policeStats.sort((a, b) -> compareStats(b.getArrestCount(), a.getArrestCount()));
 		thiefStats.sort((a, b) -> compareStats(b.getLongestSurvived(), a.getLongestSurvived()));
+=======
+        // 2. 팀별 분류 및 전체 통계 집계
+        List<GameMemberStat> policeStats = new ArrayList<>();
+        List<GameMemberStat> thiefStats = new ArrayList<>();
+        int totalArrests = 0;
+>>>>>>> backend
 
 		// 4. 승리/패배 팀 데이터 추출
 		List<GameMemberStat> winnerStats;
 		List<GameMemberStat> loserStats;
 		boolean isPoliceWin = (game.getWinTeam() == WinTeam.POLICE);
 
+<<<<<<< HEAD
 		if (isPoliceWin) {
 			winnerStats = policeStats;
 			loserStats = thiefStats;
@@ -134,6 +142,11 @@ public class GameResultServiceImpl implements GameResultService {
 			winnerStats = thiefStats;
 			loserStats = policeStats;
 		}
+=======
+            // 전체 통계 합산
+            if (stat.getArrestCount() != null) totalArrests += stat.getArrestCount();
+        }
+>>>>>>> backend
 
 		// 5. 주요 플레이어 선정 (MVP, Winning 2nd, Losing 1st)
 		GameMemberStat mvpStat = winnerStats.isEmpty() ? null : winnerStats.get(0);
@@ -167,6 +180,7 @@ public class GameResultServiceImpl implements GameResultService {
 		List<GameMemberStat> policeStats = new ArrayList<>();
 		List<GameMemberStat> thiefStats = new ArrayList<>();
 
+<<<<<<< HEAD
 		for (GameMemberStat stat : allStats) {
 			if (stat.getPosition() == Position.POLICE) {
 				policeStats.add(stat);
@@ -174,6 +188,23 @@ public class GameResultServiceImpl implements GameResultService {
 				thiefStats.add(stat);
 			}
 		}
+=======
+        // 6. 응답 생성
+        return GameResultResponse.builder()
+                .gameId(game.getId())
+                .winner(game.getWinTeam().toString())
+                .endedAt(game.getEndTime())
+                .mvp(toMvpResponse(mvpStat, "MVP"))
+                .winningSecond(toMvpResponse(winningSecondStat, "승리팀 2위"))
+                .losingFirst(toMvpResponse(losingFirstStat, "패배팀 1위"))
+                .stats(GameResultResponse.TotalStats.builder()
+                        .arrests(totalArrests)
+                        .missionsCleared(0) // 미션 완료 수는 별도 집계 필요 (현재는 0)
+                        .durationSec(durationSec)
+                        .build())
+                .build();
+    }
+>>>>>>> backend
 
 		policeStats.sort((a, b) -> compareStats(b.getArrestCount(), a.getArrestCount()));
 		thiefStats.sort((a, b) -> compareStats(b.getLongestSurvived(), a.getLongestSurvived()));
@@ -315,6 +346,7 @@ public class GameResultServiceImpl implements GameResultService {
 		}
 	}
 
+<<<<<<< HEAD
 	// 등급 ID 계산 (1 ~ 11 범위 고정)
 	private long calculateNextGradeId(long currentId, boolean isWin) {
 		if (isWin) {
@@ -325,5 +357,36 @@ public class GameResultServiceImpl implements GameResultService {
 			return Math.max(currentId - 1, MIN_GRADE_ID);
 		}
 	}
+=======
+            // 도둑 스탯과 평균시간 업데이트
+            thiefStat.updateAfterGame(
+                    isWin,  // 이겼는지 졌는지
+                    gameStat.getLongestSurvived(),
+                    memberStat.getThiefGame() // MemberStat에서 가져온 총 도둑 판수 전달
+            );
+
+            // 3. 등급 변경 계산
+            long currentGradeId = thiefStat.getGradeThief().getId();
+            long nextGradeId = calculateNextGradeId(currentGradeId, isWin);
+
+            if (currentGradeId != nextGradeId) {
+                GradeThief nextGrade = gradeThiefRepository.findById(nextGradeId)
+                        .orElse(thiefStat.getGradeThief());
+                thiefStat.changeGrade(nextGrade);
+            }
+        }
+    }
+
+    // 등급 ID 계산 (1 ~ 11 범위 고정)
+    private long calculateNextGradeId(long currentId, boolean isWin) {
+        if (isWin) {
+            // 승리 시 1단계 승급 (최대 11)
+            return Math.min(currentId + 1, MAX_GRADE_ID);
+        } else {
+            // 패배 시 1단계 강등 (최소 1)
+            return Math.max(currentId - 1, MIN_GRADE_ID);
+        }
+    }
+>>>>>>> backend
 
 }

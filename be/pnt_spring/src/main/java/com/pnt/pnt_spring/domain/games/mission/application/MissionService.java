@@ -8,10 +8,19 @@ public interface MissionService {
 
 	List<MissionResponse> getAllMissions();
 
+<<<<<<< HEAD
 	List<MissionResponse> getMissions(Long gameId);
 
 	MissionResponse getMissionDetail(Long gameId, Long missionId);
 
 	Boolean submitMission(Long gameId, Long missionId, Long thiefId);
+=======
+    MissionResponse getMission(Long missionId);
+
+    List<MissionResponse> getGameAllMissions(Long gameId);
+
+    MissionResponse getGameMission(Long gameId, Long missionId);
+
+>>>>>>> backend
 
 }

@@ -32,6 +32,7 @@ public class ThiefStatResponse { // 별도 파일로 독립
 			gradeName = stat.getGradeThief().getName();
 		}
 
+<<<<<<< HEAD
 		return ThiefStatResponse.builder()
 			.escapeCount(stat.getTotalEscapeCount()) // getter 이름 수정됨
 			.averageSurvivalTimeSec(stat.getAverageSurvivalSec())
@@ -40,4 +41,13 @@ public class ThiefStatResponse { // 별도 파일로 독립
 			.grade(gradeName)
 			.build();
 	}
+=======
+        return ThiefStatResponse.builder()
+                .averageSurvivalTimeSec(stat.getAverageSurvivalSec())
+                .missionClearCount(stat.getTotalMissionCount())
+                .longestSurvivalSec(stat.getLongestSurvivalSec())
+                .grade(gradeName)
+                .build();
+    }
+>>>>>>> backend
 }
