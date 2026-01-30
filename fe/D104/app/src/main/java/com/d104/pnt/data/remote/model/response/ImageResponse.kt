@@ -1,0 +1,10 @@
+package com.d104.pnt.data.remote.model.response
+
+import com.google.gson.annotations.SerializedName
+
+data class PresignedUrlForProfileResponse (
+    @SerializedName("presignedUrl")
+    val presignedUrl: String,
+    @SerializedName("imageKey")
+    val imageKey: String
+)

@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Man
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Button
@@ -200,6 +201,6 @@ private fun getPermissionInfo(permissionType: PermissionType): Pair<ImageVector,
             Pair(Icons.Default.Notifications, Color(0xFF9C27B0))
 
         else ->
-            Pair(Icons.Default.Notifications, Color.Gray)
+            Pair(Icons.Default.Man, Color.Gray)
     }
 }

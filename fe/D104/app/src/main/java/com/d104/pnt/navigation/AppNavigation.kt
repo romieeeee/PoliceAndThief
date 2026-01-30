@@ -1,6 +1,7 @@
 package com.d104.pnt.navigation
 
 import android.app.Activity
+import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -62,12 +63,23 @@ fun AppNavigation(
 
     // 필요한 필수 권한 목록
     val neededPermissions = remember {
-        listOf(
-            PermissionHelper.PermissionType.CAMERA,
-            PermissionHelper.PermissionType.LOCATION,
-            PermissionHelper.PermissionType.AUDIO,
-            PermissionHelper.PermissionType.NOTIFICATION
-        ).filter { it.isRequired() }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            listOf(
+                PermissionHelper.PermissionType.CAMERA,
+                PermissionHelper.PermissionType.LOCATION,
+                PermissionHelper.PermissionType.AUDIO,
+                PermissionHelper.PermissionType.NOTIFICATION,
+                PermissionHelper.PermissionType.STEP_SENSOR
+            ).filter { it.isRequired() }
+        }
+        else {
+            listOf(
+                PermissionHelper.PermissionType.CAMERA,
+                PermissionHelper.PermissionType.LOCATION,
+                PermissionHelper.PermissionType.AUDIO,
+                PermissionHelper.PermissionType.NOTIFICATION
+            ).filter { it.isRequired() }
+        }
     }
 
     // 모든 권한을 하나의 리스트로 합침

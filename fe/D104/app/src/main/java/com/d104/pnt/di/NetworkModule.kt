@@ -6,6 +6,7 @@ import com.d104.pnt.data.remote.api.AuthApiService
 import com.d104.pnt.data.remote.api.ProfileApiService
 import com.d104.pnt.data.remote.api.ChatApiService
 import com.d104.pnt.data.remote.api.GameRoomApiService
+import com.d104.pnt.data.remote.api.ImageApiService
 import com.d104.pnt.data.remote.api.NaverApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
@@ -107,5 +108,11 @@ object NetworkModule {
     @Singleton
     fun provideGameRoomApiService(retrofit: Retrofit): GameRoomApiService {
         return retrofit.create(GameRoomApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideImageApiService(retrofit: Retrofit): ImageApiService {
+        return retrofit.create(ImageApiService::class.java)
     }
 }
