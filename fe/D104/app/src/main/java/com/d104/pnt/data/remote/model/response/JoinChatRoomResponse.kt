@@ -2,7 +2,7 @@ package com.d104.pnt.data.remote.model.response
 
 
 /**
- * 채팅방 참여 Response
+ * 채팅방 참여 응답
  */
 data class JoinChatRoomResponse(
     val id: Long,

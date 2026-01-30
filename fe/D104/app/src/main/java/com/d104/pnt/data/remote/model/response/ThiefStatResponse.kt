@@ -2,6 +2,9 @@ package com.d104.pnt.data.remote.model.response
 
 import com.google.gson.annotations.SerializedName
 
+/**
+ * 도둑 스탯 조회 응답
+ */
 data class ThiefStatResponse(
     @SerializedName("memberId")
     val memberId: Long,
@@ -12,7 +15,7 @@ data class ThiefStatResponse(
 
 data class ThiefStat(
     @SerializedName("averageSurvivalTimeSec")
-    val averageSurvivalTimeSec: Double,  // 소수가 나올 수 있기 때문에 Int -> Double으로 바꿈
+    val averageSurvivalTimeSec: Double,
 
     @SerializedName("escapeCount")
     val escapeCount: Int,
