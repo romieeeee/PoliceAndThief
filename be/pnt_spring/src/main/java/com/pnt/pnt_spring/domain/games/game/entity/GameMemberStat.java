@@ -43,9 +43,6 @@ public class GameMemberStat extends BaseEntity {
 	@Column(name = "arrest_count")
 	private Integer arrestCount = 0;
 
-	@Column(name = "escape_count")
-	private Integer escapeCount = 0;
-
 	@Column(name = "longest_survived")
 	private Integer longestSurvived = 0;
 
