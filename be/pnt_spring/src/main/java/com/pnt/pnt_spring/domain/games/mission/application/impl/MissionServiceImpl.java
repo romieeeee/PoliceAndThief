@@ -22,6 +22,7 @@ public class MissionServiceImpl implements MissionService {
     private final GameMissionRepository gameMissionRepository;
     private final MissionRepository missionRepository;
 
+    // 모든 미션 항목 조회
     @Override
     @Transactional(readOnly = true)
     public List<MissionResponse> getAllMissions() {
@@ -34,9 +35,25 @@ public class MissionServiceImpl implements MissionService {
                 .collect(Collectors.toList());
     }
 
+    // 미션 단건 조회
     @Override
     @Transactional(readOnly = true)
-    public List<MissionResponse> getMissions(Long gameId) {
+    public MissionResponse getMission(Long missionId) {
+        Mission mission = missionRepository.findById(missionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MISSION_NOT_FOUND));
+
+        return MissionResponse.builder()
+                .missionId(mission.getId())
+                .title(mission.getTitle())
+                .description(mission.getDescription())
+                .build();
+    }
+
+
+    // 인 게임 내 할당된 미션 조회
+    @Override
+    @Transactional(readOnly = true)
+    public List<MissionResponse> getGameAllMissions(Long gameId) {
         // 미션 목록 조회
         List<GameMission> gameMissions = gameMissionRepository.findByGameId(gameId);
 
@@ -49,9 +66,10 @@ public class MissionServiceImpl implements MissionService {
                 .collect(Collectors.toList());
     }
 
+    // 게임 내 미션 세부항목
     @Override
     @Transactional(readOnly = true)
-    public MissionResponse getMissionDetail(Long gameId, Long missionId) {
+    public MissionResponse getGameMission(Long gameId, Long missionId) {
         // 미션 ID로 단건 조회
         Mission mission = missionRepository.findById(missionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.MISSION_NOT_FOUND));
@@ -61,14 +79,5 @@ public class MissionServiceImpl implements MissionService {
                 .title(mission.getTitle())
                 .description(mission.getDescription())
                 .build();
-    }
-
-    // 미션 제출
-    @Override
-    public Boolean submitMission(Long gameId, Long missionId, Long thiefId) {
-        GameMission gameMission = gameMissionRepository.findByGameIdAndMissionId(gameId, missionId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.MISSION_NOT_FOUND));
-
-        return true;
     }
 }
