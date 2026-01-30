@@ -36,12 +36,16 @@ public class GameSetting extends BaseEntity {
 	private Integer policeCount;
 	private Integer thiefCount;
 
+	@Column(name = "mission_count")
+	private Integer missionCount;
+
 	@Column(name = "cctv_interval")
 	private Integer cctvInterval;
 
 	// === 지도 정보 ===
 	@Column(columnDefinition = "geometry")
 	private Geometry boundaryGeo;
+
 
 	private Double prisonLat;
 	private Double prisonLng;
@@ -59,7 +63,8 @@ public class GameSetting extends BaseEntity {
 		Integer cctvInterval,
 		Geometry boundaryGeo,
 		Double prisonLat,
-		Double prisonLng
+		Double prisonLng,
+		Integer missionCount
 	) {
 		GameSetting s = new GameSetting();
 		s.game = game;
@@ -71,6 +76,7 @@ public class GameSetting extends BaseEntity {
 		s.boundaryGeo = boundaryGeo;
 		s.prisonLat = prisonLat;
 		s.prisonLng = prisonLng;
+		s.missionCount = missionCount;
 		return s;
 	}
 
@@ -78,13 +84,16 @@ public class GameSetting extends BaseEntity {
        변경 메서드 (PATCH용)
        ========================= */
 
-	// 게임 규칙 관련 설정 수정
+	/**
+	 * 게임 규칙 관련 설정 수정
+	 */
 	public void updateSetting(
 		Integer timeLimit,
 		Integer playerCount,
 		Integer policeCount,
 		Integer thiefCount,
-		Integer cctvInterval
+		Integer cctvInterval,
+		Integer missionCount
 	) {
 		if (timeLimit != null)
 			this.timeLimit = timeLimit;
@@ -96,9 +105,13 @@ public class GameSetting extends BaseEntity {
 			this.thiefCount = thiefCount;
 		if (cctvInterval != null)
 			this.cctvInterval = cctvInterval;
+		if (missionCount != null)
+			this.missionCount = missionCount;
 	}
 
-	// 지도/좌표 관련 수정
+	/**
+	 * 지도/좌표 관련 수정
+	 */
 	public void updateMap(
 		Geometry boundaryGeo,
 		Double prisonLat,

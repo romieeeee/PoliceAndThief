@@ -33,8 +33,9 @@ public class DevAuthController {
 
 	private final JwtTokenProvider jwtTokenProvider;
 
-<<<<<<<HEAD
+	// http://localhost:8080/auth/dev/token?id=tester
 
+	@Operation(summary = "토큰 발급", description = "더미 유저를 사용해 토큰을 발급합니다.")
 	@GetMapping("/token")
 	public TokenDto createDevToken(@RequestParam(value = "id", defaultValue = "tester") Long id) {
 		// 더미 유저 생성
@@ -42,38 +43,20 @@ public class DevAuthController {
 			Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
 		Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, "",
 			userDetails.getAuthorities());
-=======
-		// http://localhost:8080/auth/dev/token?id=tester
 
-		@Operation(summary = "토큰 발급", description = "더미 유저를 사용해 토큰을 발급합니다.")
-		@GetMapping("/token")
-		public TokenDto createDevToken (@RequestParam(value = "id", defaultValue = "tester") Long id){
-			// 더미 유저 생성
-			UserDetails userDetails = new User(String.valueOf(id), "q1w2e3r4",
-				Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
-			Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, "",
-				userDetails.getAuthorities());
->>>>>>>backend
+		// 토큰 발급
+		return jwtTokenProvider.generateToken(authentication, id);
+	}
 
-			// 토큰 발급
-			return jwtTokenProvider.generateToken(authentication, id);
-		}
+	@Operation(summary = "테스트 API 보내기", description = "서버 응답을 확인합니다.")
+	@GetMapping("/test")
+	public CommonResponse<?> testApi(@AuthenticationPrincipal CustomUserDetails details) {
 
-<<<<<<<HEAD
-		@GetMapping("/test")
-		public CommonResponse<?> testApi (@AuthenticationPrincipal CustomUserDetails details){
-=======
+		Long memberId = details.getMemberId();
 
-			@Operation(summary = "테스트 API 보내기", description = "서버 응답을 확인합니다.")
-			@GetMapping("/test")
-			public CommonResponse<?> testApi (@AuthenticationPrincipal CustomUserDetails details){
->>>>>>>backend
+		log.info("test loginId={}", details.getUsername());
+		log.info("test memberId={}", memberId);
 
-				Long memberId = details.getMemberId();
-
-				log.info("test loginId={}", details.getUsername());
-				log.info("test memberId={}", memberId);
-
-				return new CommonResponse<>(details, "테스트 api", HttpStatus.OK);
-			}
-		}
+		return new CommonResponse<>(details, "테스트 api", HttpStatus.OK);
+	}
+}

@@ -82,13 +82,17 @@ public class MemberChatRoom {
 		this.isConnected = false;
 	}
 
-	// 퇴장(soft delete)
+	/**
+	 * 퇴장(soft delete)
+	 */
 	public void leave() {
 		this.isConnected = false;
 		this.isDeleted = true;
 	}
 
-	// 재입장(soft delete 복구)
+	/**
+	 * 재입장(soft delete 복구)
+	 */
 	public void rejoin() {
 		this.isDeleted = false;
 		this.isConnected = true;

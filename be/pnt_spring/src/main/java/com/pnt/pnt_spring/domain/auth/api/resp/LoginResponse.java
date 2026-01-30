@@ -15,6 +15,16 @@ public class LoginResponse {
 	private String refreshToken;
 	private LoginMemberInfo member;
 
+	@Getter
+	@Builder
+	public static class LoginMemberInfo {
+		private Long memberId;
+		private String id; // 로그인 아이디
+		private String nickname;
+		private String avatarUrl;
+		private String role;
+	}
+
 	// 응답 객체 생성
 	public static LoginResponse of(TokenDto tokenDto, Member member, MemberProfile profile) {
 		return LoginResponse.builder()
@@ -28,15 +38,5 @@ public class LoginResponse {
 				.role("USER")
 				.build())
 			.build();
-	}
-
-	@Getter
-	@Builder
-	public static class LoginMemberInfo {
-		private Long memberId;
-		private String id; // 로그인 아이디
-		private String nickname;
-		private String avatarUrl;
-		private String role;
 	}
 }
