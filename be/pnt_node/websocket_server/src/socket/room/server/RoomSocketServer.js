@@ -16,18 +16,19 @@ const roomSocketServer = (io) => {
         const roomController = new RoomController(io, socket);
 
         let isActiveRoom = null;
-        let integerRoomId = null;
+        const integerRoomId = parseInt(storedRoomId);
 
-        if (storedRoomId) {
-            integerRoomId = parseInt(storedRoomId);
+        if (integerRoomId) {
             isActiveRoom = await roomController.isActiveRoom(integerRoomId);
         }
-        // game 방이 유효한지 검사 로직 필요.
-        if (isActiveRoom) {
-            await redisClient.deleteByCompletedReconnect(socket, "room", storedRoomId);
-            console.log("reconnect", storedRoomId);
 
-            socket.emit("reconnect", { roomId: storedRoomId });
+        // game 방이 유효한지 검사 로직 필요.
+        if (isActiveRoom && integerRoomId) {
+            await redisClient.deleteByCompletedReconnect(socket, "room", integerRoomId);
+            socket.data.roomId = integerRoomId;
+            console.log("reconnect", integerRoomId);
+
+            socket.emit("reconnect", { roomId: socket.data.roomId });
         }
 
         console.log("websocket is connected!");
@@ -47,9 +48,9 @@ const roomSocketServer = (io) => {
 
         socket.on("post member kick", roomController.memberKick);
 
-        socket.on("post update room map", roomController.updateRoomMap);
-
         socket.on("post disconnect", roomController.disconnect);
+
+        socket.on("post update access token", roomController.postUpdateAccessToken);
 
         socket.on("disconnect", async () => {
             if (socket.data.isIntentionalExit) {
@@ -67,4 +68,4 @@ const roomSocketServer = (io) => {
     });
 }
 
-export default gameSocketServer;
+export default roomSocketServer;

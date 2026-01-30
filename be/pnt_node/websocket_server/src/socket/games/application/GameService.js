@@ -14,6 +14,21 @@ export class GameService {
         this.redisClient = new RedisClient();
     }
 
+    getGameById = async (gameId) => {
+        const game = await Game.findOne({
+            where: {
+                id: gameId,
+                isDeleted: false
+            }
+        });
+
+        if (!game) {
+            this.makeError("NotFoundException", "게임을 찾을 수 없습니다.", 404);
+        }
+
+        return game;
+    }
+
     findGame = async (gameId, status) => {
         const whereCondition = {
             id: gameId,
@@ -36,22 +51,16 @@ export class GameService {
     }
 
     processArrest = async (gameId, thiefId, policeId) => {
-        const sequelize = db.getSequelize();
-        const t = await sequelize.transaction();
-
         try {
             // thief 상태 변경 (TRANSFER)
+             // police 스탯 업데이트 (체포 횟수 증가)
+            await this.gameMemberStatService.updateArrestCount(policeId);
             
-            await this.gameMemberService.updateMemberStatus(gameId, thiefId, GameMemberStatus.TRANSFER, { transaction: t });
+            await this.gameMemberService.updateMemberStatus(gameId, thiefId, GameMemberStatus.TRANSFER);
 
-            // police 스탯 업데이트 (체포 횟수 증가)
-            await this.gameMemberStatService.updateArrestCount(policeId, { transaction: t });
-
-            await t.commit();
             return true;
         } catch (error) {
-            await t.rollback();
-            console.error("processArrest Transaction Error", error);
+            console.error("processArrest Error", error);
             throw error;
         }
     }

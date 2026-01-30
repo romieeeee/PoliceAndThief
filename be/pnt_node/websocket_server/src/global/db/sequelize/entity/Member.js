@@ -20,7 +20,7 @@ export default class Member extends Model {
 
                 // 3. Password
                 password: {
-                    type: DataTypes.STRING, 
+                    type: DataTypes.STRING,
                     allowNull: false,
                 },
 
@@ -33,7 +33,7 @@ export default class Member extends Model {
 
                 // 5. Birth (LocalDate -> DATEONLY)
                 birth: {
-                    type: DataTypes.DATEONLY, 
+                    type: DataTypes.DATEONLY,
                     allowNull: true,
                 },
 
@@ -63,6 +63,12 @@ export default class Member extends Model {
         );
     }
     static associate(db) {
+        // Member(1) : MemberProfile(1)
+        db.Member.hasOne(db.MemberProfile, {
+            foreignKey: 'memberId',
+            sourceKey: 'id'
+        });
+
         // Member(1) : MemberChatRoom(N)
         db.Member.hasMany(db.MemberChatRoom, {
             foreignKey: 'memberId',
