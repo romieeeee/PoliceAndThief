@@ -11,6 +11,7 @@ import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
 import { GameMissionService } from "../application/GameMissionService.js";
 import { TurfService } from "../application/TurfService.js";
 import { MQConfig } from "../../../global/mq/MQConfig.js";
+import axios from "axios";
 
 
 export class GameController {
@@ -51,12 +52,13 @@ export class GameController {
      * }
      */
     joinRoom = async (payload) => {
-        // 채팅방 접속 db 처리 => is_connected = true로 처리
         try {
             const gameId = payload.gameId;
 
             await this.gameService.findGame(payload.gameId, GameStatus.IN_GAME);
-            await this.gameMemberService.findMemberGame(payload.gameId, this.socket.data.memberId);
+            const gameMember = await this.gameMemberService.findMemberGame(payload.gameId, this.socket.data.memberId);
+            
+            await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
 
             this.socket.join(gameId);
             this.socket.data.gameId = gameId;
@@ -66,8 +68,6 @@ export class GameController {
                 gameId: payload.gameId,
                 memberId: this.socket.data.memberId,
             }
-
-            await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
 
             // gameSetting에서 참여자 수 들고오기
             // isGaneConnected true로 변경 => 변경이 됐는지 안됐는지 판별하여 
@@ -126,6 +126,12 @@ export class GameController {
 
             const integerGameId = parseInt(gameId);
 
+            const gameTimer = await this.redisClient.getGameTimer(integerGameId);
+
+            if (gameTimer) {
+                return;
+            }
+
             const gameSetting = await this.gameSettingService.findGameSetting(integerGameId);
             const startedCount = await this.redisClient.getStartedCount(integerGameId);
 
@@ -133,7 +139,7 @@ export class GameController {
                 return;
             }
 
-            const isMine = await this.redisClient.setGameSettingLock(integerGameId, gameSetting.timeLimit * 60);
+            const isMine = await this.redisClient.setGameSettingLock(integerGameId, 5);
 
             if (!isMine) {
                 return;
@@ -151,9 +157,10 @@ export class GameController {
                 await this.redisClient.setGameTimer(integerGameId, gameSetting.timeLimit * 60);
 
                 // cctv 작동
-                await this.redisClient.setCctvTimer(integerGameId, gameSetting.cctvInterval);
+                const cctvInterval = gameSetting.cctvInterval || 60;
+                await this.redisClient.setCctvTimer(integerGameId, cctvInterval);
 
-                await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString() });
+                await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString(), status: GameStatus.IN_GAME });
 
                 this.io.to(gameId).emit("get start game", {
                     message: "start game",
@@ -217,6 +224,7 @@ export class GameController {
                 position,
                 status,
                 penalty,
+                isConnected: true,
                 timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
             };
 
@@ -306,11 +314,16 @@ export class GameController {
 
             // 비프음
             const locationDatas = await this.redisClient.getAllLocations(gameId);
-            const polices = locationDatas
-                .find((data) => data.position === GameMemberPosition.POLICE)
-                .map((data) => { return { policeId: data.memberId, lng: data.lng, lat: data.lat } });
+            let polices;
+            if (locationDatas) {
+                polices = locationDatas
+                    .filter(data => data.position === GameMemberPosition.POLICE)
+                    .map(({ memberId, lng, lat }) => ({ policeId: memberId, lng, lat }));
 
-            if (polices) {
+                console.log("polices", polices);
+            }
+
+            if (polices && polices.length > 0) {
                 const nearPolice = this.turfService.checkNearPolice([lng, lat], polices);
                 if (nearPolice) {
                     this.socket.emit("get beep use", {
@@ -328,49 +341,6 @@ export class GameController {
         }
     }
 
-    /**
-     * {
-        "gameId": 10,
-        "policeId": 1,
-        "thiefId": 2,
-        "lat": 35.0,
-        "lng": 129.0,
-    } 
-     */
-    /**
-     * 게임인포 동기화
-     * 게임 timer는 get gps에서 계산해서 보내주므로 여기서는 계산하지 않음
-     * need: 체포상태, 미션 상태
-     * 
-     * req : {
-     *  gameId: 10
-     * }
-     * 
-     * res : {
-     *  gameId: 10,
-     *  status: "IN_GAME" || "ENDED",
-     *  members: [
-     *    {
-     *      memberId: 1,
-     *      position: "POLICE",
-     *      status: "FREE" || "PRISON" || "TRANSFER",
-     *      nickname: "nickname",
-     *      avatarUrl: "avatarUrl",
-     *      inGameConnected: true || false,
-     *    },
-     *  ],
-     *  missions: [
-     *    {
-     *      "id" : "gameMissionId", 
-     *       "missionId": "missionId" ,
-     *       "gameId": "gameId", 
-     *       "status": "SUCCESS" || "IN_PROGRESS", 
-     *       "completedAt": "completedAt", 
-     *       "completedBy": "completedBy"
-     *    },
-     *  ],
-     * }
-     */
     syncGameInfo = async (payload) => {
         try {
             const { gameId } = payload;
@@ -399,15 +369,6 @@ export class GameController {
         }
     }
 
-    /**
-     * {
-        "gameId": 10,
-        "policeId": 1,
-        "thiefId": 2,
-        "lat": 35.0,
-        "lng": 129.0,
-    } 
-     */
     postArrest = async (payload) => {
         try {
             const { gameId, policeId, thiefId } = payload;
@@ -490,19 +451,18 @@ export class GameController {
         }
     }
 
-    /**
-     * 스킬 사용
-     * { 
-     *  "gameId": 1,
-     *  "policeId": 1
-     * }
-     */
+
     postSkillUse = async (payload) => {
         try {
-            const { gameId, policeId } = payload;
+            let { gameId, policeId } = payload;
+
+            policeId = parseInt(policeId) || parseInt(this.socket.data.memberId);
+            gameId = parseInt(gameId);
+
+            console.log("postSkillUse", payload);
 
             // 게임 스킬 정보 조회
-            const skill = await this.gameSkillService.findGameSkill(gameId, policeId);
+            const skill = await this.gameSkillService.findGameSkill(parseInt(gameId), parseInt(policeId));
 
             // 이미 사용된 스킬이면 실패
             if (skill.isUsed) {
@@ -535,26 +495,6 @@ export class GameController {
         }
     }
 
-    /**
-     * mq에 이미지 전송
-     * 
-     * req : {
-     *  gameId: 1,
-     *  memberId: 1,
-     *  gameMissionId: 1,
-     *  imageUrl: "url" 
-     * } 
-     */
-    /**
-     * mq에 이미지 전송
-     * 
-     * req : {
-     *  gameId: 1,
-     *  memberId: 1,
-     *  gameMissionId: 1,
-     *  imageUrl: "url" 
-     * } 
-     */
     postMissionImage = async (payload) => {
         try {
             const gameId = payload.gameId;
@@ -591,14 +531,15 @@ export class GameController {
 
             // 패널티와 위치 정보는 5초 후 삭제
             setTimeout(async () => {
-                await redisClient.deleteAllInGameCachesByGameId(gameId);
+                await redisClient.deleteAllLocations(gameId);
                 await redisClient.deleteStartedCount(gameId);
             }, 5000);
 
             // 게임 종료 처리 => spring boot에 요청을 보내야함.
+            const gameMembers = await redisClient.getAllLocations(gameId);
 
+            
 
-            // 게임 종료 알림
             // 게임 종료 알림
             io.to(gameId).emit("get end game", {
                 gameId: gameId,
@@ -633,6 +574,7 @@ export class GameController {
             const { gameId, memberId, position, walk, longestSurvived } = payload;
 
             // 사용자의 게임 스탯 업데이트
+            // api 호출
             if (position === GameMemberPosition.THIEF) {
                 await this.gameMemberService.updateThiefStats(gameId, memberId, walk, longestSurvived);
             } else {

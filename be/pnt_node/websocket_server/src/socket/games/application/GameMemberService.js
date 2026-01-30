@@ -1,8 +1,13 @@
 import GameMember from "../../../global/db/sequelize/entity/GameMember";
 import Member from "../../../global/db/sequelize/entity/Member";
 import MemberProfile from "../../../global/db/sequelize/entity/MemberProfile";
+import { RedisClient } from "../../utils/client/RedisClient.js";
 
 export class GameMemberService {
+    constructor() {
+        this.redisClient = new RedisClient();
+    }
+
     findMemberGame = async (gameId, memberId) => {
         const res = await GameMember.findOne({
             where: {
@@ -20,7 +25,7 @@ export class GameMemberService {
     }
 
     updateMemberStatus = async (gameId, memberId, status, options = {}) => {
-        const res = await GameMember.update({ status }, {
+        const res = await GameMember.update({ status: status }, {
             where: {
                 gameId: gameId,
                 memberId: memberId,
@@ -76,22 +81,19 @@ export class GameMemberService {
     }
 
     updateInGameConnected = async (gameId, memberId, isConnected) => {
-        const res = await GameMember.update({ isConnected }, {
-            where: {
-                gameId: gameId,
-                memberId: memberId,
-                isDeleted: false
-            }
-        });
-
-        if (!res) {
+        const location = await this.redisClient.getLocation(memberId, gameId);
+        if (!location) {
             this.makeError("NotFoundException", "유저의 게임 접속 정보를 찾을 수 없습니다.", 404);
         }
-        return res;
+
+        location.inGameConnected = isConnected;
+        await this.redisClient.setLocation(memberId, gameId, location);
+        
+        return true;
     }
 
     updateThiefStats = async (gameId, memberId, walk, longestSurvived) => {
-        const res = await GameMember.update({ walk, longestSurvived }, {
+        const res = await GameMember.update({ walk: walk, longestSurvived: longestSurvived }, {
             where: {
                 gameId: gameId,
                 memberId: memberId,
@@ -106,7 +108,7 @@ export class GameMemberService {
     }
 
     updatePoliceStats = async (gameId, memberId, arrestCount, walk) => {
-        const res = await GameMember.update({ arrestCount, walk }, {
+        const res = await GameMember.update({ arrestCount: arrestCount, walk: walk }, {
             where: {
                 gameId: gameId,
                 memberId: memberId,

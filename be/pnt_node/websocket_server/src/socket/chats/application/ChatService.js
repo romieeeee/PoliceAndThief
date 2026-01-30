@@ -14,24 +14,28 @@ export class ChatService {
             chat.avatarUrl = "default.png";
         }
 
-        console.log("chat", chat);
-
         const chatModel = new chatEntity(chat);
 
         const data = await chatModel.save();
 
         const member = await members.findOne({ memberId: chat.memberId }).exec();
-        
+
         data.member = member;
 
         return this.parseChat(data);
     }
 
     getAggregationPipeline(matchStage, sortVariable, limit) {
-        return [
+        const pipeline = [
             { $match: matchStage },
             { $sort: { _id: sortVariable } },
-            { $limit: limit },
+        ];
+
+        if (limit !== null && limit !== undefined) {
+            pipeline.push({ $limit: limit });
+        }
+
+        pipeline.push(
             {
                 $lookup: {
                     from: "members",
@@ -57,7 +61,9 @@ export class ChatService {
                     member: "$memberInfo"
                 }
             }
-        ];
+        );
+
+        return pipeline;
     }
 
     // {chatRoomId, cursor, limit}
@@ -70,7 +76,7 @@ export class ChatService {
             chatRoomId: payload.chatRoomId
         };
 
-        if (payload.cursor) {
+        if (payload.cursor && payload.cursor !== 0) {
             matchStage._id = { $lt: payload.cursor };
         }
 
