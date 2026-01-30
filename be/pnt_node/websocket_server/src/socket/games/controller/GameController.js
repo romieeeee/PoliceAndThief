@@ -52,7 +52,6 @@ export class GameController {
      * }
      */
     joinRoom = async (payload) => {
-        // 채팅방 접속 db 처리 => is_connected = true로 처리
         try {
             const gameId = payload.gameId;
 
@@ -69,8 +68,6 @@ export class GameController {
                 gameId: payload.gameId,
                 memberId: this.socket.data.memberId,
             }
-
-            await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
 
             // gameSetting에서 참여자 수 들고오기
             // isGaneConnected true로 변경 => 변경이 됐는지 안됐는지 판별하여 

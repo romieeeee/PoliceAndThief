@@ -25,7 +25,6 @@ const roomSocketServer = (io) => {
         // game 방이 유효한지 검사 로직 필요.
         if (isActiveRoom) {
             await redisClient.deleteByCompletedReconnect(socket, "room", storedRoomId);
-            await roomController.gameMemberService.updateInGameConnected(integerRoomId, socket.data.memberId, true);
             console.log("reconnect", storedRoomId);
 
             socket.emit("reconnect", { roomId: storedRoomId });
