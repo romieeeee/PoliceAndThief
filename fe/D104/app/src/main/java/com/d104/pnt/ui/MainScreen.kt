@@ -114,7 +114,7 @@ fun MainScreen(
                         navController.navigate(Routes.GAME_CREATE)
                     },
                     navigateToGameRoom = { roomId ->
-                        navController.navigate(Routes.buildGameRoom(roomId))
+                        navController.navigate(Routes.buildRoleSelect(roomId))
                     },
                     navigateToIntro = { navigateToIntro() }
                 )
@@ -167,21 +167,31 @@ fun MainScreen(
 
             // ===== 게임 대기방 =====
             composable(
-                route = "${Routes.GAME_ROOM}/{${NavArgs.ROOM_ID}}",
+                route = "${Routes.GAME_ROOM}/{${NavArgs.ROOM_ID}}/{${NavArgs.ROLE}}",
                 arguments = listOf(
-                    navArgument(NavArgs.ROOM_ID) { type = NavType.LongType }
+                    navArgument(NavArgs.ROOM_ID) { type = NavType.LongType },
+                    navArgument(NavArgs.ROLE) { type = NavType.StringType }
                 )
             ) { backStackEntry ->
                 val roomId = backStackEntry.arguments?.getLong(NavArgs.ROOM_ID) ?: 0L
+                val roleString = backStackEntry.arguments?.getString(NavArgs.ROLE) ?: "THIEF"
+
                 GameWaitingScreen(
                     roomId = roomId,
+
+                    initialRole = GameRole.fromName(roleString),
+
                     onStartGame = { gameId, role ->
                         navController.navigate(Routes.buildGamePlay(gameId, role.name)) {
                             popUpTo(Routes.HOME)
                         }
                     },
-                    onBackPressed = { navController.popBackStack() },
 
+                    onChangeRole = {
+                        navController.navigate(Routes.buildRoleSelect(roomId))
+                    },
+
+                    onBackPressed = { navController.popBackStack() },
                     onNavigateHome = { message ->
                         if (message != null) {
                             navController.previousBackStackEntry
@@ -196,10 +206,19 @@ fun MainScreen(
             // ===== 게임 플로우 =====
 
             // 역할 선택 (대기방 내에서)
-            composable(Routes.ROLE_SELECT) {
+            composable(
+                route = "${Routes.ROLE_SELECT}/{${NavArgs.ROOM_ID}}",
+                arguments = listOf(
+                    navArgument(NavArgs.ROOM_ID) { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val roomId = backStackEntry.arguments?.getLong(NavArgs.ROOM_ID) ?: 0L
+
                 RoleSelectScreen(
                     onRoleSelected = { role: GameRole ->
-                        navController.navigate(Routes.buildGameIntro(role.name))
+                        navController.navigate(Routes.buildGameRoom(roomId, role.name)) {
+                            popUpTo(Routes.HOME)
+                        }
                     },
                     onBackPressed = { navController.popBackStack() },
                 )
@@ -249,8 +268,7 @@ fun MainScreen(
                         navController.popBackStack()
                     },
                     onConfirm = { roomId ->
-                        navController.navigate(Routes.buildGameRoom(roomId)) {
-
+                        navController.navigate(Routes.buildRoleSelect(roomId)) {
                             popUpTo(Routes.HOME)
                         }
                     }
