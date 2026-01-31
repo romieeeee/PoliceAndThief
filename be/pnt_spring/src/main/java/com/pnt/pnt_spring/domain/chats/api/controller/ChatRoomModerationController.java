@@ -1,5 +1,6 @@
 package com.pnt.pnt_spring.domain.chats.api.controller;
 
+import com.pnt.pnt_spring.domain.chats.api.req.ChatRoomOwnerDelegateRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,4 +42,22 @@ public class ChatRoomModerationController {
 
 		return new CommonResponse<>(null, "강퇴 처리 성공", HttpStatus.OK);
 	}
+
+	@Operation(summary = "채팅방 방장 위임")
+	@PostMapping("/{chatRoomId}/owner")
+	public CommonResponse<Void> delegateOwner(
+			@PathVariable Long chatRoomId,
+			@Valid @RequestBody ChatRoomOwnerDelegateRequest req
+	) {
+		Long actorMemberId = SecurityUtils.currentMemberId();
+
+		moderationService.delegateOwner(
+				actorMemberId,
+				chatRoomId,
+				req.getTargetMemberId()
+		);
+
+		return new CommonResponse<>(null, "방장 위임 성공", HttpStatus.OK);
+	}
+
 }
