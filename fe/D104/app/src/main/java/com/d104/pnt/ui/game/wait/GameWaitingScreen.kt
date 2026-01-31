@@ -37,6 +37,9 @@ import com.d104.pnt.ui.theme.PixelFont
 @Composable
 fun GameWaitingScreen(
     roomId: Long,
+    initialRole: GameRole,
+    onChangeRole: () -> Unit,
+
     onStartGame: (Long, GameRole) -> Unit = { _, _ -> },
     viewModel: GameWaitingViewModel = hiltViewModel(),
     onBackPressed: () -> Boolean = { false },
@@ -72,9 +75,14 @@ fun GameWaitingScreen(
         if (uiState is UiState.Success) onStartGame(roomId, GameRole.POLICE)
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.setInitialRole(initialRole)
+    }
+
     val policeCount = players.count { it.role == GameRole.POLICE && !it.isChangingRole }
     val thiefCount = players.count { it.role == GameRole.THIEF && !it.isChangingRole }
     val isAllReady = players.isNotEmpty() && players.all { it.isReady && !it.isChangingRole }
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -83,124 +91,174 @@ fun GameWaitingScreen(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
+        val players by viewModel.players.collectAsStateWithLifecycle()
+        val roomInfo by viewModel.roomInfo.collectAsStateWithLifecycle()
+        val isHost by viewModel.isHost.collectAsStateWithLifecycle()
+        val isMeReady by viewModel.isMeReady.collectAsStateWithLifecycle()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+        val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(vertical = 32.dp, horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        var selectedPlayerId by remember { mutableStateOf<Long?>(null) }
+        var dismissedPlayerId by remember { mutableStateOf<Long?>(null) }
+        var lastDismissTime by remember { mutableLongStateOf(0L) }
+        var showSettingsDialog by remember { mutableStateOf(false) }
 
-            // 방 정보
-            WaitingHeaderSection(
-                roomCode = roomInfo.roomCode,
-                currentCount = players.size,
-                maxCount = roomInfo.maxCount,
-                timeLeft = "${roomInfo.timeLimit}:00",
-                isHost = isHost,
-                onSettingsClick = { showSettingsDialog = true },
-                onLeaveClick = { viewModel.leaveRoom() }
-            )
+        var infoDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
+        var kickDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 보드
-            UnifiedWaitingInfoCard(
-                players = players,
-                myMemberId = myMemberId,
-                policeCount = policeCount,
-                thiefCount = thiefCount,
-                isHost = isHost,
-                selectedPlayerId = selectedPlayerId,
-                onPlayerClick = { player ->
-                    val now = System.currentTimeMillis()
-                    if (!((dismissedPlayerId == player.id) && (now - lastDismissTime < 300))) selectedPlayerId =
-                        if (selectedPlayerId == player.id) null else player.id
-                },
-                onMenuDismiss = {
-                    dismissedPlayerId = selectedPlayerId; lastDismissTime =
-                    System.currentTimeMillis(); selectedPlayerId = null
-                },
-                onInfoClick = { player ->
-                    dismissedPlayerId = selectedPlayerId; lastDismissTime =
-                    System.currentTimeMillis(); selectedPlayerId = null; infoDialogTarget = player
-                },
-                onKickClick = { player ->
-                    dismissedPlayerId = selectedPlayerId; lastDismissTime =
-                    System.currentTimeMillis(); selectedPlayerId = null; kickDialogTarget = player
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                onChangeRole = { viewModel.changeRole() }
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 준비 / 시작
-            val buttonText = if (isHost) "게임 시작" else if (isMeReady) "준비 취소" else "준비"
-            val buttonColor = if (isHost) {
-                if (isAllReady) Color.White else Color.Gray
-            } else {
-                if (isMeReady) Color.Gray else Color.White
-            }
-            val textColor = if (buttonColor == Color.Gray) Color.White else Color.Black
-
-            PixelIconButton(
-                onClick = {
-                    if (isHost) {
-                        if (isAllReady) viewModel.startGame()
-                    } else viewModel.toggleReady()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                mainColor = buttonColor,
-                borderColor = if (buttonColor == Color.Gray) Color.DarkGray else Color.Black,
-                pixelSize = 3.5.dp,
-                blockHeight = 16,
-                content = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = buttonText,
-                            fontFamily = PixelFont,
-                            color = textColor,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        )
+        // 이벤트 처리
+        LaunchedEffect(Unit) {
+            viewModel.uiEvent.collect { event ->
+                when (event) {
+                    is GameWaitingUiEvent.NavigateToHome -> {
+                        if (!onBackPressed()) onNavigateHome(event.message)
                     }
                 }
-            )
-            Spacer(modifier = Modifier.height(60.dp))
+            }
         }
 
-        // 다이얼로그
-        if (infoDialogTarget != null) PlayerInfoDialog(
-            player = infoDialogTarget!!,
-            onDismiss = { infoDialogTarget = null })
+        LaunchedEffect(uiState) {
+            if (uiState is UiState.Success) onStartGame(roomId, GameRole.POLICE)
+        }
 
-        if (kickDialogTarget != null) KickConfirmDialog(
-            player = kickDialogTarget!!,
-            onDismiss = { kickDialogTarget = null },
-            onConfirm = { reason ->
-                viewModel.kickPlayer(
-                    kickDialogTarget!!.id,
-                    reason
-                ); kickDialogTarget = null
-            })
+        LaunchedEffect(Unit) {
+            viewModel.setInitialRole(initialRole)
+        }
 
-        if (showSettingsDialog) GameSettingsDialog(
-            initialState = roomInfo,
-            onDismiss = { showSettingsDialog = false },
-            onUpdateSettings = { total, time, mission, cctv, police ->
-                viewModel.updateRoomSettings(
-                    total,
-                    time,
-                    mission,
-                    cctv,
-                    police
+        val policeCount = players.count { it.role == GameRole.POLICE && !it.isChangingRole }
+        val thiefCount = players.count { it.role == GameRole.THIEF && !it.isChangingRole }
+        val isAllReady = players.isNotEmpty() && players.all { it.isReady && !it.isChangingRole }
+
+        Box(modifier = Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(id = R.drawable.bg_playground),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 32.dp, horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                // 방 정보
+                WaitingHeaderSection(
+                    roomCode = roomInfo.roomCode,
+                    currentCount = players.size,
+                    maxCount = roomInfo.maxCount,
+                    timeLeft = "${roomInfo.timeLimit}:00",
+                    isHost = isHost,
+                    onSettingsClick = { showSettingsDialog = true },
+                    onLeaveClick = { viewModel.leaveRoom() }
                 )
-            })
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 보드
+                UnifiedWaitingInfoCard(
+                    players = players,
+                    myMemberId = myMemberId,
+                    policeCount = policeCount,
+                    thiefCount = thiefCount,
+                    isHost = isHost,
+                    selectedPlayerId = selectedPlayerId,
+                    onPlayerClick = { player ->
+                        val now = System.currentTimeMillis()
+                        if (!((dismissedPlayerId == player.id) && (now - lastDismissTime < 300))) selectedPlayerId =
+                            if (selectedPlayerId == player.id) null else player.id
+                    },
+                    onMenuDismiss = {
+                        dismissedPlayerId = selectedPlayerId; lastDismissTime =
+                        System.currentTimeMillis(); selectedPlayerId = null
+                    },
+                    onInfoClick = { player ->
+                        dismissedPlayerId = selectedPlayerId; lastDismissTime =
+                        System.currentTimeMillis(); selectedPlayerId = null; infoDialogTarget =
+                        player
+                    },
+                    onKickClick = { player ->
+                        dismissedPlayerId = selectedPlayerId; lastDismissTime =
+                        System.currentTimeMillis(); selectedPlayerId = null; kickDialogTarget =
+                        player
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    onChangeRole = {
+                        onChangeRole()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 준비 / 시작
+                val buttonText = if (isHost) "게임 시작" else if (isMeReady) "준비 취소" else "준비"
+                val buttonColor = if (isHost) {
+                    if (isAllReady) Color.White else Color.Gray
+                } else {
+                    if (isMeReady) Color.Gray else Color.White
+                }
+                val textColor = if (buttonColor == Color.Gray) Color.White else Color.Black
+
+                PixelIconButton(
+                    onClick = {
+                        if (isHost) {
+                            if (isAllReady) viewModel.startGame()
+                        } else viewModel.toggleReady()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    mainColor = buttonColor,
+                    borderColor = if (buttonColor == Color.Gray) Color.DarkGray else Color.Black,
+                    pixelSize = 3.5.dp,
+                    blockHeight = 16,
+                    content = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = buttonText,
+                                fontFamily = PixelFont,
+                                color = textColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp
+                            )
+                        }
+                    }
+                )
+                Spacer(modifier = Modifier.height(60.dp))
+            }
+
+            // 다이얼로그
+            if (infoDialogTarget != null) PlayerInfoDialog(
+                player = infoDialogTarget!!,
+                onDismiss = { infoDialogTarget = null })
+
+            if (kickDialogTarget != null) KickConfirmDialog(
+                player = kickDialogTarget!!,
+                onDismiss = { kickDialogTarget = null },
+                onConfirm = { reason ->
+                    viewModel.kickPlayer(
+                        kickDialogTarget!!.id,
+                        reason
+                    ); kickDialogTarget = null
+                })
+
+            if (showSettingsDialog) GameSettingsDialog(
+                initialState = roomInfo,
+                onDismiss = { showSettingsDialog = false },
+                onUpdateSettings = { total, time, mission, cctv, police ->
+                    viewModel.updateRoomSettings(
+                        total,
+                        time,
+                        mission,
+                        cctv,
+                        police
+                    )
+                })
+        }
     }
 }

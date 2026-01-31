@@ -66,11 +66,14 @@ data class Item(
     @SerializedName("nickname")
     val nickname: String,
 
-    @SerializedName("role")
-    val role: String,
+    @SerializedName("preferPosition")
+    val preferPosition: String,
 
-    @SerializedName("profileImageUrl")
-    val profileImageUrl: String?,
+    @SerializedName("givenPosition")
+    val givenPosition: String?,
+
+    @SerializedName("avatarUrl")
+    val avatarUrl: String?,
 
     @SerializedName("host")
     val host: Boolean,

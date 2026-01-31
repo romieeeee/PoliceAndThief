@@ -4,8 +4,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.request.Location
-import com.d104.pnt.data.remote.model.response.GameMemberListResponse
-import com.d104.pnt.data.remote.model.response.GameRoomSettingsResponse
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.domain.model.GameRole
@@ -15,9 +13,7 @@ import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.util.socket.RoomSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,9 +21,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import timber.log.Timber
 import javax.inject.Inject
@@ -37,18 +31,19 @@ class GameWaitingViewModel @Inject constructor(
     private val gameRoomRepository: GameRoomRepository,
     private val authRepository: AuthRepository,
     private val roomSocketManager: RoomSocketManager,
-    savedStateHandle: SavedStateHandle,
-
-    ) : ViewModel() {
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
     private val roomId: Long = savedStateHandle.get<Long>(NavArgs.ROOM_ID) ?: 0L
 
-    // UI State
+    // 내 Member ID
     private val _myMemberId = MutableStateFlow(0L)
     val myMemberId: StateFlow<Long> = _myMemberId.asStateFlow()
 
+    // 참가자 리스트
     private val _players = MutableStateFlow<List<WaitingPlayer>>(emptyList())
     val players: StateFlow<List<WaitingPlayer>> = _players.asStateFlow()
 
+    // 방 정보
     private val _roomInfo = MutableStateFlow(GameRoomInfoState())
     val roomInfo: StateFlow<GameRoomInfoState> = _roomInfo.asStateFlow()
 
@@ -58,16 +53,22 @@ class GameWaitingViewModel @Inject constructor(
     private val _isMeReady = MutableStateFlow(false)
     val isMeReady: StateFlow<Boolean> = _isMeReady.asStateFlow()
 
+    // 로딩/에러 상태 관리
     private val _uiState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val uiState: StateFlow<UiState<Unit>> = _uiState.asStateFlow()
 
     private val _uiEvent = MutableSharedFlow<GameWaitingUiEvent>()
     val uiEvent: SharedFlow<GameWaitingUiEvent> = _uiEvent.asSharedFlow()
 
+    // 역할 변경 중 상태
+    private val _changingRoleMemberIds = MutableStateFlow<Set<Long>>(emptySet())
+
+    private var pollingJob: Job? = null
+
     init {
         Timber.d("GameWaitingViewModel 초기화 - roomId: $roomId")
 
-        // 1. 콜백 먼저 설정
+        // 콜백 먼저 설정
         setupRoomCallbacks()
 
         viewModelScope.launch {
@@ -293,6 +294,7 @@ class GameWaitingViewModel @Inject constructor(
                 is BaseResult.Success -> {
                     roomSocketManager.updateReady(nextState)
                 }
+
                 is BaseResult.Error -> {
                     _uiState.value = UiState.Error("준비 상태 변경 실패")
                 }
@@ -319,6 +321,7 @@ class GameWaitingViewModel @Inject constructor(
 
                     Timber.d("📤 [Socket] post update position 발행 완료")
                 }
+
                 is BaseResult.Error -> {
                     _uiState.value = UiState.Error("역할 변경 실패")
                 }
@@ -340,11 +343,12 @@ class GameWaitingViewModel @Inject constructor(
 
         viewModelScope.launch {
             val current = _roomInfo.value
+
             val safeMaxCount = maxCount.coerceAtLeast(5)
             val safePoliceCount = policeCount.coerceIn(1, safeMaxCount - 1)
             val thiefCount = safeMaxCount - safePoliceCount
 
-            when (gameRoomRepository.updateRoomSettings(
+            val result = gameRoomRepository.updateRoomSettings(
                 roomId = roomId,
                 playerCount = safeMaxCount,
                 timeLimit = timeLimit,
@@ -354,13 +358,24 @@ class GameWaitingViewModel @Inject constructor(
                 missionCount = missionCount,
                 prison = current.prison,
                 polygon = current.polygon
-            )) {
+            )
+
+            when (result) {
                 is BaseResult.Success -> {
-                    Timber.d("✅ 방 설정 변경 성공 - Socket 업데이트 대기")
+                    Timber.d("RoomSettings: 서버 설정 변경 성공")
+                    _roomInfo.value = current.copy(
+                        maxCount = safeMaxCount,
+                        timeLimit = timeLimit,
+                        missionCount = missionCount,
+                        cctvCycle = cctvCycle,
+                        policeCount = safePoliceCount,
+                        thiefCount = thiefCount
+                    )
                 }
+
                 is BaseResult.Error -> {
-                    Timber.e("❌ 방 설정 변경 실패")
-                    _uiState.value = UiState.Error("설정 변경 실패")
+                    Timber.e("RoomSettings: 변경 실패 ${result.error.message}")
+                    _uiState.emit(UiState.Error("설정 변경 실패: ${result.error.message}"))
                 }
             }
         }
@@ -378,6 +393,7 @@ class GameWaitingViewModel @Inject constructor(
                     Timber.d("✅ 강퇴 성공 - Socket 업데이트 대기")
                     // UI는 setOnMemberKicked에서 업데이트됨
                 }
+
                 is BaseResult.Error -> {
                     _uiState.value = UiState.Error("강퇴 실패")
                 }
@@ -399,6 +415,7 @@ class GameWaitingViewModel @Inject constructor(
                     Timber.d("✅ 게임 시작 성공")
                     _uiState.value = UiState.Success(Unit)
                 }
+
                 is BaseResult.Error -> {
                     Timber.e("❌ 게임 시작 실패")
                     _uiState.value = UiState.Error(result.error.message)
@@ -422,6 +439,28 @@ class GameWaitingViewModel @Inject constructor(
             _uiEvent.emit(GameWaitingUiEvent.NavigateToHome())
         }
     }
+
+    fun setInitialRole(role: GameRole) {
+        viewModelScope.launch {
+            val position = role.name
+
+            Timber.d("초기 역할 설정 요청: $position")
+
+            val result = gameRoomRepository.changePosition(roomId, position)
+
+            if (result is BaseResult.Error) {
+                Timber.e("초기 역할 설정 실패: ${result.error.message}")
+            }
+        }
+    }
+
+    fun resetToUndecided() {
+        viewModelScope.launch {
+
+            gameRoomRepository.changePosition(roomId, "UNDECIDED")
+        }
+    }
+
 
     override fun onCleared() {
         super.onCleared()

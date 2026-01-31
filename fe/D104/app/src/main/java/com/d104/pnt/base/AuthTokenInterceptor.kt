@@ -6,6 +6,9 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.d104.pnt.data.remote.api.AuthApiService
+import com.d104.pnt.data.remote.model.request.RefreshRequest
+import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.util.AuthEventBus
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -13,13 +16,16 @@ import okhttp3.Interceptor
 import okhttp3.Response
 import timber.log.Timber
 import javax.inject.Inject
+import javax.inject.Provider
 
 /**
  * JWT Token을 요청 헤더에 추가하는 Interceptor
  */
 class AuthTokenInterceptor @Inject constructor(
     private val dataStore: DataStore<Preferences>,
-    private val authEventBus: AuthEventBus
+    private val authEventBus: AuthEventBus,
+    private val authAPiServiceProvider: Provider<AuthApiService>,
+    private val authRepositoryProvider: Provider<AuthRepository>
 ) : Interceptor {
 
     companion object {
@@ -28,7 +34,8 @@ class AuthTokenInterceptor @Inject constructor(
             "/auth/login",
             "/auth/social-login",
             "/auth/signup",
-            "/auth/duplicate"
+            "/auth/duplicate",
+            "/auth/reissue"
         )
     }
 
@@ -73,14 +80,92 @@ class AuthTokenInterceptor @Inject constructor(
 
         // 401 에러 (토큰 만료) 처리
         if (response.code == 401) {
-            Timber.w("⚠️ Access token expired (401) - Auto logout")
+            Timber.w("Access token expired (401) - Refresh")
+            if (path.contains("/auth/reissue")) {
+                Timber.d("refreshToken are expired")
+                runBlocking {
+                    // 로컬 데이터 삭제
+                    clearAuthData()
+                    // 토큰 만료 이벤트 발생
+                    authEventBus.emit(AuthEventBus.AuthEvent.TokenExpired)
+                }
+                return response
+            }
+            response.close()
 
-            runBlocking {
-                // 로컬 데이터 삭제
-                clearAuthData()
+            synchronized(this) {
+                val currentToken = runBlocking { dataStore.data.first()[stringPreferencesKey(Constants.KEY_ACCESS_TOKEN)] }
 
-                // 토큰 만료 이벤트 발생
-                authEventBus.emit(AuthEventBus.AuthEvent.TokenExpired)
+                if (token != currentToken && !currentToken.isNullOrEmpty()) {
+                    val newerRequest = newRequest.newBuilder()
+                        .header("Authorization", "Bearer $currentToken")
+                        .build()
+                    return chain.proceed(newerRequest)
+                }
+
+                val refreshToken = runBlocking { dataStore.data.first()[stringPreferencesKey(Constants.KEY_REFRESH_TOKEN)] }
+                if (refreshToken.isNullOrEmpty()) {
+                    Timber.w("No refresh token found, skipping token refresh")
+                    runBlocking {
+                        // 로컬 데이터 삭제
+                        clearAuthData()
+                        // 토큰 만료 이벤트 발생
+                        authEventBus.emit(AuthEventBus.AuthEvent.TokenExpired)
+                    }
+                }
+                Timber.d("""
+                    accessToken = $currentToken
+                    refreshToken = $refreshToken
+                """)
+                try {
+                    val refreshCall = authAPiServiceProvider.get().refreshTokenCall(
+                        RefreshRequest(
+                            grantType = "Bearer",
+                            accessToken = currentToken ?: "",
+                            refreshToken = refreshToken ?: "",
+                            accessTokenExpiresIn = 0,
+                            refreshTokenExpiresIn = 0
+                        )
+                    )
+                    val refreshResponse = refreshCall.execute() // 동기 실행
+
+                    if (refreshResponse.isSuccessful && refreshResponse.body() != null) {
+                        val newTokens = refreshResponse.body()!!
+
+                        // 7. 새 토큰 저장
+                        runBlocking {
+                            authRepositoryProvider.get().refreshTokens(newTokens.data!!.accessToken, newTokens.data.refreshToken)
+                        }
+
+                        Timber.d("✅ 토큰 갱신 성공! 재요청 진행")
+
+                        // 8. 원래 요청에 새 토큰 갈아끼우고 재전송 (Retry)
+                        val newerRequest = newRequest.newBuilder()
+                            .header("Authorization", "Bearer ${newTokens.data!!.accessToken}")
+                            .build()
+
+                        return chain.proceed(newerRequest)
+                    } else {
+                        // 갱신 실패 (Refresh Token도 만료됨 등)
+                        Timber.e("토큰 갱신 실패 (서버 응답 오류)")
+                        runBlocking {
+                            // 로컬 데이터 삭제
+                            clearAuthData()
+                            // 토큰 만료 이벤트 발생
+                            authEventBus.emit(AuthEventBus.AuthEvent.TokenExpired)
+                        }
+                        return chain.proceed(newRequest) // 401 반환
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "토큰 갱신 중 네트워크 오류")
+                    runBlocking {
+                        // 로컬 데이터 삭제
+                        clearAuthData()
+                        // 토큰 만료 이벤트 발생
+                        authEventBus.emit(AuthEventBus.AuthEvent.TokenExpired)
+                    }
+                    return chain.proceed(newRequest)
+                }
             }
         }
 

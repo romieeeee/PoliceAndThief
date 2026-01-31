@@ -53,7 +53,10 @@ class HomeViewModel @Inject constructor(
                     val roomId = result.data.roomId
                     Timber.d("Join Game Success: roomId=$roomId")
 
+                    gameRoomRepository.changePosition(roomId, "UNDECIDED")
+
                     _uiEvent.emit(HomeUiEvent.NavigateToGameRoom(roomId))
+
 
                     _joinCode.value = ""
                 }
@@ -64,16 +67,15 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
-    }
 
-    fun logout() {
-        viewModelScope.launch {
-            authRepository.clearAuthData()
+        fun logout() {
+            viewModelScope.launch {
+                authRepository.clearAuthData()
 
-            Timber.d("Logout completed")
-            _uiEvent.emit(HomeUiEvent.ShowMessage("로그아웃되었습니다"))
-            _uiEvent.emit(HomeUiEvent.NavigateToIntro)
+                Timber.d("Logout completed")
+                _uiEvent.emit(HomeUiEvent.ShowMessage("로그아웃되었습니다"))
+                _uiEvent.emit(HomeUiEvent.NavigateToIntro)
+            }
         }
     }
 }
-
