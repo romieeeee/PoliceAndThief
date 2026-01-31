@@ -8,12 +8,35 @@ const secretKey = Buffer.from(secretKeyString, 'base64');
 
 export const generateToken = (gameId, time) => {
     const payload = {
-        gameId: gameId,
+        sub: `game${gameId}`,
+        memberId: gameId,
+        role: "ROLE_USER"
     };
 
     const options = {
         algorithm: 'HS512',
         expiresIn: `${time + 5}m`,
+        issuer: 'pnt-websocket'
+    };
+
+    try {
+        return jwt.sign(payload, secretKey, options);
+    } catch (error) {
+        console.error("토큰 생성 실패:", error);
+        throw new Error("Token generation failed");
+    }
+};
+
+export const generateMemberAccessToken = (memberId) => {
+    const payload = {
+        sub: "memberId",
+        memberId: memberId,
+        role: "ROLE_USER"
+    };
+
+    const options = {
+        algorithm: 'HS512',
+        expiresIn: '1h',
         issuer: 'pnt-websocket'
     };
 
