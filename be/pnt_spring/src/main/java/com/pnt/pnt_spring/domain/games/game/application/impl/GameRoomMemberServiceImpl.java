@@ -241,7 +241,7 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
 		}
 
 		GameMember target = gameMemberRepository.findByGameIdAndMemberIdAndIsDeletedFalse(roomId, targetMemberId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_JOINED));
+			.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_JOINED, "이미 강퇴한 사용자입니다."));
 
 		target.kick();
 	}
