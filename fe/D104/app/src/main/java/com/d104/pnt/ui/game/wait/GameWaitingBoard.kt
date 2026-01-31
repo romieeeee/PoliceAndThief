@@ -41,6 +41,7 @@ fun UnifiedWaitingInfoCard(
     myMemberId: Long,
     policeCount: Int,
     thiefCount: Int,
+    anyCount: Int,
     isHost: Boolean,
     selectedPlayerId: Long?,
     onPlayerClick: (WaitingPlayer) -> Unit,
@@ -67,7 +68,7 @@ fun UnifiedWaitingInfoCard(
             ) {
                 MapPreviewContent()
                 Spacer(modifier = Modifier.height(16.dp))
-                RoleCountInfo(policeCount, thiefCount)
+                RoleCountInfo(policeCount, thiefCount, anyCount)
                 Spacer(modifier = Modifier.height(20.dp))
                 Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(Color(0xFF6591E9).copy(alpha = 0.5f)))
             }
@@ -191,7 +192,7 @@ fun MapPreviewContent() {
 }
 
 @Composable
-fun RoleCountInfo(policeCount: Int, thiefCount: Int) {
+fun RoleCountInfo(policeCount: Int, thiefCount: Int, anyCount: Int) {
     Row(horizontalArrangement = Arrangement.spacedBy(32.dp), verticalAlignment = Alignment.CenterVertically) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(text = "👮", fontSize = 20.sp); Spacer(modifier = Modifier.width(8.dp))
@@ -199,6 +200,11 @@ fun RoleCountInfo(policeCount: Int, thiefCount: Int) {
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(text = "🕵️", fontSize = 20.sp); Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "$thiefCount", fontFamily = PixelFont, color = Color.White, fontSize = 20.sp)
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text = "❓", fontSize = 20.sp); Spacer(modifier = Modifier.width(8.dp))
             Text(text = "$thiefCount", fontFamily = PixelFont, color = Color.White, fontSize = 20.sp)
         }
     }

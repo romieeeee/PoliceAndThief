@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.game.wait
+package com.d104.pnt.ui.game.wait.role
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -21,16 +21,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.theme.DarkBackground
-import timber.log.Timber
 
 @Composable
 fun RoleSelectScreen(
     onRoleSelected: (GameRole) -> Unit,
-    onBackPressed: () -> Boolean
+    onBackPressed: () -> Boolean,
+    viewModel: RoleSelectViewModel = hiltViewModel()
 ) {
     Surface(modifier = Modifier.fillMaxSize()) {
 
@@ -66,12 +67,20 @@ fun RoleSelectScreen(
                 RoleCard(
                     role = GameRole.POLICE,
                     modifier = Modifier.weight(1f),
-                    onClick = { onRoleSelected(GameRole.POLICE) }
+                    onClick = {
+                        viewModel.selectRole(GameRole.POLICE) { role ->
+                            onRoleSelected(role)
+                        }
+                    }
                 )
                 RoleCard(
                     role = GameRole.THIEF,
                     modifier = Modifier.weight(1f),
-                    onClick = { onRoleSelected(GameRole.THIEF) }
+                    onClick = {
+                        viewModel.selectRole(GameRole.THIEF) { role ->
+                            onRoleSelected(role)
+                        }
+                    }
                 )
             }
 
@@ -81,7 +90,9 @@ fun RoleSelectScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        onRoleSelected(GameRole.ANY)
+                        viewModel.selectRole(GameRole.ANY) { role ->
+                            onRoleSelected(role)
+                        }
                     },
                 backgroundColor = DarkBackground,
                 borderColor = Color.White,
@@ -99,51 +110,5 @@ fun RoleSelectScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun RoleCard(role: GameRole, modifier: Modifier, onClick: () -> Unit) {
-    PixelContainer(
-        modifier = modifier.clickable(onClick = {
-            onClick()
-            Timber.d("clicked!")
-        }),
-        backgroundColor = DarkBackground,
-        borderColor = role.color
-    ) {
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(4.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Image(
-                modifier = Modifier.fillMaxWidth(),
-                painter = painterResource(role.emoji),
-                contentDescription = null,
-                contentScale = ContentScale.Crop
-            )
-
-            Text(
-                text = role.roleName,
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally),
-                color = Color.White
-            )
-
-            Text(
-                text = "영차 케로챠 영차 케로챠 영차",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally),
-                color = Color.White
-            )
-
-        }
-
-
     }
 }

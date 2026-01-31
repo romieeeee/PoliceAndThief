@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -43,7 +44,7 @@ import com.d104.pnt.ui.game.play.GamePlayScreen
 import com.d104.pnt.ui.game.play.GameRoleScreen
 import com.d104.pnt.ui.game.play.mission.CameraScreen
 import com.d104.pnt.ui.game.wait.GameWaitingScreen
-import com.d104.pnt.ui.game.wait.RoleSelectScreen
+import com.d104.pnt.ui.game.wait.role.RoleSelectScreen
 import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
 import kotlinx.coroutines.launch
@@ -96,7 +97,6 @@ fun MainScreen(
         ) {
             // ===== BottomNav 탭 =====
             composable(Routes.HOME) { backStackEntry ->
-
                 val savedStateHandle = backStackEntry.savedStateHandle
                 val kickMessage = savedStateHandle.get<String>("kick_message")
 
@@ -253,7 +253,6 @@ fun MainScreen(
                 val roleName = backStackEntry.arguments?.getString(NavArgs.ROLE) ?: "THIEF"
                 val role = GameRole.fromName(roleName)
 
-                // (SavedStateHandle로 role 자동 주입)
                 GameLoadingScreen(
                     onLoadingComplete = { gameId ->
                         navController.navigate(Routes.buildGamePlay(gameId, role.name)) {

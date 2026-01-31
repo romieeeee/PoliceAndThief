@@ -15,7 +15,7 @@ import javax.inject.Singleton
 @Singleton
 class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocketManager("room") {
 
-    private var currentRoomId: Long? = null
+    var currentRoomId: Long? = null
 
     companion object {
         // Request Events (req)
@@ -63,13 +63,11 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
         on(EVENT_GET_UPDATE_READY) { args ->
             try {
                 val root = args[0] as JSONObject
-
+                // 💡 'data' 객체가 있는지 확인하고 있으면 그 안에서 추출!
                 val data = root.optJSONObject("data") ?: root
 
-                val roomId = data.optLong("roomId", currentRoomId ?: 0L)
                 val memberId = data.optLong("memberId", 0L)
-
-                // 3. ready 상태 추출 (ready 또는 isReady)
+                // 서버 키값이 'ready'인지 'isReady'인지 확인해서 둘 다 대응
                 val isReady = when {
                     data.has("ready") -> data.getBoolean("ready")
                     data.has("isReady") -> data.getBoolean("isReady")
@@ -77,10 +75,11 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
                 }
 
                 if (memberId != 0L) {
-                    onReadyUpdated?.invoke(roomId, memberId, isReady)
+                    Timber.d("✅ [Socket] Ready 파싱 성공: memberId=$memberId, ready=$isReady")
+                    onReadyUpdated?.invoke(currentRoomId ?: 0L, memberId, isReady)
                 }
             } catch (e: Exception) {
-                Timber.e(e, "❌ Ready 상태 업데이트 파싱 실패")
+                Timber.e(e, "❌ Ready 상태 업데이트 파싱 실패: ${e.message}")
             }
         }
 
@@ -90,11 +89,11 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
                 val root = args[0] as JSONObject
                 Timber.d("📥 포지션 업데이트 수신 데이터: $root")
 
-                // 1. "data" 객체 추출 (중첩 구조 대응)
                 val data = root.optJSONObject("data") ?: root
 
                 val roomId = data.optLong("roomId", currentRoomId ?: 0L)
                 val memberId = data.optLong("memberId", 0L)
+
                 val preferPosition = data.optString("preferPosition", "THIEF")
 
                 if (memberId != 0L) {
@@ -133,24 +132,38 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
         // 멤버 강퇴 알림
         on(EVENT_GET_MEMBER_KICK) { args ->
             try {
-                val data = args[0] as JSONObject
-                val memberId = data.getLong("memberId")
-                Timber.d("멤버 강퇴됨: memberId=$memberId")
-                onMemberKicked?.invoke(memberId)
+                val root = args[0] as JSONObject
+                Timber.d("📥 [Socket] get member kick 수신: $root")
+
+                // 💡 서버 응답 구조에 따라 data 객체 혹은 루트에서 memberId 추출
+                val data = root.optJSONObject("data") ?: root
+                val kickedMemberId = data.optLong("memberId", 0L)
+
+                if (kickedMemberId != 0L) {
+                    Timber.d("✅ 강퇴 알림 파싱 성공: $kickedMemberId")
+                    onMemberKicked?.invoke(kickedMemberId)
+                }
             } catch (e: Exception) {
-                Timber.e(e, "멤버 강퇴 파싱 실패")
+                Timber.e(e, "❌ 멤버 강퇴 이벤트 파싱 실패")
             }
         }
 
         // 멤버 퇴장 알림
         on(EVENT_GET_DISCONNECT) { args ->
             try {
-                val data = args[0] as JSONObject
-                val memberId = data.getLong("memberId")
-                Timber.d("멤버 퇴장: memberId=$memberId")
-                onMemberLeft?.invoke(memberId)
+                val root = args[0] as JSONObject
+                val data = root.optJSONObject("data") ?: root
+
+                // memberId가 없을 수도 있으니 optLong으로 안전하게 추출
+                val leftMemberId = data.optLong("memberId", 0L)
+
+                if (leftMemberId != 0L) {
+                    onMemberLeft?.invoke(leftMemberId)
+                } else {
+                    Timber.w("📥 [Socket] memberId 없는 퇴장 이벤트 수신 (무시)")
+                }
             } catch (e: Exception) {
-                Timber.e(e, "멤버 퇴장 파싱 실패")
+                Timber.e(e, "❌ 멤버 퇴장 파싱 실패")
             }
         }
     }
@@ -184,7 +197,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
 
         currentRoomId = roomId
 
-        // 1️방 입장 요청
+        // 방 입장 요청
         val joinData = JSONObject().apply {
             put("roomId", roomId)
         }
@@ -278,11 +291,8 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
     /**
      * Ready 상태 업데이트
      */
-    fun updateReady(ready: Boolean) {
-        val roomId = currentRoomId ?: run {
-            Timber.e("roomId가 없어서 Ready 상태 업데이트 불가")
-            return
-        }
+    fun updateReady(roomId: Long, ready: Boolean) {
+        val currentRoomId = roomId
 
         val data = JSONObject().apply {
             put("roomId", roomId)
@@ -301,10 +311,6 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
             return
         }
 
-        if (preferPosition != "POLICE" && preferPosition != "THIEF") {
-            Timber.e("잘못된 포지션: $preferPosition")
-            return
-        }
 
         val data = JSONObject().apply {
             put("roomId", roomId)
@@ -330,6 +336,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
             put("reason", reason)
         }
 
+        Timber.d("📤 post member kick 전송 시도: roomId = $roomId, target = $targetMemberId")
         emit(EVENT_POST_MEMBER_KICK, data)
     }
 

@@ -13,7 +13,6 @@ import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.util.socket.RoomSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,72 +59,41 @@ class GameWaitingViewModel @Inject constructor(
     private val _uiEvent = MutableSharedFlow<GameWaitingUiEvent>()
     val uiEvent: SharedFlow<GameWaitingUiEvent> = _uiEvent.asSharedFlow()
 
-    // 역할 변경 중 상태
-    private val _changingRoleMemberIds = MutableStateFlow<Set<Long>>(emptySet())
-
-    private var pollingJob: Job? = null
-
     init {
-        Timber.d("GameWaitingViewModel 초기화 - roomId: $roomId")
-
-        // 콜백 먼저 설정
+        roomSocketManager.currentRoomId = roomId
         setupRoomCallbacks()
 
         viewModelScope.launch {
             authRepository.getMemberId().collect { id ->
                 if (id != 0L) {
                     _myMemberId.value = id
-                    Timber.d("내 멤버 ID: $id")
-
-                    connectToRoom()
+                    Timber.d("👤 내 ID 확인됨: $id")
+                    syncData()
                 }
             }
         }
     }
 
-    /**
-     * Socket 연결 및 방 입장
-     */
-    private fun connectToRoom() {
+    private fun syncData() {
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
+            while (!roomSocketManager.isConnected()) { delay(200) }
 
-            authRepository.getAccessToken().collect { token ->
-                if (token.isNotEmpty()) {
-                    Timber.d("🔌 Room 소켓 연결 시작")
-
-                    // Socket 연결
-                    roomSocketManager.connect(token)
-
-                    // 연결 대기
-                    var retryCount = 0
-                    while (!roomSocketManager.isConnected() && retryCount < 30) {
-                        delay(100)
-                        retryCount++
-                    }
-
-                    if (roomSocketManager.isConnected()) {
-                        Timber.d("✅ Room 소켓 연결 성공")
-
-                        // 방 입장 (자동으로 room info 요청됨)
-                        roomSocketManager.joinRoom(roomId) { success, message ->
-                            if (success) {
-                                Timber.d("✅ 방 입장 성공 - UI는 Socket 콜백에서 업데이트됨")
-                            } else {
-                                Timber.e("❌ 방 입장 실패: $message")
-                                viewModelScope.launch {
-                                    _uiState.value = UiState.Error("방 입장 실패")
-                                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome("방 입장 실패"))
-                                }
-                            }
-                        }
-                    } else {
-                        Timber.e("❌ Room 소켓 연결 타임아웃")
-                        _uiState.value = UiState.Error("서버 연결 실패")
-                        _uiEvent.emit(GameWaitingUiEvent.NavigateToHome("서버 연결 실패"))
-                    }
+            // 💡 Join을 먼저 확실히 하고, 성공하면 정보를 가져옵니다.
+            roomSocketManager.joinRoom(roomId) { success, _ ->
+                if (success) {
+                    roomSocketManager.requestRoomInfo(roomId)
+                    roomSocketManager.requestReadyInfo(roomId)
                 }
-                return@collect
+            }
+        }
+    }
+
+    fun resetToUndecided() {
+        viewModelScope.launch {
+            // 방을 나가지 않고(leaveRoom X), 역할만 ANY로 바꿈
+            val result = gameRoomRepository.changePosition(roomId, "ANY")
+            if (result is BaseResult.Success) {
+                roomSocketManager.updatePosition("ANY")
             }
         }
     }
@@ -134,32 +102,32 @@ class GameWaitingViewModel @Inject constructor(
      * Socket 콜백 설정
      */
     private fun setupRoomCallbacks() {
-        // ✅ 전체 방 정보 수신 (UI 업데이트의 유일한 진실의 원천)
+        // 전체 방 정보 수신
         roomSocketManager.setOnFullRoomInfoReceived { data ->
             Timber.d("📥 [PRIMARY] 전체 방 정보 수신 - UI 업데이트")
             parseFullRoomInfo(data)
             _uiState.value = UiState.Idle  // 로딩 해제
         }
 
-        // ✅ 방 설정 업데이트
+        // 방 설정 업데이트
         roomSocketManager.setOnRoomInfoUpdated { data ->
             Timber.d("📥 방 설정 업데이트")
             parseRoomSettings(data)
         }
 
-        // ✅ Ready 상태 업데이트
+        // Ready 상태 업데이트
         roomSocketManager.setOnReadyUpdated { roomId, memberId, isReady ->
             Timber.d("📥 Ready 업데이트: memberId=$memberId, ready=$isReady")
             updatePlayerReady(memberId, isReady)
         }
 
-        // ✅ 포지션 업데이트
+        // 포지션 업데이트
         roomSocketManager.setOnPositionUpdated { roomId, memberId, position ->
             Timber.d("📥 포지션 업데이트: memberId=$memberId, position=$position")
             updatePlayerPosition(memberId, position)
         }
 
-        // ✅ 멤버 강퇴
+        // 멤버 강퇴
         roomSocketManager.setOnMemberKicked { memberId ->
             Timber.d("📥 멤버 강퇴: $memberId")
             if (memberId == _myMemberId.value) {
@@ -171,7 +139,7 @@ class GameWaitingViewModel @Inject constructor(
             }
         }
 
-        // ✅ 멤버 퇴장
+        // 멤버 퇴장
         roomSocketManager.setOnMemberLeft { memberId ->
             Timber.d("📥 멤버 퇴장: $memberId")
             removePlayer(memberId)
@@ -183,8 +151,12 @@ class GameWaitingViewModel @Inject constructor(
      */
     private fun parseFullRoomInfo(data: RoomInfoResponse) {
         try {
+            val hostId = data.room.hostMemberId
+            val myId = _myMemberId.value
             // 방장 여부 확인
-            _isHost.value = data.room.hostMemberId == _myMemberId.value
+            _isHost.value = (hostId == myId && myId != 0L)
+
+            Timber.d("🏠 방장 확인: host=$hostId, me=$myId, 결과=${_isHost.value}")
 
             // 방 설정 업데이트
             _roomInfo.value = GameRoomInfoState(
@@ -200,15 +172,22 @@ class GameWaitingViewModel @Inject constructor(
 
             // 플레이어 리스트 업데이트
             _players.value = data.members.map { member ->
-                if (member.memberId == _myMemberId.value) {
+
+                // 내 레디 상태 동기화
+                if (member.memberId == myId) {
                     _isMeReady.value = member.ready
                 }
 
                 WaitingPlayer(
                     id = member.memberId,
-                    nickname = member.memberDetail.profile.nickname ?: "이름 없음",
-                    role = if (member.preferPosition == "POLICE") GameRole.POLICE else GameRole.THIEF,
+                    nickname = member.memberDetail.profile.nickname,
+                    role = when (member.preferPosition) {
+                        "POLICE" -> GameRole.POLICE
+                        "THIEF" -> GameRole.THIEF
+                        else -> GameRole.ANY
+                    },
                     isReady = member.ready,
+                    isHost = member.memberId == hostId,
                     profileUrl = member.memberDetail.profile.avatarUrl
                 )
             }
@@ -244,8 +223,11 @@ class GameWaitingViewModel @Inject constructor(
      * 플레이어 Ready 상태 업데이트
      */
     private fun updatePlayerReady(memberId: Long, isReady: Boolean) {
-        _players.value = _players.value.map { player ->
+        // 💡 새로운 리스트를 만들어 할당해야 UI가 확실히 바뀝니다.
+        val currentPlayers = _players.value
+        _players.value = currentPlayers.map { player ->
             if (player.id == memberId) {
+                // 내 상태면 _isMeReady도 같이 업데이트
                 if (memberId == _myMemberId.value) {
                     _isMeReady.value = isReady
                 }
@@ -265,7 +247,9 @@ class GameWaitingViewModel @Inject constructor(
                 player.copy(
                     role = when (position) {
                         "POLICE" -> GameRole.POLICE
-                        else -> GameRole.THIEF
+                        "THIEF" -> GameRole.THIEF
+                        "UNDECIDED" -> GameRole.UNDECIDED
+                        else -> GameRole.ANY
                     }
                 )
             } else {
@@ -281,7 +265,7 @@ class GameWaitingViewModel @Inject constructor(
         _players.value = _players.value.filter { it.id != memberId }
     }
 
-// ==================== User Actions ====================
+    // ==================== User Actions ====================
 
     /**
      * 준비 상태 변경 (HTTP → Socket)
@@ -292,38 +276,11 @@ class GameWaitingViewModel @Inject constructor(
 
             when (gameRoomRepository.toggleReady(roomId, nextState)) {
                 is BaseResult.Success -> {
-                    roomSocketManager.updateReady(nextState)
+                    roomSocketManager.updateReady(roomId, nextState)
                 }
 
                 is BaseResult.Error -> {
                     _uiState.value = UiState.Error("준비 상태 변경 실패")
-                }
-            }
-        }
-    }
-
-    /**
-     * 역할 변경 (HTTP → Socket)
-     */
-    fun changeRole() {
-        viewModelScope.launch {
-            val currentId = _myMemberId.value
-            if (currentId == 0L) return@launch
-
-            val myPlayer = _players.value.find { it.id == currentId } ?: return@launch
-            val nextRole = if (myPlayer.role == GameRole.POLICE) "THIEF" else "POLICE"
-
-            when (gameRoomRepository.changePosition(roomId, nextRole)) {
-                is BaseResult.Success -> {
-                    Timber.d("✅ 포지션 HTTP 요청 성공")
-
-                    roomSocketManager.updatePosition(nextRole)
-
-                    Timber.d("📤 [Socket] post update position 발행 완료")
-                }
-
-                is BaseResult.Error -> {
-                    _uiState.value = UiState.Error("역할 변경 실패")
                 }
             }
         }
@@ -391,7 +348,7 @@ class GameWaitingViewModel @Inject constructor(
             when (gameRoomRepository.kickPlayer(roomId, targetMemberId, reason)) {
                 is BaseResult.Success -> {
                     Timber.d("✅ 강퇴 성공 - Socket 업데이트 대기")
-                    // UI는 setOnMemberKicked에서 업데이트됨
+                    roomSocketManager.kickMember(targetMemberId, reason)
                 }
 
                 is BaseResult.Error -> {
@@ -444,27 +401,17 @@ class GameWaitingViewModel @Inject constructor(
         viewModelScope.launch {
             val position = role.name
 
-            Timber.d("초기 역할 설정 요청: $position")
-
             val result = gameRoomRepository.changePosition(roomId, position)
 
-            if (result is BaseResult.Error) {
-                Timber.e("초기 역할 설정 실패: ${result.error.message}")
+            if (result is BaseResult.Success) {
+                // 연결된 상태일 때만 소켓 신호를 보냅니다.
+                while (!roomSocketManager.isConnected()) {
+                    delay(200) // 소켓 연결 대기
+                }
+                roomSocketManager.updatePosition(position)
+                Timber.d("📤 [Socket] 초기 역할 설정 완료: $position")
             }
         }
     }
 
-    fun resetToUndecided() {
-        viewModelScope.launch {
-
-            gameRoomRepository.changePosition(roomId, "UNDECIDED")
-        }
-    }
-
-
-    override fun onCleared() {
-        super.onCleared()
-        roomSocketManager.disconnect()
-        Timber.d("GameWaitingViewModel cleared")
-    }
 }
