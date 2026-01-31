@@ -76,6 +76,9 @@ dependencies {
     // AWS SDK (S3)
     implementation platform('software.amazon.awssdk:bom:2.21.1')
     implementation 'software.amazon.awssdk:s3'
+
+    // LiveKit Server SDK
+    implementation 'io.livekit:livekit-server:0.8.0'
 }
 
 tasks.named('test') {

@@ -87,3 +87,8 @@ cloud:
       static: ${AWS_REGION}
     s3:
       bucket: ${AWS_S3_BUCKET_NAME}
+
+livekit:
+  url: wss://ssafy-d104-f7ty2iv4.livekit.cloud  # LiveKit Cloud WebSocket URL
+  api-key: ${LIVEKIT_API_KEY}            # 발급받은 API Key
+  api-secret: ${LIVEKIT_API_SECRET}      # 발급받은 API Secret
