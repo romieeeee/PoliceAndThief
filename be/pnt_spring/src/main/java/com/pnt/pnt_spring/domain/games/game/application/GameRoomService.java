@@ -12,4 +12,6 @@ public interface GameRoomService {
 
 	GameRoomStartableResponse getStartable(Long actorMemberId, Long roomId);
 
+	void resetGame(Long gameId);
+
 }

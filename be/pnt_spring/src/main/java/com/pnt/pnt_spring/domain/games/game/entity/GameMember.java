@@ -136,12 +136,18 @@ public class GameMember extends BaseEntity {
 		this.status = status;
 	}
 
-	// 게임 재시작(Reset) 시 상태 초기화
-	public void resetForNewGame() {
+	public void resetForNextGame() {
+		// 이미 나간 사람은 건드리지 않음
+		if (this.isDeleted()) {
+			return;
+		}
+		// 상태를 WAITING으로 변경
+		this.status = null;
+
+		// 역할(Position)은 로비에서 다시 정해야 하므로 초기화
+		this.preferPosition = PreferPosition.ANY;
+		this.givenPosition = null;
 		this.ready = false;
-		this.givenPosition = null; // 포지션 배정 초기화
-		this.status = null;        // 인게임 상태(감옥 등) 초기화
-		this.inGameConnected = true; // 대기방 상태이므로 기본 연결로 간주 (혹은 null)
-		this.preferPosition = null;
+
 	}
 }
