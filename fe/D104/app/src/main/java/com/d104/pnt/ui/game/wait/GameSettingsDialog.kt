@@ -2,6 +2,7 @@ package com.d104.pnt.ui.game.wait
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,20 +28,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.d104.pnt.R
+import com.d104.pnt.data.remote.model.request.Location
+import com.d104.pnt.domain.model.DraggableLatLng
+import com.d104.pnt.ui.component.GoogleMaps
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.RoundedButton
 import com.d104.pnt.ui.game.create.CounterControl
 import com.d104.pnt.ui.game.create.FactionRatioBar
+import com.d104.pnt.ui.game.create.MapSettingDialog
 import com.d104.pnt.ui.game.create.SectionTitle
 import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.DialogBorderColor
 import com.d104.pnt.ui.theme.PixelFont
+import com.google.android.gms.maps.model.LatLng
 
 @Composable
 fun GameSettingsDialog(
     initialState: GameRoomInfoState,
     onDismiss: () -> Unit,
-    onUpdateSettings: (Int, Int, Int, Int, Int) -> Unit
+    onUpdateSettings: (Int, Int, Int, Int, Int, Location, List<Location>) -> Unit
 ) {
     var totalPlayers by remember { mutableStateOf(initialState.maxCount.coerceAtLeast(5)) }
     var gameTime by remember { mutableStateOf(initialState.timeLimit.coerceAtLeast(5)) }
@@ -52,6 +58,11 @@ fun GameSettingsDialog(
     val thiefCount = totalPlayers - policeCount
 
     val scrollState = rememberScrollState()
+
+    var prisonLocation by remember { mutableStateOf(initialState.prison) }
+    var polygonPoints by remember { mutableStateOf(initialState.polygon) }
+
+    var showMapPopup by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         PixelContainer(
@@ -91,15 +102,17 @@ fun GameSettingsDialog(
                         .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFFEEEEEE))
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.img_map_example),
-                        contentDescription = "Map Preview",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                    GoogleMaps(
+                        modifier = Modifier.fillMaxSize(),
+                        inGameMinimap = false,
+                        isPreview = true,
+                        polygonPoints = polygonPoints?.map { DraggableLatLng(position = LatLng(it.lat, it.lng)) } ?: emptyList(),
+                        prisonLocation = LatLng(prisonLocation?.lat ?: 37.56681969564895, prisonLocation?.lng ?: 126.97864094105321),
                     )
 
                     Box(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize()
+                            .clickable { showMapPopup = true },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -194,7 +207,10 @@ fun GameSettingsDialog(
                     RoundedButton(
                         text = "변경 완료",
                         onClick = {
-                            onUpdateSettings(totalPlayers, gameTime, missionCount, cctvCycle, policeCount)
+                            onUpdateSettings(totalPlayers, gameTime, missionCount, cctvCycle, policeCount,
+                                Location(prisonLocation!!.lat, prisonLocation!!.lng),
+                                polygonPoints!!.map{ Location(it.lat, it.lng) }
+                            )
                             onDismiss()
                         },
                         containerColor = Color.White,
@@ -204,5 +220,16 @@ fun GameSettingsDialog(
                 }
             }
         }
+    }
+    if (showMapPopup) {
+        GameWaitingMapSettingDialog(
+            modifier = Modifier,
+            onDismiss = { showMapPopup = false },
+            onConfirm = { prison, polygon ->
+                prisonLocation = prison
+                polygonPoints = polygon
+                showMapPopup = false
+            }
+        )
     }
 }
