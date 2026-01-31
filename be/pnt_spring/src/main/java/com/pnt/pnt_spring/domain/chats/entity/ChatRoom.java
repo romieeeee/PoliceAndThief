@@ -99,4 +99,17 @@ public class ChatRoom extends BaseEntity {
 		this.updatedAt = java.time.OffsetDateTime.now();
 	}
 
+	// ===== 방장 위임 =====
+	public void delegateOwner(Long newOwnerId) {
+		if (newOwnerId == null) {
+			throw new IllegalArgumentException("newOwnerId는 null일 수 없습니다.");
+		}
+		this.ownerId = newOwnerId;
+	}
+
+	public boolean isSameOwner(Long newOwnerId) {
+		return this.ownerId != null && this.ownerId.equals(newOwnerId);
+	}
+
+
 }
