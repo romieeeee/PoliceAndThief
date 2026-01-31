@@ -93,7 +93,7 @@ export class WebSocketReconnect {
             const isGameEnd = await this.gameController.gameService.checkGameHaveToFinish(roomId);
 
             if (isGameEnd) {
-                await this.gameController.gameEnd(this.gameIo, this.redisClient, roomId, GameMemberPosition.POLICE);
+                await this.gameController.gameEnd(this.gameIo, this.redisClient, roomId, isGameEnd);
             }
 
             console.log("user_left", { memberId, roomId });

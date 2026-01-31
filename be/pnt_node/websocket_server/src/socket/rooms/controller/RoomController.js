@@ -29,8 +29,10 @@ export class RoomController {
         const room = await this.gameService.getGameById(roomId);
 
         if (room.status !== "WAITING") {
-            this.makeError("NotFoundException", "방을 찾을 수 없습니다.", 404);
+            sendError(this.socket, { code: 404, message: "방을 찾을 수 없습니다." }, "NotFoundException");
+            return false;
         }
+
         return true;
     }
 
