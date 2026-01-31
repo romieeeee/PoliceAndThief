@@ -5,9 +5,11 @@ import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.api.AuthApiService
 import com.d104.pnt.data.remote.api.ProfileApiService
 import com.d104.pnt.data.remote.api.ChatApiService
+import com.d104.pnt.data.remote.api.GameApiService
 import com.d104.pnt.data.remote.api.GameRoomApiService
 import com.d104.pnt.data.remote.api.ImageApiService
 import com.d104.pnt.data.remote.api.NaverApiService
+import com.d104.pnt.data.remote.api.ReportApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -115,4 +117,17 @@ object NetworkModule {
     fun provideImageApiService(retrofit: Retrofit): ImageApiService {
         return retrofit.create(ImageApiService::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideReportApiService(retrofit: Retrofit): ReportApiService {
+        return retrofit.create(ReportApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGameApiService(retrofit: Retrofit): GameApiService{
+        return retrofit.create(GameApiService::class.java)
+    }
+
 }

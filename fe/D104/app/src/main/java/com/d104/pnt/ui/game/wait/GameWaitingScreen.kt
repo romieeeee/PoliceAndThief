@@ -72,7 +72,11 @@ fun GameWaitingScreen(
     }
 
     LaunchedEffect(uiState) {
-        if (uiState is UiState.Success) onStartGame(roomId, GameRole.POLICE)
+        if (uiState is UiState.Success) {
+            val myRole = players.find { it.id == myMemberId }?.role ?: GameRole.THIEF
+
+            onStartGame(roomId, myRole)
+        }
     }
 
     LaunchedEffect(Unit) {
