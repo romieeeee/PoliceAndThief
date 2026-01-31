@@ -58,7 +58,10 @@ fun GameWaitingScreen(
     var showSettingsDialog by remember { mutableStateOf(false) }
 
     var infoDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
+    var delegateDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
     var kickDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
+
+    var showLeaveDialog by remember { mutableStateOf(false) }
 
     // 이벤트 처리
     LaunchedEffect(Unit) {
@@ -110,7 +113,7 @@ fun GameWaitingScreen(
                 timeLeft = "${roomInfo.timeLimit}:00",
                 isHost = isHost,
                 onSettingsClick = { showSettingsDialog = true },
-                onLeaveClick = { viewModel.leaveRoom() }
+                onLeaveClick = { showLeaveDialog = true }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -135,6 +138,12 @@ fun GameWaitingScreen(
                 onInfoClick = { player ->
                     dismissedPlayerId = selectedPlayerId; lastDismissTime =
                     System.currentTimeMillis(); selectedPlayerId = null; infoDialogTarget = player
+                },
+                onDelegateHostClick = { player ->
+                    dismissedPlayerId = selectedPlayerId
+                    lastDismissTime = System.currentTimeMillis()
+                    selectedPlayerId = null
+                    delegateDialogTarget = player
                 },
                 onKickClick = { player ->
                     dismissedPlayerId = selectedPlayerId; lastDismissTime =
@@ -202,6 +211,27 @@ fun GameWaitingScreen(
                     reason
                 ); kickDialogTarget = null
             })
+
+        if (delegateDialogTarget != null) {
+            DelegateHostConfirmDialog(
+                nickname = delegateDialogTarget!!.nickname,
+                onDismissRequest = { delegateDialogTarget = null },
+                onConfirm = {
+                    viewModel.delegateHost(delegateDialogTarget!!.id)
+                    delegateDialogTarget = null
+                }
+            )
+        }
+
+        if (showLeaveDialog) {
+            LeaveRoomConfirmDialog(
+                onDismissRequest = { showLeaveDialog = false },
+                onConfirm = {
+                    showLeaveDialog = false
+                    viewModel.leaveRoom()
+                }
+            )
+        }
 
         if (showSettingsDialog) GameSettingsDialog(
             initialState = roomInfo,
