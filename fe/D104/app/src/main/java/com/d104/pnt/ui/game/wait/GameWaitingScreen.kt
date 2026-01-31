@@ -37,6 +37,9 @@ import com.d104.pnt.ui.theme.PixelFont
 @Composable
 fun GameWaitingScreen(
     roomId: Long,
+    initialRole: GameRole,
+    onChangeRole: () -> Unit,
+
     onStartGame: (Long, GameRole) -> Unit = { _, _ -> },
     viewModel: GameWaitingViewModel = hiltViewModel(),
     onBackPressed: () -> Boolean = { false },
@@ -70,6 +73,10 @@ fun GameWaitingScreen(
 
     LaunchedEffect(uiState) {
         if (uiState is UiState.Success) onStartGame(roomId, GameRole.POLICE)
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.setInitialRole(initialRole)
     }
 
     val policeCount = players.count { it.role == GameRole.POLICE && !it.isChangingRole }
@@ -132,7 +139,9 @@ fun GameWaitingScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                onChangeRole = { viewModel.changeRole() }
+                onChangeRole = {
+                    onChangeRole()
+                }
             )
 
             Spacer(modifier = Modifier.height(20.dp))

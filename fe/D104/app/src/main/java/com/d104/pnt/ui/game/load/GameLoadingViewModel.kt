@@ -57,6 +57,7 @@ class GameLoadingViewModel @Inject constructor(
         return when (role) {
             GameRole.POLICE -> "경찰 팀원들과 무전기로 소통하며\n도둑들을 체포하세요!"
             GameRole.THIEF -> "경찰을 피해 미션을 완수하고\n생존하세요!"
+            else -> "곧 게임이 시작됩니다!\n역할을 확인하세요."
         }
     }
 
@@ -66,11 +67,13 @@ class GameLoadingViewModel @Inject constructor(
             _remainingTime.value > 30 -> when (role) {
                 GameRole.POLICE -> "도둑들의 위치를 파악하세요"
                 GameRole.THIEF -> "은신 장소를 찾으세요"
+                else -> "주변을 탐색하세요"
             }
 
             _remainingTime.value > 10 -> when (role) {
                 GameRole.POLICE -> "팀원들과 협력하세요"
                 GameRole.THIEF -> "경찰의 포위망을 조심하세요"
+                else -> "준비하세요"
             }
 
             else -> "곧 게임이 시작됩니다!"
