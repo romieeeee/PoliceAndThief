@@ -1,5 +1,6 @@
 package com.d104.pnt.ui.game.wait
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -71,14 +72,22 @@ fun GameWaitingScreen(
         }
     }
 
+    BackHandler {
+        viewModel.leaveRoom()
+    }
+
     LaunchedEffect(uiState) {
         if (uiState is UiState.Success) onStartGame(roomId, GameRole.POLICE)
     }
 
-    val policeCount = players.count { it.role == GameRole.POLICE}
-    val thiefCount = players.count { it.role == GameRole.THIEF}
-    val anyCount = players.count { it.role == GameRole.ANY || it.isChangingRole }
-    val isAllReady = players.isNotEmpty() && players.all { it.isReady && !it.isChangingRole }
+    val policeCount = players.count { it.role == GameRole.POLICE && !it.isChangingRole }
+    val thiefCount = players.count { it.role == GameRole.THIEF && !it.isChangingRole }
+
+    val anyCount = players.size - policeCount - thiefCount
+
+    val isAllReady = players.isNotEmpty() && players.filter { it.id != myMemberId }.all {
+        it.isReady && !it.isChangingRole && it.role != GameRole.ANY
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -187,7 +196,7 @@ fun GameWaitingScreen(
             Spacer(modifier = Modifier.height(60.dp))
         }
 
-        // 다이얼로그
+        // ========== 다이얼로그 ==========
         if (infoDialogTarget != null) PlayerInfoDialog(
             player = infoDialogTarget!!,
             onDismiss = { infoDialogTarget = null })

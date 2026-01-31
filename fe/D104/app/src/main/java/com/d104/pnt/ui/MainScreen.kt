@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +36,7 @@ import com.d104.pnt.navigation.Routes
 import com.d104.pnt.ui.chatroom.chat.ChatRoomScreen
 import com.d104.pnt.ui.chatroom.create.ChatRoomCreateScreen
 import com.d104.pnt.ui.chatroomlist.ChatRoomListScreen
+import com.d104.pnt.ui.component.KickedNoticeDialog
 import com.d104.pnt.ui.game.create.GameCreateScreen
 import com.d104.pnt.ui.game.end.GameResultScreen
 import com.d104.pnt.ui.game.load.GameLoadingScreen
@@ -49,13 +49,9 @@ import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import com.d104.pnt.ui.component.KickedNoticeDialog
 
 @Composable
-fun MainScreen(
-    memberId: String,
-    navigateToIntro: () -> Unit
-) {
+fun MainScreen(navigateToIntro: () -> Unit) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val activity = context as? Activity
@@ -179,19 +175,15 @@ fun MainScreen(
 
                 GameWaitingScreen(
                     roomId = roomId,
-
                     initialRole = GameRole.fromName(roleString),
-
                     onStartGame = { gameId, role ->
                         navController.navigate(Routes.buildGamePlay(gameId, role.name)) {
                             popUpTo(Routes.HOME)
                         }
                     },
-
                     onChangeRole = {
                         navController.navigate(Routes.buildRoleSelect(roomId))
                     },
-
                     onBackPressed = { navController.popBackStack() },
                     onNavigateHome = { message ->
                         if (message != null) {
@@ -199,7 +191,7 @@ fun MainScreen(
                                 ?.savedStateHandle
                                 ?.set("kick_message", message)
                         }
-                        navController.popBackStack()
+                        navController.popBackStack(Routes.HOME, inclusive = false)
                     }
                 )
             }

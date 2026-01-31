@@ -1,5 +1,6 @@
 package com.d104.pnt.ui.game.wait.role
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +34,12 @@ fun RoleSelectScreen(
     onBackPressed: () -> Boolean,
     viewModel: RoleSelectViewModel = hiltViewModel()
 ) {
+
+    BackHandler {
+        viewModel.leaveRoom() // 소켓/DB 정리
+        onBackPressed()       // 홈 화면으로 이동
+    }
+
     Surface(modifier = Modifier.fillMaxSize()) {
 
         // 배경 이미지

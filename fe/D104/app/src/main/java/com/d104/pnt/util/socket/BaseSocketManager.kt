@@ -164,7 +164,7 @@ abstract class BaseSocketManager(
      * 연결 해제 시 정리 작업 (하위 클래스에서 구현)
      */
     protected open fun onDisconnectCleanup() {
-        // 하위 클래스에서 필요시 오버라이드
+
     }
 
     /**

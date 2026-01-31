@@ -67,4 +67,30 @@ class RoleSelectViewModel @Inject constructor(
             }
         }
     }
+
+    fun leaveRoom() {
+        viewModelScope.launch {
+            try {
+                roomSocketManager.isIntentionalLeave = true // 의도적 퇴장 표시
+
+                // 소켓 먼저 정리
+                roomSocketManager.leaveRoom()
+                roomSocketManager.disconnect()
+
+                // 2. HTTP로 방 나가기 알림
+                gameRoomRepository.leaveRoom(roomId)
+
+                Timber.d("🧹 RoleSelect 단계에서 방 퇴장 및 소켓 정리 완료")
+            } catch (e: Exception) {
+                Timber.e(e, "RoleSelect 퇴장 중 에러")
+            }
+        }
+    }
+
+    fun leaveRoomExplicitly() {
+        viewModelScope.launch {
+            roomSocketManager.isIntentionalLeave = true // 의도적 퇴장 표시
+            roomSocketManager.leaveRoom() // 여기서 disconnect 호출됨
+        }
+    }
 }

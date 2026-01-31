@@ -10,8 +10,10 @@ import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.util.getSingleLocation
+import com.d104.pnt.util.socket.RoomSocketManager
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +25,7 @@ import javax.inject.Inject
 class GameCreateViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
     private val gameRoomRepository: GameRoomRepository,
+    private val roomSocketManager: RoomSocketManager,
 ) : ViewModel() {
     val userLocation = locationRepository.currentLocation
     val polygonPoints = locationRepository.polygonPoints
@@ -117,6 +120,10 @@ class GameCreateViewModel @Inject constructor(
 
         viewModelScope.launch {
             _gameRoomState.value = UiState.Loading
+
+            roomSocketManager.disconnect()
+            delay(100) // 잠시 대기
+
             when (val result = gameRoomRepository.createGameRoom(
                 playerCount,
                 timeLimit,

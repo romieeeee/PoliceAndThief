@@ -67,7 +67,6 @@ class GameWaitingViewModel @Inject constructor(
             authRepository.getMemberId().collect { id ->
                 if (id != 0L) {
                     _myMemberId.value = id
-                    Timber.d("👤 내 ID 확인됨: $id")
                     syncData()
                 }
             }
@@ -78,7 +77,6 @@ class GameWaitingViewModel @Inject constructor(
         viewModelScope.launch {
             while (!roomSocketManager.isConnected()) { delay(200) }
 
-            // 💡 Join을 먼저 확실히 하고, 성공하면 정보를 가져옵니다.
             roomSocketManager.joinRoom(roomId) { success, _ ->
                 if (success) {
                     roomSocketManager.requestRoomInfo(roomId)
@@ -106,7 +104,7 @@ class GameWaitingViewModel @Inject constructor(
         roomSocketManager.setOnFullRoomInfoReceived { data ->
             Timber.d("📥 [PRIMARY] 전체 방 정보 수신 - UI 업데이트")
             parseFullRoomInfo(data)
-            _uiState.value = UiState.Idle  // 로딩 해제
+            _uiState.value = UiState.Idle
         }
 
         // 방 설정 업데이트
@@ -129,6 +127,20 @@ class GameWaitingViewModel @Inject constructor(
 
         // 멤버 강퇴
         roomSocketManager.setOnMemberKicked { memberId ->
+//            if (memberId == 0L) {
+//                // 💡 1. 서버가 ID를 안 준다면? 일단 방 정보를 다시 요청해서 리스트를 갱신해봅니다.
+//                Timber.w("⚠️ 강퇴 ID가 없어서 방 정보를 재요청합니다.")
+//                roomSocketManager.requestRoomInfo(roomId)
+//
+//                // 💡 2. 그리고 내가 여전히 이 방 멤버인지 확인하는 로직이 필요합니다.
+//                // (이건 서버가 나를 강퇴했다면 방 정보 members 리스트에 내가 없을 테니까요)
+//            } else if (memberId == _myMemberId.value) {
+//                viewModelScope.launch {
+//                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome("방에서 강퇴되었습니다."))
+//                }
+//            } else {
+//                removePlayer(memberId)
+//            }
             Timber.d("📥 멤버 강퇴: $memberId")
             if (memberId == _myMemberId.value) {
                 viewModelScope.launch {
@@ -153,7 +165,7 @@ class GameWaitingViewModel @Inject constructor(
         try {
             val hostId = data.room.hostMemberId
             val myId = _myMemberId.value
-            // 방장 여부 확인
+
             _isHost.value = (hostId == myId && myId != 0L)
 
             Timber.d("🏠 방장 확인: host=$hostId, me=$myId, 결과=${_isHost.value}")
@@ -173,7 +185,6 @@ class GameWaitingViewModel @Inject constructor(
             // 플레이어 리스트 업데이트
             _players.value = data.members.map { member ->
 
-                // 내 레디 상태 동기화
                 if (member.memberId == myId) {
                     _isMeReady.value = member.ready
                 }
@@ -190,6 +201,15 @@ class GameWaitingViewModel @Inject constructor(
                     isHost = member.memberId == hostId,
                     profileUrl = member.memberDetail.profile.avatarUrl
                 )
+            }
+
+            // 새로 받은 명단에 내 ID가 없고, 내 ID가 0이 아닐 때 (방에 들어가 있는 상태였을 때)
+            if (myId != 0L && _players.value.none { it.id == myId }) {
+                Timber.w("🚨 내 ID가 서버 명단에 없습니다. 강퇴된 것으로 판단하여 홈으로 이동합니다.")
+                viewModelScope.launch {
+                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome("방에서 강퇴되었습니다."))
+                }
+                return // 이후 로직 중단
             }
 
             Timber.d("✅ UI 업데이트 완료: players=${_players.value.size}, isHost=${_isHost.value}, myReady=${_isMeReady.value}")
@@ -262,9 +282,11 @@ class GameWaitingViewModel @Inject constructor(
      * 플레이어 제거
      */
     private fun removePlayer(memberId: Long) {
-        _players.value = _players.value.filter { it.id != memberId }
-    }
+        _players.value = _players.value.filter { it.id != memberId }.toList()
 
+        // 로그로 현재 남은 인원 확인
+        Timber.d("👤 플레이어 제거 완료: $memberId, 남은 인원: ${_players.value.size}")
+    }
     // ==================== User Actions ====================
 
     /**
@@ -300,11 +322,11 @@ class GameWaitingViewModel @Inject constructor(
 
         viewModelScope.launch {
             val current = _roomInfo.value
-
             val safeMaxCount = maxCount.coerceAtLeast(5)
             val safePoliceCount = policeCount.coerceIn(1, safeMaxCount - 1)
             val thiefCount = safeMaxCount - safePoliceCount
 
+            // 1. [HTTP] 서버 DB 업데이트
             val result = gameRoomRepository.updateRoomSettings(
                 roomId = roomId,
                 playerCount = safeMaxCount,
@@ -319,42 +341,35 @@ class GameWaitingViewModel @Inject constructor(
 
             when (result) {
                 is BaseResult.Success -> {
-                    Timber.d("RoomSettings: 서버 설정 변경 성공")
-                    _roomInfo.value = current.copy(
-                        maxCount = safeMaxCount,
+                    Timber.d("✅ [HTTP] 방 설정 변경 성공")
+
+                    // 2. [Socket] 다른 유저들에게 변경 알림 (추가된 부분)
+                    roomSocketManager.updateRoomInfo(
+                        playerCount = safeMaxCount,
                         timeLimit = timeLimit,
-                        missionCount = missionCount,
-                        cctvCycle = cctvCycle,
                         policeCount = safePoliceCount,
-                        thiefCount = thiefCount
+                        thiefCount = thiefCount,
+                        cctvInterval = cctvCycle,
+                        prison = current.prison,
+                        polygon = current.polygon
                     )
                 }
-
                 is BaseResult.Error -> {
-                    Timber.e("RoomSettings: 변경 실패 ${result.error.message}")
-                    _uiState.emit(UiState.Error("설정 변경 실패: ${result.error.message}"))
+                    _uiState.emit(UiState.Error("설정 변경 실패"))
                 }
             }
         }
     }
 
     /**
-     * 강퇴 (HTTP → Socket)
+     * 강퇴
      */
     fun kickPlayer(targetMemberId: Long, reason: String) {
         if (!_isHost.value) return
 
-        viewModelScope.launch {
-            when (gameRoomRepository.kickPlayer(roomId, targetMemberId, reason)) {
-                is BaseResult.Success -> {
-                    Timber.d("✅ 강퇴 성공 - Socket 업데이트 대기")
-                    roomSocketManager.kickMember(targetMemberId, reason)
-                }
-
-                is BaseResult.Error -> {
-                    _uiState.value = UiState.Error("강퇴 실패")
-                }
-            }
+        roomSocketManager.kickMember(targetMemberId, reason) { kickedId ->
+            removePlayer(kickedId)
+            roomSocketManager.requestRoomInfo(roomId)
         }
     }
 
@@ -386,17 +401,15 @@ class GameWaitingViewModel @Inject constructor(
      */
     fun leaveRoom() {
         viewModelScope.launch {
-            // HTTP 요청
-            gameRoomRepository.leaveRoom(roomId)
-
-            // Socket 연결 해제
             roomSocketManager.leaveRoom()
 
-            // 홈으로 이동
+            roomSocketManager.disconnect()
+
+            gameRoomRepository.leaveRoom(roomId)
+
             _uiEvent.emit(GameWaitingUiEvent.NavigateToHome())
         }
     }
-
     fun setInitialRole(role: GameRole) {
         viewModelScope.launch {
             val position = role.name
