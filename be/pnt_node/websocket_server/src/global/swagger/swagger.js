@@ -14,7 +14,7 @@ const options = {
             },
         ],
     },
-    apis: ["./src/rest/**/*.js", "./src/global/swagger/docs/**/*.yaml"], // Path to the API docs
+    apis: ["./src/rest/**/*.js", "./src/global/swagger/apis/**/*.yaml"], // Path to the API docs
 };
 
 const specs = swaggerJsdoc(options);
