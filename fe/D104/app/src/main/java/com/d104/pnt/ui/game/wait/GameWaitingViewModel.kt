@@ -283,20 +283,17 @@ class GameWaitingViewModel @Inject constructor(
 // ==================== User Actions ====================
 
     /**
-     * 준비 상태 변경 (HTTP → Socket 업데이트)
+     * 준비 상태 변경 (HTTP → Socket)
      */
     fun toggleReady() {
         viewModelScope.launch {
             val nextState = !_isMeReady.value
 
-            // HTTP 요청
             when (gameRoomRepository.toggleReady(roomId, nextState)) {
                 is BaseResult.Success -> {
-                    Timber.d("✅ Ready 요청 성공 - Socket 업데이트 대기")
-                    // UI는 setOnReadyUpdated에서 업데이트됨
+                    roomSocketManager.updateReady(nextState)
                 }
                 is BaseResult.Error -> {
-                    Timber.e("❌ Ready 요청 실패")
                     _uiState.value = UiState.Error("준비 상태 변경 실패")
                 }
             }
@@ -304,21 +301,25 @@ class GameWaitingViewModel @Inject constructor(
     }
 
     /**
-     * 역할 변경 (HTTP → Socket 업데이트)
+     * 역할 변경 (HTTP → Socket)
      */
     fun changeRole() {
         viewModelScope.launch {
-            val myPlayer = _players.value.find { it.id == _myMemberId.value } ?: return@launch
+            val currentId = _myMemberId.value
+            if (currentId == 0L) return@launch
+
+            val myPlayer = _players.value.find { it.id == currentId } ?: return@launch
             val nextRole = if (myPlayer.role == GameRole.POLICE) "THIEF" else "POLICE"
 
-            // HTTP 요청
             when (gameRoomRepository.changePosition(roomId, nextRole)) {
                 is BaseResult.Success -> {
-                    Timber.d("✅ 포지션 변경 요청 성공 - Socket 업데이트 대기")
-                    // UI는 setOnPositionUpdated에서 업데이트됨
+                    Timber.d("✅ 포지션 HTTP 요청 성공")
+
+                    roomSocketManager.updatePosition(nextRole)
+
+                    Timber.d("📤 [Socket] post update position 발행 완료")
                 }
                 is BaseResult.Error -> {
-                    Timber.e("❌ 포지션 변경 실패")
                     _uiState.value = UiState.Error("역할 변경 실패")
                 }
             }
@@ -326,7 +327,7 @@ class GameWaitingViewModel @Inject constructor(
     }
 
     /**
-     * 방 설정 변경 (HTTP → Socket 업데이트)
+     * 방 설정 변경 (HTTP → Socket)
      */
     fun updateRoomSettings(
         maxCount: Int,
@@ -356,7 +357,6 @@ class GameWaitingViewModel @Inject constructor(
             )) {
                 is BaseResult.Success -> {
                     Timber.d("✅ 방 설정 변경 성공 - Socket 업데이트 대기")
-                    // UI는 setOnRoomInfoUpdated에서 업데이트됨
                 }
                 is BaseResult.Error -> {
                     Timber.e("❌ 방 설정 변경 실패")
@@ -367,7 +367,7 @@ class GameWaitingViewModel @Inject constructor(
     }
 
     /**
-     * 강퇴 (HTTP → Socket 업데이트)
+     * 강퇴 (HTTP → Socket)
      */
     fun kickPlayer(targetMemberId: Long, reason: String) {
         if (!_isHost.value) return

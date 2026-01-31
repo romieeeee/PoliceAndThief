@@ -62,28 +62,47 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
         // Ready 상태 업데이트 수신
         on(EVENT_GET_UPDATE_READY) { args ->
             try {
-                val data = args[0] as JSONObject
-                val roomId = data.getLong("roomId")
-                val memberId = data.getLong("memberId")
-                val isReady = data.getBoolean("isReady")
-                Timber.d("Ready 상태 업데이트: memberId=$memberId, isReady=$isReady")
-                onReadyUpdated?.invoke(roomId, memberId, isReady)
+                val root = args[0] as JSONObject
+
+                val data = root.optJSONObject("data") ?: root
+
+                val roomId = data.optLong("roomId", currentRoomId ?: 0L)
+                val memberId = data.optLong("memberId", 0L)
+
+                // 3. ready 상태 추출 (ready 또는 isReady)
+                val isReady = when {
+                    data.has("ready") -> data.getBoolean("ready")
+                    data.has("isReady") -> data.getBoolean("isReady")
+                    else -> false
+                }
+
+                if (memberId != 0L) {
+                    onReadyUpdated?.invoke(roomId, memberId, isReady)
+                }
             } catch (e: Exception) {
-                Timber.e(e, "Ready 상태 업데이트 파싱 실패")
+                Timber.e(e, "❌ Ready 상태 업데이트 파싱 실패")
             }
         }
 
         // 선호 포지션 업데이트 수신
         on(EVENT_GET_UPDATE_PREFER_POSITION) { args ->
             try {
-                val data = args[0] as JSONObject
-                val roomId = data.getLong("roomId")
-                val memberId = data.getLong("memberId")
-                val preferPosition = data.getString("preferPosition")
-                Timber.d("선호 포지션 업데이트: memberId=$memberId, position=$preferPosition")
-                onPositionUpdated?.invoke(roomId, memberId, preferPosition)
+                val root = args[0] as JSONObject
+                Timber.d("📥 포지션 업데이트 수신 데이터: $root")
+
+                // 1. "data" 객체 추출 (중첩 구조 대응)
+                val data = root.optJSONObject("data") ?: root
+
+                val roomId = data.optLong("roomId", currentRoomId ?: 0L)
+                val memberId = data.optLong("memberId", 0L)
+                val preferPosition = data.optString("preferPosition", "THIEF")
+
+                if (memberId != 0L) {
+                    Timber.d("✅ 포지션 파싱 성공: memberId=$memberId, position=$preferPosition")
+                    onPositionUpdated?.invoke(roomId, memberId, preferPosition)
+                }
             } catch (e: Exception) {
-                Timber.e(e, "선호 포지션 업데이트 파싱 실패")
+                Timber.e(e, "❌ 선호 포지션 업데이트 파싱 실패")
             }
         }
 
