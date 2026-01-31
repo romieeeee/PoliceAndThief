@@ -33,6 +33,24 @@ enum class GameRole(
         color = ThiefRed,
         emoji = R.drawable.ic_thief,
         badge = R.drawable.ic_thief_badge
+    ),
+
+    ANY(
+        roleName = "랜덤",
+        roleNameEn = "ANY",
+        description = "역할이 자동으로 배정됩니다",
+        color = Color.Gray,
+        emoji = R.drawable.ic_thief, // 임시 도둑 아이콘
+        badge = R.drawable.ic_thief_badge
+    ),
+
+    UNDECIDED(
+        roleName = "미정",
+        roleNameEn = "UNDECIDED",
+        description = "역할을 선택하는 중입니다",
+        color = Color.Gray,
+        emoji = R.drawable.ic_thief, // 임시 도둑 아이콘
+        badge = R.drawable.ic_thief_badge
     );
 
     companion object {
@@ -43,7 +61,7 @@ enum class GameRole(
             return values().find {
                 it.name.equals(name, ignoreCase = true) ||
                         it.roleNameEn.equals(name, ignoreCase = true)
-            } ?: THIEF
+            } ?: UNDECIDED
         }
 
         /**
@@ -70,6 +88,7 @@ enum class GameRole(
         return when (this) {
             POLICE -> THIEF
             THIEF -> POLICE
+            else -> this
         }
     }
 

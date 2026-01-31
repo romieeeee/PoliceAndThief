@@ -80,7 +80,9 @@ fun RoleSelectScreen(
             PixelContainer(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { /* TODO: 랜덤 선택하도록 해야하는데? */ },
+                    .clickable {
+                        onRoleSelected(GameRole.ANY)
+                    },
                 backgroundColor = DarkBackground,
                 borderColor = Color.White,
             ) {
