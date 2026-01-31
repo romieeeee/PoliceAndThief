@@ -399,6 +399,19 @@ class GameWaitingViewModel @Inject constructor(
         }
     }
 
+    // 방장 위임하기
+    fun delegateHost(targetMemberId: Long) {
+        viewModelScope.launch {
+            Timber.d("방장 위임 요청: targetMemberId=$targetMemberId")
+
+            // TODO: 나중에 API 연결 시 주석 해제
+            // val result = gameRoomRepository.delegateHost(roomId, targetMemberId)
+
+            delay(100)
+            fetchMembers()
+        }
+    }
+
     fun setPolygonPoints(points: List<LatLng>) {
         locationRepository.setPolygonPoints(points)
     }
@@ -414,5 +427,4 @@ class GameWaitingViewModel @Inject constructor(
     fun addPointToList(targetList: MutableList<DraggableLatLng>, newPoint: LatLng) {
         locationRepository.addPointToList(targetList, newPoint)
     }
-
 }
