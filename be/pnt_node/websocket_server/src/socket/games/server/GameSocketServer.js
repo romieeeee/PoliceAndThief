@@ -26,11 +26,16 @@ const gameSocketServer = (io) => {
         }
         // game 방이 유효한지 검사 로직 필요.
         if (isActiveRoom) {
-            await redisClient.deleteByCompletedReconnect(socket, "game", storedGameId);
-            await gameController.gameMemberService.updateInGameConnected(integerGameId, socket.data.memberId, true);
-            console.log("reconnect", storedGameId);
+            try {
+                await redisClient.deleteByCompletedReconnect(socket, "game", storedGameId);
+                await gameController.gameMemberService.updateInGameConnected(integerGameId, socket.data.memberId, true);
+                console.log("reconnect", storedGameId);
 
-            socket.emit("reconnect", { gameId: storedGameId });
+                socket.emit("reconnect", { gameId: storedGameId });
+            } catch (error) {
+                console.error(`[GameSocketServer] Reconnect failed partially for user ${socket.data.memberId}:`, error.message);
+                // 진행을 막지 않음. 소켓은 이미 룸에 조인되어 있음(deleteByCompletedReconnect 내부에서).
+            }
         }
 
         console.log("websocket is connected!");
