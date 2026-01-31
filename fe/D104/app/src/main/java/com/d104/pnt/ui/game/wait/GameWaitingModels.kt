@@ -9,7 +9,8 @@ data class WaitingPlayer(
     val role: GameRole,
     val isReady: Boolean = false,
     val isChangingRole: Boolean = false,
-    val profileUrl: String? = null
+    val profileUrl: String? = null,
+    val isHost: Boolean = false
 )
 
 data class GameRoomInfoState(
