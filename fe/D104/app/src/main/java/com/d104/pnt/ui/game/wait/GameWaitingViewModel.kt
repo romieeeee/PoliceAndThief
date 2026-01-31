@@ -152,17 +152,39 @@ class GameWaitingViewModel @Inject constructor(
                         }
                     }
 
+                    val isChangingRole = _changingRoleMemberIds.value.contains(item.memberId)
+
+                    val adjustedReady = if (item.host) {
+                        !isChangingRole
+                    } else {
+                        item.ready
+                    }
+
+                    if (item.memberId == currentMemberId) {
+                        if (_isHost.value != item.host) {
+                            _isHost.value = item.host
+                            Timber.d("CheckHost: 내 방장 권한 변경됨 -> ${item.host}")
+                        }
+
+                        if (_isMeReady.value != adjustedReady) {
+                            _isMeReady.value = adjustedReady
+                        }
+                    }
+
+                    val displayRoleString = if (item.givenPosition != null && item.givenPosition != "UNDECIDED") {
+                        item.givenPosition
+                    } else {
+                        item.preferPosition
+                    }
+
                     WaitingPlayer(
                         id = item.memberId,
                         nickname = item.nickname,
-
-                        role = GameRole.fromName(item.preferPosition),
-
-                        isReady = item.ready,
-
+                        role = GameRole.fromName(displayRoleString),
+                        isReady = adjustedReady,
                         profileUrl = item.avatarUrl,
-
-                        isChangingRole = _changingRoleMemberIds.value.contains(item.memberId)
+                        isChangingRole = _changingRoleMemberIds.value.contains(item.memberId),
+                        isHost = item.host
                     )
                 }
                 _players.value = uiPlayers
@@ -180,10 +202,31 @@ class GameWaitingViewModel @Inject constructor(
         pollingJob = viewModelScope.launch {
             while (isActive) {
                 fetchMembers()
+                checkRoomStatus()
                 delay(3000)
             }
         }
     }
+
+        private suspend fun checkRoomStatus() {
+            if (_uiState.value is UiState.Success) return
+
+            when (val result = gameRoomRepository.getRoomSettings(roomId)) {
+                is BaseResult.Success -> {
+                    val status = result.data.status
+
+                    if (status == "IN_GAME") {
+                        Timber.d("게임 시작 감지! 상태: $status")
+
+                        fetchMembers()
+
+                        pollingJob?.cancel()
+                        _uiState.value = UiState.Success(Unit)
+                    }
+                }
+                else -> {}
+            }
+        }
 
     // 준비
     fun toggleReady() {
@@ -228,13 +271,18 @@ class GameWaitingViewModel @Inject constructor(
     fun startGame() {
         viewModelScope.launch {
             _uiState.value = UiState.Loading
+
             when (val result = gameRoomRepository.startGame(roomId)) {
                 is BaseResult.Success -> {
-                    Timber.d("게임 시작 성공")
-                    _uiState.value = UiState.Success(Unit) // 화면 이동 트리거용
+                    Timber.d("방장: 게임 시작 요청 성공")
+
+                    fetchMembers()
+
+                    pollingJob?.cancel()
+                    _uiState.value = UiState.Success(Unit)
                 }
                 is BaseResult.Error -> {
-                    _uiState.value = UiState.Error(result.error.message)
+                    _uiState.value = UiState.Error(result.error.message ?: "시작 실패")
                 }
             }
         }

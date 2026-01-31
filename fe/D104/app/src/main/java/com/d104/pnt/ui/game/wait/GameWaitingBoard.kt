@@ -38,6 +38,7 @@ import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.theme.PixelFont
 import com.google.android.gms.maps.model.LatLng
 
+import com.d104.pnt.ui.theme.*
 @Composable
 fun UnifiedWaitingInfoCard(
     players: List<WaitingPlayer>,
@@ -130,6 +131,7 @@ fun PlayerSlotCard(
 ) {
     val borderColor = when {
         player.isChangingRole -> Color(0xFFFF5252)
+        player.isHost -> AccentYellow
         player.isReady -> Color(0xFF76FF03)
         else -> Color(0xFF8D90B3)
     }
