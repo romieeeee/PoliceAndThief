@@ -27,6 +27,7 @@ import com.d104.pnt.ui.theme.TextSecondary
 
 @Composable
 fun ChatRoomFooter(
+    modifier: Modifier = Modifier,
     message: String,
     onSendMessage: (String) -> Unit,
     onValueChange: (String) -> Unit
@@ -43,12 +44,12 @@ fun ChatRoomFooter(
     ) {
 
         Row(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
                 .height(64.dp)
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically // 중앙 정렬로 변경
+            verticalAlignment = Alignment.CenterVertically
         ) {
             PixelInputField(
                 modifier = Modifier
