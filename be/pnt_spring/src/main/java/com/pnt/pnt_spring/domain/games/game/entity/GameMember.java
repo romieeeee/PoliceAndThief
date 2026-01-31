@@ -129,4 +129,25 @@ public class GameMember extends BaseEntity {
 		}
 		this.givenPosition = position;
 	}
+
+	// 추가: 결과 저장 시 상태 업데이트
+	public void updateGameResultState(Boolean isConnected, GameMemberStatus status) {
+		this.inGameConnected = isConnected;
+		this.status = status;
+	}
+
+	public void resetForNextGame() {
+		// 이미 나간 사람은 건드리지 않음
+		if (this.isDeleted()) {
+			return;
+		}
+		// 상태를 WAITING으로 변경
+		this.status = null;
+
+		// 역할(Position)은 로비에서 다시 정해야 하므로 초기화
+		this.preferPosition = PreferPosition.ANY;
+		this.givenPosition = null;
+		this.ready = false;
+
+	}
 }

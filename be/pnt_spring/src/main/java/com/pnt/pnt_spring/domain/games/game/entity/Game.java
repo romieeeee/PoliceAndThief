@@ -110,4 +110,12 @@ public class Game extends BaseEntity {
 		this.isDeleted = true;
 		// updatedAt은 BaseEntity에서 처리하는게 일반적이라 여기서 건드리지 않는 걸 추천
 	}
+
+	public void reset() {
+		this.status = GameStatus.WAITING; // 대기 상태로 변경
+		this.winTeam = null;              // 승리팀 초기화
+		this.startTime = null;            // 시작 시간 null
+		this.endTime = null;              // 종료 시간 null
+		this.caughtCount = 0;
+	}
 }

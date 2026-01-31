@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -15,4 +16,10 @@ public interface GameMissionRepository extends JpaRepository<GameMission, Long> 
 	List<GameMission> findByGameId(@Param("gameId") Long gameId);
 
 	Optional<GameMission> findByGameIdAndMissionId(Long gameId, Long missionId);
+
+	// 미션 진행 상태 초기화 (재사용)
+	@Modifying(clearAutomatically = true)
+	@Query("UPDATE GameMission m SET m.status = 'IN_PROGRESS', m.completedBy = null, m.completedAt = null WHERE m.game.id = :gameId")
+	void resetAllByGameId(@Param("gameId") Long gameId);
+
 }
