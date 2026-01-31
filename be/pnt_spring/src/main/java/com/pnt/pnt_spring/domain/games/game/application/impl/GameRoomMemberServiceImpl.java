@@ -2,17 +2,13 @@ package com.pnt.pnt_spring.domain.games.game.application.impl;
 
 import java.util.List;
 
+import com.pnt.pnt_spring.domain.games.game.api.resp.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomJoinRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomPositionRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomReadyRequest;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomJoinResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomMemberItem;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomMemberListResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomPositionResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomReadyResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomMemberService;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
@@ -247,7 +243,7 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
 	}
 
 	@Override
-	public void delegateHost(Long actorId, Long roomId, Long targetMemberId) {
+	public GameRoomHostDelegateResponse delegateHost(Long actorId, Long roomId, Long targetMemberId) {
 		// ===== 요청값 검증 =====
 		if (targetMemberId == null) {
 			throw new BusinessException(ErrorCode.INVALID_REQUEST);
@@ -270,8 +266,11 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
 			throw new BusinessException(ErrorCode.ROOM_NOT_HOST);
 		}
 
+		// 기존 방장(응답용)
+		Long oldHostMemberId = game.getHost().getId();
+
 		// 이미 방장인 경우
-		if (game.getHost() != null && game.getHost().getId().equals(targetMemberId)) {
+		if (oldHostMemberId.equals(targetMemberId)) {
 			throw new BusinessException(ErrorCode.INVALID_REQUEST);
 		}
 
@@ -294,7 +293,7 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
 		// 새 방장은 ready 버튼이 안 보이므로 false 강제
 		targetGm.setReady(false);
 
-		//기존 방장도 false로 맞춰 “다시 준비 받기” 정책 
+		// 기존 방장도 false로 맞춰 “다시 준비 받기” 정책
 		actorGm.setReady(false);
 
 		// ===== host 변경 =====
@@ -303,6 +302,8 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
 
 		game.changeHost(targetMember);
 
+		// ===== 응답 =====
+		return GameRoomHostDelegateResponse.of(roomId, oldHostMemberId, targetMemberId);
 	}
 
 }
