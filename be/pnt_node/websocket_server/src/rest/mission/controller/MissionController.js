@@ -1,22 +1,24 @@
-import redisDB from "../../../global/db/redis/RedisDB";
 import { Router } from "express";
 import { Emitter } from "@socket.io/redis-emitter";
 import { GameMissionService } from "../application/GameMissionService";
 import { MissionStatus } from "../../../global/db/sequelize/status/MissionStatus";
-import member from "../../../global/db/mongo/entity/member";
+import { RedisClient } from "../../../socket/utils/client/RedisClient";
+import { generateToken } from "../../../global/auth/JwtProvider";
 
 const GAME_NAMESPACE = "/game";
 
 export class MissionController {
     constructor() {
         this.router = new Router();
-        this.emitter = new Emitter(redisDB.getPubClient());
+        this.redisClient = new RedisClient();
+        this.emitter = new Emitter(this.redisClient.pubClient);
         this.init();
         this.gameMissionService = new GameMissionService();
     }
 
     init = () => {
         this.router.post("/complete", this.missionComplete);
+        this.router.post("/token", this.createToken);
     }
 
     getRouter = () => {
@@ -57,6 +59,8 @@ export class MissionController {
                     completedAt: completedAt,
                     status: MissionStatus.SUCCESS
                 });
+
+                await this.redisClient.setMission(gameId, memberId, missionId);
             }
 
             res.status(200).json({ message: "GameMission updated" });
@@ -77,6 +81,18 @@ export class MissionController {
             this.emitter.of(GAME_NAMESPACE).to(gameId).emit("get mission result", resData);
         } catch (error) {
             console.error("missionComplete error", error);
+            res.status(error.code || 500).json({ message: error.message });
+        }
+    }
+
+    createToken = async (req, res) => {
+        try {
+            const payload = req.body;
+            const { gameId } = payload;
+            const token = generateToken(gameId, 30);
+            res.status(200).json({ token });
+        } catch (error) {
+            console.error("createToken error", error);
             res.status(error.code || 500).json({ message: error.message });
         }
     }

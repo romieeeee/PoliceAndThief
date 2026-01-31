@@ -7,6 +7,7 @@ export class RedisClient {
         this.RECONNECT_PREFIX = "websocket:reconnect:timer:";
         this.GAME_TIMER_PREFIX = "room:game:timer:";
         this.CCTV_TIMER_PREFIX = "room:game:cctv:";
+        this.GAME_END_PREFIX = "room:game:end:";
     }
 
     /**
@@ -43,7 +44,7 @@ export class RedisClient {
     getStoredRoomId = async (socket, namespace) => {
         const infoKey = `websocket:reconnect:info:${namespace}:${socket.data.memberId}`;
         const storedRoomId = await this.pubClient.get(infoKey);
-        return storedRoomId;
+        return parseInt(storedRoomId);
     }
 
     pubReconnectTimer = async (namespace, socket, roomId) => {
@@ -97,6 +98,10 @@ export class RedisClient {
         return JSON.parse(gameSetting);
     }
 
+    deleteGameSetting = async (gameId) => {
+        await this.pubClient.del(this.getGameSettingString(gameId));
+    }
+
     setGameSettingLock = async (gameId, time) => {
         const duration = parseInt(time);
         if (isNaN(duration)) {
@@ -108,6 +113,28 @@ export class RedisClient {
 
     deleteGameSettingLock = async (gameId) => {
         await this.pubClient.del(`room:game:setting:lock:${gameId}`);
+    }
+
+    /**
+     * 게임 토큰
+     * 
+     * 게임 종료 및 초기화 api 호출 시 사용할 토큰
+     */
+    setGameToken = async (gameId, token, timeLimit) => {
+        await this.pubClient.set(this.getGameTokenString(gameId), token, "EX", (timeLimit + 5) * 60);
+    }
+
+    getGameToken = async (gameId) => {
+        const token = await this.pubClient.get(this.getGameTokenString(gameId));
+        return token;
+    }
+
+    deleteGameToken = async (gameId) => {
+        await this.pubClient.del(this.getGameTokenString(gameId));
+    }
+
+    getGameTokenString = (gameId) => {
+        return `room:game:token:${gameId}`;
     }
 
     /**
@@ -132,7 +159,7 @@ export class RedisClient {
     setLocation = async (memberId, gameId, location) => {
         await this.pubClient.hset(this.getLocationKeyString(gameId), memberId, JSON.stringify(location));
     }
-    
+
     getLocation = async (memberId, gameId) => {
         const location = await this.pubClient.hget(this.getLocationKeyString(gameId), memberId);
         return JSON.parse(location);
@@ -186,11 +213,55 @@ export class RedisClient {
         await this.pubClient.hdel(this.getPenaltyKeyString(gameId), memberId);
     }
 
+    deleteAllPenalties = async (gameId) => {
+        await this.pubClient.del(this.getPenaltyKeyString(gameId));
+    }
+
     getLocationKeyString = (gameId, memberId) => {
         if (memberId) {
             return `room:game:${gameId}:locations:${memberId}`;
         }
         return `room:game:${gameId}:locations`;
+    }
+
+    /**
+     * 미션 관련
+     */
+    setMission = async (gameId, memberId, missionId) => {
+        await this.pubClient.hset(this.getMissionKeyString(gameId), memberId, missionId);
+    }
+
+    getMission = async (gameId, memberId) => {
+        const missionId = await this.pubClient.hget(this.getMissionKeyString(gameId), memberId);
+        return missionId;
+    }
+
+    deleteAllMissions = async (gameId) => {
+        await this.pubClient.del(this.getMissionKeyString(gameId));
+    }
+
+    getMissionKeyString = (gameId) => {
+        return `room:game:mission:${gameId}`;
+    }
+
+    /**
+     * news 관련
+     */
+    setNews = async (gameId, newsId) => {
+        await this.pubClient.hset(this.getNewsKeyString(gameId), newsId, "EX", 60 * 5);
+    }
+
+    getNews = async (gameId) => {
+        const newsId = await this.pubClient.hget(this.getNewsKeyString(gameId));
+        return newsId;
+    }
+
+    deleteNews = async (gameId) => {
+        await this.pubClient.del(this.getNewsKeyString(gameId));
+    }
+
+    getNewsKeyString = (gameId) => {
+        return `room:game:news:${gameId}`;
     }
 
 
@@ -204,8 +275,15 @@ export class RedisClient {
 
     deleteAllInGameCachesByGameId = async (gameId) => {
         await this.deleteAllLocations(gameId);
-        await this.pubClient.del(this.getPenaltyKeyString(gameId));
+        await this.deleteAllPenalties(gameId);
         await this.deleteCctvTimer(gameId);
+        await this.deleteStartedCount(gameId);
+        await this.deleteGameToken(gameId);
+        await this.deleteGameSetting(gameId);
+        await this.deleteGameTimer(gameId);
+        await this.deleteGameTimerLock(gameId);
+        await this.deleteGameSettingLock(gameId);
+        await this.deleteNews(gameId);
     }
 
     /**
@@ -213,7 +291,7 @@ export class RedisClient {
      */
     setGameTimerLock = async (gameId) => {
         // 키가 존재할땐 false 반환, 키가 존재하지 않을땐 생성후 true 반환
-        return await this.pubClient.set(this.getGameTimerLockKeyString(gameId), "locked", "NX", "EX", 5);
+        return await this.pubClient.set(this.getGameTimerLockKeyString(gameId), "locked", "NX", "EX", 2);
     }
 
     deleteGameTimerLock = async (gameId) => {
@@ -274,9 +352,28 @@ export class RedisClient {
         await this.deleteGameTimer(gameId);
         await this.deleteGameTimerLock(gameId);
         await this.pubClient.del(this.getStartedString(gameId));
-        await this.pubClient.del(this.getStartedString(gameId));
         await this.deleteStartedCount(gameId);
         await this.deleteCctvTimer(gameId);
+    }
+
+    /**
+     * 게임 종료 후 1분 동안만 유지
+     */
+    setGameEnd = async (gameId) => {
+        await this.pubClient.set(this.getGameEndKeyString(gameId), "end", "EX", 60);
+    }
+
+    getGameEnd = async (gameId) => {
+        const gameEnd = await this.pubClient.get(this.getGameEndKeyString(gameId));
+        return gameEnd;
+    }
+
+    deleteGameEnd = async (gameId) => {
+        await this.pubClient.del(this.getGameEndKeyString(gameId));
+    }
+
+    getGameEndKeyString = (gameId) => {
+        return `room:game:end:${gameId}`;
     }
 
     getGameTimerLock = async (gameId) => {

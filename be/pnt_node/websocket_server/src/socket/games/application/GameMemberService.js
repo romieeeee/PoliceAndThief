@@ -8,12 +8,51 @@ export class GameMemberService {
         this.redisClient = new RedisClient();
     }
 
+    getGameMembers = async (gameId) => {
+        const res = await GameMember.findAll({
+            where: {
+                gameId: gameId,
+                isDeleted: false
+            },
+            include: [
+                {
+                    model: Member,
+                    attributes: ["id"],
+                    include: [
+                        {
+                            model: MemberProfile,
+                            attributes: ["nickname", "avatarUrl"]
+                        }
+                    ]
+                }
+            ]
+        });
+
+        return res;
+    }
+
     findMemberGame = async (gameId, memberId) => {
-        const res = JSON.parse(await this.redisClient.getLocation(memberId, gameId));
+        const res = await this.redisClient.getLocation(memberId, gameId);
 
         if (!res) {
             this.makeError("NotFoundException", "유저의 게임 접속 정보를 찾을 수 없습니다.", 404);
         }
+        return res;
+    }
+
+    findMemberGameInDB = async (memberId, gameId) => {
+        const res = await GameMember.findOne({
+            where: {
+                memberId: memberId,
+                gameId: gameId,
+                isDeleted: false
+            }
+        });
+
+        if (!res) {
+            this.makeError("NotFoundException", "유저의 게임 접속 정보를 찾을 수 없습니다.", 404);
+        }
+
         return res;
     }
 
@@ -76,7 +115,7 @@ export class GameMemberService {
             this.makeError("NotFoundException", "유저의 게임 접속 정보를 찾을 수 없습니다.", 404);
         }
 
-        location.inGameConnected = isConnected;
+        location.isConnected = isConnected;
         await this.redisClient.setLocation(memberId, gameId, location);
         
         return true;

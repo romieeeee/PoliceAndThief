@@ -12,6 +12,7 @@ import { GameMissionService } from "../application/GameMissionService.js";
 import { TurfService } from "../application/TurfService.js";
 import { MQConfig } from "../../../global/mq/MQConfig.js";
 import { JwtResolver, resolveInController } from "../../../global/auth/JwtResolver.js";
+import { generateToken, generateMemberAccessToken } from "../../../global/auth/JwtProvider.js";
 import axios from "axios";
 
 
@@ -54,13 +55,21 @@ export class GameController {
      */
     joinRoom = async (payload) => {
         try {
-            const gameId = payload.gameId;
+            const gameId = parseInt(payload.gameId);
             const memberId = this.socket.data.memberId;
 
-            await this.gameService.findGame(payload.gameId, GameStatus.IN_GAME);
+            await this.gameService.findGame(gameId, GameStatus.IN_GAME);
+
+            if (await this.redisClient.getGameEnd(gameId)) {
+                this.makeError("GameEndException", "게임이 종료되었습니다.", 400);
+            }
 
             const location = await this.redisClient.getLocation(this.socket.data.memberId);
             if (!location) {
+                const memberGame = await this.gameMemberService.findMemberGameInDB(this.socket.data.memberId, gameId);
+                if (!memberGame) {
+                    this.makeError("NotFoundException", "게임에 참여하지 않았습니다.", 404);
+                }
                 const locationData = {
                     lat: 0,
                     lng: 0,
@@ -68,16 +77,19 @@ export class GameController {
                     gameId: payload.gameId,
                     walk: 0,
                     longestSurvived: 0,
-                    position: null,
+                    position: memberGame.givenPosition,
                     status: null,
                     penalty: 0,
                     isConnected: true,
                     timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
                 }
+                const token = generateMemberAccessToken(this.socket.data.memberId);
+                await this.redisClient.setAccessToken(this.socket.data.memberId, token);
 
-                await this.redisClient.setLocation(this.socket.data.memberId, locationData);
+                await this.redisClient.setLocation(this.socket.data.memberId, gameId, locationData);
             }
             await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
+            const locations = await this.redisClient.getAllLocations(gameId);
 
             this.socket.join(gameId);
             this.socket.data.gameId = gameId;
@@ -86,6 +98,7 @@ export class GameController {
                 message: "joined room",
                 gameId: payload.gameId,
                 memberId: this.socket.data.memberId,
+                connectedMembers: locations.length,
             }
 
             // gameSetting에서 참여자 수 들고오기
@@ -156,7 +169,6 @@ export class GameController {
             }
 
             await this.redisClient.setGameSetting(integerGameId, gameSetting);
-
             this.io.to(gameId).emit("get will start game", {
                 message: "start game",
                 gameId: integerGameId,
@@ -165,6 +177,8 @@ export class GameController {
 
             setTimeout(async () => {
                 await this.redisClient.setGameTimer(integerGameId, gameSetting.timeLimit * 60);
+                await this.redisClient.setGameToken(integerGameId, generateToken(integerGameId, gameSetting.timeLimit), gameSetting.timeLimit);
+
 
                 // cctv 작동
                 const cctvInterval = gameSetting.cctvInterval || 60;
@@ -237,6 +251,8 @@ export class GameController {
                 timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
             };
 
+            const isConnected = locationData.isConnected;
+
             if (position === GameMemberPosition.THIEF && status === GameMemberStatus.FREE) {
                 locationData.longestSurvived++;
             }
@@ -280,12 +296,15 @@ export class GameController {
                 // 만약 3번 이상 벗어나면 자동으로 감옥으로 이송. -> 다음 패널티 체크 활성화까지 10초
                 const count = await this.redisClient.increasePenalty(memberId, gameId);
 
-                locationData.penalty = count === 3 ? 0 : count;
                 await this.redisClient.setLocation(memberId, gameId, locationData);
+
+                res.penalty = count;
 
                 if (count >= 3) {
                     await this.gameMemberService.updateMemberStatus(gameId, memberId, GameMemberStatus.TRANSFER);
                     await this.redisClient.deletePenalty(memberId, gameId);
+
+                    locationData.penalty = 0;
 
                     const isGameEnd = await this.gameService.checkGameHaveToFinish(gameId);
 
@@ -321,15 +340,18 @@ export class GameController {
                 return;
             }
 
+            if (position === GameMemberPosition.POLICE) {
+                return;
+            }
+
             // 비프음
             const locationDatas = await this.redisClient.getAllLocations(gameId);
             let polices;
             if (locationDatas) {
                 polices = locationDatas
-                    .filter(data => data.position === GameMemberPosition.POLICE)
+                    .filter(data => data.position === GameMemberPosition.POLICE && data.isConnected === true)
                     .map(({ memberId, lng, lat }) => ({ policeId: memberId, lng, lat }));
 
-                console.log("polices", polices);
             }
 
             if (polices && polices.length > 0) {
@@ -352,7 +374,7 @@ export class GameController {
 
     syncGameInfo = async (payload) => {
         try {
-            const { gameId } = payload;
+            const gameId = parseInt(payload.gameId) || this.socket.data.gameId;
 
             const game = await this.gameService.findGame(gameId);
             const gameMembers = await this.gameMemberService.findAllByGameId(gameId);
@@ -367,7 +389,7 @@ export class GameController {
                     status: member.status,
                     nickname: member.memberProfile.nickname,
                     avatarUrl: member.memberProfile.avatarUrl,
-                    inGameConnected: member.inGameConnected,
+                    isConnected: member.isConnected,
                 })),
                 missions: gameMissions
             };
@@ -460,7 +482,6 @@ export class GameController {
         }
     }
 
-
     postSkillUse = async (payload) => {
         try {
             let { gameId, policeId } = payload;
@@ -506,7 +527,6 @@ export class GameController {
 
     postMissionImage = async (payload) => {
         try {
-            const gameId = payload.gameId;
             this.mq.sendMessage(payload, MQConfig.MQ_IMAGE);
             console.log("postMissionImage", payload);
         } catch (error) {
@@ -525,9 +545,16 @@ export class GameController {
      * 
      * 게임 상태 변경, 멤버 스탯 저장은 모두 스프링에서 진행
      */
-    gameEnd = async (io, redisClient, gameId, winnerPosition) => {
+    gameEnd = async (io, redisClient, gameId, winTeam) => {
         try {
-            const isMine = await redisClient.setGameTimerLock(gameId);
+            const integerGameId = parseInt(gameId);
+            // 게임 종료 1분 타이머가 있으면 게임이 이미 종료된 것으로 판별하여 종료
+            const isEnded = await redisClient.getGameEnd(integerGameId);
+            if (isEnded) {
+                return;
+            }
+
+            const isMine = await redisClient.setGameTimerLock(integerGameId);
 
             // 한 프로세스에서만 게임 종료 로직이 실행될 수 있게 락 설정
             if (!isMine) {
@@ -535,29 +562,38 @@ export class GameController {
             }
 
             // redis에서 게임 타이머 삭제
-            await redisClient.deleteGameTimer(gameId);
-            await redisClient.deleteGameSettingLock(gameId);
-
-            // 패널티와 위치 정보는 5초 후 삭제
-            setTimeout(async () => {
-                await redisClient.deleteAllLocations(gameId);
-                await redisClient.deleteStartedCount(gameId);
-            }, 5000);
+            await redisClient.deleteGameTimer(integerGameId);
 
             // 게임 종료 처리 => spring boot에 요청을 보내야함.
-            const gameMembers = await redisClient.getAllLocations(gameId);
+            const gameMembers = await redisClient.getAllLocations(integerGameId);
+
+            const memberStats = gameMembers.map(member => ({
+                gameMemberId: member.memberId,
+                position: member.position,
+                walk: member.walk,
+                longestSurvived: member.longestSurvived,
+                isConnected: member.isConnected,
+                status: member.status
+            }));
+
+            const gameToken = await this.redisClient.getGameToken(integerGameId);
 
             let res = await axios.post(`${process.env.SPRING_BOOT_URL}/api/games/result`, {
-                gameId: gameId,
-                winnerPosition: winnerPosition,
-                gameMembers: gameMembers
+                gameId: integerGameId,
+                winTeam: winTeam,
+                memberStats: memberStats
+            }, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${gameToken}`
+                }
             });
 
             if (res.data.code !== 200) {
                 console.log("game end failed", res.data);
                 io.to(gameId).emit("get end game", {
                     gameId: gameId,
-                    winnerPosition: null,
+                    winTeam: winTeam,
                     message: "게임이 종료에 실패하였습니다.",
                     reason: "SERVER_ERROR",
                     code: 500
@@ -565,11 +601,14 @@ export class GameController {
                 return;
             }
 
+            // 게임 종료 후 1분 동안만 유지
+            await redisClient.setGameEnd(integerGameId);
+
             // 게임 종료 알림
-            io.to(gameId).emit("get end game", {
-                gameId: gameId,
-                winnerPosition: winnerPosition,
-                message: winnerPosition === GameMemberPosition.THIEF
+            io.to(integerGameId).emit("get end game", {
+                gameId: integerGameId,
+                winTeam: winTeam,
+                message: winTeam === GameMemberPosition.THIEF
                     ? "시간이 모두 소진되었습니다. 게임이 종료되었습니다."
                     : "모든 도둑이 잡혔습니다. 게임이 종료되었습니다.",
                 reason: null,
@@ -585,8 +624,8 @@ export class GameController {
 
     retryEndGame = async (payload) => {
         try {
-            const { gameId, winnerPosition } = payload;
-            await this.gameEnd(this.io, this.redisClient, gameId, winnerPosition);
+            const { gameId, winTeam } = payload;
+            await this.gameEnd(this.io, this.redisClient, gameId, winTeam);
         } catch (error) {
             console.error("retryEndGame error", error);
             sendError(this.socket, error, "GameError");
@@ -618,7 +657,12 @@ export class GameController {
             member.longestSurvived = longestSurvived;
             await this.redisClient.setMember(gameId, memberId, member);
 
-            const res = await axios.post(`${process.env.SPRING_BOOT_URL}/api/games/${gameId}/result`, member);
+            const res = await axios.get(`${process.env.SPRING_BOOT_URL}/api/games/${gameId}/result`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${await this.redisClient.getAccessToken(memberId)}`
+                }
+            });
 
             // 사용자의 게임 캐시 삭제
             await this.redisClient.deleteGameCachesByMemberId(memberId, gameId);
@@ -671,5 +715,12 @@ export class GameController {
             // 소켓이 끊어지는 상황이므로 emit을 해도 클라이언트가 못 받을 수 있음.
             // 하지만 로깅은 중요함.
         }
+    }
+
+    makeError = (message, text, code) => {
+        const error = new Error(message);
+        error.code = code;
+        error.text = text;
+        throw error;
     }
 }
