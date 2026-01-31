@@ -30,10 +30,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import com.d104.pnt.R
+import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.ui.component.GoogleMaps
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.theme.PixelFont
+import com.google.android.gms.maps.model.LatLng
+
 import com.d104.pnt.ui.theme.*
 @Composable
 fun UnifiedWaitingInfoCard(
@@ -43,9 +47,12 @@ fun UnifiedWaitingInfoCard(
     thiefCount: Int,
     isHost: Boolean,
     selectedPlayerId: Long?,
+    prisonLocation: LatLng,
+    polygonPoints: List<LatLng>,
     onPlayerClick: (WaitingPlayer) -> Unit,
     onMenuDismiss: () -> Unit,
     onInfoClick: (WaitingPlayer) -> Unit,
+    onDelegateHostClick: (WaitingPlayer) -> Unit,
     onKickClick: (WaitingPlayer) -> Unit,
     modifier: Modifier = Modifier,
     onChangeRole: () -> Unit
@@ -65,7 +72,10 @@ fun UnifiedWaitingInfoCard(
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp, start = 20.dp, end = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                MapPreviewContent()
+                MapPreviewContent(
+                    prisonLocation = prisonLocation,
+                    polygonPoints = polygonPoints
+                )
                 Spacer(modifier = Modifier.height(16.dp))
                 RoleCountInfo(policeCount, thiefCount)
                 Spacer(modifier = Modifier.height(20.dp))
@@ -89,6 +99,7 @@ fun UnifiedWaitingInfoCard(
                         onClick = { onPlayerClick(player) },
                         onDismissMenu = onMenuDismiss,
                         onInfoClick = { onMenuDismiss(); onInfoClick(player) },
+                        onDelegateHostClick = { onMenuDismiss(); onDelegateHostClick(player) },
                         onKickClick = { onMenuDismiss(); onKickClick(player) }
                     )
                 }
@@ -118,6 +129,7 @@ fun PlayerSlotCard(
     onClick: () -> Unit,
     onDismissMenu: () -> Unit,
     onInfoClick: () -> Unit,
+    onDelegateHostClick: () -> Unit,
     onKickClick: () -> Unit
 ) {
     val borderColor = when {
@@ -153,19 +165,22 @@ fun PlayerSlotCard(
         }
 
         if (showMenu) {
-            PlayerActionMenu(isHost, isMe, onDismissMenu, onInfoClick, onKickClick)
+            PlayerActionMenu(isHost, isMe, onDismissMenu, onInfoClick, onDelegateHostClick, onKickClick)
         }
     }
 }
 
 @Composable
-fun PlayerActionMenu(isHost: Boolean, isTargetMe: Boolean, onDismiss: () -> Unit, onInfoClick: () -> Unit, onKickClick: () -> Unit) {
+fun PlayerActionMenu(isHost: Boolean, isTargetMe: Boolean, onDismiss: () -> Unit, onInfoClick: () -> Unit, onDelegateHostClick: () -> Unit, onKickClick: () -> Unit) {
     val density = LocalDensity.current
     val yOffset = remember(density) { with(density) { (48.dp + 4.dp).roundToPx() } }
 
     Popup(alignment = Alignment.TopCenter, offset = IntOffset(0, yOffset), onDismissRequest = onDismiss) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             MenuButton(text = "정보 확인", textColor = Color.Black, onClick = onInfoClick)
+            if (isHost && !isTargetMe) {
+                MenuButton(text = "방장 위임하기", textColor = Color.Black, onClick = onDelegateHostClick)
+            }
             if (isHost && !isTargetMe) {
                 MenuButton(text = "강퇴하기", textColor = Color(0xFFFF5252), onClick = onKickClick)
             }
@@ -183,11 +198,18 @@ fun MenuButton(text: String, textColor: Color, onClick: () -> Unit) {
 }
 
 @Composable
-fun MapPreviewContent() {
-    Image(
-        painter = painterResource(id = R.drawable.img_map_example), contentDescription = "맵 프리뷰",
-        contentScale = ContentScale.Crop,
-        modifier = Modifier.size(130.dp).clip(RoundedCornerShape(8.dp)).border(2.dp, Color(0xFF6591E9), RoundedCornerShape(8.dp))
+fun MapPreviewContent(
+    prisonLocation: LatLng,
+    polygonPoints: List<LatLng>
+) {
+    GoogleMaps(
+        modifier = Modifier
+            .height(130.dp)
+            .width(200.dp),
+        prisonLocation = prisonLocation,
+        polygonPoints = polygonPoints.map { DraggableLatLng(position = it) },
+        inGameMinimap = false,
+        isPreview = true,
     )
 }
 

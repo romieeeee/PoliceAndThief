@@ -135,6 +135,7 @@ fun LoginScreen(
                         placeholder = "비밀번호",
                         modifier = Modifier.fillMaxWidth(),
                         borderColor = BorderDefault,
+                        isPassword = true
                     )
                 }
 

@@ -33,6 +33,7 @@ import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.theme.PixelFont
+import com.google.android.gms.maps.model.LatLng
 
 @Composable
 fun GameWaitingScreen(
@@ -58,7 +59,10 @@ fun GameWaitingScreen(
     var showSettingsDialog by remember { mutableStateOf(false) }
 
     var infoDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
+    var delegateDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
     var kickDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
+
+    var showLeaveDialog by remember { mutableStateOf(false) }
 
     // 이벤트 처리
     LaunchedEffect(Unit) {
@@ -110,7 +114,7 @@ fun GameWaitingScreen(
                 timeLeft = "${roomInfo.timeLimit}:00",
                 isHost = isHost,
                 onSettingsClick = { showSettingsDialog = true },
-                onLeaveClick = { viewModel.leaveRoom() }
+                onLeaveClick = { showLeaveDialog = true }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -123,6 +127,8 @@ fun GameWaitingScreen(
                 thiefCount = thiefCount,
                 isHost = isHost,
                 selectedPlayerId = selectedPlayerId,
+                prisonLocation = LatLng(roomInfo.prison?.lat ?: 37.56681969564895, roomInfo.prison?.lng ?: 126.97864094105321),
+                polygonPoints = roomInfo.polygon?.map { LatLng(it.lat, it.lng) } ?: emptyList(),
                 onPlayerClick = { player ->
                     val now = System.currentTimeMillis()
                     if (!((dismissedPlayerId == player.id) && (now - lastDismissTime < 300))) selectedPlayerId =
@@ -135,6 +141,12 @@ fun GameWaitingScreen(
                 onInfoClick = { player ->
                     dismissedPlayerId = selectedPlayerId; lastDismissTime =
                     System.currentTimeMillis(); selectedPlayerId = null; infoDialogTarget = player
+                },
+                onDelegateHostClick = { player ->
+                    dismissedPlayerId = selectedPlayerId
+                    lastDismissTime = System.currentTimeMillis()
+                    selectedPlayerId = null
+                    delegateDialogTarget = player
                 },
                 onKickClick = { player ->
                     dismissedPlayerId = selectedPlayerId; lastDismissTime =
@@ -203,16 +215,39 @@ fun GameWaitingScreen(
                 ); kickDialogTarget = null
             })
 
+        if (delegateDialogTarget != null) {
+            DelegateHostConfirmDialog(
+                nickname = delegateDialogTarget!!.nickname,
+                onDismissRequest = { delegateDialogTarget = null },
+                onConfirm = {
+                    viewModel.delegateHost(delegateDialogTarget!!.id)
+                    delegateDialogTarget = null
+                }
+            )
+        }
+
+        if (showLeaveDialog) {
+            LeaveRoomConfirmDialog(
+                onDismissRequest = { showLeaveDialog = false },
+                onConfirm = {
+                    showLeaveDialog = false
+                    viewModel.leaveRoom()
+                }
+            )
+        }
+
         if (showSettingsDialog) GameSettingsDialog(
             initialState = roomInfo,
             onDismiss = { showSettingsDialog = false },
-            onUpdateSettings = { total, time, mission, cctv, police ->
+            onUpdateSettings = { total, time, mission, cctv, police, prison, polygon ->
                 viewModel.updateRoomSettings(
                     total,
                     time,
                     mission,
                     cctv,
-                    police
+                    police,
+                    prison,
+                    polygon
                 )
             })
     }
