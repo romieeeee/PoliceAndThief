@@ -377,20 +377,29 @@ export class GameController {
             const gameId = parseInt(payload.gameId) || this.socket.data.gameId;
 
             const game = await this.gameService.findGame(gameId);
-            const gameMembers = await this.gameMemberService.findAllByGameId(gameId);
             const gameMissions = await this.gameMissionService.findAllByGameId(gameId);
+
+            // 1. DB에서 프로필 정보 가져오기
+            const gameMembers = await this.gameMemberService.findMembersWithProfileByGameId(gameId);
+            // 2. Redis에서 실시간 정보 가져오기
+            const locationDatas = await this.redisClient.getAllLocations(gameId);
 
             const res = {
                 gameId: gameId,
                 gameStatus: game.status,
-                members: gameMembers.map(member => ({
-                    memberId: member.memberId,
-                    position: member.givenPosition,
-                    status: member.status,
-                    nickname: member.memberProfile.nickname,
-                    avatarUrl: member.memberProfile.avatarUrl,
-                    isConnected: member.isConnected,
-                })),
+                members: gameMembers.map(dbMember => {
+                    // Redis 데이터 매칭 (memberId는 문자열/숫자 차이 있을 수 있으므로 파싱 후 비교)
+                    const redisMember = locationDatas.find(r => parseInt(r.memberId) === parseInt(dbMember.memberId));
+                    return {
+                        memberId: dbMember.memberId,
+                        nickname: dbMember.memberProfile.nickname,
+                        avatarUrl: dbMember.memberProfile.avatarUrl,
+                        // Redis 데이터가 있으면 우선 사용, 없으면 DB 데이터 사용
+                        position: redisMember.position,
+                        status: redisMember.status,
+                        isConnected: redisMember.isConnected,
+                    };
+                }),
                 missions: gameMissions
             };
             this.socket.emit("get sync game info", res);
@@ -650,15 +659,8 @@ export class GameController {
      */
     postGameEndAfter = async (payload) => {
         try {
-            const { gameId, memberId, position, walk, longestSurvived } = payload;
-
-            // 사용자의 게임 스탯 업데이트
-            // api 호출
-            const member = await this.redisClient.getMember(gameId, memberId);
-            member.position = position;
-            member.walk = walk;
-            member.longestSurvived = longestSurvived;
-            await this.redisClient.setMember(gameId, memberId, member);
+            const gameId = this.socket.data.gameId;
+            const memberId = this.socket.data.memberId;
 
             const res = await axios.get(`${process.env.SPRING_BOOT_URL}/api/games/${gameId}/result`, {
                 headers: {
