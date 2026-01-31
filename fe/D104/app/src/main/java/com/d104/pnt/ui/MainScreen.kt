@@ -36,6 +36,7 @@ import com.d104.pnt.navigation.Routes
 import com.d104.pnt.ui.chatroom.chat.ChatRoomScreen
 import com.d104.pnt.ui.chatroom.create.ChatRoomCreateScreen
 import com.d104.pnt.ui.chatroomlist.ChatRoomListScreen
+import com.d104.pnt.ui.component.KickedNoticeDialog
 import com.d104.pnt.ui.game.create.GameCreateScreen
 import com.d104.pnt.ui.game.end.GameResultScreen
 import com.d104.pnt.ui.game.load.GameLoadingScreen
@@ -43,18 +44,14 @@ import com.d104.pnt.ui.game.play.GamePlayScreen
 import com.d104.pnt.ui.game.play.GameRoleScreen
 import com.d104.pnt.ui.game.play.mission.CameraScreen
 import com.d104.pnt.ui.game.wait.GameWaitingScreen
-import com.d104.pnt.ui.game.wait.RoleSelectScreen
+import com.d104.pnt.ui.game.wait.role.RoleSelectScreen
 import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import com.d104.pnt.ui.component.KickedNoticeDialog
 
 @Composable
-fun MainScreen(
-    memberId: String,
-    navigateToIntro: () -> Unit
-) {
+fun MainScreen(navigateToIntro: () -> Unit) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val activity = context as? Activity
@@ -96,7 +93,6 @@ fun MainScreen(
         ) {
             // ===== BottomNav 탭 =====
             composable(Routes.HOME) { backStackEntry ->
-
                 val savedStateHandle = backStackEntry.savedStateHandle
                 val kickMessage = savedStateHandle.get<String>("kick_message")
 
@@ -161,8 +157,9 @@ fun MainScreen(
 
                 ChatRoomScreen(
                     modifier = Modifier.fillMaxSize(),
-                    onBackPressed = { navController.popBackStack() }
-                )
+                    onBackPressed = {
+                        navController.popBackStack(Routes.CHAT, inclusive = false)
+                    })
             }
 
             // ===== 게임 대기방 =====
@@ -178,19 +175,15 @@ fun MainScreen(
 
                 GameWaitingScreen(
                     roomId = roomId,
-
                     initialRole = GameRole.fromName(roleString),
-
                     onStartGame = { gameId, role ->
                         navController.navigate(Routes.buildGamePlay(gameId, role.name)) {
                             popUpTo(Routes.HOME)
                         }
                     },
-
                     onChangeRole = {
                         navController.navigate(Routes.buildRoleSelect(roomId))
                     },
-
                     onBackPressed = { navController.popBackStack() },
                     onNavigateHome = { message ->
                         if (message != null) {
@@ -198,7 +191,7 @@ fun MainScreen(
                                 ?.savedStateHandle
                                 ?.set("kick_message", message)
                         }
-                        navController.popBackStack()
+                        navController.popBackStack(Routes.HOME, inclusive = false)
                     }
                 )
             }
@@ -252,7 +245,6 @@ fun MainScreen(
                 val roleName = backStackEntry.arguments?.getString(NavArgs.ROLE) ?: "THIEF"
                 val role = GameRole.fromName(roleName)
 
-                // (SavedStateHandle로 role 자동 주입)
                 GameLoadingScreen(
                     onLoadingComplete = { gameId ->
                         navController.navigate(Routes.buildGamePlay(gameId, role.name)) {

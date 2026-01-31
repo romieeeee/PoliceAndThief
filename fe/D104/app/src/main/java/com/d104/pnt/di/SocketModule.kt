@@ -3,6 +3,7 @@ package com.d104.pnt.di
 import com.d104.pnt.util.socket.ChatSocketManager
 import com.d104.pnt.util.socket.GameSocketManager
 import com.d104.pnt.util.socket.RoomSocketManager
+import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,8 +22,8 @@ object SocketModule {
      */
     @Provides
     @Singleton
-    fun provideRoomSocketManager(): RoomSocketManager {
-        return RoomSocketManager()
+    fun provideRoomSocketManager(gson: Gson): RoomSocketManager {
+        return RoomSocketManager(gson)
     }
 
     /**

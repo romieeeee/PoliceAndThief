@@ -25,10 +25,19 @@ abstract class BaseSocketManager(
      * 소켓 연결
      */
     fun connect(authToken: String) {
-        if (socket?.connected() == true) {
-            Timber.d("[$namespace] 이미 연결되어 있습니다.")
+        if (socket != null && (socket!!.connected() || !isManualDisconnect)) {
+            Timber.d("[$namespace] 소켓이 이미 활성화 상태이거나 연결 시도 중입니다.")
             return
         }
+
+        // 2. [핵심] 기존 소켓이 있다면 확실히 정리하고 시작
+        socket?.let {
+            Timber.d("[$namespace] 기존 소켓 인스턴스 정리")
+            it.off()
+            it.disconnect()
+            it.close() // 완전히 파괴
+        }
+        socket = null
 
         try {
             val socketUrl = "${Constants.BASE_URL}$namespace"
@@ -39,6 +48,8 @@ abstract class BaseSocketManager(
                 reconnection = true
                 reconnectionAttempts = 5
                 reconnectionDelay = 1000
+                forceNew = true
+                transports = arrayOf("websocket")
             }
 
             socket = IO.socket(socketUrl, options)
@@ -153,7 +164,7 @@ abstract class BaseSocketManager(
      * 연결 해제 시 정리 작업 (하위 클래스에서 구현)
      */
     protected open fun onDisconnectCleanup() {
-        // 하위 클래스에서 필요시 오버라이드
+
     }
 
     /**
