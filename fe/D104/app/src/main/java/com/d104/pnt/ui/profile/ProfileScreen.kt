@@ -7,11 +7,13 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +33,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.d104.pnt.R
 import com.d104.pnt.data.remote.model.response.ProfileResponse
 import com.d104.pnt.domain.model.common.UiState
+import com.d104.pnt.ui.component.PixelAlertDialog
+import com.d104.pnt.ui.component.PixelButtonCode
 import timber.log.Timber
 
 @Composable
@@ -40,6 +44,7 @@ fun ProfileScreen(
     val context = LocalContext.current
     val profileState by viewModel.profileState.collectAsState()
     var showImageDialog by remember { mutableStateOf(false) }
+    var logoutDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // 배경 화면
@@ -62,7 +67,7 @@ fun ProfileScreen(
 
                 ProfileContent(
                     profile = currentProfile,
-                    onLogoutClick = { /* 로그아웃 */ },
+                    onLogoutClick = { viewModel.safeLogout() },
                     onUpdateNickname = { newName ->
                         val safeAvatarUrl =
                             if (currentProfile.avatarUrl.isNullOrBlank()) "default.jpeg" else currentProfile.avatarUrl
@@ -88,6 +93,16 @@ fun ProfileScreen(
             }
 
             else -> {} // Idle
+        }
+
+        if (logoutDialog) {
+            PixelAlertDialog(
+                title = "로그아웃 하시겠습니까?",
+                message = "",
+                buttonContent = {
+
+                }
+            )
         }
 
         // 이미지 변경 다이얼로그
@@ -138,10 +153,28 @@ fun ProfileContent(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(40.dp) // 카드 간 간격
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding(),
     ) {
-        Spacer(modifier = Modifier.height(40.dp)) // 상단 여백
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 5.dp, horizontal = 20.dp),
+            horizontalArrangement = Arrangement.End
+        ) {
+            PixelButtonCode(
+                text = "로그아웃",
+                onClick = { onLogoutClick() },
+                modifier = Modifier,
+                textColor = Color.Red,
+                fontSize = 10,
+                blockHeight = 8,
+                blockWidth = 18
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
 
         // 1. 메인 프로필 카드 (아바타 + 닉네임 + 등급 통합됨)
         ProfileCardSection(
@@ -156,6 +189,8 @@ fun ProfileContent(
                 .fillMaxWidth()
                 .padding(horizontal = 36.dp)
         )
+
+        Spacer(modifier = Modifier.height(40.dp)) // 여백
 
         // 전적 요약 섹션
         StatSummarySection(
