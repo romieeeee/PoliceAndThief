@@ -43,5 +43,5 @@ data class ChangePositionRequest(
 
 data class JoinGameRoomRequest(
     @SerializedName("roomCode")
-    val roomCode: String,
+    val roomCode: String
 )
