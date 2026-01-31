@@ -53,9 +53,9 @@ export class GameService {
     processArrest = async (gameId, thiefId, policeId) => {
         try {
             // thief 상태 변경 (TRANSFER)
-             // police 스탯 업데이트 (체포 횟수 증가)
+            // police 스탯 업데이트 (체포 횟수 증가)
             await this.gameMemberStatService.updateArrestCount(policeId);
-            
+
             await this.gameMemberService.updateMemberStatus(gameId, thiefId, GameMemberStatus.TRANSFER);
 
             return true;
@@ -75,18 +75,19 @@ export class GameService {
         }
 
         const gameMembers = await this.redisClient.getAllLocations(gameId);
-        
 
         const thiefMembers = gameMembers
-            .filter(member => member.position === GameMemberPosition.THIEF && 
-                member.status === GameMemberStatus.FREE &&
-                member.inGameConnected === true
+            .filter(member => member.position === GameMemberPosition.THIEF &&
+                (!member.status && member.status === GameMemberStatus.FREE) &&
+                member.isConnected
             );
-        
-        console.log("thiefMembers", thiefMembers.length);
-        console.log('thiefMembers', thiefMembers);
 
-        const isGameEnd = thiefMembers.length === 0;
+        const policeMembers = gameMembers
+            .filter(member => member.position === GameMemberPosition.POLICE &&
+                member.isConnected
+            );
+
+        const isGameEnd = thiefMembers.length === 0 || policeMembers.length === 0;
 
         return isGameEnd;
     }
