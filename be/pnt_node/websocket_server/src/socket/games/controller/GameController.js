@@ -12,6 +12,7 @@ import { GameMissionService } from "../application/GameMissionService.js";
 import { TurfService } from "../application/TurfService.js";
 import { MQConfig } from "../../../global/mq/MQConfig.js";
 import { JwtResolver, resolveInController } from "../../../global/auth/JwtResolver.js";
+import { generateToken } from "../../../global/auth/JwtProvider.js";
 import axios from "axios";
 
 
@@ -156,6 +157,7 @@ export class GameController {
             }
 
             await this.redisClient.setGameSetting(integerGameId, gameSetting);
+            await this.redisClient.setGameToken(integerGameId, generateToken({ gameId: integerGameId, timeLimit: gameSetting.timeLimit }), gameSetting.timeLimit);
 
             this.io.to(gameId).emit("get will start game", {
                 message: "start game",
@@ -460,7 +462,6 @@ export class GameController {
         }
     }
 
-
     postSkillUse = async (payload) => {
         try {
             let { gameId, policeId } = payload;
@@ -534,23 +535,30 @@ export class GameController {
                 return;
             }
 
+            // 게임 종료 1분 타이머가 있으면 게임이 이미 종료된 것으로 판별하여 종료
+            if (await redisClient.getGameEnd(gameId)) {
+                return;
+            }
+
             // redis에서 게임 타이머 삭제
             await redisClient.deleteGameTimer(gameId);
-            await redisClient.deleteGameSettingLock(gameId);
-
-            // 패널티와 위치 정보는 5초 후 삭제
-            setTimeout(async () => {
-                await redisClient.deleteAllLocations(gameId);
-                await redisClient.deleteStartedCount(gameId);
-            }, 5000);
 
             // 게임 종료 처리 => spring boot에 요청을 보내야함.
             const gameMembers = await redisClient.getAllLocations(gameId);
 
+            const memberStats = gameMembers.map(member => ({
+                gameMemberId: member.memberId,
+                position: member.position,
+                walk: member.walk,
+                longestSurvived: member.longestSurvived,
+                isConnected: member.isConnected,
+                status: member.status
+            }));
+
             let res = await axios.post(`${process.env.SPRING_BOOT_URL}/api/games/result`, {
                 gameId: gameId,
-                winnerPosition: winnerPosition,
-                gameMembers: gameMembers
+                winTeam: winnerPosition,
+                memberStats: memberStats
             });
 
             if (res.data.code !== 200) {
@@ -564,6 +572,9 @@ export class GameController {
                 });
                 return;
             }
+
+            // 게임 종료 후 1분 동안만 유지
+            await redisClient.setGameEnd(gameId);
 
             // 게임 종료 알림
             io.to(gameId).emit("get end game", {
