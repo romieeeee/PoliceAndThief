@@ -4,6 +4,8 @@ import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.AuthRepositoryImpl
 import com.d104.pnt.data.repository.ChatRepository
 import com.d104.pnt.data.repository.ChatRepositoryImpl
+import com.d104.pnt.data.repository.GameRepository
+import com.d104.pnt.data.repository.GameRepositoryImpl
 import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.data.repository.GameRoomRepositoryImpl
 import com.d104.pnt.data.repository.ImageRepository
@@ -74,4 +76,9 @@ abstract class RepositoryModule {
         impl: ReportRepositoryImpl
     ): ReportRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindGameRepository(
+        impl: GameRepositoryImpl
+    ): GameRepository
 }
