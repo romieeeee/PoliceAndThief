@@ -32,6 +32,8 @@ import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSkillRepository;
+import com.pnt.pnt_spring.domain.games.mission.repository.GameMissionRepository;
+import com.pnt.pnt_spring.domain.games.news.repository.GameNewsRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
@@ -51,6 +53,8 @@ public class GameRoomServiceImpl implements GameRoomService {
 	private final GameRoomCodeGenerator gameRoomCodeGenerator;
 	private final GameMemberStatRepository gameMemberStatRepository;
 	private final GameSkillRepository gameSkillRepository;
+	private final GameMissionRepository gameMissionRepository;
+	private final GameNewsRepository gameNewsRepository;
 
 	private static final GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
 
@@ -149,12 +153,17 @@ public class GameRoomServiceImpl implements GameRoomService {
 		// 게임 시작
 		game.start();
 
-		// Stat 생성
 		for (GameMember member : members) {
-			if (!gameMemberStatRepository.existsByGameMemberId(member.getId())) {
-				GameMemberStat stat = GameMemberStat.create(member);
-				gameMemberStatRepository.save(stat);
-			}
+			// 기존 스탯을 가져오거나, 없으면 새로 만듦 (GameMemberStat.create 내부에서 member.givenPosition 사용)
+			GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(member.getId())
+				.orElseGet(() -> GameMemberStat.create(member));
+
+			// 가져온 스탯의 포지션을 이번 판에 배정된 포지션(givenPosition)으로 강제 동기화
+			// 이렇게 해야 이전 판 데이터가 남아있어도 이번 판 포지션으로 덮어씌워짐
+			stat.syncPosition(member.getGivenPosition());
+
+			// 저장
+			gameMemberStatRepository.save(stat);
 		}
 
 		// chiefMemberId 포함해서 반환
@@ -314,4 +323,42 @@ public class GameRoomServiceImpl implements GameRoomService {
 
 		return memberId;
 	}
+
+	@Override
+	@Transactional
+	public void resetGame(Long gameId) {
+		Game game = gameRepository.findById(gameId)
+			.orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
+
+		if (game.getStatus() == GameStatus.IN_GAME) {
+			throw new BusinessException(ErrorCode.GAME_ALREADY_STARTED);
+		}
+
+		// 1. 하위 데이터 초기화 (이 과정에서 영속성 컨텍스트가 비워짐)
+		gameSkillRepository.resetAllByGameId(gameId);
+		gameMissionRepository.resetAllByGameId(gameId);
+		gameMemberStatRepository.resetAllByGameId(gameId);
+		gameNewsRepository.softDeleteAllByGameId(gameId);
+
+		// 2. 게임 상태 초기화
+		game.reset();
+
+		// [중요!] 영속성 컨텍스트가 비워졌으므로 save를 호출하여 강제로 DB에 반영해야 함
+		gameRepository.save(game);
+
+		// 3. 멤버 상태 초기화
+		// 여기서도 멤버들을 다시 조회해야 안전합니다 (Context Clear 영향)
+		List<GameMember> members = gameMemberRepository.findAllByGameId(gameId);
+
+		for (GameMember member : members) {
+			if (member.isDeleted()) {
+				continue;
+			}
+			member.resetForNextGame();
+		}
+		// 멤버들의 변경사항도 반영하기 위해 리스트 저장 (혹은 Dirty Checking이 안될 수 있으므로 saveAll 권장)
+		gameMemberRepository.saveAll(members);
+
+		}
 }
+

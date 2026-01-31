@@ -9,6 +9,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class GameRoomMemberItem {
 	private Long memberId;
+	private Long gameMemberId;
 	private String nickname;
 	private String role;
 	private boolean isHost;
