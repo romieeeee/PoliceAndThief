@@ -22,6 +22,7 @@ public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
 	@Query("""
 			    select new com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomMemberItem(
 			        m.id,
+					gm.id,
 			        coalesce(mp.nickname, m.loginId),
 			        case
 			            when gm.givenPosition is null then 'UNDECIDED'
