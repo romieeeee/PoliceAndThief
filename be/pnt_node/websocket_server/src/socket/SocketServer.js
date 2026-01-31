@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
 import chatSocketServer from "./chats/server/ChatSocketServer.js";
 import gameSocketServer from "./games/server/GameSocketServer.js";
-import roomSocketServer from "./room/server/RoomSocketServer.js";
+import roomSocketServer from "./rooms/server/RoomSocketServer.js";
 import redisDB from "../global/db/redis/RedisDB.js";
 import { RedisEvent } from "./utils/RedisEvent.js";
 

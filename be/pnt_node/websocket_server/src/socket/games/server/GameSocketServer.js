@@ -46,7 +46,7 @@ const gameSocketServer = (io) => {
         socket.on("post arrest", gameController.postArrest);
         socket.on("post skill use", gameController.postSkillUse);
         socket.on("post mission image", gameController.postMissionImage);
-        // socket.on("post after game end", gameController.postGameEndAfter);
+        socket.on("post after game end", gameController.postGameEndAfter);
         socket.on("post sync game info", gameController.syncGameInfo);
 
         socket.on("post reset game", gameController.gameReset);

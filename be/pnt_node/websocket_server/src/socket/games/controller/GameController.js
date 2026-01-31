@@ -723,5 +723,4 @@ export class GameController {
         error.text = text;
         throw error;
     }
-
 }

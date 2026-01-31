@@ -80,7 +80,7 @@ export class GameService {
 
         const thiefMembers = gameMembers
             .filter(member => member.position === GameMemberPosition.THIEF &&
-                member.status === GameMemberStatus.FREE &&
+                (!member.status && member.status === GameMemberStatus.FREE) &&
                 member.isConnected
             );
 
