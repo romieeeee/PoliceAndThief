@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -32,11 +33,12 @@ import java.io.File
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CameraScreen(
-    onPhotoConfirmed: (File) -> Unit, // 사진 확인 완료 콜백 (압축된 파일 전달)
+    onPhotoConfirmed: () -> Unit, // 사진 확인 완료 콜백
     modifier: Modifier = Modifier,
     compressionQuality: Int = 80, // 압축 품질 (0-100)
     maxWidth: Int = 1280,        // 최대 가로 해상도
-    maxHeight: Int = 720         // 최대 세로 해상도
+    maxHeight: Int = 720,          // 최대 세로 해상도
+    viewModel: CameraViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -136,7 +138,7 @@ fun CameraScreen(
                 photoFile = compressedPhotoFile!!,
                 onConfirm = {
                     // 확인 버튼 클릭 시 - 압축된 파일을 서버로 전송
-                    onPhotoConfirmed(compressedPhotoFile!!)
+                    viewModel.uploadImage(compressedPhotoFile!!)
                 },
                 onCancel = {
                     // 취소 버튼 클릭 시 - 파일 삭제하고 다시 촬영

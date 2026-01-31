@@ -27,16 +27,17 @@ object Routes {
     // ===== 게임 생성 =====
     const val GAME_CREATE = "game_create"
 
+    const val ROLE_SELECT = "role_select"
+    fun buildRoleSelect(roomId: Long) = "$ROLE_SELECT/$roomId"
+
     // ===== 게임 대기방 =====
-    const val GAME_ROOM = "game_room"                    // 게임 대기방
-    fun buildGameRoom(roomId: Long) = "$GAME_ROOM/$roomId"
+    const val GAME_ROOM = "game_room"
+    fun buildGameRoom(roomId: Long, role: String) = "$GAME_ROOM/$roomId/$role"
 
     const val GAME_ROOM_SETTINGS = "game_room_settings"  // 게임 설정
     fun buildGameRoomSettings(roomId: Long) = "$GAME_ROOM_SETTINGS/$roomId"
 
     // ===== 게임 플로우 =====
-    const val ROLE_SELECT = "role_select"                // 역할 선택 (대기방 내)
-
     const val GAME_ROLE = "game_role"                  // 역할 안내
     fun buildGameIntro(role: String) = "$GAME_ROLE/$role"
 

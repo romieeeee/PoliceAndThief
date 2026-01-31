@@ -46,32 +46,34 @@ fun HomeScreen(
     goToGameCreate: () -> Unit,
     navigateToGameRoom: (Long) -> Unit,
     navigateToIntro: () -> Unit,
-    viewModel: HomeViewModel = hiltViewModel(),
-
-    ) {
+    viewModel: HomeViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
     var showJoinDialog by remember { mutableStateOf(false) }
     val joinCode by viewModel.joinCode.collectAsStateWithLifecycle()
 
-    // 이벤트 수집
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is HomeUiEvent.NavigateToIntro -> {
+                is HomeViewModel.HomeUiEvent.NavigateToIntro -> {
                     navigateToIntro()
                 }
 
-                is HomeUiEvent.ShowMessage -> {
+                is HomeViewModel.HomeUiEvent.ShowMessage -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
 
-                is HomeUiEvent.ShowError -> {
+                is HomeViewModel.HomeUiEvent.ShowError -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                }
+
+                is HomeViewModel.HomeUiEvent.NavigateToGameRoom -> {
+                    showJoinDialog = false
+                    navigateToGameRoom(event.roomId)
                 }
             }
         }
     }
-
 
     Surface(modifier = Modifier.fillMaxSize()) {
 
@@ -92,8 +94,7 @@ fun HomeScreen(
 
             PixelIconButton(
                 onClick = {
-                    viewModel.logout()
-//                    navigateToGameRoom(1)
+                    showJoinDialog = true
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -135,7 +136,7 @@ fun HomeScreen(
                     JoinGameDialog(
                         onDismiss = { showJoinDialog = false },
                         onConfirm = {
-                            showJoinDialog = false
+                            viewModel.joinGame()
                         },
                         joinCode = joinCode,
                         onUpdateCode = {
@@ -183,7 +184,9 @@ fun JoinGameDialog(
                 placeholder = "참여코드를 입력해주세요",
                 borderColor = BorderDefault,
                 value = joinCode,
-                onValueChange = { onUpdateCode(it) }
+                onValueChange = {
+                    onUpdateCode(it.uppercase())
+                }
             )
 
             Spacer(modifier = Modifier.height(30.dp))

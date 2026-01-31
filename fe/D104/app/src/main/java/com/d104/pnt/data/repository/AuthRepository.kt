@@ -51,6 +51,11 @@ interface AuthRepository {
         memberId: Long
     )
 
+    suspend fun refreshTokens(
+        accessToken: String,
+        refreshToken: String
+    )
+
     /**
      * 인증 정보 삭제
      */

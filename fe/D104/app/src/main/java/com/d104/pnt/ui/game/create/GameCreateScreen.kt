@@ -1,6 +1,6 @@
 package com.d104.pnt.ui.game.create
 
-//import com.d104.pnt.ui.component.PixelButtonCode
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.data.remote.model.request.Location
 import com.d104.pnt.domain.model.DraggableLatLng
+import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.GoogleMaps
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.RoundedButton
@@ -49,7 +50,7 @@ import com.google.android.gms.maps.model.LatLng
 @Composable
 fun GameCreateScreen(
     onCancel: () -> Unit,
-    onConfirm: () -> Unit,
+    onConfirm: (Long) -> Unit,
     viewModel: GameCreateViewModel = hiltViewModel()
 ) {
     val gameName by viewModel.gameName.collectAsStateWithLifecycle()
@@ -66,9 +67,19 @@ fun GameCreateScreen(
     val polygonPoints by viewModel.polygonPoints.collectAsStateWithLifecycle()
     val prisonLocation by viewModel.prisonLocation.collectAsStateWithLifecycle()
 
+    val gameRoomState by viewModel.gameRoomState.collectAsStateWithLifecycle()
+
     var showMapPopup by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         viewModel.setDefaultSettings(context)
+    }
+
+    LaunchedEffect(gameRoomState) {
+        if (gameRoomState is UiState.Success) {
+            val roomId = (gameRoomState as UiState.Success).data.roomId
+            onConfirm(roomId)
+        }
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -135,8 +146,7 @@ fun GameCreateScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clickable { showMapPopup = true }
-                            )// 여기서 클릭 감지 -> 팝업 띄우기
+                                    .clickable { showMapPopup = true })
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -231,28 +241,40 @@ fun GameCreateScreen(
                                             lng = it.longitude
                                         )
                                     }
-                                    if (viewModel.isValid(
-                                            playerCount = totalPlayers,
-                                            timeLimit = gameTime,
-                                            policeCount = policeCount,
-                                            thiefCount = thiefCount,
-                                            polygon = polyPoint
-                                        )
-                                    ) {
+
+                                    val closedPolygon = if (polyPoint.isNotEmpty()) {
+                                        polyPoint + polyPoint.first()
+                                    } else {
+                                        polyPoint
+                                    }
+
+                                    val isValid = viewModel.isValid(
+                                        playerCount = totalPlayers,
+                                        timeLimit = gameTime,
+                                        policeCount = policeCount,
+                                        thiefCount = thiefCount,
+                                        polygon = polyPoint
+                                    )
+
+                                    if (isValid) {
                                         viewModel.createGameRoom(
                                             playerCount = totalPlayers,
                                             timeLimit = gameTime,
+                                            cctvInterval = cctvCycle,
+                                            missionCount = missionCount,
                                             policeCount = policeCount,
                                             thiefCount = thiefCount,
                                             prison = Location(
                                                 lat = prisonLocation!!.latitude,
                                                 lng = prisonLocation!!.longitude
                                             ),
-                                            polygon = polyPoint
+                                            polygon = closedPolygon
                                         )
-                                        onConfirm()
+                                    } else {
+
                                     }
                                 },
+
                                 containerColor = Color.White,
                                 modifier = Modifier.weight(1f)
                             )
