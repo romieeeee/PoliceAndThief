@@ -306,9 +306,7 @@ fun ReasonChip(
     }
 }
 
-/**
- * ✅ 개선: 로딩/에러 표시 지원
- */
+// 신고 확인
 @Composable
 fun ConfirmReportDialog(
     isLoading: Boolean,
@@ -394,6 +392,7 @@ fun ConfirmReportDialog(
     }
 }
 
+// 신고 완료
 @Composable
 fun SuccessReportDialog(
     onDismissRequest: () -> Unit
