@@ -113,7 +113,7 @@ public class Game extends BaseEntity {
 
 	public void reset() {
 		this.status = GameStatus.WAITING; // 대기 상태로 변경
-		this.winTeam = null;              // 승리팀 초기화
+		this.winTeam = WinTeam.NONE;              // 승리팀 초기화
 		this.startTime = null;            // 시작 시간 null
 		this.endTime = null;              // 종료 시간 null
 		this.caughtCount = 0;

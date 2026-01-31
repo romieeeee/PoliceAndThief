@@ -402,7 +402,9 @@ export class GameController {
 
     postArrest = async (payload) => {
         try {
-            const { gameId, policeId, thiefId } = payload;
+            const gameId = parseInt(payload.gameId) || this.socket.data.gameId;
+            const policeId = parseInt(payload.policeId) || this.socket.data.memberId;
+            const thiefId = parseInt(payload.thiefId);
 
             const thief = await this.gameMemberService.findMemberGame(gameId, thiefId);
 
@@ -469,7 +471,7 @@ export class GameController {
             const isGameEnd = await this.gameService.checkGameHaveToFinish(gameId);
 
             if (isGameEnd) {
-                await this.gameEnd(this.io, this.redisClient, gameId, GameMemberPosition.POLICE);
+                await this.gameEnd(this.io, this.redisClient, gameId, isGameEnd);
 
                 console.log("game end", gameId);
                 return;
@@ -603,14 +605,15 @@ export class GameController {
 
             // 게임 종료 후 1분 동안만 유지
             await redisClient.setGameEnd(integerGameId);
+            await redisClient.deleteAllGameCachesByGameId(integerGameId);
 
             // 게임 종료 알림
             io.to(integerGameId).emit("get end game", {
                 gameId: integerGameId,
                 winTeam: winTeam,
                 message: winTeam === GameMemberPosition.THIEF
-                    ? "시간이 모두 소진되었습니다. 게임이 종료되었습니다."
-                    : "모든 도둑이 잡혔습니다. 게임이 종료되었습니다.",
+                    ? "도둑 승!!"
+                    : "경찰 승!!",
                 reason: null,
                 code: 200
             });
@@ -708,6 +711,12 @@ export class GameController {
             this.socket.data.isIntentionalExit = true;
 
             await this.gameMemberService.updateInGameConnected(this.socket.data.gameId, this.socket.data.memberId, false);
+
+            const isGameEnd = await this.gameService.checkGameHaveToFinish(this.socket.data.gameId);
+
+            if (isGameEnd) {
+                await this.gameEnd(this.io, this.redisClient, this.socket.data.gameId, isGameEnd);
+            }
 
             this.socket.disconnect();
         } catch (error) {
