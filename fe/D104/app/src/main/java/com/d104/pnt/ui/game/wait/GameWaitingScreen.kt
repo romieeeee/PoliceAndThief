@@ -33,6 +33,7 @@ import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.theme.PixelFont
+import com.google.android.gms.maps.model.LatLng
 
 @Composable
 fun GameWaitingScreen(
@@ -126,6 +127,8 @@ fun GameWaitingScreen(
                 thiefCount = thiefCount,
                 isHost = isHost,
                 selectedPlayerId = selectedPlayerId,
+                prisonLocation = LatLng(roomInfo.prison?.lat ?: 37.56681969564895, roomInfo.prison?.lng ?: 126.97864094105321),
+                polygonPoints = roomInfo.polygon?.map { LatLng(it.lat, it.lng) } ?: emptyList(),
                 onPlayerClick = { player ->
                     val now = System.currentTimeMillis()
                     if (!((dismissedPlayerId == player.id) && (now - lastDismissTime < 300))) selectedPlayerId =
@@ -236,13 +239,15 @@ fun GameWaitingScreen(
         if (showSettingsDialog) GameSettingsDialog(
             initialState = roomInfo,
             onDismiss = { showSettingsDialog = false },
-            onUpdateSettings = { total, time, mission, cctv, police ->
+            onUpdateSettings = { total, time, mission, cctv, police, prison, polygon ->
                 viewModel.updateRoomSettings(
                     total,
                     time,
                     mission,
                     cctv,
-                    police
+                    police,
+                    prison,
+                    polygon
                 )
             })
     }

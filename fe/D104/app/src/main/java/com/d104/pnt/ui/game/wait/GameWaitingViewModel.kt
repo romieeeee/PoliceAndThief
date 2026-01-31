@@ -23,11 +23,15 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 import com.d104.pnt.data.remote.model.request.Location
+import com.d104.pnt.data.repository.LocationRepository
+import com.d104.pnt.domain.model.DraggableLatLng
+import com.google.android.gms.maps.model.LatLng
 
 @HiltViewModel
 class GameWaitingViewModel @Inject constructor(
     private val gameRoomRepository: GameRoomRepository,
     private val authRepository: AuthRepository,
+    private val locationRepository: LocationRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -285,7 +289,15 @@ class GameWaitingViewModel @Inject constructor(
     }
 
     // 방 설정 변경
-    fun updateRoomSettings(maxCount: Int, timeLimit: Int, missionCount: Int, cctvCycle: Int, policeCount: Int) {
+    fun updateRoomSettings(
+        maxCount: Int,
+        timeLimit: Int,
+        missionCount: Int,
+        cctvCycle: Int,
+        policeCount: Int,
+        prisonLocation: Location,
+        polygonPoints: List<Location>
+    ) {
         viewModelScope.launch {
             val current = _roomInfo.value
 
@@ -301,8 +313,8 @@ class GameWaitingViewModel @Inject constructor(
                 policeCount = safePoliceCount,
                 thiefCount = thiefCount,
                 missionCount = missionCount,
-                prison = current.prison,
-                polygon = current.polygon
+                prison = prisonLocation,
+                polygon = polygonPoints
             )
 
             when (result) {
@@ -314,7 +326,9 @@ class GameWaitingViewModel @Inject constructor(
                         missionCount = missionCount,
                         cctvCycle = cctvCycle,
                         policeCount = safePoliceCount,
-                        thiefCount = thiefCount
+                        thiefCount = thiefCount,
+                        prison = prisonLocation,
+                        polygon = polygonPoints
                     )
                 }
                 is BaseResult.Error -> {
@@ -396,5 +410,21 @@ class GameWaitingViewModel @Inject constructor(
             delay(100)
             fetchMembers()
         }
+    }
+
+    fun setPolygonPoints(points: List<LatLng>) {
+        locationRepository.setPolygonPoints(points)
+    }
+
+    fun setPrisonLocation(location: LatLng?) {
+        locationRepository.setPrisonLocation(location)
+    }
+
+    fun deletePolygonPoint(targetList: MutableList<DraggableLatLng>, index: Int): Boolean {
+        return locationRepository.deletePolygonPoint(targetList, index)
+    }
+
+    fun addPointToList(targetList: MutableList<DraggableLatLng>, newPoint: LatLng) {
+        locationRepository.addPointToList(targetList, newPoint)
     }
 }
