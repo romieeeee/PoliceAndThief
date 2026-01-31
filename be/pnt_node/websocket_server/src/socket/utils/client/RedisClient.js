@@ -44,7 +44,7 @@ export class RedisClient {
     getStoredRoomId = async (socket, namespace) => {
         const infoKey = `websocket:reconnect:info:${namespace}:${socket.data.memberId}`;
         const storedRoomId = await this.pubClient.get(infoKey);
-        return storedRoomId;
+        return parseInt(storedRoomId);
     }
 
     pubReconnectTimer = async (namespace, socket, roomId) => {
@@ -159,7 +159,7 @@ export class RedisClient {
     setLocation = async (memberId, gameId, location) => {
         await this.pubClient.hset(this.getLocationKeyString(gameId), memberId, JSON.stringify(location));
     }
-    
+
     getLocation = async (memberId, gameId) => {
         const location = await this.pubClient.hget(this.getLocationKeyString(gameId), memberId);
         return JSON.parse(location);
@@ -213,11 +213,55 @@ export class RedisClient {
         await this.pubClient.hdel(this.getPenaltyKeyString(gameId), memberId);
     }
 
+    deleteAllPenalties = async (gameId) => {
+        await this.pubClient.del(this.getPenaltyKeyString(gameId));
+    }
+
     getLocationKeyString = (gameId, memberId) => {
         if (memberId) {
             return `room:game:${gameId}:locations:${memberId}`;
         }
         return `room:game:${gameId}:locations`;
+    }
+
+    /**
+     * 미션 관련
+     */
+    setMission = async (gameId, memberId, missionId) => {
+        await this.pubClient.hset(this.getMissionKeyString(gameId), memberId, missionId);
+    }
+
+    getMission = async (gameId, memberId) => {
+        const missionId = await this.pubClient.hget(this.getMissionKeyString(gameId), memberId);
+        return missionId;
+    }
+
+    deleteAllMissions = async (gameId) => {
+        await this.pubClient.del(this.getMissionKeyString(gameId));
+    }
+
+    getMissionKeyString = (gameId) => {
+        return `room:game:mission:${gameId}`;
+    }
+
+    /**
+     * news 관련
+     */
+    setNews = async (gameId, newsId) => {
+        await this.pubClient.hset(this.getNewsKeyString(gameId), newsId, "EX", 60 * 5);
+    }
+
+    getNews = async (gameId) => {
+        const newsId = await this.pubClient.hget(this.getNewsKeyString(gameId));
+        return newsId;
+    }
+
+    deleteNews = async (gameId) => {
+        await this.pubClient.del(this.getNewsKeyString(gameId));
+    }
+
+    getNewsKeyString = (gameId) => {
+        return `room:game:news:${gameId}`;
     }
 
 
@@ -231,12 +275,15 @@ export class RedisClient {
 
     deleteAllInGameCachesByGameId = async (gameId) => {
         await this.deleteAllLocations(gameId);
-        await this.pubClient.del(this.getPenaltyKeyString(gameId));
+        await this.deleteAllPenalties(gameId);
         await this.deleteCctvTimer(gameId);
         await this.deleteStartedCount(gameId);
         await this.deleteGameToken(gameId);
         await this.deleteGameSetting(gameId);
         await this.deleteGameTimer(gameId);
+        await this.deleteGameTimerLock(gameId);
+        await this.deleteGameSettingLock(gameId);
+        await this.deleteNews(gameId);
     }
 
     /**
@@ -244,7 +291,7 @@ export class RedisClient {
      */
     setGameTimerLock = async (gameId) => {
         // 키가 존재할땐 false 반환, 키가 존재하지 않을땐 생성후 true 반환
-        return await this.pubClient.set(this.getGameTimerLockKeyString(gameId), "locked", "NX", "EX", 5);
+        return await this.pubClient.set(this.getGameTimerLockKeyString(gameId), "locked", "NX", "EX", 2);
     }
 
     deleteGameTimerLock = async (gameId) => {
@@ -304,7 +351,6 @@ export class RedisClient {
         await this.pubClient.del(this.getGameSettingLockString(gameId));
         await this.deleteGameTimer(gameId);
         await this.deleteGameTimerLock(gameId);
-        await this.pubClient.del(this.getStartedString(gameId));
         await this.pubClient.del(this.getStartedString(gameId));
         await this.deleteStartedCount(gameId);
         await this.deleteCctvTimer(gameId);
