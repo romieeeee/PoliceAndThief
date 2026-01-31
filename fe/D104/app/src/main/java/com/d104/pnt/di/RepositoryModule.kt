@@ -12,6 +12,8 @@ import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.data.repository.LocationRepositoryImpl
 import com.d104.pnt.data.repository.ProfileRepository
 import com.d104.pnt.data.repository.ProfileRepositoryImpl
+import com.d104.pnt.data.repository.ReportRepository
+import com.d104.pnt.data.repository.ReportRepositoryImpl
 import com.d104.pnt.data.repository.WalkieRepository
 import com.d104.pnt.data.repository.WalkieRepositoryImpl
 import dagger.Binds
@@ -65,4 +67,11 @@ abstract class RepositoryModule {
     abstract fun bindImageRepository(
         impl: ImageRepositoryImpl
     ): ImageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindReportRepository(
+        impl: ReportRepositoryImpl
+    ): ReportRepository
+
 }
