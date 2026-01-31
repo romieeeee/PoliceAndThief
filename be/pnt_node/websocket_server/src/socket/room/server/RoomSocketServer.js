@@ -52,6 +52,8 @@ const roomSocketServer = (io) => {
 
         socket.on("post update access token", roomController.postUpdateAccessToken);
 
+        socket.on("post game start", roomController.gameStart);
+
         socket.on("disconnect", async () => {
             if (socket.data.isIntentionalExit) {
                 console.log("socket의 연결이 정상적으로 끊어졌습니다.");

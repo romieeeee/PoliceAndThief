@@ -19,6 +19,8 @@ export const resolveInSocket = (socket, next) => {
         socket.data.memberId = data.memberId;
         socket.data.accessToken = token;
 
+        console.log("data", data);
+
         redisClient.setAccessToken(data.memberId, token);
 
         next();
