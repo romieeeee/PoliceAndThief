@@ -15,6 +15,7 @@ import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.UserProfileCard
 import com.d104.pnt.ui.theme.AccentYellow
+import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
@@ -90,5 +91,146 @@ fun ReasonButtonRow(items: List<String>, selectedItem: String, onSelect: (String
             }
         }
         if (items.size < 3) Spacer(modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+fun DelegateHostConfirmDialog(
+    nickname: String,
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismissRequest) {
+        PixelContainer(
+            backgroundColor = DarkSurface,
+            borderColor = Color.White,
+            borderWidth = 3f,
+            cornerSize = 8f,
+            innerVerticalPadding = 30,
+            innerHorizontalPadding = 20,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "방장을 위임하시겠습니까?",
+                    fontFamily = PixelFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    color = AccentYellow,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = nickname,
+                    fontFamily = PixelFont,
+                    fontSize = 18.sp,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(30.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    PixelIconButton(
+                        onClick = onDismissRequest,
+                        modifier = Modifier.weight(1f),
+                        mainColor = Color.White,
+                        borderColor = Color.Black,
+                        pixelSize = 3.dp,
+                        blockHeight = 12,
+                        content = {
+                            Text(text = "취소", fontFamily = PixelFont, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.width(20.dp))
+
+                    PixelIconButton(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f),
+                        mainColor = Color.White,
+                        borderColor = Color.Black,
+                        pixelSize = 3.dp,
+                        blockHeight = 12,
+                        content = {
+                            Text(text = "확인", fontFamily = PixelFont, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LeaveRoomConfirmDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismissRequest) {
+        PixelContainer(
+            backgroundColor = DarkSurface,
+            borderColor = Color.White,
+            borderWidth = 3f,
+            cornerSize = 8f,
+            innerVerticalPadding = 30,
+            innerHorizontalPadding = 20,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "정말 나가시겠습니까?",
+                    fontFamily = PixelFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(30.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    PixelIconButton(
+                        onClick = onDismissRequest,
+                        modifier = Modifier.weight(1f),
+                        mainColor = Color.White,
+                        borderColor = Color.Black,
+                        pixelSize = 3.dp,
+                        blockHeight = 12,
+                        content = {
+                            Text(text = "취소", fontFamily = PixelFont, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.width(20.dp))
+
+                    PixelIconButton(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f),
+                        mainColor = Color.White,
+                        borderColor = Color.Black,
+                        pixelSize = 3.dp,
+                        blockHeight = 12,
+                        content = {
+                            Text(text = "확인", fontFamily = PixelFont, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+                    )
+                }
+            }
+        }
     }
 }

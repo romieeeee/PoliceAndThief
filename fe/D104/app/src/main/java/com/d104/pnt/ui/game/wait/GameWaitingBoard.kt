@@ -52,6 +52,7 @@ fun UnifiedWaitingInfoCard(
     onPlayerClick: (WaitingPlayer) -> Unit,
     onMenuDismiss: () -> Unit,
     onInfoClick: (WaitingPlayer) -> Unit,
+    onDelegateHostClick: (WaitingPlayer) -> Unit,
     onKickClick: (WaitingPlayer) -> Unit,
     modifier: Modifier = Modifier,
     onChangeRole: () -> Unit
@@ -98,6 +99,7 @@ fun UnifiedWaitingInfoCard(
                         onClick = { onPlayerClick(player) },
                         onDismissMenu = onMenuDismiss,
                         onInfoClick = { onMenuDismiss(); onInfoClick(player) },
+                        onDelegateHostClick = { onMenuDismiss(); onDelegateHostClick(player) },
                         onKickClick = { onMenuDismiss(); onKickClick(player) }
                     )
                 }
@@ -127,6 +129,7 @@ fun PlayerSlotCard(
     onClick: () -> Unit,
     onDismissMenu: () -> Unit,
     onInfoClick: () -> Unit,
+    onDelegateHostClick: () -> Unit,
     onKickClick: () -> Unit
 ) {
     val borderColor = when {
@@ -162,19 +165,22 @@ fun PlayerSlotCard(
         }
 
         if (showMenu) {
-            PlayerActionMenu(isHost, isMe, onDismissMenu, onInfoClick, onKickClick)
+            PlayerActionMenu(isHost, isMe, onDismissMenu, onInfoClick, onDelegateHostClick, onKickClick)
         }
     }
 }
 
 @Composable
-fun PlayerActionMenu(isHost: Boolean, isTargetMe: Boolean, onDismiss: () -> Unit, onInfoClick: () -> Unit, onKickClick: () -> Unit) {
+fun PlayerActionMenu(isHost: Boolean, isTargetMe: Boolean, onDismiss: () -> Unit, onInfoClick: () -> Unit, onDelegateHostClick: () -> Unit, onKickClick: () -> Unit) {
     val density = LocalDensity.current
     val yOffset = remember(density) { with(density) { (48.dp + 4.dp).roundToPx() } }
 
     Popup(alignment = Alignment.TopCenter, offset = IntOffset(0, yOffset), onDismissRequest = onDismiss) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             MenuButton(text = "정보 확인", textColor = Color.Black, onClick = onInfoClick)
+            if (isHost && !isTargetMe) {
+                MenuButton(text = "방장 위임하기", textColor = Color.Black, onClick = onDelegateHostClick)
+            }
             if (isHost && !isTargetMe) {
                 MenuButton(text = "강퇴하기", textColor = Color(0xFFFF5252), onClick = onKickClick)
             }
