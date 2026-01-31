@@ -31,9 +31,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,7 +43,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.d104.pnt.R
+import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.theme.AccentYellow
@@ -57,7 +56,6 @@ import com.d104.pnt.ui.theme.TextPrimary
 import com.d104.pnt.ui.theme.TextSecondary
 import com.d104.pnt.ui.theme.WinColor
 
-// MVP 데이터 모델
 data class MvpData(
     val type: String,
     val role: String,
@@ -95,17 +93,15 @@ fun GameResultScreen(
     @DrawableRes tierIconRes: Int = R.drawable.img_tier_police_2,
     tierName: String = "경장",
     statsValue: String = "24명",
-    onExitClick: () -> Unit = {}
+    onExitClick: () -> Unit = {},
+    viewModel: GameResultViewModel = hiltViewModel()
 ) {
     val blinkAlpha by rememberInfiniteTransition(label = "winlose-blink")
         .animateFloat(
             initialValue = 1f,
             targetValue = 0.7f,
             animationSpec = infiniteRepeatable(
-                animation = tween(
-                    durationMillis = 500,
-                    easing = LinearEasing
-                ),
+                animation = tween(durationMillis = 500, easing = LinearEasing),
                 repeatMode = RepeatMode.Reverse
             ),
             label = "alpha"
@@ -117,19 +113,16 @@ fun GameResultScreen(
     val titleText = if (isWin) "WIN!" else "LOSE"
     val statsLabel = if (isPolice) "검거한 도둑 수" else "최장 생존 시간"
     val mvpBoxBgColor = Color(0xFF35384F)
-    val participantNames = remember(mvpList) {
-        mvpList.map { it.nickname } + listOf("치와와", "이래롬") // 게임 참여자 임시 목록
-    }
+
+    // ✅ 참가자 목록 (현재는 임시 포함. 실제로는 룸 스냅샷에서 받아오는 값으로 교체)
+    val participantNames = mvpList.map { it.nickname } + listOf("치와와", "이래롬")
 
     val characterImageRes = when {
         isPolice && isWin -> R.drawable.img_police_win
         isPolice && !isWin -> R.drawable.img_police_lose
         !isPolice && isWin -> R.drawable.img_thief_win
-        else -> R.drawable.img_thief_win
+        else -> R.drawable.img_thief_lose
     }
-
-    var reportStep by remember { mutableStateOf(ReportStep.NONE) }
-    var tempReportData by remember { mutableStateOf(Triple("", "", "")) }
 
     Box(
         modifier = Modifier
@@ -158,13 +151,13 @@ fun GameResultScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // ✅ 신고 버튼
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
                 Box(
-                    modifier = Modifier
-                        .clickable { reportStep = ReportStep.INPUT },
+                    modifier = Modifier.clickable { viewModel.openReportDialog() },
                     contentAlignment = Alignment.Center,
                 ) {
                     Image(
@@ -202,16 +195,13 @@ fun GameResultScreen(
                     fontWeight = FontWeight.Bold,
                     color = titleColor.copy(alpha = blinkAlpha),
                     style = TextStyle(
-                        shadow = Shadow(
-                            color = Color.Black,
-                        )
+                        shadow = Shadow(color = Color.Black)
                     ),
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .zIndex(1f)
                 )
 
-                // 캐릭터 이미지
                 Image(
                     painter = painterResource(id = characterImageRes),
                     contentDescription = "Character",
@@ -224,7 +214,6 @@ fun GameResultScreen(
                 )
             }
 
-
             // Rank / Stat
             PixelContainer(
                 backgroundColor = Color.Black.copy(alpha = 0.45f),
@@ -236,8 +225,7 @@ fun GameResultScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     // RANK
@@ -293,7 +281,6 @@ fun GameResultScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-
                             Icon(
                                 painter = painterResource(R.drawable.ic_best),
                                 contentDescription = null,
@@ -317,9 +304,7 @@ fun GameResultScreen(
             val isLast = pagerState.currentPage == pagerState.pageCount - 1
 
             // MVP 카드
-            Box(
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Box(modifier = Modifier.fillMaxWidth()) {
                 HorizontalPager(
                     state = pagerState,
                     pageSpacing = 16.dp,
@@ -350,51 +335,44 @@ fun GameResultScreen(
             )
         }
 
-        when (reportStep) {
+        // ✅ 신고 다이얼로그 플로우 (ViewModel 상태 기반)
+        when (viewModel.reportStep) {
             ReportStep.INPUT -> {
                 ReportDialog(
-                    initialTargetUser = tempReportData.first,
-                    initialReason = tempReportData.second,
-                    initialDescription = tempReportData.third,
-                    validNicknames = participantNames, // 참여자 명단
-                    // 입력창을 닫으면 데이터 비우기
-                    onDismissRequest = {
-                        tempReportData = Triple("", "", "")
-                        reportStep = ReportStep.NONE
-                    },
-
+                    initialTargetUser = viewModel.draft.nickname,
+                    initialReason = viewModel.draft.reasonKr,
+                    initialDescription = viewModel.draft.detail,
+                    validNicknames = participantNames,
+                    onDismissRequest = { viewModel.closeReportDialog() },
                     onReport = { user, reason, desc ->
-                        tempReportData = Triple(user, reason, desc)
-                        reportStep = ReportStep.CONFIRM
+                        viewModel.onDraftSubmitted(user, reason, desc)
                     }
                 )
             }
 
             ReportStep.CONFIRM -> {
+                val isLoading = viewModel.reportSendState is UiState.Loading
+                val errorMsg = (viewModel.reportSendState as? UiState.Error)?.message
+
                 ConfirmReportDialog(
-                    onDismissRequest = { reportStep = ReportStep.INPUT },
-                    onConfirm = {
-                        println("신고 전송: $tempReportData") // 실제 서버 전송 로직이 들어갈 곳
-
-                        tempReportData = Triple("", "", "") // 신고 후 데이터 비우기
-
-                        reportStep = ReportStep.SUCCESS
-                    }
+                    isLoading = isLoading,
+                    errorText = errorMsg,
+                    onDismissRequest = { viewModel.backToInput() },
+                    onConfirm = { viewModel.confirmReport() }
                 )
             }
 
             ReportStep.SUCCESS -> {
                 SuccessReportDialog(
-                    onDismissRequest = { reportStep = ReportStep.NONE }
+                    onDismissRequest = { viewModel.closeReportDialog() }
                 )
             }
 
-            else -> {}
+            else -> Unit
         }
     }
 }
 
-// MVP 카드
 @Composable
 fun MvpCard(
     mvpData: MvpData,
@@ -467,7 +445,6 @@ fun MvpCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.LightGray
                     )
-
                     Text(
                         text = mvpData.statValue,
                         style = MaterialTheme.typography.titleMedium,

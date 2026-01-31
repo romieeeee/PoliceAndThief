@@ -8,6 +8,7 @@ import com.d104.pnt.data.remote.api.ChatApiService
 import com.d104.pnt.data.remote.api.GameRoomApiService
 import com.d104.pnt.data.remote.api.ImageApiService
 import com.d104.pnt.data.remote.api.NaverApiService
+import com.d104.pnt.data.remote.api.ReportApiService
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -115,4 +116,10 @@ object NetworkModule {
     fun provideImageApiService(retrofit: Retrofit): ImageApiService {
         return retrofit.create(ImageApiService::class.java)
     }
+
+    @Provides
+    fun provideReportApiService(retrofit: Retrofit): ReportApiService {
+        return retrofit.create(ReportApiService::class.java)
+    }
+
 }
