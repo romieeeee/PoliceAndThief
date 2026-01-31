@@ -12,12 +12,9 @@ const redisClient = new RedisClient();
 
 export const resolveInSocket = (socket, next) => {
     const token = socket.handshake.auth.token;
-    console.log(token);
 
     try {
         const data = jwt.verify(token, secretKey, options);
-
-        console.log("data", data);
 
         socket.data.memberId = data.memberId;
         socket.data.accessToken = token;
