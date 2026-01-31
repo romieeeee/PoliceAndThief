@@ -118,4 +118,5 @@ public class Game extends BaseEntity {
 		this.endTime = null;              // 종료 시간 null
 		this.caughtCount = 0;
 	}
+
 }
