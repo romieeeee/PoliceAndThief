@@ -30,10 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import com.d104.pnt.R
+import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.ui.component.GoogleMaps
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.theme.PixelFont
+import com.google.android.gms.maps.model.LatLng
 
 @Composable
 fun UnifiedWaitingInfoCard(
@@ -43,6 +46,8 @@ fun UnifiedWaitingInfoCard(
     thiefCount: Int,
     isHost: Boolean,
     selectedPlayerId: Long?,
+    prisonLocation: LatLng,
+    polygonPoints: List<LatLng>,
     onPlayerClick: (WaitingPlayer) -> Unit,
     onMenuDismiss: () -> Unit,
     onInfoClick: (WaitingPlayer) -> Unit,
@@ -65,7 +70,10 @@ fun UnifiedWaitingInfoCard(
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp, start = 20.dp, end = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                MapPreviewContent()
+                MapPreviewContent(
+                    prisonLocation = prisonLocation,
+                    polygonPoints = polygonPoints
+                )
                 Spacer(modifier = Modifier.height(16.dp))
                 RoleCountInfo(policeCount, thiefCount)
                 Spacer(modifier = Modifier.height(20.dp))
@@ -182,11 +190,18 @@ fun MenuButton(text: String, textColor: Color, onClick: () -> Unit) {
 }
 
 @Composable
-fun MapPreviewContent() {
-    Image(
-        painter = painterResource(id = R.drawable.img_map_example), contentDescription = "맵 프리뷰",
-        contentScale = ContentScale.Crop,
-        modifier = Modifier.size(130.dp).clip(RoundedCornerShape(8.dp)).border(2.dp, Color(0xFF6591E9), RoundedCornerShape(8.dp))
+fun MapPreviewContent(
+    prisonLocation: LatLng,
+    polygonPoints: List<LatLng>
+) {
+    GoogleMaps(
+        modifier = Modifier
+            .height(130.dp)
+            .width(200.dp),
+        prisonLocation = prisonLocation,
+        polygonPoints = polygonPoints.map { DraggableLatLng(position = it) },
+        inGameMinimap = false,
+        isPreview = true,
     )
 }
 
