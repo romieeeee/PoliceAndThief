@@ -21,4 +21,7 @@ public interface GameRoomMemberService {
 	GameRoomPositionResponse pickPosition(Long actorMemberId, Long roomId, GameRoomPositionRequest req);
 
 	void kick(Long actorId, Long roomId, Long targetMemberId, String reason);
+
+	void delegateHost(Long actorId, Long roomId, Long targetMemberId);
+
 }
