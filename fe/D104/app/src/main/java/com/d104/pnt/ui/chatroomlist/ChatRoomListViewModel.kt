@@ -11,7 +11,6 @@ import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.util.socket.ChatSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -173,25 +172,31 @@ class ChatRoomListViewModel @Inject constructor(
         }
     }
 
+
     fun joinChatRoomFromList(
         chatRoomId: Long,
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
-            Timber.d("리스트에서 채팅방 입장 시도: $chatRoomId")
 
-            // 1️. HTTP 참여
             when (val joinResult = chatRepository.joinChatRoom(chatRoomId)) {
                 is BaseResult.Success -> {
-                    Timber.d("HTTP 참여 성공")
+                    Timber.d("채팅방[$chatRoomId] 입장 성공 참여 성공")
 
-                    // 2️. HTTP 연결
                     when (val connectResult = chatRepository.connectChatRoom(chatRoomId)) {
                         is BaseResult.Success -> {
-                            Timber.d("HTTP 연결 성공")
 
-                            // 3️. 소켓 입장
-                            joinChatRoomViaSocket(chatRoomId, onSuccess)
+                            if (!chatSocketManager.isConnected()) {
+                                authRepository.getAccessToken().collect { token ->
+                                    if (token.isNotEmpty()) {
+                                        chatSocketManager.connect(token)
+                                        kotlinx.coroutines.delay(500)
+                                    }
+                                    return@collect
+                                }
+                            }
+
+                            onSuccess()
                         }
 
                         is BaseResult.Error -> {
@@ -206,44 +211,6 @@ class ChatRoomListViewModel @Inject constructor(
             }
         }
     }
-
-    private fun joinChatRoomViaSocket(
-        chatRoomId: Long,
-        onSuccess: () -> Unit
-    ) {
-        viewModelScope.launch {
-            // 소켓 연결 확인
-            if (!chatSocketManager.isConnected()) {
-                authRepository.getAccessToken().collect { token ->
-                    if (token.isNotEmpty()) {
-                        chatSocketManager.connect(token)
-                        kotlinx.coroutines.delay(1000)
-                        joinRoomInternal(chatRoomId, onSuccess)
-                    }
-                    return@collect
-                }
-            } else {
-                joinRoomInternal(chatRoomId, onSuccess)
-            }
-        }
-    }
-
-    private fun joinRoomInternal(
-        chatRoomId: Long,
-        onSuccess: () -> Unit
-    ) {
-        chatSocketManager.joinRoom(chatRoomId) { success, message ->
-            viewModelScope.launch(Dispatchers.Main) {
-                if (success) {
-                    Timber.d("소켓 입장 성공: $message")
-                    onSuccess()
-                } else {
-                    Timber.e("소켓 입장 실패: $message")
-                }
-            }
-        }
-    }
-
 
     enum class ViewMode(val value: String) {
         Me("Me"),

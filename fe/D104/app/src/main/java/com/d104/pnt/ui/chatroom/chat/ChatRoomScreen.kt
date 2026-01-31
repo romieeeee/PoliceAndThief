@@ -35,7 +35,6 @@ fun ChatRoomScreen(
         modifier = modifier
             .fillMaxSize()
             .background(DarkBackground)
-            .imePadding()
             .statusBarsPadding()
             .navigationBarsPadding(),
         topBar = {
@@ -55,6 +54,7 @@ fun ChatRoomScreen(
         },
         bottomBar = {
             ChatRoomFooter(
+                modifier = Modifier.imePadding(),
                 onSendMessage = {
                     viewModel.sendMessage()
                 },
