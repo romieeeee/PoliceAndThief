@@ -392,12 +392,12 @@ export class GameController {
                     const redisMember = locationDatas.find(r => parseInt(r.memberId) === parseInt(dbMember.memberId));
                     return {
                         memberId: dbMember.memberId,
-                        nickname: dbMember.memberProfile.nickname,
-                        avatarUrl: dbMember.memberProfile.avatarUrl,
+                        nickname: dbMember.Member?.MemberProfile?.nickname,
+                        avatarUrl: dbMember.Member?.MemberProfile?.avatarUrl,
                         // Redis 데이터가 있으면 우선 사용, 없으면 DB 데이터 사용
-                        position: redisMember.position,
-                        status: redisMember.status,
-                        isConnected: redisMember.isConnected,
+                        position: redisMember?.position || null,
+                        status: redisMember?.status || null,
+                        isConnected: redisMember?.isConnected || false,
                     };
                 }),
                 missions: gameMissions
@@ -443,7 +443,6 @@ export class GameController {
                     arrestedAt: new Date().toISOString(),
                 };
                 this.io.to(gameId).emit("get arrest", res);
-                console.log("fail already caught", res);
                 return;
             }
 
