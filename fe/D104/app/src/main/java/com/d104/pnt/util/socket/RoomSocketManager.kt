@@ -1,5 +1,7 @@
 package com.d104.pnt.util.socket
 
+import com.d104.pnt.domain.model.RoomInfoResponse
+import com.google.gson.Gson
 import org.json.JSONArray
 import org.json.JSONObject
 import timber.log.Timber
@@ -11,7 +13,7 @@ import javax.inject.Singleton
  * 게임 로비(대기방) 관련 이벤트 처리
  */
 @Singleton
-class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
+class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocketManager("room") {
 
     private var currentRoomId: Long? = null
 
@@ -41,7 +43,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
     private var onReadyUpdated: ((Long, Long, Boolean) -> Unit)? = null
     private var onPositionUpdated: ((Long, Long, String) -> Unit)? = null
     private var onReadyInfoReceived: ((JSONArray) -> Unit)? = null
-    private var onFullRoomInfoReceived: ((JSONObject) -> Unit)? = null
+    private var onFullRoomInfoReceived: ((RoomInfoResponse) -> Unit)? = null
     private var onMemberKicked: ((Long) -> Unit)? = null
     private var onMemberLeft: ((Long) -> Unit)? = null
 
@@ -99,9 +101,11 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
         // 전체 방 정보 수신
         on(EVENT_GET_NOW_ROOM_INFO) { args ->
             try {
-                val data = args[0] as JSONObject
-                Timber.d("전체 방 정보 수신: ${data.optJSONObject("room")?.optString("roomCode")}")
-                onFullRoomInfoReceived?.invoke(data)
+                val jsonString = args[0].toString()
+                val roomInfo = gson.fromJson(jsonString, RoomInfoResponse::class.java)
+
+                Timber.d("전체 방 정보 수신 완료: ${roomInfo}")
+                onFullRoomInfoReceived?.invoke(roomInfo)
             } catch (e: Exception) {
                 Timber.e(e, "전체 방 정보 파싱 실패")
             }
@@ -153,17 +157,60 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
      * 방 입장
      */
     fun joinRoom(roomId: Long, onResponse: (Boolean, String) -> Unit) {
+        if (!isConnected()) {
+            Timber.e("소켓이 연결되지 않아 방 입장 불가")
+            onResponse(false, "소켓 연결 안됨")
+            return
+        }
+
         currentRoomId = roomId
+
+        // 1️방 입장 요청
+        val joinData = JSONObject().apply {
+            put("roomId", roomId)
+        }
+
+        emit(EVENT_POST_JOIN_ROOM, joinData)
+
+        // 방 정보 요청
+        requestRoomInfo(roomId)
+
+        //  정보도 요청
+        requestReadyInfo(roomId)
+
+        onResponse(true, "입장 요청 완료")
+    }
+
+    /**
+     * 현재 방 정보 요청
+     */
+    fun requestRoomInfo(roomId: Long = currentRoomId ?: 0) {
+        if (roomId == 0L) {
+            Timber.e("roomId가 없어서 방 정보 요청 불가")
+            return
+        }
 
         val data = JSONObject().apply {
             put("roomId", roomId)
         }
 
-        emit(EVENT_POST_JOIN_ROOM, data)
+        emit(EVENT_POST_NOW_ROOM_INFO, data)
+    }
 
-        // 입장 후 방 정보 자동 요청
-        requestRoomInfo(roomId)
-        requestReadyInfo(roomId)
+    /**
+     * 현재 Ready 정보 요청
+     */
+    fun requestReadyInfo(roomId: Long = currentRoomId ?: 0) {
+        if (roomId == 0L) {
+            Timber.e("roomId가 없어서 Ready 정보 요청 불가")
+            return
+        }
+
+        val data = JSONObject().apply {
+            put("roomId", roomId)
+        }
+
+        emit(EVENT_POST_NOW_READY_INFO, data)
     }
 
     /**
@@ -248,37 +295,6 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
         emit(EVENT_POST_UPDATE_POSITION, data)
     }
 
-    /**
-     * 현재 Ready 정보 요청
-     */
-    fun requestReadyInfo(roomId: Long = currentRoomId ?: 0) {
-        if (roomId == 0L) {
-            Timber.e("roomId가 없어서 Ready 정보 요청 불가")
-            return
-        }
-
-        val data = JSONObject().apply {
-            put("roomId", roomId)
-        }
-
-        emit(EVENT_POST_NOW_READY_INFO, data)
-    }
-
-    /**
-     * 현재 방 정보 요청
-     */
-    fun requestRoomInfo(roomId: Long = currentRoomId ?: 0) {
-        if (roomId == 0L) {
-            Timber.e("roomId가 없어서 방 정보 요청 불가")
-            return
-        }
-
-        val data = JSONObject().apply {
-            put("roomId", roomId)
-        }
-
-        emit(EVENT_POST_NOW_ROOM_INFO, data)
-    }
 
     /**
      * 멤버 강퇴 (호스트만 가능)
@@ -335,7 +351,7 @@ class RoomSocketManager @Inject constructor() : BaseSocketManager("room") {
         onReadyInfoReceived = callback
     }
 
-    fun setOnFullRoomInfoReceived(callback: (JSONObject) -> Unit) {
+    fun setOnFullRoomInfoReceived(callback: (RoomInfoResponse) -> Unit) {
         onFullRoomInfoReceived = callback
     }
 
