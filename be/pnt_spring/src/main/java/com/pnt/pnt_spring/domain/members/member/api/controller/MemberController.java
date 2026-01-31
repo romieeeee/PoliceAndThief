@@ -68,7 +68,9 @@ public class MemberController {
 	@GetMapping("/{id}/presigned-url")
 	public CommonResponse<PresignedUrlResponse> getPresignedUrl(@RequestParam String fileName) {
 		Long currentMemberId = SecurityUtils.currentMemberId();
-		PresignedUrlResponse response = s3Service.getPresignedPutUrl("profiles", fileName, currentMemberId);
+
+		String pathPrefix = "profiles/" + currentMemberId;
+		PresignedUrlResponse response = s3Service.getPresignedPutUrl(pathPrefix, fileName);
 
 		return new CommonResponse<>(response, "업로드 URL 발급 완료", HttpStatus.OK);
 	}

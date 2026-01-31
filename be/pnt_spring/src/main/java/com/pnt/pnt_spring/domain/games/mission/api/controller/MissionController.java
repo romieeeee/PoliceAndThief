@@ -6,11 +6,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.pnt.pnt_spring.domain.games.mission.api.resp.MissionResponse;
 import com.pnt.pnt_spring.domain.games.mission.application.MissionService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
+import com.pnt.pnt_spring.global.api.response.PresignedUrlResponse;
+import com.pnt.pnt_spring.global.utils.S3Service;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class MissionController {
 
 	private final MissionService missionService;
+	private final S3Service s3Service;
 
 	@Operation(summary = "전체 미션 목록 조회 (원본)", description = "게임 할당 여부와 관계없이 시스템에 등록된 모든 원본 미션 목록을 조회합니다.")
 	@GetMapping("/missions")
@@ -59,6 +63,14 @@ public class MissionController {
 		MissionResponse response = missionService.getGameMission(gameId, missionId);
 
 		return new CommonResponse<>(response, "미션 상세 조회 성공", HttpStatus.OK);
+	}
+
+	@Operation(summary = "미션 사진 업로드 URL 발급", description = "미션 수행 사진을 S3에 업로드하기 위한 Presigned URL을 발급합니다.")
+	@GetMapping("/missions/upload-url")
+	public CommonResponse<PresignedUrlResponse> getMissionUploadUrl(@RequestParam String fileName) {
+		PresignedUrlResponse response = s3Service.getPresignedPutUrl("missions", fileName);
+
+		return new CommonResponse<>(response, "업로드 URL 발급 완료", HttpStatus.OK);
 	}
 
 }

@@ -4,6 +4,8 @@ import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
@@ -15,12 +17,14 @@ import com.pnt.pnt_spring.domain.games.game.application.GameResultService;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
+import com.pnt.pnt_spring.domain.games.game.entity.GameSetting;
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.enums.WinTeam;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
+import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GradePoliceRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GradeThiefRepository;
 import com.pnt.pnt_spring.domain.games.news.api.req.AiNewsRequest;
@@ -50,6 +54,7 @@ public class GameResultServiceImpl implements GameResultService {
 	private final GameMemberStatRepository gameMemberStatRepository;
 	private final RabbitTemplate rabbitTemplate;
 	private final MemberStatRepository memberStatRepository;
+	private final GameSettingRepository gameSettingRepository;
 
 	private final MemberStatPoliceRepository memberStatPoliceRepository;
 	private final MemberStatThiefRepository memberStatThiefRepository;
@@ -61,7 +66,6 @@ public class GameResultServiceImpl implements GameResultService {
 
 	@Override
 	public void saveGameResult(GameResultRequest request) {
-		log.info("게임 결과 저장 시작: GameId={}", request.getGameId());
 
 		Game game = gameRepository.findById(request.getGameId())
 			.orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
@@ -72,6 +76,23 @@ public class GameResultServiceImpl implements GameResultService {
 
 		game.end(request.getWinTeam());
 
+		// 요청에 포함된 생존/참여 멤버 ID 추출
+		Set<Long> requestMemberIds = request.getMemberStats().stream()
+			.map(GameResultRequest.MemberStat::getGameMemberId)
+			.collect(Collectors.toSet());
+
+		List<GameMember> allMembers = gameMemberRepository.findAllByGameId(request.getGameId());
+
+		// 요청에 없는 멤버는 이탈 처리(isDeleted = true)
+		for (GameMember member : allMembers) {
+			if (!requestMemberIds.contains(member.getId())) {
+				// GameMember.leave() 메서드가 isDeleted = true 처리 및 상태 초기화를 수행함
+				member.leave();
+				log.info("Member {} excluded from game result (marked as deleted)", member.getId());
+			}
+		}
+
+		// 결과에 포함된 멤버들의 스탯 업데이트
 		for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
 			GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(statReq.getGameMemberId())
 				.orElseGet(() -> {
@@ -80,15 +101,15 @@ public class GameResultServiceImpl implements GameResultService {
 					return gameMemberStatRepository.save(GameMemberStat.createInitialStat(gm));
 				});
 
-			// 1. 해당 판의 결과(이동거리, 생존시간) 업데이트
 			stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived());
 
-			// 2. 유저의 누적 스탯(총 승리수, 등급 등) 업데이트 호출
 			updateMemberGradeAndStats(stat, request.getWinTeam(), statReq.getPosition());
 		}
 
-		// AI 뉴스 생성 요청
-		triggerAiNewsGeneration(game, request.getLatitude(), request.getLongitude());
+		GameSetting setting = gameSettingRepository.findByGameIdAndIsDeletedFalse(game.getId())
+			.orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
+
+		triggerAiNewsGeneration(game, setting.getPrisonLat(), setting.getPrisonLng());
 	}
 
 	@Override

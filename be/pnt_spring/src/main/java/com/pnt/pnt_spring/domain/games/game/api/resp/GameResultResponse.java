@@ -9,7 +9,6 @@ import lombok.Getter;
 @Builder
 public class GameResultResponse {
 	private Long gameId;
-	private Long resultId;
 	private String winner; // "POLICE" | "THIEF"
 	private OffsetDateTime endedAt;
 	private TotalStats stats; // 총 게임 스탯(모든 유저들이 쌓은 스탯)
