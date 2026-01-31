@@ -29,23 +29,30 @@ export class RoomController {
         const room = await this.gameService.getGameById(roomId);
 
         if (room.status !== "WAITING") {
-            this.makeError("NotFoundException", "방을 찾을 수 없습니다.", 404);
+            sendError(this.socket, { code: 404, message: "방을 찾을 수 없습니다." }, "NotFoundException");
+            return false;
         }
+
         return true;
     }
 
     joinRoom = async (data) => {
-        const { roomId } = data;
+        try {
+            const roomId = parseInt(data.roomId);
 
-        this.socket.data.roomId = roomId;
+            this.socket.data.roomId = roomId;
 
-        this.socket.join(roomId);
+            this.socket.join(roomId);
 
-        const accessToken = generateMemberAccessToken(this.socket.data.memberId);
-        this.redisClient.setAccessToken(this.socket.data.memberId, accessToken);
-        this.socket.data.accessToken = accessToken;
+            const accessToken = generateMemberAccessToken(this.socket.data.memberId);
+            this.redisClient.setAccessToken(this.socket.data.memberId, accessToken);
+            this.socket.data.accessToken = accessToken;
 
-        this.io.to(roomId).emit("get join room", { roomId });
+            this.io.to(roomId).emit("get join room", { roomId });
+        } catch (error) {
+            console.error("joinRoom error", error);
+            sendError(this.socket, error, "RoomError");
+        }
     }
 
     updateRoomInfo = async (data) => {
@@ -53,9 +60,9 @@ export class RoomController {
 
         console.log("updateRoomInfo", data);
 
-        const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
-
         try {
+            const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+
             const response = await axios.patch(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/settings`, data, {
                 headers: {
                     "Content-Type": "application/json",
@@ -98,10 +105,9 @@ export class RoomController {
 
     updatePreferPosition = async (data) => {
         const roomId = this.socket.data.roomId;
-
-        const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
-
         try {
+            const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+
             const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/position`, data, {
                 headers: {
                     "Content-Type": "application/json",
@@ -135,13 +141,18 @@ export class RoomController {
     }
 
     nowRoomInfo = async (data) => {
-        const roomId = this.socket.data.roomId;
+        try {
+            const roomId = this.socket.data.roomId;
 
-        const room = await this.gameService.getGameById(roomId);
-        const roomSetting = await this.gameSettingService.findGameSetting(roomId);
-        const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
+            const room = await this.gameService.getGameById(roomId);
+            const roomSetting = await this.gameSettingService.findGameSetting(roomId);
+            const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
 
         this.io.to(roomId).emit("get now room info", { room, roomSetting, members });
+        } catch (error) {
+            console.error("nowRoomInfo error", error);
+            sendError(this.socket, error, "RoomError");
+        }
     }
 
     memberKick = async (data) => {
@@ -160,6 +171,30 @@ export class RoomController {
         } catch (error) {
             if (error.response) {
                 this.io.to(roomId).emit("get member kick", error.response.data);
+            } else {
+                sendError(this.socket, error, "RoomError");
+            }
+        }
+    }
+
+    delegateOwner = async (data) => {
+        try {
+            const roomId = this.socket.data.roomId;
+
+            const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+
+            const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/deletegate-host`, {
+                "targetMemberId": parseInt(data.targetMemberId)
+            }, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`
+                }
+            });
+            this.io.to(roomId).emit("get delegate owner", response.data);
+        } catch (error) {
+            if (error.response) {
+                this.io.to(roomId).emit("get delegate owner", error.response.data);
             } else {
                 sendError(this.socket, error, "RoomError");
             }
@@ -207,22 +242,30 @@ export class RoomController {
     }
 
     gameStart = async (data) => {
-        const roomId = this.socket.data.roomId;
+        try {
+            const roomId = this.socket.data.roomId;
 
-        const room = await this.gameService.getGameById(roomId);
-        const roomSetting = await this.gameSettingService.findGameSetting(roomId);
-        const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
+            const room = await this.gameService.getGameById(roomId);
+            const roomSetting = await this.gameSettingService.findGameSetting(roomId);
+            const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
 
         this.io.to(roomId).emit("get game start", { room, roomSetting, members });
+        } catch (error) {
+            sendError(this.socket, error, "RoomError");
+        }
+       
     }
 
     disconnect = async (data) => {
+        try {
         const roomId = this.socket.data.roomId;
 
         this.socket.data.isIntentionalExit = true; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
 
-        this.io.to(roomId).emit("get disconnect", { "message": "사용자가 방을 나갔습니다." });
         this.io.to(roomId).emit("get user left", { roomId: roomId, memberId: this.socket.data.memberId });
+        } catch (error) {
+            sendError(this.socket, error, "RoomError");
+        }
     }
 
 }

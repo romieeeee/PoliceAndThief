@@ -75,22 +75,26 @@ const expiredChannel = async (message, pubClient, chatIo, roomIo, gameIo) => {
 
             await redisClient.deleteGameEnd(gameId);
 
-            await redisClient.deleteAllInGameCachesByGameId(gameId);
-
             // 여긴 승환이가 다 만들어주면 그때 하면됨.
-            const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${gameId}/reset`, {
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${await redisClient.getGameToken(gameId)}`
-                }
-            });
+            try {
+                const token = await redisClient.getGameToken(gameId);
+                const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${gameId}/reset`, {}, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+            } catch (apiError) {
+                console.error(`[ExpiredChannel] API call failed for game ${gameId}:`, apiError.message);
+            }
+
+            await redisClient.deleteAllInGameCachesByGameId(gameId);
 
             gameIo.to(gameId).emit("get game reset", { gameId: parseInt(gameId) });
         } catch (error) {
-            console.error("Error in expiredChannel (game end):", error);
+            console.error("Error in expiredChannel (game end):", error.data);
         }
     }
 }
-
 
 export default expiredChannel;

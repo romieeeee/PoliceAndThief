@@ -76,9 +76,11 @@ export class GameService {
 
         const gameMembers = await this.redisClient.getAllLocations(gameId);
 
+        console.log("gameMembers", gameMembers);
+
         const thiefMembers = gameMembers
             .filter(member => member.position === GameMemberPosition.THIEF &&
-                (!member.status && member.status === GameMemberStatus.FREE) &&
+                (!member.status || member.status === GameMemberStatus.FREE) &&
                 member.isConnected
             );
 
@@ -87,7 +89,16 @@ export class GameService {
                 member.isConnected
             );
 
-        const isGameEnd = thiefMembers.length === 0 || policeMembers.length === 0;
+        let isGameEnd = false;
+
+        console.log("thiefMembers", thiefMembers);
+        console.log("policeMembers", policeMembers);
+
+        if (thiefMembers.length === 0) {
+            isGameEnd = GameMemberPosition.POLICE;
+        } else if (policeMembers.length === 0) {
+            isGameEnd = GameMemberPosition.THIEF;
+        }
 
         return isGameEnd;
     }
