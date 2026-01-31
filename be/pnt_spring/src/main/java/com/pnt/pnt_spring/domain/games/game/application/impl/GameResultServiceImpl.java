@@ -4,7 +4,8 @@ import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -76,33 +77,39 @@ public class GameResultServiceImpl implements GameResultService {
 
 		game.end(request.getWinTeam());
 
-		// 요청에 포함된 생존/참여 멤버 ID 추출
-		Set<Long> requestMemberIds = request.getMemberStats().stream()
-			.map(GameResultRequest.MemberStat::getGameMemberId)
-			.collect(Collectors.toSet());
-
+		// 성능 최적화를 위해 해당 게임의 모든 멤버를 한 번에 조회하여 Map으로 변환
 		List<GameMember> allMembers = gameMemberRepository.findAllByGameId(request.getGameId());
+		Map<Long, GameMember> memberMap = allMembers.stream()
+			.collect(Collectors.toMap(GameMember::getId, Function.identity()));
 
-		// 요청에 없는 멤버는 이탈 처리(isDeleted = true)
-		for (GameMember member : allMembers) {
-			if (!requestMemberIds.contains(member.getId())) {
-				// GameMember.leave() 메서드가 isDeleted = true 처리 및 상태 초기화를 수행함
-				member.leave();
-				log.info("Member {} excluded from game result (marked as deleted)", member.getId());
-			}
-		}
-
-		// 결과에 포함된 멤버들의 스탯 업데이트
+		// 요청된 멤버 스탯 정보를 순회하며 처리
 		for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
-			GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(statReq.getGameMemberId())
-				.orElseGet(() -> {
-					GameMember gm = gameMemberRepository.findById(statReq.getGameMemberId())
-						.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-					return gameMemberStatRepository.save(GameMemberStat.createInitialStat(gm));
-				});
+			GameMember gameMember = memberMap.get(statReq.getGameMemberId());
+
+			if (gameMember == null) {
+				log.warn("GameMember not found for id: {}", statReq.getGameMemberId());
+				continue;
+			}
+
+			// 1. isConnected가 false인 경우 -> 방 나가기 처리 (isDeleted = true) 후 스킵
+			if (Boolean.FALSE.equals(statReq.getIsConnected())) {
+				gameMember.leave(); // 상태 초기화 및 isDeleted = true
+				log.info("Member {} disconnected. Marked as deleted.", gameMember.getId());
+				continue; // 스탯 업데이트 로직 수행 안 함
+			}
+
+			// 2. isConnected가 true인 경우 -> 스탯 업데이트 진행
+
+			// 2-1. GameMember 상태 동기화 (status 등)
+			gameMember.updateGameResultState(statReq.getIsConnected(), statReq.getStatus());
+
+			// 2-2. GameMemberStat 업데이트
+			GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(gameMember.getId())
+				.orElseGet(() -> gameMemberStatRepository.save(GameMemberStat.createInitialStat(gameMember)));
 
 			stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived());
 
+			// 2-3. 누적 스탯 및 등급 업데이트
 			updateMemberGradeAndStats(stat, request.getWinTeam(), statReq.getPosition());
 		}
 
@@ -138,8 +145,15 @@ public class GameResultServiceImpl implements GameResultService {
 				totalArrests += stat.getArrestCount();
 		}
 
-		// 3. 정렬 (경찰: 체포수 내림차순, 도둑: 생존시간 내림차순) - triggerAiNewsGeneration과 동일 로직
-		policeStats.sort((a, b) -> compareStats(b.getArrestCount(), a.getArrestCount()));
+		// 3. 정렬 (경찰: 체포수 내림차순 후 걸음, 도둑: 생존시간 내림차순) - triggerAiNewsGeneration과 동일 로직
+		// 경찰: 체포수(1순위) -> 걸음수(2순위) 내림차순
+		policeStats.sort((a, b) -> {
+			int result = compareStats(b.getArrestCount(), a.getArrestCount());
+			if (result == 0) {
+				return compareStats(b.getWalk(), a.getWalk());
+			}
+			return result;
+		});
 		thiefStats.sort((a, b) -> compareStats(b.getLongestSurvived(), a.getLongestSurvived()));
 
 		// 4. 승리/패배 팀 데이터 추출

@@ -151,8 +151,10 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
 				String signedUrl = s3Service.getPresignedGetUrl(storedKey);
 				return GameRoomMemberItem.builder()
 					.memberId(item.getMemberId())
+					.gameMemberId(item.getGameMemberId())
 					.nickname(item.getNickname())
-					.role(item.getRole())
+					.preferPosition(item.getPreferPosition())
+					.givenPosition(item.getGivenPosition())
 					.isHost(item.isHost())
 					.isReady(item.isReady())
 					.avatarUrl(signedUrl)

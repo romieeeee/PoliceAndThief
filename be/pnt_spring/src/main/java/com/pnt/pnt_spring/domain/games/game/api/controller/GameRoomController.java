@@ -74,4 +74,12 @@ public class GameRoomController {
 			HttpStatus.OK
 		);
 	}
+
+	@PostMapping("/{gameId}/reset")
+	@Operation(summary = "게임방 초기화 (재시작 준비)", description = "게임 종료 후, 같은 멤버끼리 다시 하기 위해 데이터를 초기화합니다.")
+	public CommonResponse<Void> resetGame(@PathVariable Long gameId) {
+		gameRoomService.resetGame(gameId);
+		return new CommonResponse<>(null, "재시작 준비 완료", HttpStatus.OK);
+	}
 }
+

@@ -2,6 +2,7 @@ package com.pnt.pnt_spring.domain.games.game.api.req;
 
 import java.util.List;
 
+import com.pnt.pnt_spring.domain.games.game.enums.GameMemberStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.enums.WinTeam;
 
@@ -25,5 +26,8 @@ public class GameResultRequest {
 		private Position position;
 		private Integer walk;
 		private Integer longestSurvived;
+
+		private Boolean isConnected;
+		private GameMemberStatus status;
 	}
 }

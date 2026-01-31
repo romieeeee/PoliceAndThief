@@ -91,6 +91,15 @@ public class GameMemberStat extends BaseEntity {
 			.build();
 	}
 
+	// 게임 시작 시 확정된 포지션으로 강제 업데이트하는 메서드
+	public void syncPosition(Position position) {
+		this.position = position;
+		// 필요하다면 점수들도 여기서 확실하게 0으로 리셋
+		this.walk = 0;
+		this.arrestCount = 0;
+		this.longestSurvived = 0;
+	}
+
 	// 결과 업데이트
 	public void updateResultStats(Integer walk, Integer longestSurvived) {
 		this.walk = walk;
