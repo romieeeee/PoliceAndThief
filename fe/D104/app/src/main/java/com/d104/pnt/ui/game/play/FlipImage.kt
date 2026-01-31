@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
@@ -19,18 +20,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.d104.pnt.R
+import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.ui.component.QRcodeContainer
 import kotlinx.coroutines.launch
 
 @Composable
 fun FlipImage(
-    frontRes: Int,
-    backRes: Int,
+    role: GameRole,
+    memberId: Long,
     size: Dp = 280.dp
 ) {
     val rotation = remember { Animatable(0f) }
@@ -41,7 +48,7 @@ fun FlipImage(
     Box(
         modifier = Modifier
             .size(size)
-            .clip(CircleShape)
+            .clip(if (role == GameRole.POLICE) CircleShape else RectangleShape)
             // 탭으로 플립
             .clickable {
                 scope.launch {
@@ -97,12 +104,52 @@ fun FlipImage(
     ) {
         // 90도 기준으로 이미지 결정
         val showFront = rotation.value > -90f
-
-        Image(
-            painter = painterResource(if (showFront) frontRes else backRes),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        if (role == GameRole.POLICE) {
+            Image(
+                painter = painterResource(if (showFront) role.badge else R.drawable.img_helicopter),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        else {
+            if (showFront) {
+                Image(
+                    painter = painterResource(role.badge),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            else {
+                Image(
+                    painter = painterResource(R.drawable.ic_thief_bg),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .scale(-1f, 1f)
+                )
+                Box (
+                    modifier = Modifier
+                        .padding(top = 70.dp, bottom = 32.dp, start = 47.dp, end = 47.dp)
+                ) {
+                    QRcodeContainer(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        data = memberId.toString()
+                    )
+                }
+            }
+        }
     }
+}
+
+@Preview
+@Composable
+fun PreviewFlip() {
+    FlipImage(
+        role = GameRole.THIEF,
+        memberId = 16L
+    )
 }
