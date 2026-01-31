@@ -48,9 +48,23 @@ class GameCreateViewModel @Inject constructor(
         _gameName.value = newName
     }
     fun updateTotalPlayers(plus: Boolean) {
-        if (plus && _totalPlayers.value < 30) _totalPlayers.value += 1
-        else if (!plus && _totalPlayers.value > 5) _totalPlayers.value -= 1
-        _policeCount.value = _totalPlayers.value - _thiefCount.value
+        if (plus && _totalPlayers.value < 30) {
+            _totalPlayers.value += 1
+        } else if (!plus && _totalPlayers.value > 5) {
+            _totalPlayers.value -= 1
+        } else {
+            return
+        }
+
+        if (_policeCount.value >= _totalPlayers.value) {
+            _policeCount.value = _totalPlayers.value - 1
+        }
+
+        _thiefCount.value = _totalPlayers.value - _policeCount.value
+
+        if (_missionCount.value > _thiefCount.value) {
+            _missionCount.value = _thiefCount.value
+        }
     }
     fun updateGameTime(plus: Boolean) {
         if (plus && _gameTime.value < 60) _gameTime.value += 5
