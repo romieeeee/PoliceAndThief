@@ -92,7 +92,24 @@ const expiredChannel = async (message, pubClient, chatIo, roomIo, gameIo) => {
             await redisClient.setCctvTimer(gameId, cctvInterval);
         }
     }
+    // Key format: room:game:end:${gameId}
+    // Example: room:game:end:123
+    else if (key.startsWith(redisClient.GAME_END_PREFIX)) {
+        try {
+            const parts = key.split(":");
+            const gameId = parseInt(parts[3]);
 
+            await redisClient.deleteGameEnd(gameId);
+
+            await redisClient.deleteAllGameCachesByGameId(gameId);
+
+            const response = await axios.patch(`${process.env.SPRING_BOOT_URL}/games/${gameId}/end`);
+
+            gameIo.to(gameId).emit("get game reset", { gameId: parseInt(gameId) });
+        } catch (error) {
+            console.error("Error in expiredChannel (game end):", error);
+        }
+    }
 }
 
 
@@ -107,28 +124,32 @@ const chatDisconnect = async (memberId, roomId, chatIo) => {
 // => 비정상 로직이니까 만약 아무도 없다면 방 삭제
 // => 이거는 그냥 api 호출하면 됨.
 const roomDisconnect = async (memberId, roomId, roomIo) => {
-    const accessToken = await redisClient.getAccessToken(memberId);
-    await redisClient.deleteKeys("room", roomId, memberId);
-    await redisClient.deleteAccessToken(memberId);
+    try {
+        const accessToken = await redisClient.getAccessToken(memberId);
+        await redisClient.deleteKeys("room", roomId, memberId);
+        await redisClient.deleteAccessToken(memberId);
 
-    const response = await axios.delete(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/members/me`, {
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`
-        }
-    });
-
-    if (response.status !== 200) {
-        // 에러 처리 해야함. => 이건 무식한 방법이긴 한데 어쩔 수 없다. 유저가 이미 소켓을 끊은 상황이기때문에... => mq 넣는것 말고는 방법이 없는것 같다.
-        await axios.delete(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/members/me`, {
+        const response = await axios.delete(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/members/me`, {
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${accessToken}`
             }
         });
+
+        if (response.status !== 200) {
+            // 에러 처리 해야함. => 이건 무식한 방법이긴 한데 어쩔 수 없다. 유저가 이미 소켓을 끊은 상황이기때문에... => mq 넣는것 말고는 방법이 없는것 같다.
+            await axios.delete(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/members/me`, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`
+                }
+            });
+        }
+        console.log("user_left", { memberId, roomId });
+        roomIo.to(roomId).emit("get user left", { roomId: roomId, memberId: memberId });
+    } catch (error) {
+        console.error("Error in expiredChannel (room disconnect):", error);
     }
-    console.log("user_left", { memberId, roomId });
-    roomIo.to(roomId).emit("get user left", { roomId: roomId, memberId: memberId });
 }
 
 // => 비정상 로직이니까 만약 아무도 없다면 방 삭제 => 연쇄로 다 삭제.
