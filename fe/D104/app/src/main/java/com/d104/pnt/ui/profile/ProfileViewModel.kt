@@ -8,7 +8,7 @@ import android.provider.OpenableColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.R
-import com.d104.pnt.data.remote.model.response.PresignedUrlForProfileResponse
+import com.d104.pnt.data.remote.model.response.PresignedUrlResponse
 import com.d104.pnt.data.remote.model.response.ProfileResponse
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.ImageRepository
@@ -44,7 +44,7 @@ class ProfileViewModel @Inject constructor(
 
     // 화면 상태
     private val _profileState = MutableStateFlow<UiState<ProfileResponse>>(UiState.Idle)
-    private val _uploadState = MutableStateFlow<UiState<PresignedUrlForProfileResponse>>(UiState.Idle)
+    private val _uploadState = MutableStateFlow<UiState<PresignedUrlResponse>>(UiState.Idle)
     val profileState: StateFlow<UiState<ProfileResponse>> = _profileState.asStateFlow()
 
     init {
@@ -207,4 +207,16 @@ class ProfileViewModel @Inject constructor(
             null
         }
     }
+
+    fun safeLogout() {
+        viewModelScope.launch {
+            when (val result = authRepository.logout()) {
+                is BaseResult.Success -> {}
+                is BaseResult.Error -> {
+                    Timber.e("로그아웃 실패: ${result.error.message}")
+                }
+            }
+        }
+    }
+
 }
