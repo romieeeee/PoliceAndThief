@@ -259,11 +259,7 @@ fun MainScreen(
 
             composable(Routes.MISSION_CAMERA) {
                 CameraScreen(
-                    onPhotoConfirmed = { compressedPhotoFile ->
-                        // 이미 압축된 파일이 전달됨
-//                        viewModel.submitMissionPhoto(compressedPhotoFile)
-
-                        // 또는 다음 화면으로 이동
+                    onPhotoConfirmed = {
                         navController.popBackStack()
                     },
                     compressionQuality = 80, // 압축 품질 (0-100) - 기본값 80
