@@ -288,6 +288,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
         policeCount: Int,
         thiefCount: Int,
         cctvInterval: Int,
+        missionCount: Int,
         prison: Location?,
         polygon: List<Location>?
     ) {
@@ -299,6 +300,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
             put("policeCount", policeCount)
             put("thiefCount", thiefCount)
             put("cctvInterval", cctvInterval)
+            put("missionCount", missionCount)
 
             // 감옥 좌표
             put("prison", JSONObject().apply {
