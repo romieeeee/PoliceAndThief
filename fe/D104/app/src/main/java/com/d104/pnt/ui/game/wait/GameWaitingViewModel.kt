@@ -74,7 +74,6 @@ class GameWaitingViewModel @Inject constructor(
         }
 
         loadRoomSettings()
-        startPolling()
     }
 
     // 방 설정 조회
@@ -138,15 +137,12 @@ class GameWaitingViewModel @Inject constructor(
                         Timber.d("CheckHost: 방장 발견! ID=${item.memberId}, 닉네임=${item.nickname}")
                     }
 
-                    // 내 상태 갱신 로직
                     if (item.memberId == currentMemberId) {
-                        // 내가 방장인지 확인
                         if (_isHost.value != item.host) {
                             _isHost.value = item.host
                             Timber.d("CheckHost: 내 방장 권한 변경됨 -> ${item.host}")
                         }
 
-                        // 준비 상태 동기화
                         if (_isMeReady.value != item.ready) {
                             _isMeReady.value = item.ready
                         }
@@ -155,9 +151,13 @@ class GameWaitingViewModel @Inject constructor(
                     WaitingPlayer(
                         id = item.memberId,
                         nickname = item.nickname,
-                        role = if (item.role == "POLICE") GameRole.POLICE else GameRole.THIEF,
+
+                        role = GameRole.fromName(item.preferPosition),
+
                         isReady = item.ready,
-                        profileUrl = item.profileImageUrl,
+
+                        profileUrl = item.avatarUrl,
+
                         isChangingRole = _changingRoleMemberIds.value.contains(item.memberId)
                     )
                 }
@@ -312,4 +312,29 @@ class GameWaitingViewModel @Inject constructor(
         super.onCleared()
         pollingJob?.cancel()
     }
+
+    fun setInitialRole(role: GameRole) {
+        viewModelScope.launch {
+            val position = role.name
+
+            Timber.d("초기 역할 설정 요청: $position")
+
+            val result = gameRoomRepository.changePosition(roomId, position)
+
+            if (result is BaseResult.Error) {
+                Timber.e("초기 역할 설정 실패: ${result.error.message}")
+            }
+
+            fetchMembers()
+            startPolling()
+        }
+    }
+
+    fun resetToUndecided() {
+        viewModelScope.launch {
+
+            gameRoomRepository.changePosition(roomId, "UNDECIDED")
+        }
+    }
+
 }
