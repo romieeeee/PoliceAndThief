@@ -71,13 +71,13 @@ fun GoogleMaps(
     val hapticFeedback = LocalHapticFeedback.current
 
     LaunchedEffect(polygonPoints) {
-        if (polygonPoints.isNotEmpty() && isPreview) {
+        if (polygonPoints.isNotEmpty()) {
             val builder = LatLngBounds.builder()
             polygonPoints.forEach { builder.include(it.position) }
 
             try {
                 val bounds = builder.build()
-                cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 50))
+                cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 20))
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -131,7 +131,7 @@ fun GoogleMaps(
             if (prisonLocation != null) {
                 Circle(
                     center = prisonLocation,
-                    radius = 20.0,
+                    radius = 10.0,
                     fillColor = PrisonArea,
                     strokeColor = PrisonBoundary,
                     strokeWidth = 5f,
