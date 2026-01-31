@@ -31,6 +31,8 @@ export class RedisClient {
             socket.data.chatRoomId = storedRoomId;
         } else if (namespace === 'game') {
             socket.data.gameId = storedRoomId;
+        } else if (namespace === 'room') {
+            socket.data.roomId = storedRoomId;
         }
 
         // Delete keys to cancel expiration event

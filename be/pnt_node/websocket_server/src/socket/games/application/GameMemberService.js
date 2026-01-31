@@ -72,7 +72,7 @@ export class GameMemberService {
         const res = await GameMember.findAll({
             where: {
                 gameId: gameId,
-                isDeleted: false
+                isDeleted: false,
             }
         });
 
