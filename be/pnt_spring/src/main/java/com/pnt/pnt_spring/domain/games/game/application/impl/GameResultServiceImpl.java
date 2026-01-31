@@ -145,8 +145,15 @@ public class GameResultServiceImpl implements GameResultService {
 				totalArrests += stat.getArrestCount();
 		}
 
-		// 3. 정렬 (경찰: 체포수 내림차순, 도둑: 생존시간 내림차순) - triggerAiNewsGeneration과 동일 로직
-		policeStats.sort((a, b) -> compareStats(b.getArrestCount(), a.getArrestCount()));
+		// 3. 정렬 (경찰: 체포수 내림차순 후 걸음, 도둑: 생존시간 내림차순) - triggerAiNewsGeneration과 동일 로직
+		// 경찰: 체포수(1순위) -> 걸음수(2순위) 내림차순
+		policeStats.sort((a, b) -> {
+			int result = compareStats(b.getArrestCount(), a.getArrestCount());
+			if (result == 0) {
+				return compareStats(b.getWalk(), a.getWalk());
+			}
+			return result;
+		});
 		thiefStats.sort((a, b) -> compareStats(b.getLongestSurvived(), a.getLongestSurvived()));
 
 		// 4. 승리/패배 팀 데이터 추출
