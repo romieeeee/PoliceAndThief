@@ -153,12 +153,17 @@ public class GameRoomServiceImpl implements GameRoomService {
 		// 게임 시작
 		game.start();
 
-		// Stat 생성
 		for (GameMember member : members) {
-			if (!gameMemberStatRepository.existsByGameMemberId(member.getId())) {
-				GameMemberStat stat = GameMemberStat.create(member);
-				gameMemberStatRepository.save(stat);
-			}
+			// 기존 스탯을 가져오거나, 없으면 새로 만듦 (GameMemberStat.create 내부에서 member.givenPosition 사용)
+			GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(member.getId())
+				.orElseGet(() -> GameMemberStat.create(member));
+
+			// 가져온 스탯의 포지션을 이번 판에 배정된 포지션(givenPosition)으로 강제 동기화
+			// 이렇게 해야 이전 판 데이터가 남아있어도 이번 판 포지션으로 덮어씌워짐
+			stat.syncPosition(member.getGivenPosition());
+
+			// 저장
+			gameMemberStatRepository.save(stat);
 		}
 
 		// chiefMemberId 포함해서 반환
