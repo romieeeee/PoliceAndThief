@@ -30,37 +30,38 @@ public class S3Service {
 	private String bucketName;
 
 	/**
-	 * Presigned URL 생성 메서드 (업로드용 - PUT)
-	 * memberId를 받아 경로에 포함시킵니다.
+	 * Presigned URL 생성 메서드 (범용)
+	 * prefix 경로 아래에 UUID 파일명으로 저장
+	 * 예) prefix="profiles/1" -> "profiles/1/uuid.jpg"
+	 * 예) prefix="missions"   -> "missions/uuid.jpg"
 	 */
-	public PresignedUrlResponse getPresignedPutUrl(String prefix, String fileName, Long memberId) {
+	public PresignedUrlResponse getPresignedPutUrl(String prefix, String fileName) {
 		if (fileName == null || fileName.isBlank()) {
 			return null;
 		}
 
-		// 1. 확장자 추출 (예: image.png -> .png)
+		// 1. 확장자 추출
 		String extension = "";
 		int dotIndex = fileName.lastIndexOf(".");
 		if (dotIndex > 0) {
-			extension = fileName.substring(dotIndex).toLowerCase(); // .png, .jpg 등
+			extension = fileName.substring(dotIndex).toLowerCase();
 		} else {
-			extension = ".jpg"; // 확장자가 없으면 기본값 jpg 부여
+			extension = ".jpg";
 		}
 
-		// 2. Content-Type 자동 결정
-		String contentType = "image/jpeg"; // 기본값
+		// 2. Content-Type 결정
+		String contentType = "image/jpeg";
 		if (extension.equals(".png")) {
 			contentType = "image/png";
 		}
 
-		// 3. 서버에서 파일명 완전 생성 (UUID + 확장자)
-		// 결과 예시: profiles/1/550e8400-e29b-41d4_originalFileName.jpg
-		String key = prefix + "/" + memberId + "/" + UUID.randomUUID() + extension;
+		// 3. Key 생성 (prefix + "/" + UUID + ext)
+		String key = prefix + "/" + UUID.randomUUID() + extension;
 
 		PutObjectRequest objectRequest = PutObjectRequest.builder()
 			.bucket(bucketName)
 			.key(key)
-			.contentType(contentType) // 서버가 결정한 타입 적용
+			.contentType(contentType)
 			.build();
 
 		PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
