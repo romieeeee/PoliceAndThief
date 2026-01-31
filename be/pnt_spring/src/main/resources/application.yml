@@ -13,7 +13,7 @@ spring:
   jpa:
     database: postgresql
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     show-sql: true
     # data.sql 로드
     defer-datasource-initialization: true
@@ -87,3 +87,8 @@ cloud:
       static: ${AWS_REGION}
     s3:
       bucket: ${AWS_S3_BUCKET_NAME}
+
+livekit:
+  url: wss://your-project.livekit.cloud  # LiveKit Cloud WebSocket URL
+  api-key: ${LIVEKIT_API_KEY}            # 발급받은 API Key
+  api-secret: ${LIVEKIT_API_SECRET}      # 발급받은 API Secret
