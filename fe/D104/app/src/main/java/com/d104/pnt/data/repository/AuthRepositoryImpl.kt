@@ -152,10 +152,21 @@ class AuthRepositoryImpl @Inject constructor(
         Timber.d(
             """
                     accessToken = $accessToken
+                    refreshToken = $refreshToken
                     userId = $userId
                     memberId = $memberId
                 """.trimIndent()
         )
+    }
+
+    override suspend fun refreshTokens(
+        accessToken: String,
+        refreshToken: String
+    ) {
+        dataStore.edit { preferences ->
+            preferences[KEY_ACCESS_TOKEN] = accessToken
+            preferences[KEY_REFRESH_TOKEN] = refreshToken
+        }
     }
 
     override suspend fun clearAuthData() {

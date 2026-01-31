@@ -1,7 +1,7 @@
 package com.d104.pnt.data.repository
 
 import com.d104.pnt.data.remote.api.ImageApiService
-import com.d104.pnt.data.remote.model.response.PresignedUrlForProfileResponse
+import com.d104.pnt.data.remote.model.response.PresignedUrlResponse
 import com.d104.pnt.domain.model.common.ApiError
 import com.d104.pnt.domain.model.common.BaseResult
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -38,9 +38,15 @@ class ImageRepositoryImpl @Inject constructor(
     override suspend fun getPresignedUrlToProfile(
         id: Long,
         fileName: String
-    ): BaseResult<PresignedUrlForProfileResponse> {
+    ): BaseResult<PresignedUrlResponse> {
         return safeApiCall {
             imageApiService.getPresignedUrlForProfile(id, fileName)
+        }
+    }
+
+    override suspend fun getPresignedUrlToMission(fileName: String): BaseResult<PresignedUrlResponse> {
+        return safeApiCall {
+            imageApiService.getPresignedUrlForMission(fileName)
         }
     }
 }

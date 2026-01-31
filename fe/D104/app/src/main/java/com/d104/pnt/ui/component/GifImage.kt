@@ -1,5 +1,6 @@
 package com.d104.pnt.ui.component
 
+import android.os.Build.VERSION.SDK_INT
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -8,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
 
 @Composable
@@ -19,13 +21,19 @@ fun GifImage(
 
     val imageLoader = ImageLoader.Builder(context)
         .components {
-            add(GifDecoder.Factory())
+            if (SDK_INT >= 28) {
+                add(ImageDecoderDecoder.Factory())
+            } else {
+                add(GifDecoder.Factory())
+            }
         }
         .build()
 
     AsyncImage(
         model = ImageRequest.Builder(context)
             .data(imageRes)
+            .allowHardware(false)
+            .crossfade(true)
             .build(),
         imageLoader = imageLoader,
         contentDescription = null,
