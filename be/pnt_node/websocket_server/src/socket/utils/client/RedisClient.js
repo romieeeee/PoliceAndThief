@@ -7,6 +7,7 @@ export class RedisClient {
         this.RECONNECT_PREFIX = "websocket:reconnect:timer:";
         this.GAME_TIMER_PREFIX = "room:game:timer:";
         this.CCTV_TIMER_PREFIX = "room:game:cctv:";
+        this.GAME_END_PREFIX = "room:game:end:";
     }
 
     /**
@@ -97,6 +98,10 @@ export class RedisClient {
         return JSON.parse(gameSetting);
     }
 
+    deleteGameSetting = async (gameId) => {
+        await this.pubClient.del(this.getGameSettingString(gameId));
+    }
+
     setGameSettingLock = async (gameId, time) => {
         const duration = parseInt(time);
         if (isNaN(duration)) {
@@ -108,6 +113,28 @@ export class RedisClient {
 
     deleteGameSettingLock = async (gameId) => {
         await this.pubClient.del(`room:game:setting:lock:${gameId}`);
+    }
+
+    /**
+     * 게임 토큰
+     * 
+     * 게임 종료 및 초기화 api 호출 시 사용할 토큰
+     */
+    setGameToken = async (gameId, token, timeLimit) => {
+        await this.pubClient.set(this.getGameTokenString(gameId), token, "EX", (timeLimit + 5) * 60);
+    }
+
+    getGameToken = async (gameId) => {
+        const token = await this.pubClient.get(this.getGameTokenString(gameId));
+        return token;
+    }
+
+    deleteGameToken = async (gameId) => {
+        await this.pubClient.del(this.getGameTokenString(gameId));
+    }
+
+    getGameTokenString = (gameId) => {
+        return `room:game:token:${gameId}`;
     }
 
     /**
@@ -206,6 +233,10 @@ export class RedisClient {
         await this.deleteAllLocations(gameId);
         await this.pubClient.del(this.getPenaltyKeyString(gameId));
         await this.deleteCctvTimer(gameId);
+        await this.deleteStartedCount(gameId);
+        await this.deleteGameToken(gameId);
+        await this.deleteGameSetting(gameId);
+        await this.deleteGameTimer(gameId);
     }
 
     /**
@@ -277,6 +308,26 @@ export class RedisClient {
         await this.pubClient.del(this.getStartedString(gameId));
         await this.deleteStartedCount(gameId);
         await this.deleteCctvTimer(gameId);
+    }
+
+    /**
+     * 게임 종료 후 1분 동안만 유지
+     */
+    setGameEnd = async (gameId) => {
+        await this.pubClient.set(this.getGameEndKeyString(gameId), "end", "EX", 60);
+    }
+
+    getGameEnd = async (gameId) => {
+        const gameEnd = await this.pubClient.get(this.getGameEndKeyString(gameId));
+        return gameEnd;
+    }
+
+    deleteGameEnd = async (gameId) => {
+        await this.pubClient.del(this.getGameEndKeyString(gameId));
+    }
+
+    getGameEndKeyString = (gameId) => {
+        return `room:game:end:${gameId}`;
     }
 
     getGameTimerLock = async (gameId) => {
