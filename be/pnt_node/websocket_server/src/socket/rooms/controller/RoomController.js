@@ -1,0 +1,271 @@
+import { GameMemberService } from "../../games/application/GameMemberService.js";
+import { GameService } from "../../games/application/GameService.js";
+import { GameSettingService } from "../../games/application/GameSettingService.js";
+import { RedisClient } from "../../utils/client/RedisClient.js";
+import axios from "axios";
+import { sendError } from "../../../global/util/SocketError.js";
+import { JwtResolver, resolveInSocket, resolveInController } from "../../../global/auth/JwtResolver.js";
+import { generateToken, generateMemberAccessToken } from "../../../global/auth/JwtProvider.js";
+
+
+export class RoomController {
+    constructor(io, socket) {
+        this.io = io;
+        this.socket = socket;
+        this.redisClient = new RedisClient();
+        this.gameSettingService = new GameSettingService();
+        this.gameMemberService = new GameMemberService();
+        this.gameService = new GameService();
+    }
+
+    /*
+    * 게임 로비 입장 => db 입장 처리는 spring 에서 처리
+    * 
+    * 내려줄 정보 없음.
+    * 
+    */
+
+    isActiveRoom = async (roomId) => {
+        const room = await this.gameService.getGameById(roomId);
+
+        if (room.status !== "WAITING") {
+            sendError(this.socket, { code: 404, message: "방을 찾을 수 없습니다." }, "NotFoundException");
+            return false;
+        }
+
+        return true;
+    }
+
+    joinRoom = async (data) => {
+        try {
+            const roomId = parseInt(data.roomId);
+
+            this.socket.data.roomId = roomId;
+
+            this.socket.join(roomId);
+
+            const accessToken = generateMemberAccessToken(this.socket.data.memberId);
+            this.redisClient.setAccessToken(this.socket.data.memberId, accessToken);
+            this.socket.data.accessToken = accessToken;
+
+            this.io.to(roomId).emit("get join room", { roomId });
+        } catch (error) {
+            console.error("joinRoom error", error);
+            sendError(this.socket, error, "RoomError");
+        }
+    }
+
+    updateRoomInfo = async (data) => {
+        const roomId = this.socket.data.roomId;
+
+        console.log("updateRoomInfo", data);
+
+        try {
+            const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+
+            const response = await axios.patch(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/settings`, data, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`
+                }
+            });
+            this.io.to(roomId).emit("get update room info", response.data);
+        } catch (error) {
+            if (error.response) {
+                this.io.to(roomId).emit("get update room info", error.response.data);
+            } else {
+                sendError(this.socket, error, "RoomError");
+            }
+        }
+    }
+
+    updateReady = async (data) => {
+        const roomId = this.socket.data.roomId;
+
+        const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+
+        try {
+            const response = await axios.patch(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/ready`, data, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`
+                }
+            });
+            console.log("updateReady", response.data);
+            this.io.to(roomId).emit("get update ready", response.data);
+        } catch (error) {
+            console.log("updateReady error", error);
+            if (error.response) {
+                this.io.to(roomId).emit("get update ready", error.response.data);
+            } else {
+                sendError(this.socket, error, "RoomError");
+            }
+        }
+    }
+
+    updatePreferPosition = async (data) => {
+        const roomId = this.socket.data.roomId;
+        try {
+            const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+
+            const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/position`, data, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`
+                }
+            });
+
+            this.io.to(roomId).emit("get update prefer position", response.data);
+        } catch (error) {
+            if (error.response) {
+                this.io.to(roomId).emit("get update prefer position", error.response.data);
+            } else {
+                sendError(this.socket, error, "RoomError");
+            }
+        }
+    }
+
+    nowReadyInfo = async (data) => {
+        const roomId = this.socket.data.roomId;
+
+        const gameMembers = await this.gameMemberService.getGameMembers(parseInt(roomId));
+        const readyInfo = gameMembers.map((gameMember) => {
+            return {
+                memberId: gameMember.memberId,
+                ready: gameMember.ready,
+                preferPosition: gameMember.preferPosition
+            }
+        })
+
+        this.io.to(roomId).emit("get now ready info", readyInfo);
+    }
+
+    nowRoomInfo = async (data) => {
+        try {
+            const roomId = this.socket.data.roomId;
+
+            const room = await this.gameService.getGameById(roomId);
+            const roomSetting = await this.gameSettingService.findGameSetting(roomId);
+            const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
+
+        this.io.to(roomId).emit("get now room info", { room, roomSetting, members });
+        } catch (error) {
+            console.error("nowRoomInfo error", error);
+            sendError(this.socket, error, "RoomError");
+        }
+    }
+
+    memberKick = async (data) => {
+        const roomId = this.socket.data.roomId;
+
+        const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+
+        try {
+            const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/members/kick`, data, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`
+                }
+            });
+            this.io.to(roomId).emit("get member kick", response.data);
+        } catch (error) {
+            if (error.response) {
+                this.io.to(roomId).emit("get member kick", error.response.data);
+            } else {
+                sendError(this.socket, error, "RoomError");
+            }
+        }
+    }
+
+    delegateOwner = async (data) => {
+        try {
+            const roomId = this.socket.data.roomId;
+
+            const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+
+            const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/deletegate-host`, {
+                "targetMemberId": parseInt(data.targetMemberId)
+            }, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`
+                }
+            });
+            this.io.to(roomId).emit("get delegate owner", response.data);
+        } catch (error) {
+            if (error.response) {
+                this.io.to(roomId).emit("get delegate owner", error.response.data);
+            } else {
+                sendError(this.socket, error, "RoomError");
+            }
+        }
+    }
+
+    postUpdateAccessToken = async (data) => {
+        try {
+            const accessToken = data.accessToken;
+
+            resolveInController(accessToken);
+
+            this.redisClient.setAccessToken(this.socket.data.memberId, accessToken);
+            this.socket.data.accessToken = accessToken;
+
+            console.log("update access token", this.socket.data.accessToken);
+
+            this.socket.emit("get update access token", { "accessToken": data.accessToken });
+        } catch (error) {
+            sendError(this.socket, error, "RoomError");
+        }
+
+    }
+
+    updateRoomMap = async (data) => {
+        const roomId = this.socket.data.roomId;
+
+        const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+
+        try {
+            const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/map`, data, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`
+                }
+            });
+            this.io.to(roomId).emit("get update room map", response.data);
+        } catch (error) {
+            if (error.response) {
+                this.io.to(roomId).emit("get update room map", error.response.data);
+            } else {
+                sendError(this.socket, error, "RoomError");
+            }
+        }
+    }
+
+    gameStart = async (data) => {
+        try {
+            const roomId = this.socket.data.roomId;
+
+            const room = await this.gameService.getGameById(roomId);
+            const roomSetting = await this.gameSettingService.findGameSetting(roomId);
+            const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
+
+        this.io.to(roomId).emit("get game start", { room, roomSetting, members });
+        } catch (error) {
+            sendError(this.socket, error, "RoomError");
+        }
+       
+    }
+
+    disconnect = async (data) => {
+        try {
+        const roomId = this.socket.data.roomId;
+
+        this.socket.data.isIntentionalExit = true; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
+
+        this.io.to(roomId).emit("get user left", { roomId: roomId, memberId: this.socket.data.memberId });
+        } catch (error) {
+            sendError(this.socket, error, "RoomError");
+        }
+    }
+
+}
