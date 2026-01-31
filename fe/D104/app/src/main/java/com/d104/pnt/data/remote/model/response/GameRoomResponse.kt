@@ -8,8 +8,73 @@ import com.google.gson.annotations.SerializedName
 data class CreateGameRoomResponse(
     @SerializedName("roomId")
     val roomId: Long,
+
     @SerializedName("roomCode")
     val roomCode: String,
+
     @SerializedName("status")
-    val status: String,
+    val status: String?,
+)
+
+data class GameRoomSettingsResponse(
+    @SerializedName("roomId")
+    val roomId: Long,
+
+    @SerializedName("roomCode")
+    val roomCode: String,
+
+    @SerializedName("status")
+    val status: String?,
+
+    @SerializedName("timeLimit")
+    val timeLimit: Int,
+
+    @SerializedName("playerCount")
+    val playerCount: Int,
+
+    @SerializedName("policeCount")
+    val policeCount: Int,
+
+    @SerializedName("thiefCount")
+    val thiefCount: Int,
+
+    @SerializedName("cctvInterval")
+    val cctvInterval: Int,
+
+    @SerializedName("missionCount")
+    val missionCount: Int,
+
+    @SerializedName("prisonLat")
+    val prisonLat: Double,
+
+    @SerializedName("prisonLng")
+    val prisonLng: Double,
+)
+
+data class GameMemberListResponse(
+    @SerializedName("roomId")
+    val roomId: Long,
+
+    @SerializedName("items")
+    val items: List<Item>
+)
+
+data class Item(
+    @SerializedName("memberId")
+    val memberId: Long,
+
+    @SerializedName("nickname")
+    val nickname: String,
+
+    @SerializedName("role")
+    val role: String,
+
+    @SerializedName("profileImageUrl")
+    val profileImageUrl: String?,
+
+    @SerializedName("host")
+    val host: Boolean,
+
+    @SerializedName("ready")
+    val ready: Boolean
 )

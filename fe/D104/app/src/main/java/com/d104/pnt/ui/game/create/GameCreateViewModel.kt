@@ -104,16 +104,24 @@ class GameCreateViewModel @Inject constructor(
     fun createGameRoom(
         playerCount: Int,
         timeLimit: Int,
+        cctvInterval: Int,
+        missionCount: Int,
         policeCount: Int,
         thiefCount: Int,
         prison: Location,
         polygon: List<Location>
     ) {
+        if (_gameRoomState.value is UiState.Loading) {
+            return
+        }
+
         viewModelScope.launch {
             _gameRoomState.value = UiState.Loading
             when (val result = gameRoomRepository.createGameRoom(
                 playerCount,
                 timeLimit,
+                cctvInterval,
+                missionCount,
                 policeCount,
                 thiefCount,
                 prison,
@@ -121,11 +129,9 @@ class GameCreateViewModel @Inject constructor(
             )) {
                 is BaseResult.Success -> {
                     _gameRoomState.value = UiState.Success(result.data)
-                    Timber.d("GameRoomCreate: ${result.data}")
                 }
                 is BaseResult.Error -> {
                     _gameRoomState.value = UiState.Error(result.error.message)
-                    Timber.d("GameRoomCreate Error: ${result.error.message}")
                 }
             }
         }

@@ -48,6 +48,7 @@ import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import com.d104.pnt.ui.component.KickedNoticeDialog
 
 @Composable
 fun MainScreen(
@@ -94,13 +95,26 @@ fun MainScreen(
                 .windowInsetsPadding(WindowInsets.navigationBars)
         ) {
             // ===== BottomNav 탭 =====
-            composable(Routes.HOME) {
+            composable(Routes.HOME) { backStackEntry ->
+
+                val savedStateHandle = backStackEntry.savedStateHandle
+                val kickMessage = savedStateHandle.get<String>("kick_message")
+
+                if (kickMessage != null) {
+                    KickedNoticeDialog(
+                        reason = kickMessage,
+                        onConfirm = {
+                            savedStateHandle.remove<String>("kick_message")
+                        }
+                    )
+                }
+
                 HomeScreen(
                     goToGameCreate = {
                         navController.navigate(Routes.GAME_CREATE)
                     },
                     navigateToGameRoom = { roomId ->
-                        navController.navigate(Routes.ROLE_SELECT)
+                        navController.navigate(Routes.buildGameRoom(roomId))
                     },
                     navigateToIntro = { navigateToIntro() }
                 )
@@ -166,7 +180,16 @@ fun MainScreen(
                             popUpTo(Routes.HOME)
                         }
                     },
-                    onBackPressed = { navController.popBackStack() }
+                    onBackPressed = { navController.popBackStack() },
+
+                    onNavigateHome = { message ->
+                        if (message != null) {
+                            navController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.set("kick_message", message)
+                        }
+                        navController.popBackStack()
+                    }
                 )
             }
 
@@ -225,24 +248,18 @@ fun MainScreen(
                     onCancel = {
                         navController.popBackStack()
                     },
-                    onConfirm = {
-                        // TODO: 게임 방 생성 후 대기방 이동할지 메인으로 갈지 고민중
-//                        navController.navigate(
-//                            Routes.buildGameRoom(1)
-//                        ) {
-//                            popUpTo(Routes.HOME)
-//                        }
+                    onConfirm = { roomId ->
+                        navController.navigate(Routes.buildGameRoom(roomId)) {
+
+                            popUpTo(Routes.HOME)
+                        }
                     }
                 )
             }
 
             composable(Routes.MISSION_CAMERA) {
                 CameraScreen(
-                    onPhotoConfirmed = { compressedPhotoFile ->
-                        // 이미 압축된 파일이 전달됨
-//                        viewModel.submitMissionPhoto(compressedPhotoFile)
-
-                        // 또는 다음 화면으로 이동
+                    onPhotoConfirmed = {
                         navController.popBackStack()
                     },
                     compressionQuality = 80, // 압축 품질 (0-100) - 기본값 80
