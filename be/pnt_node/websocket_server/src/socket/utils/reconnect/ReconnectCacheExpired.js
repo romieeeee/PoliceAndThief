@@ -3,7 +3,6 @@ import { ChatRoomService } from "../../chats/application/ChatRoomService.js";
 import { RedisClient } from "../client/RedisClient.js";
 import { GameController } from "../../games/controller/GameController.js";
 import axios from "axios";
-import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemberPosition.js";
 
 
 export class WebSocketReconnect {
@@ -104,3 +103,5 @@ export class WebSocketReconnect {
     }
 
 }
+
+
