@@ -129,4 +129,19 @@ public class GameMember extends BaseEntity {
 		}
 		this.givenPosition = position;
 	}
+
+	// 추가: 결과 저장 시 상태 업데이트
+	public void updateGameResultState(Boolean isConnected, GameMemberStatus status) {
+		this.inGameConnected = isConnected;
+		this.status = status;
+	}
+
+	// 게임 재시작(Reset) 시 상태 초기화
+	public void resetForNewGame() {
+		this.ready = false;
+		this.givenPosition = null; // 포지션 배정 초기화
+		this.status = null;        // 인게임 상태(감옥 등) 초기화
+		this.inGameConnected = true; // 대기방 상태이므로 기본 연결로 간주 (혹은 null)
+		this.preferPosition = null;
+	}
 }
