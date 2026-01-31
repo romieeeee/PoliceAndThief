@@ -50,9 +50,7 @@ fun ReportDialog(
     val reasons = listOf("욕설", "폭행", "비매너", "구역 이탈", "기타")
 
     var targetUser by remember { mutableStateOf(initialTargetUser) }
-    var selectedReason by remember {
-        mutableStateOf(if (initialReason.isNotEmpty()) initialReason else reasons[0])
-    }
+    var selectedReason by remember { mutableStateOf(if (initialReason.isNotEmpty()) initialReason else reasons[0]) }
     var reportDescription by remember { mutableStateOf(initialDescription) }
     var errorText by remember { mutableStateOf("") }
     val selectedColor = Color(0xFFD35400)
@@ -95,9 +93,7 @@ fun ReportDialog(
                     )
                     Spacer(modifier = Modifier.width(24.dp))
 
-                    Column(
-                        modifier = Modifier.width(160.dp)
-                    ) {
+                    Column(modifier = Modifier.width(160.dp)) {
                         BasicTextField(
                             value = targetUser,
                             onValueChange = {
@@ -133,9 +129,11 @@ fun ReportDialog(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Canvas(modifier = Modifier
-                            .fillMaxWidth()
-                            .height(2.dp)) {
+                        Canvas(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(2.dp)
+                        ) {
                             drawLine(
                                 color = Color.White,
                                 start = Offset(0f, 0f),
@@ -210,7 +208,7 @@ fun ReportDialog(
                             decorationBox = { innerTextField ->
                                 if (reportDescription.isEmpty()) {
                                     Text(
-                                        text = "상세 내용을 입력하세요.", // Placeholder
+                                        text = "상세 내용을 입력하세요.",
                                         color = Color.Gray,
                                         fontFamily = PixelFont,
                                         fontSize = 12.sp
@@ -280,7 +278,6 @@ fun ReportDialog(
     }
 }
 
-// 신고 사유 버튼 선택기능
 @Composable
 fun ReasonChip(
     text: String,
@@ -309,13 +306,17 @@ fun ReasonChip(
     }
 }
 
-// 신고 확인 다이얼로그
+/**
+ * ✅ 개선: 로딩/에러 표시 지원
+ */
 @Composable
 fun ConfirmReportDialog(
+    isLoading: Boolean,
+    errorText: String?,
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit
 ) {
-    Dialog(onDismissRequest = onDismissRequest) {
+    Dialog(onDismissRequest = { if (!isLoading) onDismissRequest() }) {
         PixelContainer(
             backgroundColor = DarkSurface,
             borderColor = Color.White,
@@ -348,6 +349,18 @@ fun ConfirmReportDialog(
                     textAlign = TextAlign.Center
                 )
 
+                if (!errorText.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        text = errorText,
+                        fontFamily = PixelFont,
+                        fontSize = 14.sp,
+                        color = AccentRed,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(30.dp))
 
                 Row(
@@ -356,7 +369,7 @@ fun ConfirmReportDialog(
                 ) {
                     PixelButtonCode(
                         text = "취소",
-                        onClick = onDismissRequest,
+                        onClick = { if (!isLoading) onDismissRequest() },
                         mainColor = Color.White,
                         textColor = Color.Black,
                         blockWidth = 24,
@@ -367,8 +380,8 @@ fun ConfirmReportDialog(
                     Spacer(modifier = Modifier.width(20.dp))
 
                     PixelButtonCode(
-                        text = "신고하기",
-                        onClick = onConfirm,
+                        text = if (isLoading) "전송 중..." else "신고하기",
+                        onClick = { if (!isLoading) onConfirm() },
                         mainColor = Color.White,
                         textColor = Color.Black,
                         blockWidth = 24,
@@ -381,7 +394,6 @@ fun ConfirmReportDialog(
     }
 }
 
-// 신고 완료 다이얼로그
 @Composable
 fun SuccessReportDialog(
     onDismissRequest: () -> Unit
