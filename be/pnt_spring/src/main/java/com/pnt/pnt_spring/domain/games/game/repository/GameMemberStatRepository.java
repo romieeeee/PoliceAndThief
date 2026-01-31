@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -51,4 +52,9 @@ public interface GameMemberStatRepository extends JpaRepository<GameMemberStat, 
 		"JOIN FETCH m.memberProfile " +
 		"WHERE gm.game.id = :gameId")
 	List<GameMemberStat> findAllByGameId(@Param("gameId") Long gameId);
+
+	// 멤버 스탯 0으로 초기화 (재사용)
+	@Modifying(clearAutomatically = true)
+	@Query("UPDATE GameMemberStat s SET s.walk = 0, s.arrestCount = 0, s.longestSurvived = 0 WHERE s.gameMember.game.id = :gameId")
+	void resetAllByGameId(@Param("gameId") Long gameId);
 }
