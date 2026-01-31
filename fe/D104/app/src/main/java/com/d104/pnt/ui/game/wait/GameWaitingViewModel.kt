@@ -183,7 +183,9 @@ class GameWaitingViewModel @Inject constructor(
             )
 
             // 플레이어 리스트 업데이트
-            _players.value = data.members.map { member ->
+            _players.value = data.members
+                .distinctBy { it.memberId } // 중복된 멤버 ID 제거
+                .map { member ->
 
                 if (member.memberId == myId) {
                     _isMeReady.value = member.ready
@@ -268,9 +270,9 @@ class GameWaitingViewModel @Inject constructor(
                     role = when (position) {
                         "POLICE" -> GameRole.POLICE
                         "THIEF" -> GameRole.THIEF
-                        "UNDECIDED" -> GameRole.UNDECIDED
                         else -> GameRole.ANY
-                    }
+                    },
+                    isChangingRole = false
                 )
             } else {
                 player

@@ -81,12 +81,13 @@ fun GameWaitingScreen(
     }
 
     val policeCount = players.count { it.role == GameRole.POLICE && !it.isChangingRole }
+
     val thiefCount = players.count { it.role == GameRole.THIEF && !it.isChangingRole }
 
-    val anyCount = players.size - policeCount - thiefCount
+    val anyCount = 0 // TODO: ANY 카운팅 수정 필요
 
     val isAllReady = players.isNotEmpty() && players.filter { it.id != myMemberId }.all {
-        it.isReady && !it.isChangingRole && it.role != GameRole.ANY
+        it.isReady && !it.isChangingRole && it.role != GameRole.ANY && it.role != GameRole.UNDECIDED
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
