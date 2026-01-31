@@ -37,7 +37,7 @@ export class RoomController {
     }
 
     joinRoom = async (data) => {
-        const { roomId } = data;
+        const roomId = parseInt(data.roomId);
 
         this.socket.data.roomId = roomId;
 
