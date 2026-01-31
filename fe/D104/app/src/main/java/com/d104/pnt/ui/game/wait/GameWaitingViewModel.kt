@@ -258,11 +258,12 @@ class GameWaitingViewModel @Inject constructor(
                 val isThisMemberHost = (member.memberId == hostId)
 
                 // 포지션 결정 (팀원 로직: given 우선)
-                val displayRoleString = if (!member.givenPosition.isNullOrEmpty() && member.givenPosition != "UNDECIDED") {
-                    member.givenPosition
-                } else {
-                    member.preferPosition
-                }
+                val displayRoleString =
+                    if (!member.givenPosition.isNullOrEmpty() && member.givenPosition != "UNDECIDED") {
+                        member.givenPosition
+                    } else {
+                        member.preferPosition
+                    }
 
                 // [팀원 로직 반영] 역할 변경 중일 때 방장 ready 상태 조정
                 val isChangingRole = changingMemberIds.contains(member.memberId)
@@ -309,18 +310,36 @@ class GameWaitingViewModel @Inject constructor(
      */
     private fun parseRoomSettings(data: JSONObject) {
         try {
-            _roomInfo.value = _roomInfo.value.copy(
-                maxCount = data.getInt("playerCount"),
-                policeCount = data.getInt("policeCount"),
-                thiefCount = data.getInt("thiefCount"),
-                timeLimit = data.getInt("timeLimit") / 60,
-                prison = Location(
-                    lat = data.getJSONObject("prison").getDouble("lat"),
-                    lng = data.getJSONObject("prison").getDouble("lng")
+            // 응답 성공 여부 확인
+            if (data.has("code") && data.getInt("code") != 200) {
+                val msg = data.optString("message", "설정 변경 실패")
+                Timber.e("📥 서버 에러: $msg")
+                return
+            }
+
+            val actualData = data.optJSONObject("data") ?: data
+
+            _roomInfo.value.prison?.let {
+                _roomInfo.value = _roomInfo.value.copy(
+                    maxCount = actualData.optInt("playerCount", _roomInfo.value.maxCount),
+                    policeCount = actualData.optInt("policeCount", _roomInfo.value.policeCount),
+                    thiefCount = actualData.optInt("thiefCount", _roomInfo.value.thiefCount),
+
+                    timeLimit = actualData.optInt("timeLimit", _roomInfo.value.timeLimit * 60) / 60,
+                    missionCount = actualData.optInt("missionCount", _roomInfo.value.missionCount),
+                    cctvCycle = actualData.optInt("cctvInterval", _roomInfo.value.cctvCycle),
+
+                    prison = Location(
+                        lat = actualData.optDouble("prisonLat", it.lat),
+                        lng = actualData.optDouble("prisonLng", it.lng)
+                    )
                 )
-            )
+            }
+
+            Timber.d("✅ 방 설정 로컬 반영 성공: ${_roomInfo.value}")
+
         } catch (e: Exception) {
-            Timber.e(e, "방 설정 파싱 실패")
+            Timber.e(e, "❌ 방 설정 파싱 실패: 데이터 구조 확인 필요")
         }
     }
 

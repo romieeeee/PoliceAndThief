@@ -56,6 +56,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
     private var onReconnected: ((Long) -> Unit)? = null
 
     override fun setupCustomListeners() {
+
         on(EVENT_ROOM_RECONNECT) { args ->
             try {
                 val root = args[0] as JSONObject
