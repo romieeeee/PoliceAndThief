@@ -3,10 +3,7 @@ package com.pnt.pnt_spring.domain.games.game.application;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomJoinRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomPositionRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomReadyRequest;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomJoinResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomMemberListResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomPositionResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomReadyResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.*;
 
 public interface GameRoomMemberService {
 
@@ -22,6 +19,6 @@ public interface GameRoomMemberService {
 
 	void kick(Long actorId, Long roomId, Long targetMemberId, String reason);
 
-	void delegateHost(Long actorId, Long roomId, Long targetMemberId);
+	GameRoomHostDelegateResponse delegateHost(Long actorId, Long roomId, Long targetMemberId);
 
 }
