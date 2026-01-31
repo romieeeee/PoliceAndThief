@@ -8,6 +8,29 @@ export class GameMemberService {
         this.redisClient = new RedisClient();
     }
 
+    getGameMembers = async (gameId) => {
+        const res = await GameMember.findAll({
+            where: {
+                gameId: gameId,
+                isDeleted: false
+            },
+            include: [
+                {
+                    model: Member,
+                    attributes: ["id"],
+                    include: [
+                        {
+                            model: MemberProfile,
+                            attributes: ["nickname", "avatarUrl"]
+                        }
+                    ]
+                }
+            ]
+        });
+
+        return res;
+    }
+
     findMemberGame = async (gameId, memberId) => {
         const res = JSON.parse(await this.redisClient.getLocation(memberId, gameId));
 

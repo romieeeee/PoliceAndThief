@@ -5,6 +5,8 @@ import { RedisClient } from "../../utils/client/RedisClient.js";
 import axios from "axios";
 import { sendError } from "../../../global/util/SocketError.js";
 import { JwtResolver, resolveInSocket, resolveInController } from "../../../global/auth/JwtResolver.js";
+import { generateToken, generateMemberAccessToken } from "../../../global/auth/JwtProvider.js";
+
 
 export class RoomController {
     constructor(io, socket) {
@@ -39,11 +41,17 @@ export class RoomController {
 
         this.socket.join(roomId);
 
+        const accessToken = generateMemberAccessToken(this.socket.data.memberId);
+        this.redisClient.setAccessToken(this.socket.data.memberId, accessToken);
+        this.socket.data.accessToken = accessToken;
+
         this.io.to(roomId).emit("get join room", { roomId });
     }
 
     updateRoomInfo = async (data) => {
-        const { roomId } = data;
+        const roomId = this.socket.data.roomId;
+
+        console.log("updateRoomInfo", data);
 
         const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
 
@@ -65,7 +73,7 @@ export class RoomController {
     }
 
     updateReady = async (data) => {
-        const { roomId } = data;
+        const roomId = this.socket.data.roomId;
 
         const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
 
@@ -118,7 +126,7 @@ export class RoomController {
         const readyInfo = gameMembers.map((gameMember) => {
             return {
                 memberId: gameMember.memberId,
-                isReady: gameMember.isReady,
+                ready: gameMember.ready,
                 preferPosition: gameMember.preferPosition
             }
         })
@@ -196,6 +204,16 @@ export class RoomController {
                 sendError(this.socket, error, "RoomError");
             }
         }
+    }
+
+    gameStart = async (data) => {
+        const roomId = this.socket.data.roomId;
+
+        const room = await this.gameService.getGameById(roomId);
+        const roomSetting = await this.gameSettingService.findGameSetting(roomId);
+        const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
+
+        this.io.to(roomId).emit("get game start", { room, roomSetting, members });
     }
 
     disconnect = async (data) => {
