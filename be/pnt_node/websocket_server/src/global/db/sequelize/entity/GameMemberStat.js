@@ -33,6 +33,11 @@ export default class GameMemberStat extends Model {
                     allowNull: true,
                     defaultValue: 0,
                 },
+                isDeleted: {
+                    type: DataTypes.BOOLEAN,
+                    allowNull: false,
+                    defaultValue: false,
+                },
             },
             {
                 sequelize,

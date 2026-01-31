@@ -2,17 +2,13 @@ package com.pnt.pnt_spring.domain.games.game.application.impl;
 
 import java.util.List;
 
+import com.pnt.pnt_spring.domain.games.game.api.resp.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomJoinRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomPositionRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomReadyRequest;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomJoinResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomMemberItem;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomMemberListResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomPositionResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomReadyResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomMemberService;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
@@ -241,8 +237,73 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
 		}
 
 		GameMember target = gameMemberRepository.findByGameIdAndMemberIdAndIsDeletedFalse(roomId, targetMemberId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_JOINED));
+			.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_JOINED, "이미 강퇴한 사용자입니다."));
 
 		target.kick();
 	}
+
+	@Override
+	public GameRoomHostDelegateResponse delegateHost(Long actorId, Long roomId, Long targetMemberId) {
+		// ===== 요청값 검증 =====
+		if (targetMemberId == null) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST);
+		}
+		if (actorId.equals(targetMemberId)) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST); // 본인 위임 금지
+		}
+
+		// ===== 동시성 대비: 게임방 row 락 =====
+		Game game = gameRepository.findByIdForUpdate(roomId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_FOUND));
+
+		// 정책: 대기방(WAITING)에서만 위임 허용
+		if (!game.isWaiting()) {
+			throw new BusinessException(ErrorCode.ROOM_ALREADY_STARTED);
+		}
+
+		// 권한: 방장만 위임 가능
+		if (!game.isHost(actorId)) {
+			throw new BusinessException(ErrorCode.ROOM_NOT_HOST);
+		}
+
+		// 기존 방장(응답용)
+		Long oldHostMemberId = game.getHost().getId();
+
+		// 이미 방장인 경우
+		if (oldHostMemberId.equals(targetMemberId)) {
+			throw new BusinessException(ErrorCode.INVALID_REQUEST);
+		}
+
+		// ===== 대상/기존 방장 GameMember 락 + 상태 정합성 =====
+		GameMember targetGm = gameMemberRepository.findByGameIdAndMemberIdForUpdate(roomId, targetMemberId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_JOINED));
+
+		if (targetGm.isDeleted()) {
+			throw new BusinessException(ErrorCode.ROOM_NOT_JOINED);
+		}
+
+		GameMember actorGm = gameMemberRepository.findByGameIdAndMemberIdForUpdate(roomId, actorId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_JOINED));
+
+		if (actorGm.isDeleted()) {
+			throw new BusinessException(ErrorCode.ROOM_NOT_JOINED);
+		}
+
+		// ===== ready 정책 =====
+		// 새 방장은 ready 버튼이 안 보이므로 false 강제
+		targetGm.setReady(false);
+
+		// 기존 방장도 false로 맞춰 “다시 준비 받기” 정책
+		actorGm.setReady(false);
+
+		// ===== host 변경 =====
+		Member targetMember = memberRepository.findById(targetMemberId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+		game.changeHost(targetMember);
+
+		// ===== 응답 =====
+		return GameRoomHostDelegateResponse.of(roomId, oldHostMemberId, targetMemberId);
+	}
+
 }

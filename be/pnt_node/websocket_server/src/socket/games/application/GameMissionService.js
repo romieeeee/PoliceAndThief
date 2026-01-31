@@ -1,4 +1,6 @@
 import GameMission from "../../../global/db/sequelize/entity/GameMission";
+import Mission from "../../../global/db/sequelize/entity/Mission";
+
 
 export class GameMissionService {
     findAllByGameId = async (gameId) => {
@@ -11,7 +13,7 @@ export class GameMissionService {
             include: [
                 {
                     model: Mission,
-                    attributes: ["name", "description", "icon", "type", "reward"]
+                    attributes: ["id", "description", "title"]
                 }
             ]
         });

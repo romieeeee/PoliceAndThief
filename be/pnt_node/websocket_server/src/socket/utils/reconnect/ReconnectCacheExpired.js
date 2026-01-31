@@ -3,7 +3,6 @@ import { ChatRoomService } from "../../chats/application/ChatRoomService.js";
 import { RedisClient } from "../client/RedisClient.js";
 import { GameController } from "../../games/controller/GameController.js";
 import axios from "axios";
-import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemberPosition.js";
 
 
 export class WebSocketReconnect {
@@ -93,7 +92,7 @@ export class WebSocketReconnect {
             const isGameEnd = await this.gameController.gameService.checkGameHaveToFinish(roomId);
 
             if (isGameEnd) {
-                await this.gameController.gameEnd(this.gameIo, this.redisClient, roomId, GameMemberPosition.POLICE);
+                await this.gameController.gameEnd(this.gameIo, this.redisClient, roomId, isGameEnd);
             }
 
             console.log("user_left", { memberId, roomId });
@@ -104,3 +103,5 @@ export class WebSocketReconnect {
     }
 
 }
+
+

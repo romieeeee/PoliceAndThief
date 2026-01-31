@@ -31,6 +31,8 @@ export class RedisClient {
             socket.data.chatRoomId = storedRoomId;
         } else if (namespace === 'game') {
             socket.data.gameId = storedRoomId;
+        } else if (namespace === 'room') {
+            socket.data.roomId = storedRoomId;
         }
 
         // Delete keys to cancel expiration event
@@ -253,7 +255,7 @@ export class RedisClient {
 
     getNews = async (gameId) => {
         const newsId = await this.pubClient.hget(this.getNewsKeyString(gameId));
-        return newsId;
+        return parseInt(newsId);
     }
 
     deleteNews = async (gameId) => {
@@ -283,9 +285,7 @@ export class RedisClient {
         await this.deleteGameTimer(gameId);
         await this.deleteGameTimerLock(gameId);
         await this.deleteGameSettingLock(gameId);
-        await this.deleteNews(gameId);
     }
-
     /**
      * 게임 타이머 => 게임 진행 시간 관리
      */

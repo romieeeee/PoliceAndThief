@@ -1,5 +1,7 @@
 package com.pnt.pnt_spring.domain.games.game.api.controller;
 
+import com.pnt.pnt_spring.domain.games.game.api.req.*;
+import com.pnt.pnt_spring.domain.games.game.api.resp.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,14 +12,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomJoinRequest;
-import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomKickRequest;
-import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomPositionRequest;
-import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomReadyRequest;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomJoinResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomMemberListResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomPositionResponse;
-import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomReadyResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomMemberService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import com.pnt.pnt_spring.global.utils.SecurityUtils;
@@ -132,4 +126,23 @@ public class GameRoomMemberController {
 			HttpStatus.OK
 		);
 	}
+
+	@Operation(summary = "게임방 방장 위임")
+	@PostMapping("/{roomId}/delegate-host")
+	public CommonResponse<GameRoomHostDelegateResponse> delegateHost(
+			@PathVariable Long roomId,
+			@Valid @RequestBody GameRoomHostDelegateRequest req
+	) {
+		Long actorId = SecurityUtils.currentMemberId();
+
+		GameRoomHostDelegateResponse data =
+				gameRoomMemberService.delegateHost(actorId, roomId, req.getTargetMemberId());
+
+		return new CommonResponse<>(
+				data,
+				"게임방 방장 위임 성공",
+				HttpStatus.OK
+		);
+	}
+
 }
