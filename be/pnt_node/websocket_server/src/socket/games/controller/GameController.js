@@ -176,7 +176,6 @@ export class GameController {
             // cctv 작동
             const cctvInterval = gameSetting.cctvInterval || 60;
             await this.redisClient.setCctvTimer(integerGameId, cctvInterval);
-            console.log("cctvInterval", cctvInterval);
 
             await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString(), status: GameStatus.IN_GAME });
 
@@ -267,7 +266,6 @@ export class GameController {
                 escapedAt: new Date().toISOString(),
             };
             this.io.to(gameId).emit("get escape", res);
-            console.log("escape", res);
             return;
         }
 
@@ -330,7 +328,6 @@ export class GameController {
                 arrestedAt: new Date().toISOString(),
             };
             this.io.to(gameId).emit("modify member status", res);
-            console.log("modify from transfer to prison member status", res);
             return;
         }
 
@@ -363,7 +360,6 @@ export class GameController {
 
     syncGameInfo = async (payload) => {
         const gameId = parseInt(payload.gameId) || this.socket.data.gameId;
-        console.log("sync game info", gameId, this.socket.data.memberId);
 
         const game = await this.gameService.findGame(gameId);
         const gameMissions = await this.gameMissionService.findAllByGameId(gameId);
@@ -391,7 +387,6 @@ export class GameController {
             }),
             missions: gameMissions
         };
-        console.log("get sync game info", res);
         this.socket.emit("get sync game info", res);
     }
 
@@ -413,7 +408,6 @@ export class GameController {
                 arrestedAt: new Date().toISOString(),
             };
             this.io.to(gameId).emit("get arrest", res);
-            console.log("fail not thief", res);
             return;
         }
 
@@ -444,7 +438,6 @@ export class GameController {
             };
 
             this.io.to(gameId).emit("get arrest", res);
-            console.log("fail not police", res);
             return;
         }
 
@@ -465,8 +458,6 @@ export class GameController {
 
         if (isGameEnd) {
             await this.gameEnd(this.io, this.redisClient, gameId, isGameEnd);
-
-            console.log("game end", gameId);
             return;
         }
 
@@ -478,8 +469,6 @@ export class GameController {
 
         policeId = parseInt(policeId) || parseInt(this.socket.data.memberId);
         gameId = parseInt(gameId);
-
-        console.log("postSkillUse", payload);
 
         // 게임 스킬 정보 조회
         const skill = await this.gameSkillService.findGameSkill(parseInt(gameId), parseInt(policeId));
@@ -494,7 +483,6 @@ export class GameController {
                 usedAt: new Date().toISOString(),
             };
             this.io.to(gameId).emit("get skill use", res);
-            console.log("fail already used", res);
             return;
         }
 
