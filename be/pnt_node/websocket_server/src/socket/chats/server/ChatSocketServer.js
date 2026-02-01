@@ -2,6 +2,7 @@ import { ChatController } from "../controller/ChatController.js";
 import { resolveInSocket } from "../../../global/auth/JwtResolver.js";
 import { RedisClient } from "../../utils/client/RedisClient.js";
 import { sendError } from "../../../global/util/SocketError.js";
+import { withLogging } from "../../../global/util/socketWrapper.js";
 
 const redisClient = new RedisClient();
 
@@ -24,12 +25,13 @@ const chatSocketServer = (io) => {
             const chatController = new ChatController(io, socket);
 
             // 채팅방 관련 이벤트
-            socket.on("post join room", chatController.joinRoom);
-            socket.on("post message", chatController.sendMessage);
-            socket.on("post prev chat", chatController.getPrevChat);
-            socket.on("post sync chat", chatController.syncChat);
+            socket.on("post join room", withLogging("joinRoom", chatController.joinRoom, socket, "ChatError"));
+            socket.on("post message", withLogging("sendMessage", chatController.sendMessage, socket, "ChatError"));
+            socket.on("post prev chat", withLogging("getPrevChat", chatController.getPrevChat, socket, "ChatError"));
+            socket.on("post sync chat", withLogging("syncChat", chatController.syncChat, socket, "ChatError"));
+            socket.on("post delegate owner", withLogging("delegateOwer", chatController.delegateOwer, socket, "ChatError"));
 
-            socket.on("post disconnect", chatController.disconnect);
+            socket.on("post disconnect", withLogging("disconnect", chatController.disconnect, socket, "ChatError"));
 
             socket.on("disconnect", async () => {
                 if (socket.data.isIntentionalExit) {
@@ -48,7 +50,7 @@ const chatSocketServer = (io) => {
         } catch (error) {
             console.error("chatSocketServer error", error);
             sendError(socket, error, "ChatError");
-        } 
+        }
     });
 }
 

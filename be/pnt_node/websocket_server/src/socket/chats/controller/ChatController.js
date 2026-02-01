@@ -3,6 +3,8 @@ import { ChatRoomService } from "../application/ChatRoomService.js";
 import mq from "../../../global/mq/MessagingQueue.js";
 import { MQConfig } from "../../../global/mq/MQConfig.js";
 import { sendError } from "../../../global/util/SocketError.js";
+import { generateMemberAccessToken } from "../../../global/auth/JwtProvider.js";
+import axios from "axios";
 
 export class ChatController {
 
@@ -15,52 +17,43 @@ export class ChatController {
 
     joinRoom = async (payload) => {
         // 채팅방 접속 db 처리 => is_connected = true로 처리
-        try {
-            const { chatRoomId } = payload;
-            console.log("join room = ", chatRoomId, "member = ", this.socket.data.memberId);
-            await this.chatRoomService.findChatRoom(chatRoomId);
-            await this.chatRoomService.findMemberChatRoom(chatRoomId, this.socket.data.memberId);
-            const strChatRoomId = String(chatRoomId);
+        console.log("payload = ", payload);
+        const chatRoomId = parseInt(payload.chatRoomId);
+        console.log("join room = ", chatRoomId, "member = ", this.socket.data.memberId);
+        await this.chatRoomService.findChatRoom(chatRoomId);
+        await this.chatRoomService.findMemberChatRoom(chatRoomId, this.socket.data.memberId);
+        const strChatRoomId = String(chatRoomId);
 
-            this.socket.join(strChatRoomId);
-            this.socket.data.chatRoomId = strChatRoomId;
+        this.socket.join(strChatRoomId);
+        this.socket.data.chatRoomId = strChatRoomId;
 
-            const data = {
-                "message": "joined room",
-                "chatRoomId": chatRoomId
-            }
-
-            this.io.to(strChatRoomId).emit("get join room", data);
-        } catch (error) {
-            console.error("joinRoom error", error);
-            sendError(this.socket, error, "ChatError");
+        const data = {
+            "message": "joined room",
+            "chatRoomId": chatRoomId
         }
+
+        this.io.to(strChatRoomId).emit("get join room", data);
     }
 
     sendMessage = async (payload) => {
-        try {
-            if (!payload || !payload.content) {
-                throw { code: 400, message: "Invalid payload: content is required" };
-            }
-
-            payload.memberId = this.socket.data.memberId;
-            const chatRoomId = this.socket.data.chatRoomId;
-            const strChatRoomId = String(chatRoomId);
-
-            if (!chatRoomId) {
-                throw { code: 400, message: "ChatRoomId is missing in socket data" };
-            }
-
-            const resData = await this.chatService.save({ chatRoomId, ...payload });
-
-            // 푸시 알림 => 컨슈머에서 채팅방에 접속해 있지 않은 멤버를 확인후 푸시알림
-            mq.sendMessage({ chatRoomId: strChatRoomId, ...payload }, MQConfig.MQ_ALARM);
-
-            this.io.to(strChatRoomId).emit("get message", resData);
-        } catch (error) {
-            console.error("sendMessage error", error);
-            sendError(this.socket, error, "ChatError");
+        if (!payload || !payload.content) {
+            throw { code: 400, message: "Invalid payload: content is required" };
         }
+
+        payload.memberId = this.socket.data.memberId;
+        const chatRoomId = this.socket.data.chatRoomId;
+        const strChatRoomId = String(chatRoomId);
+
+        if (!chatRoomId) {
+            throw { code: 400, message: "ChatRoomId is missing in socket data" };
+        }
+
+        const resData = await this.chatService.save({ chatRoomId, ...payload });
+
+        // 푸시 알림 => 컨슈머에서 채팅방에 접속해 있지 않은 멤버를 확인후 푸시알림
+        mq.sendMessage({ chatRoomId: strChatRoomId, ...payload }, MQConfig.MQ_ALARM);
+
+        this.io.to(strChatRoomId).emit("get message", resData);
     }
 
     /**
@@ -70,25 +63,20 @@ export class ChatController {
      * }
      */
     getPrevChat = async (payload) => {
-        try {
-            const { chatRoomId, memberId } = this.socket.data;
+        const { chatRoomId, memberId } = this.socket.data;
 
-            if (!chatRoomId) {
-                throw { code: 400, message: "ChatRoomId is missing in socket data" };
-            }
-
-            const strChatRoomId = String(chatRoomId);
-
-            console.log("get prev chat", payload);
-
-            // 데이터 로딩 로직
-            const data = await this.chatService.getPrevChat({ chatRoomId: strChatRoomId, memberId, ...payload });
-
-            this.socket.emit("get prev chat", data);
-        } catch (error) {
-            console.error("getPrevChat error", error);
-            sendError(this.socket, error, "ChatError");
+        if (!chatRoomId) {
+            throw { code: 400, message: "ChatRoomId is missing in socket data" };
         }
+
+        const strChatRoomId = String(chatRoomId);
+
+        console.log("get prev chat", payload);
+
+        // 데이터 로딩 로직
+        const data = await this.chatService.getPrevChat({ chatRoomId: strChatRoomId, memberId, ...payload });
+
+        this.socket.emit("get prev chat", data);
     }
 
     /**
@@ -97,25 +85,45 @@ export class ChatController {
      * }
      */
     syncChat = async (payload) => {
+        const { chatRoomId, memberId } = this.socket.data;
+
+        if (!chatRoomId) {
+            throw { code: 400, message: "ChatRoomId is missing in socket data" };
+        }
+
+        const strChatRoomId = String(chatRoomId);
+        console.log("sync chat", payload);
+
+        // 데이터 로딩 로직
+        const data = await this.chatService.syncChat({ chatRoomId: strChatRoomId, memberId, ...payload });
+
+        this.socket.emit("get sync chat", data);
+    }
+
+    delegateOwer = async (payload) => {
+        const chatRoomId = String(this.socket.data.chatRoomId);
+        const targetMemberId = parseInt(payload.targetMemberId);
+
         try {
-            const { chatRoomId, memberId } = this.socket.data;
-
-            if (!chatRoomId) {
-                throw { code: 400, message: "ChatRoomId is missing in socket data" };
-            }
-
-            const strChatRoomId = String(chatRoomId);
-            console.log("sync chat", payload);
-
-            // 데이터 로딩 로직
-            const data = await this.chatService.syncChat({ chatRoomId: strChatRoomId, memberId, ...payload });
-
-            this.socket.emit("get sync chat", data);
+            const accessToken = generateMemberAccessToken(this.socket.data.memberId, 0);
+            const response = await axios.post(`${process.env.SPRING_BOOT_URL}/chats/${chatRoomId}/owner`, { targetMemberId: targetMemberId }, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`
+                }
+            });
+            console.log("delegate ower", response.data);
+            this.io.to(chatRoomId).emit("get delegate owner", response.data);
         } catch (error) {
-            console.error("syncChat error", error);
-            sendError(this.socket, error, "ChatError");
+            console.log("delegate ower", error.response.data);
+            if (error.response) {
+                this.io.to(chatRoomId).emit("get delegate owner", error.response.data);
+            } else {
+                throw error;
+            }
         }
     }
+
 
     /**
      * 사용자 요청에 의한 채팅방 나가기 -> api 로 disconnect 호출
@@ -130,5 +138,6 @@ export class ChatController {
         this.socket.data.isIntentionalExit = true;
 
         this.socket.disconnect();
+        this.io.to(chatRoomId).emit("get user left", { roomId: chatRoomId, memberId: memberId });
     }
 }

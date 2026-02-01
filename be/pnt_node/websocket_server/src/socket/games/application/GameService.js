@@ -86,8 +86,6 @@ export class GameService {
 
         const gameMembers = await this.redisClient.getAllLocations(gameId);
 
-        console.log("gameMembers", gameMembers);
-
         const thiefMembers = gameMembers
             .filter(member => member.position === GameMemberPosition.THIEF &&
                 (!member.status || member.status === GameMemberStatus.FREE) &&
@@ -100,9 +98,6 @@ export class GameService {
             );
 
         let isGameEnd = false;
-
-        console.log("thiefMembers", thiefMembers);
-        console.log("policeMembers", policeMembers);
 
         if (thiefMembers.length === 0) {
             isGameEnd = GameMemberPosition.POLICE;
