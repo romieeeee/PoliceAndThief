@@ -4,14 +4,17 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
+import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.util.getSingleLocation
 import com.d104.pnt.util.socket.GameSocketManager
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -19,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class GamePlayViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
+    private val authRepository: AuthRepository,
     private val gameSocketManager: GameSocketManager
 ) : ViewModel() {
     val userLocation = locationRepository.currentLocation
@@ -32,8 +36,25 @@ class GamePlayViewModel @Inject constructor(
 
     init {
         setupSocketListeners()
+    }
 
-        gameSocketManager.syncGameInfo()
+    fun initGame(gameId: Long) {
+        viewModelScope.launch {
+            val token = authRepository.getAccessToken().first()
+            if (token.isNotEmpty() && !gameSocketManager.isConnected()) {
+                gameSocketManager.connect(token)
+
+                while (!gameSocketManager.isConnected()) {
+                    delay(100)
+                }
+            }
+
+            gameSocketManager.joinGame(gameId)
+            Timber.d("GamePlayViewModel: 게임($gameId) 입장 요청 보냄")
+
+            delay(500)
+            gameSocketManager.syncGameInfo()
+        }
     }
 
     private fun setupSocketListeners() {
@@ -96,4 +117,12 @@ class GamePlayViewModel @Inject constructor(
             }
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+
+        gameSocketManager.leaveGame()
+        gameSocketManager.removeAllListeners()
+    }
+
 }
