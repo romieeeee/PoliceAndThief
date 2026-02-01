@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import timber.log.Timber
@@ -140,20 +141,6 @@ class GameWaitingViewModel @Inject constructor(
 
         // 멤버 강퇴
         roomSocketManager.setOnMemberKicked { memberId ->
-//            if (memberId == 0L) {
-//                // 💡 1. 서버가 ID를 안 준다면? 일단 방 정보를 다시 요청해서 리스트를 갱신해봅니다.
-//                Timber.w("⚠️ 강퇴 ID가 없어서 방 정보를 재요청합니다.")
-//                roomSocketManager.requestRoomInfo(roomId)
-//
-//                // 💡 2. 그리고 내가 여전히 이 방 멤버인지 확인하는 로직이 필요합니다.
-//                // (이건 서버가 나를 강퇴했다면 방 정보 members 리스트에 내가 없을 테니까요)
-//            } else if (memberId == _myMemberId.value) {
-//                viewModelScope.launch {
-//                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome("방에서 강퇴되었습니다."))
-//                }
-//            } else {
-//                removePlayer(memberId)
-//            }
             Timber.d("📥 멤버 강퇴: $memberId")
             if (memberId == _myMemberId.value) {
                 viewModelScope.launch {
@@ -161,6 +148,62 @@ class GameWaitingViewModel @Inject constructor(
                 }
             } else {
                 removePlayer(memberId)
+            }
+        }
+
+        // 토큰 갱신
+        roomSocketManager.setOnTokenUpdated { newToken ->
+            viewModelScope.launch {
+                val refreshToken = authRepository.getRefreshToken().first()
+                authRepository.refreshTokens(newToken, refreshToken)
+                roomSocketManager.updateAccessToken(newToken)
+                Timber.d("✅ 토큰 갱신 및 동기화 완료")
+            }
+        }
+
+        // 방장 위임
+        roomSocketManager.setOnOwnerDelegated { data ->
+            val code = data.optInt("code", 200)
+            if (code == 200) {
+                roomSocketManager.requestRoomInfo(roomId)
+            } else {
+                val msg = data.optString("message", "위임 실패")
+                _uiState.value = UiState.Error(msg)
+            }
+        }
+
+        // 게임 시작: 네임스페이스 교체 및 화면 이동
+        roomSocketManager.setOnGameStarted { data ->
+            viewModelScope.launch {
+                try {
+                    // 1. 서버가 준 members 배열 추출
+                    val membersArray = data.optJSONArray("members") ?: return@launch
+                    val myId = _myMemberId.value
+                    var myFinalRole = "ANY" // 기본값
+
+                    // 2. 리스트를 돌면서 내 ID와 일치하는 객체의 역할 확인
+                    for (i in 0 until membersArray.length()) {
+                        val member = membersArray.getJSONObject(i)
+                        if (member.optLong("memberId") == myId) {
+                            // 서버가 점지해준 최종 포지션 (givenPosition)
+                            myFinalRole = member.optString("givenPosition", "ANY")
+                            break
+                        }
+                    }
+
+                    Timber.d("🎮 최종 역할 확정: $myFinalRole (ID: $myId)")
+
+                    // 3. 네임스페이스 전환 (Room 끊기)
+                    roomSocketManager.isIntentionalLeave = true
+                    roomSocketManager.disconnect()
+
+                    // 4. 게임 화면으로 이동하면서 확정된 역할 전달
+                    // NavigateToGame 이벤트에 roomId와 myFinalRole을 실어 보냅니다.
+                    _uiEvent.emit(GameWaitingUiEvent.NavigateToGame(roomId, myFinalRole))
+
+                } catch (e: Exception) {
+                    Timber.e(e, "❌ 게임 시작 데이터 파싱 실패")
+                }
             }
         }
 
@@ -310,7 +353,6 @@ class GameWaitingViewModel @Inject constructor(
      */
     private fun parseRoomSettings(data: JSONObject) {
         try {
-            // 응답 성공 여부 확인
             if (data.has("code") && data.getInt("code") != 200) {
                 val msg = data.optString("message", "설정 변경 실패")
                 Timber.e("📥 서버 에러: $msg")
@@ -319,20 +361,31 @@ class GameWaitingViewModel @Inject constructor(
 
             val actualData = data.optJSONObject("data") ?: data
 
-            _roomInfo.value.prison?.let {
+            _roomInfo.value.prison?.let { currentPrison ->
+                val polygonArray = actualData.optJSONArray("polygon")
+                val updatedPolygon = if (polygonArray != null) {
+                    val list = mutableListOf<Location>()
+                    for (i in 0 until polygonArray.length()) {
+                        val obj = polygonArray.getJSONObject(i)
+                        list.add(Location(obj.getDouble("lat"), obj.getDouble("lng")))
+                    }
+                    list
+                } else {
+                    _roomInfo.value.polygon
+                }
+
                 _roomInfo.value = _roomInfo.value.copy(
                     maxCount = actualData.optInt("playerCount", _roomInfo.value.maxCount),
                     policeCount = actualData.optInt("policeCount", _roomInfo.value.policeCount),
                     thiefCount = actualData.optInt("thiefCount", _roomInfo.value.thiefCount),
-
                     timeLimit = actualData.optInt("timeLimit", _roomInfo.value.timeLimit * 60) / 60,
                     missionCount = actualData.optInt("missionCount", _roomInfo.value.missionCount),
                     cctvCycle = actualData.optInt("cctvInterval", _roomInfo.value.cctvCycle),
-
                     prison = Location(
-                        lat = actualData.optDouble("prisonLat", it.lat),
-                        lng = actualData.optDouble("prisonLng", it.lng)
-                    )
+                        lat = actualData.optDouble("prisonLat", currentPrison.lat),
+                        lng = actualData.optDouble("prisonLng", currentPrison.lng)
+                    ),
+                    polygon = updatedPolygon
                 )
             }
 
@@ -394,6 +447,10 @@ class GameWaitingViewModel @Inject constructor(
             when (val result = gameRoomRepository.startGame(roomId)) {
                 is BaseResult.Success -> {
                     Timber.d("✅ 게임 시작 성공")
+                    _uiState.value = UiState.Success(Unit)
+
+                    roomSocketManager.gameStart(roomId)
+
                     _uiState.value = UiState.Success(Unit)
                 }
 
@@ -458,8 +515,8 @@ class GameWaitingViewModel @Inject constructor(
                         thiefCount = thiefCount,
                         cctvInterval = cctvCycle,
                         missionCount = missionCount,
-                        prison = current.prison,
-                        polygon = current.polygon
+                        prison = prisonLocation,
+                        polygon = polygonPoints
                     )
                 }
 
@@ -482,6 +539,7 @@ class GameWaitingViewModel @Inject constructor(
             roomSocketManager.requestRoomInfo(roomId)
         }
     }
+
 
     /**
      * 방 나가기
@@ -517,14 +575,11 @@ class GameWaitingViewModel @Inject constructor(
 
     // 방장 위임하기
     fun delegateHost(targetMemberId: Long) {
+        if (!_isHost.value) return
+
         viewModelScope.launch {
-            Timber.d("방장 위임 요청: targetMemberId=$targetMemberId")
-
-            // TODO: 나중에 API 연결 시 주석 해제
-            // val result = gameRoomRepository.delegateHost(roomId, targetMemberId)
-
-            delay(100)
-//            fetchMembers()
+            _uiState.value = UiState.Loading // 로딩 상태 표시
+            roomSocketManager.delegateOwner(targetMemberId)
         }
     }
 

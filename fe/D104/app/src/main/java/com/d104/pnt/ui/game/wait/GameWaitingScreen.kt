@@ -77,6 +77,10 @@ fun GameWaitingScreen(
                 is GameWaitingUiEvent.NavigateToHome -> {
                     if (!onBackPressed()) onNavigateHome(event.message)
                 }
+
+                is GameWaitingUiEvent.NavigateToGame -> {
+                    onStartGame(event.roomId, GameRole.fromName(event.role))
+                }
             }
         }
     }
