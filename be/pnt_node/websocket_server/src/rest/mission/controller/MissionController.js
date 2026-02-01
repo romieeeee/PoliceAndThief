@@ -18,7 +18,6 @@ export class MissionController {
 
     init = () => {
         this.router.post("/complete", this.missionComplete);
-        this.router.post("/token", this.createToken);
     }
 
     getRouter = () => {
@@ -81,18 +80,6 @@ export class MissionController {
             this.emitter.of(GAME_NAMESPACE).to(gameId).emit("get mission result", resData);
         } catch (error) {
             console.error("missionComplete error", error);
-            res.status(error.code || 500).json({ message: error.message });
-        }
-    }
-
-    createToken = async (req, res) => {
-        try {
-            const payload = req.body;
-            const { gameId } = payload;
-            const token = generateToken(gameId, 30);
-            res.status(200).json({ token });
-        } catch (error) {
-            console.error("createToken error", error);
             res.status(error.code || 500).json({ message: error.message });
         }
     }

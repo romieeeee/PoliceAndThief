@@ -2,6 +2,7 @@ import { RoomController } from "../controller/RoomController.js";
 import { resolveInSocket } from "../../../global/auth/JwtResolver.js";
 import { RedisClient } from "../../utils/client/RedisClient.js";
 import { sendError } from "../../../global/util/SocketError.js";
+import { withLogging } from "../../../global/util/socketWrapper.js";
 
 const redisClient = new RedisClient();
 
@@ -36,27 +37,27 @@ const roomSocketServer = (io) => {
             console.log("websocket is connected!");
 
             // 로비 관련 이벤트
-            socket.on("post join room", roomController.joinRoom);
+            socket.on("post join room", withLogging("joinRoom", roomController.joinRoom, socket, "RoomError"));
 
-            socket.on("post update room info", roomController.updateRoomInfo);
+            socket.on("post update room info", withLogging("updateRoomInfo", roomController.updateRoomInfo, socket, "RoomError"));
 
-            socket.on("post update ready", roomController.updateReady);
+            socket.on("post update ready", withLogging("updateReady", roomController.updateReady, socket, "RoomError"));
 
-            socket.on('post now ready info', roomController.nowReadyInfo);
+            socket.on('post now ready info', withLogging("nowReadyInfo", roomController.nowReadyInfo, socket, "RoomError"));
 
-            socket.on('post update position', roomController.updatePreferPosition);
+            socket.on('post update position', withLogging("updatePreferPosition", roomController.updatePreferPosition, socket, "RoomError"));
 
-            socket.on("post now room info", roomController.nowRoomInfo);
+            socket.on("post now room info", withLogging("nowRoomInfo", roomController.nowRoomInfo, socket, "RoomError"));
 
-            socket.on("post member kick", roomController.memberKick);
+            socket.on("post member kick", withLogging("memberKick", roomController.memberKick, socket, "RoomError"));
 
-            socket.on("post disconnect", roomController.disconnect);
+            socket.on("post disconnect", withLogging("disconnect", roomController.disconnect, socket, "RoomError"));
 
-            socket.on("post update access token", roomController.postUpdateAccessToken);
+            socket.on("post update access token", withLogging("postUpdateAccessToken", roomController.postUpdateAccessToken, socket, "RoomError"));
 
-            socket.on("post game start", roomController.gameStart);
+            socket.on("post game start", withLogging("gameStart", roomController.gameStart, socket, "RoomError"));
 
-            socket.on("post delegate owner", roomController.delegateOwner);
+            socket.on("post delegate owner", withLogging("delegateOwner", roomController.delegateOwner, socket, "RoomError"));
 
             socket.on("disconnect", async () => {
                 if (socket.data.isIntentionalExit) {
