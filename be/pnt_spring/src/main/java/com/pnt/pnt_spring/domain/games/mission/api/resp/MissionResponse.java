@@ -13,4 +13,5 @@ public class MissionResponse {
 	private Long missionId;
 	private String title;
 	private String description;
+	private String keyword;
 }
