@@ -45,6 +45,7 @@ fun UnifiedWaitingInfoCard(
     myMemberId: Long,
     policeCount: Int,
     thiefCount: Int,
+    anyCount: Int,
     isHost: Boolean,
     selectedPlayerId: Long?,
     prisonLocation: LatLng,
@@ -52,6 +53,7 @@ fun UnifiedWaitingInfoCard(
     onPlayerClick: (WaitingPlayer) -> Unit,
     onMenuDismiss: () -> Unit,
     onInfoClick: (WaitingPlayer) -> Unit,
+    onDelegateHostClick: (WaitingPlayer) -> Unit,
     onKickClick: (WaitingPlayer) -> Unit,
     modifier: Modifier = Modifier,
     onChangeRole: () -> Unit
@@ -76,7 +78,7 @@ fun UnifiedWaitingInfoCard(
                     polygonPoints = polygonPoints
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                RoleCountInfo(policeCount, thiefCount)
+                RoleCountInfo(policeCount, thiefCount, anyCount)
                 Spacer(modifier = Modifier.height(20.dp))
                 Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(Color(0xFF6591E9).copy(alpha = 0.5f)))
             }
@@ -98,6 +100,7 @@ fun UnifiedWaitingInfoCard(
                         onClick = { onPlayerClick(player) },
                         onDismissMenu = onMenuDismiss,
                         onInfoClick = { onMenuDismiss(); onInfoClick(player) },
+                        onDelegateHostClick = { onMenuDismiss(); onDelegateHostClick(player) },
                         onKickClick = { onMenuDismiss(); onKickClick(player) }
                     )
                 }
@@ -127,6 +130,7 @@ fun PlayerSlotCard(
     onClick: () -> Unit,
     onDismissMenu: () -> Unit,
     onInfoClick: () -> Unit,
+    onDelegateHostClick: () -> Unit,
     onKickClick: () -> Unit
 ) {
     val borderColor = when {
@@ -162,19 +166,22 @@ fun PlayerSlotCard(
         }
 
         if (showMenu) {
-            PlayerActionMenu(isHost, isMe, onDismissMenu, onInfoClick, onKickClick)
+            PlayerActionMenu(isHost, isMe, onDismissMenu, onInfoClick, onDelegateHostClick, onKickClick)
         }
     }
 }
 
 @Composable
-fun PlayerActionMenu(isHost: Boolean, isTargetMe: Boolean, onDismiss: () -> Unit, onInfoClick: () -> Unit, onKickClick: () -> Unit) {
+fun PlayerActionMenu(isHost: Boolean, isTargetMe: Boolean, onDismiss: () -> Unit, onInfoClick: () -> Unit, onDelegateHostClick: () -> Unit, onKickClick: () -> Unit) {
     val density = LocalDensity.current
     val yOffset = remember(density) { with(density) { (48.dp + 4.dp).roundToPx() } }
 
     Popup(alignment = Alignment.TopCenter, offset = IntOffset(0, yOffset), onDismissRequest = onDismiss) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             MenuButton(text = "정보 확인", textColor = Color.Black, onClick = onInfoClick)
+            if (isHost && !isTargetMe) {
+                MenuButton(text = "방장 위임하기", textColor = Color.Black, onClick = onDelegateHostClick)
+            }
             if (isHost && !isTargetMe) {
                 MenuButton(text = "강퇴하기", textColor = Color(0xFFFF5252), onClick = onKickClick)
             }
@@ -208,7 +215,7 @@ fun MapPreviewContent(
 }
 
 @Composable
-fun RoleCountInfo(policeCount: Int, thiefCount: Int) {
+fun RoleCountInfo(policeCount: Int, thiefCount: Int, anyCount: Int) {
     Row(horizontalArrangement = Arrangement.spacedBy(32.dp), verticalAlignment = Alignment.CenterVertically) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(text = "👮", fontSize = 20.sp); Spacer(modifier = Modifier.width(8.dp))
@@ -216,6 +223,11 @@ fun RoleCountInfo(policeCount: Int, thiefCount: Int) {
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(text = "🕵️", fontSize = 20.sp); Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "$thiefCount", fontFamily = PixelFont, color = Color.White, fontSize = 20.sp)
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text = "❓", fontSize = 20.sp); Spacer(modifier = Modifier.width(8.dp))
             Text(text = "$thiefCount", fontFamily = PixelFont, color = Color.White, fontSize = 20.sp)
         }
     }

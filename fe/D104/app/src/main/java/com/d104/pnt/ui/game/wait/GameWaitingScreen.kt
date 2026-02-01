@@ -1,5 +1,6 @@
 package com.d104.pnt.ui.game.wait
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,7 +41,6 @@ fun GameWaitingScreen(
     roomId: Long,
     initialRole: GameRole,
     onChangeRole: () -> Unit,
-
     onStartGame: (Long, GameRole) -> Unit = { _, _ -> },
     viewModel: GameWaitingViewModel = hiltViewModel(),
     onBackPressed: () -> Boolean = { false },
@@ -59,10 +59,14 @@ fun GameWaitingScreen(
     var showSettingsDialog by remember { mutableStateOf(false) }
 
     var infoDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
+    var delegateDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
     var kickDialogTarget by remember { mutableStateOf<WaitingPlayer?>(null) }
+
+    var showLeaveDialog by remember { mutableStateOf(false) }
 
     // 이벤트 처리
     LaunchedEffect(Unit) {
+        viewModel.setInitialRole(initialRole)
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is GameWaitingUiEvent.NavigateToHome -> {
@@ -70,6 +74,10 @@ fun GameWaitingScreen(
                 }
             }
         }
+    }
+
+    BackHandler {
+        viewModel.leaveRoom()
     }
 
     LaunchedEffect(uiState) {
@@ -80,13 +88,15 @@ fun GameWaitingScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.setInitialRole(initialRole)
-    }
-
     val policeCount = players.count { it.role == GameRole.POLICE && !it.isChangingRole }
+
     val thiefCount = players.count { it.role == GameRole.THIEF && !it.isChangingRole }
-    val isAllReady = players.isNotEmpty() && players.all { it.isReady && !it.isChangingRole }
+
+    val anyCount = 0 // TODO: ANY 카운팅 수정 필요
+
+    val isAllReady = players.isNotEmpty() && players.filter { it.id != myMemberId }.all {
+        it.isReady && !it.isChangingRole && it.role != GameRole.ANY && it.role != GameRole.UNDECIDED
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -111,7 +121,7 @@ fun GameWaitingScreen(
                 timeLeft = "${roomInfo.timeLimit}:00",
                 isHost = isHost,
                 onSettingsClick = { showSettingsDialog = true },
-                onLeaveClick = { viewModel.leaveRoom() }
+                onLeaveClick = { showLeaveDialog = true }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -122,6 +132,7 @@ fun GameWaitingScreen(
                 myMemberId = myMemberId,
                 policeCount = policeCount,
                 thiefCount = thiefCount,
+                anyCount = anyCount,
                 isHost = isHost,
                 selectedPlayerId = selectedPlayerId,
                 prisonLocation = LatLng(roomInfo.prison?.lat ?: 37.56681969564895, roomInfo.prison?.lng ?: 126.97864094105321),
@@ -132,23 +143,34 @@ fun GameWaitingScreen(
                         if (selectedPlayerId == player.id) null else player.id
                 },
                 onMenuDismiss = {
-                    dismissedPlayerId = selectedPlayerId; lastDismissTime =
-                    System.currentTimeMillis(); selectedPlayerId = null
+                    dismissedPlayerId = selectedPlayerId
+                    lastDismissTime = System.currentTimeMillis()
+                    selectedPlayerId = null
                 },
                 onInfoClick = { player ->
-                    dismissedPlayerId = selectedPlayerId; lastDismissTime =
-                    System.currentTimeMillis(); selectedPlayerId = null; infoDialogTarget = player
+                    dismissedPlayerId = selectedPlayerId
+                    lastDismissTime = System.currentTimeMillis()
+                    selectedPlayerId = null
+                    infoDialogTarget = player
+                },
+                onDelegateHostClick = { player ->
+                    dismissedPlayerId = selectedPlayerId
+                    lastDismissTime = System.currentTimeMillis()
+                    selectedPlayerId = null
+                    delegateDialogTarget = player
                 },
                 onKickClick = { player ->
                     dismissedPlayerId = selectedPlayerId; lastDismissTime =
-                    System.currentTimeMillis(); selectedPlayerId = null; kickDialogTarget = player
+                    System.currentTimeMillis(); selectedPlayerId = null; kickDialogTarget =
+                    player
+                },
+                onChangeRole = {
+                    viewModel.resetToUndecided()
+                    onChangeRole()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
-                onChangeRole = {
-                    onChangeRole()
-                }
+                    .weight(1f)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -191,7 +213,7 @@ fun GameWaitingScreen(
             Spacer(modifier = Modifier.height(60.dp))
         }
 
-        // 다이얼로그
+        // ========== 다이얼로그 ==========
         if (infoDialogTarget != null) PlayerInfoDialog(
             player = infoDialogTarget!!,
             onDismiss = { infoDialogTarget = null })
@@ -205,6 +227,27 @@ fun GameWaitingScreen(
                     reason
                 ); kickDialogTarget = null
             })
+
+        if (delegateDialogTarget != null) {
+            DelegateHostConfirmDialog(
+                nickname = delegateDialogTarget!!.nickname,
+                onDismissRequest = { delegateDialogTarget = null },
+                onConfirm = {
+                    viewModel.delegateHost(delegateDialogTarget!!.id)
+                    delegateDialogTarget = null
+                }
+            )
+        }
+
+        if (showLeaveDialog) {
+            LeaveRoomConfirmDialog(
+                onDismissRequest = { showLeaveDialog = false },
+                onConfirm = {
+                    showLeaveDialog = false
+                    viewModel.leaveRoom()
+                }
+            )
+        }
 
         if (showSettingsDialog) GameSettingsDialog(
             initialState = roomInfo,

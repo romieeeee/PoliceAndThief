@@ -3,6 +3,7 @@ package com.d104.pnt.navigation
 import android.app.Activity
 import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -38,6 +39,7 @@ import timber.log.Timber
  * 전체 앱 네비게이션
  * 설정 복귀 시 자동 재확인 처리 개선
  */
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AppNavigation(
@@ -213,10 +215,8 @@ fun AppNavigation(
             // 메인 앱
             AppScreen.Main -> {
                 MainScreen(
-                    memberId = memberId,
                     navigateToIntro = {
                         Timber.d("Navigation: Main -> Intro (Logout)")
-//                        currentScreen = AppScreen.Intro // ⭐ Intro로 변경
                     }
                 )
             }
