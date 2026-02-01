@@ -1,5 +1,6 @@
 package com.pnt.pnt_spring.domain.games.game.application.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.locationtech.jts.geom.Coordinate;
@@ -49,6 +50,17 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 		GameSetting setting = gameSettingRepository.findByGameIdAndIsDeletedFalse(roomId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
 
+		List<GameRoomSettingResponse.LatLng> polygon = new ArrayList<>();
+		if (setting.getBoundaryGeo() != null) {
+			for (Coordinate coord : setting.getBoundaryGeo().getCoordinates()) {
+				// JTS Coordinate: x=lng, y=lat
+				polygon.add(GameRoomSettingResponse.LatLng.builder()
+					.lat(coord.y)
+					.lng(coord.x)
+					.build());
+			}
+		}
+
 		return new GameRoomSettingResponse(
 			roomId,
 			game.getStatus().name(),
@@ -60,7 +72,8 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 			setting.getMissionCount(),
 			game.getRoomCode(),
 			setting.getPrisonLat(),
-			setting.getPrisonLng()
+			setting.getPrisonLng(),
+			polygon
 		);
 	}
 
@@ -118,6 +131,17 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 
 		setting.updateMap(boundary, prisonLat, prisonLng);
 
+		// 응답용 폴리곤 변환 (업데이트된 엔티티 기준)
+		List<GameRoomSettingResponse.LatLng> polygon = new ArrayList<>();
+		if (setting.getBoundaryGeo() != null) {
+			for (Coordinate coord : setting.getBoundaryGeo().getCoordinates()) {
+				polygon.add(GameRoomSettingResponse.LatLng.builder()
+					.lat(coord.y)
+					.lng(coord.x)
+					.build());
+			}
+		}
+
 		return new GameRoomSettingResponse(
 			roomId,
 			game.getStatus().name(),
@@ -129,7 +153,8 @@ public class GameRoomSettingServiceImpl implements GameRoomSettingService {
 			setting.getMissionCount(),
 			game.getRoomCode(),
 			setting.getPrisonLat(),
-			setting.getPrisonLng()
+			setting.getPrisonLng(),
+			polygon
 		);
 	}
 
