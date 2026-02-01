@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -71,6 +72,9 @@ fun GamePlayScreen(
 
     val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
 
+    val isOutOfBoundary by viewModel.isOutOfBoundary.collectAsStateWithLifecycle()
+
+    // 위치서비스 시작 / 종료
     DisposableEffect(Unit) {
         val serviceIntent = Intent(context, LocationService::class.java).apply {
             putExtra(LocationService.EXTRA_GAME_MODE, true)
@@ -87,6 +91,7 @@ fun GamePlayScreen(
         }
     }
 
+    // 게임 초기화
     // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
     LaunchedEffect(Unit) {
         viewModel.setDefaultArea(context)
@@ -303,6 +308,15 @@ fun GamePlayScreen(
                 thiefMembers = thiefMembers
             )
         }
+    }
+
+    if (isOutOfBoundary) {
+        Image(
+            painter = painterResource(id = R.drawable.warning_overlay),
+            contentDescription = "Out of Boundary Warning",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds
+        )
     }
 }
 
