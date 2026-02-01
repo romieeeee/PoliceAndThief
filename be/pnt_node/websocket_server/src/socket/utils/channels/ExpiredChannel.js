@@ -4,6 +4,7 @@ import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemb
 import { GameMemberStatus } from "../../../global/db/sequelize/status/GameMemberStatus.js";
 import axios from "axios";
 import { withFunctionLogging } from "../../../global/util/genericWrapper.js";
+import logger from "../../../global/config/logger.js"
 
 const redisClient = new RedisClient();
 const gameController = new GameController();
@@ -11,7 +12,7 @@ const gameController = new GameController();
 const expiredChannel = withFunctionLogging("ExpiredChannel", async (message, pubClient, chatIo, roomIo, gameIo) => {
 
     const key = message;
-    console.log(`[ExpiredChannel] Received expired key: ${key}`);
+    logger.info(`[ExpiredChannel] Received expired key: ${key}`);
 
     // Key format: room:game:timer:${gameId}
     // Example: room:game:timer:123
@@ -23,14 +24,13 @@ const expiredChannel = withFunctionLogging("ExpiredChannel", async (message, pub
         if (parts[3] === 'lock' || isNaN(gameId)) return;
 
         // 게임 종료 처리 => 컨트롤러에서 처리
-        console.log("game end", gameId);
+        logger.info("game end", gameId);
         gameController.gameEnd(gameIo, redisClient, gameId, GameMemberPosition.THIEF);
     }
 
     // Key format: room:game:cctv:${gameId}
     // Example: room:game:cctv:123
     else if (key.startsWith(redisClient.CCTV_TIMER_PREFIX)) {
-        console.log("cctv timer expired");
         const parts = key.split(":");
         const gameId = parseInt(parts[3]);
 
@@ -53,8 +53,6 @@ const expiredChannel = withFunctionLogging("ExpiredChannel", async (message, pub
             }
         }
 
-        console.log(thieves.map(player => player.memberId));
-
         // 도둑의 수가 적으면 CCTV를 보내지 않음. => 이건 정해야함.
         if (thieves.length > 0) {
             const randomIndex = Math.floor(Math.random() * thieves.length);
@@ -66,9 +64,9 @@ const expiredChannel = withFunctionLogging("ExpiredChannel", async (message, pub
                 lng: randomThief.lng,
                 lat: randomThief.lat
             });
-            console.log(`[CCTV] Game ${gameId}: Sent CCTV data for thief ${randomThief.memberId}`);
+            logger.info(`[CCTV] Game ${gameId}: Sent CCTV data for thief ${randomThief.memberId}`);
         } else {
-            console.log(`[CCTV] Game ${gameId}: No free thieves found.`);
+            logger.info(`[CCTV] Game ${gameId}: No free thieves found.`);
         }
 
         const gameTimer = await redisClient.getGameTimer(gameId);
@@ -96,10 +94,10 @@ const expiredChannel = withFunctionLogging("ExpiredChannel", async (message, pub
                 }
             });
         } catch (apiError) {
-            console.error(`[ExpiredChannel] API call failed for game ${gameId}:`, apiError.message);
+            logger.error(`[ExpiredChannel] API call failed for game ${gameId}:`, apiError.message);
         }
 
-        await redisClient.deleteAllInGameCachesByGameId(gameId);
+        await redisClient.deleteAllGameCachesByGameId(gameId);
 
         gameIo.to(gameId).emit("get game reset", { gameId: parseInt(gameId) });
     }

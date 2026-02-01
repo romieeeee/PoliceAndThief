@@ -4,6 +4,7 @@ import { RedisClient } from "../../utils/client/RedisClient.js";
 import MessagingQueue from "../../../global/mq/MessagingQueue.js";
 import { sendError } from "../../../global/util/SocketError.js";
 import { withLogging } from "../../../global/util/socketWrapper.js";
+import logger from "../../../global/config/logger.js";
 
 const redisClient = new RedisClient();
 
@@ -32,11 +33,11 @@ const gameSocketServer = (io) => {
                 try {
                     await redisClient.deleteByCompletedReconnect(socket, "game", storedGameId);
                     await gameController.gameMemberService.updateInGameConnected(integerGameId, socket.data.memberId, true);
-                    console.log("reconnect", storedGameId);
+                    logger.info("reconnect", storedGameId);
 
                     socket.emit("reconnect", { gameId: storedGameId });
                 } catch (error) {
-                    console.error(`[GameSocketServer] Reconnect failed partially for user ${socket.data.memberId}:`, error.message);
+                    logger.error(`[GameSocketServer] Reconnect failed partially for user ${socket.data.memberId}:`, error.message);
                     // 진행을 막지 않음. 소켓은 이미 룸에 조인되어 있음(deleteByCompletedReconnect 내부에서).
                 }
             }
@@ -62,20 +63,20 @@ const gameSocketServer = (io) => {
 
             socket.on("disconnect", async () => {
                 if (socket.data.isIntentionalExit) {
-                    console.log("socket의 연결이 정상적으로 끊어졌습니다.");
+                    logger.info("socket의 연결이 정상적으로 끊어졌습니다.");
                     return;
                 } else {
                     // 비정상적인 소켓 종료 => 채팅방 퇴장 db 처리 X
-                    console.log(`socket의 연결이 비정상적으로 끊어졌습니다. (Room: ${socket.data.gameId})`);
+                    logger.info(`socket의 연결이 비정상적으로 끊어졌습니다. (Room: ${socket.data.gameId})`);
 
                     if (socket.data.gameId) {
                         await redisClient.pubReconnectTimer("game", socket, socket.data.gameId);
-                        console.log("[GAME] pubReconnectTimer", socket.data.gameId);
+                        logger.info("[GAME] pubReconnectTimer", socket.data.gameId);
                     }
                 }
             });
         } catch (error) {
-            console.error("gameSocketServer error", error);
+            logger.error("gameSocketServer error", error);
             sendError(socket, error, "GameError");
         }
     });
