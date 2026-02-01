@@ -10,8 +10,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -36,6 +39,9 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _members = MutableStateFlow<List<GameMemberSocketDto>>(emptyList())
     override val members = _members.asStateFlow()
 
+    private val _eventFlow = MutableSharedFlow<GameSessionEvent>()
+    override val eventFlow = _eventFlow.asSharedFlow()
+
     private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var gpsJob: Job? = null
 
@@ -53,7 +59,65 @@ class GameSessionRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun connectAndJoin(gameId: Long) {
+        repositoryScope.launch {
+            // 1. 소켓 연결 시도
+            try {
+                val token = authRepository.getAccessToken().first() // 토큰 가져오기
+                if (token.isNotEmpty()) {
+                    Timber.d("🔌 레포지토리: 소켓 연결 시도...")
+                    gameSocketManager.connect(token)
+
+                    // 연결될 때까지 잠시 대기 (타임아웃 5초 설정)
+                    var retry = 0
+                    while (!gameSocketManager.isConnected() && retry < 50) {
+                        delay(100)
+                        retry++
+                    }
+                }
+                else {
+                    Timber.d("레포지토리: 토큰이 비어있습니다")
+                }
+            }
+            catch (exception: Exception) {
+                Timber.e("소켓 연결 실패. 입장을 중단합니다. message: ${exception.message}")
+                return@launch
+            }
+
+            // 2. 연결 실패 시 중단
+            if (!gameSocketManager.isConnected()) {
+                Timber.e("❌ 소켓 연결 실패. 입장을 중단합니다.")
+                return@launch
+            }
+
+            // 3. 리스너 세팅 (기존 것 지우고 새로 등록)
+            gameSocketManager.removeAllListeners()
+            setupSocketListeners() // 여기에 setOnGameStarted 등 포함됨
+
+            // 4. 게임 입장 요청
+            Timber.d("🚪 게임($gameId) 입장 요청")
+            gameSocketManager.joinGame(gameId)
+
+            // 5. [안전장치] 방장이 5초 이벤트를 놓쳤을 경우를 대비한 동기화 요청
+            delay(500)
+            gameSocketManager.syncGameInfo()
+        }
+    }
+
     private fun setupSocketListeners() {
+        gameSocketManager.setOnGameStarted { gameId, startTime ->
+            repositoryScope.launch {
+                // 뷰모델에게 "넘어가라"고 신호 보냄
+                _eventFlow.emit(GameSessionEvent.GameStarted(gameId, startTime))
+            }
+        }
+
+        gameSocketManager.setOnJoinedRoom { gameId, memberId, message -> }
+
+        gameSocketManager.setOnWillStartGame { gameId, willStartAt ->
+            Timber.d("⏰ get will start game 수신 - gameId: $gameId, willStartAt: $willStartAt")
+        }
+
         gameSocketManager.setOnGameInfoSynced { data ->
             try {
                 val membersArray = data.optJSONArray("members")
@@ -133,4 +197,19 @@ class GameSessionRepositoryImpl @Inject constructor(
         gameSocketManager.leaveGame()
         _members.value = emptyList()
     }
+}
+
+sealed class GameSessionEvent {
+
+    // 1. 게임 시작 신호 (게임 ID와 시작 시간을 담아서 보냄)
+    data class GameStarted(
+        val gameId: Long,
+        val startTime: String
+    ) : GameSessionEvent()
+
+    // 2. (예시) 게임 종료 신호
+    data object GameEnded : GameSessionEvent()
+
+    // 3. (예시) 에러 발생 신호
+    data class ErrorOccurred(val message: String) : GameSessionEvent()
 }

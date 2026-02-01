@@ -58,6 +58,7 @@ class GamePlayViewModel @Inject constructor(
                 }
             }
             gameSessionRepository.gameInit()
+            startService(GameActiveService.ACTION_START)
         }
     }
 
