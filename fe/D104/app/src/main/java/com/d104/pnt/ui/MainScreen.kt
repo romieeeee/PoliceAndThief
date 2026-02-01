@@ -234,7 +234,7 @@ fun MainScreen(navigateToIntro: () -> Unit) {
 
                 GameRoleScreen(
                     role = role,
-                    onIntroFinished = { // 역할 안내가 끝나면 로딩화면으로 이동
+                    onIntroFinished = {
                         navController.navigate(Routes.buildGameLoading(roomId, role.name)){
                             popUpTo(Routes.HOME) { inclusive = false }
                         }
