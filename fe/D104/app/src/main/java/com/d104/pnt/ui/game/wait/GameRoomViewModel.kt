@@ -305,20 +305,18 @@ class GameRoomViewModel @Inject constructor(
             _players.value = data.members.distinctBy { it.memberId }.map { member ->
                 val isMe = member.memberId == myId
 
-                // 🔥 핵심: 팀원들이 썼던 item.host 대신 이걸 씁니다!
                 val isThisMemberHost = (member.memberId == hostId)
 
                 // 포지션 결정 (팀원 로직: given 우선)
                 val displayRoleString =
-                    if (!member.givenPosition.isNullOrEmpty() && member.givenPosition != "UNDECIDED") {
+                    if (!member.givenPosition.isNullOrEmpty() && member.givenPosition != "ANY") {
                         member.givenPosition
                     } else {
                         member.preferPosition
                     }
 
-                // [팀원 로직 반영] 역할 변경 중일 때 방장 ready 상태 조정
                 val isChangingRole = changingMemberIds.contains(member.memberId)
-                val adjustedReady = if (isThisMemberHost) { // 여기서 위에서 만든 변수 사용
+                val adjustedReady = if (isThisMemberHost) {
                     !isChangingRole
                 } else {
                     member.ready
@@ -341,15 +339,12 @@ class GameRoomViewModel @Inject constructor(
                 )
             }
 
-            // 새로 받은 명단에 내 ID가 없고, 내 ID가 0이 아닐 때 (방에 들어가 있는 상태였을 때)
             if (myId != 0L && _players.value.none { it.id == myId }) {
-                Timber.w("🚨 내 ID가 서버 명단에 없습니다. 강퇴된 것으로 판단하여 홈으로 이동합니다.")
                 viewModelScope.launch {
                     _uiEvent.emit(GameRoomUiEvent.NavigateToHome("방에서 강퇴되었습니다."))
                 }
                 return // 이후 로직 중단
             }
-            Timber.d("✅ UI 업데이트 완료: players=${_players.value.size}, isHost=${_isHost.value}, myReady=${_isMeReady.value}")
         } catch (e: Exception) {
             Timber.e(e, "❌ 방 정보 파싱 실패")
             _uiState.value = UiState.Error("방 정보 파싱 실패")
@@ -397,7 +392,6 @@ class GameRoomViewModel @Inject constructor(
                 )
             }
 
-            Timber.d("✅ 방 설정 로컬 반영 성공: ${_roomInfo.value}")
 
         } catch (e: Exception) {
             Timber.e(e, "❌ 방 설정 파싱 실패: 데이터 구조 확인 필요")
@@ -411,7 +405,6 @@ class GameRoomViewModel @Inject constructor(
         val currentPlayers = _players.value
         _players.value = currentPlayers.map { player ->
             if (player.id == memberId) {
-                // 내 상태면 _isMeReady도 같이 업데이트
                 if (memberId == _myMemberId.value) {
                     _isMeReady.value = isReady
                 }
@@ -453,7 +446,6 @@ class GameRoomViewModel @Inject constructor(
 
             when (val result = gameRoomRepository.startGame(roomId)) {
                 is BaseResult.Success -> {
-                    Timber.d("✅ 게임 시작 성공")
                     _uiState.value = UiState.Success(Unit)
 
                     roomSocketManager.gameStart(roomId)
@@ -474,8 +466,6 @@ class GameRoomViewModel @Inject constructor(
      */
     private fun removePlayer(memberId: Long) {
         _players.value = _players.value.filter { it.id != memberId }.toList()
-
-        // 로그로 현재 남은 인원 확인
         Timber.d("👤 플레이어 제거 완료: $memberId, 남은 인원: ${_players.value.size}")
     }
 
@@ -513,7 +503,6 @@ class GameRoomViewModel @Inject constructor(
 
             when (result) {
                 is BaseResult.Success -> {
-                    Timber.d("RoomSettings: 서버 설정 변경 성공")
                     roomSocketManager.updateRoomInfo(
                         playerCount = safeMaxCount,
                         timeLimit = timeLimit,
@@ -572,7 +561,6 @@ class GameRoomViewModel @Inject constructor(
                     delay(200) // 소켓 연결 대기
                 }
                 roomSocketManager.updatePosition(position)
-                Timber.d("📤 [Socket] 초기 역할 설정 완료: $position")
             }
         }
     }
