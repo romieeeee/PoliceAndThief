@@ -68,9 +68,22 @@ public class MissionController {
 	@Operation(summary = "미션 사진 업로드 URL 발급", description = "미션 수행 사진을 S3에 업로드하기 위한 Presigned URL을 발급합니다.")
 	@GetMapping("/missions/upload-url")
 	public CommonResponse<PresignedUrlResponse> getMissionUploadUrl(@RequestParam String fileName) {
-		PresignedUrlResponse response = s3Service.getPresignedPutUrl("missions", fileName);
 
-		return new CommonResponse<>(response, "업로드 URL 발급 완료", HttpStatus.OK);
+		// 1. 업로드용(PUT) URL 발급 (기존 로직)
+		PresignedUrlResponse putResponse = s3Service.getPresignedPutUrl("missions", fileName);
+
+		// 2. 조회용(GET) URL 별도 생성
+		// putResponse에 들어있는 imageKey를 꺼내서 GET URL을 만듭니다.
+		String downloadUrl = s3Service.getPresignedGetUrl(putResponse.getImageKey());
+
+		// 3. 두 URL을 모두 포함하여 새로운 응답 객체 생성
+		PresignedUrlResponse finalResponse = PresignedUrlResponse.builder()
+			.presignedUrl(putResponse.getPresignedUrl()) // PUT URL
+			.imageKey(putResponse.getImageKey())         // Key
+			.downloadUrl(downloadUrl)                    // GET URL (여기가 채워져야 함!)
+			.build();
+
+		return new CommonResponse<>(finalResponse, "업로드 URL 발급 완료", HttpStatus.OK);
 	}
 
 }
