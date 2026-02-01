@@ -99,7 +99,16 @@ class GamePlayViewModel @Inject constructor(
 
     private fun updateMembersList(newList: List<GameMemberSocketDto>) {
         _allMembers.value = newList
-        _thiefMembers.value = newList.filter { it.position == "THIEF" }
+
+        newList.forEach { member ->
+            Timber.d("🕵️ 멤버 확인: ${member.nickname} / 포지션: [${member.position}] / 상태: ${member.rawStatus}")
+        }
+
+        _thiefMembers.value = newList.filter {
+            it.position.equals("THIEF", ignoreCase = true)
+        }
+
+        Timber.d("📋 필터링된 도둑 수: ${_thiefMembers.value.size}명")
     }
 
     fun setDefaultArea(context: Context) {
