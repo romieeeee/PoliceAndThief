@@ -180,19 +180,10 @@ fun GamePlayScreen(
 
                 Spacer(modifier = Modifier.height(30.dp))
 
-                if (role == GameRole.POLICE) {
-                    FlipImage(
-                        frontRes = role.badge,
-                        backRes = R.drawable.img_helicopter // 뒷면 이미지
-                    )
-                } else {
-                    Image(
-                        modifier = Modifier.size(280.dp),
-                        painter = painterResource(role.badge),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop
-                    )
-                }
+                FlipImage(
+                    role = role,
+                    memberId = 16L // TODO: 여기에 본인 멤버 아이디 넣기
+                )
 
             }
         }
