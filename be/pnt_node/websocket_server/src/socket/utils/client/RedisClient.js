@@ -66,9 +66,9 @@ export class RedisClient {
         await this.pubClient.set(infoKey, roomId, "EX", 60);
     }
 
-    setAccessToken = async (memberId, accessToken) => {
+    setAccessToken = async (memberId, accessToken, timeLimit) => {
         const infoKey = `websocket:access:token:${memberId}`;
-        await this.pubClient.set(infoKey, accessToken, "EX", 60 * 5);
+        await this.pubClient.set(infoKey, accessToken, "EX", timeLimit ? (parseInt(timeLimit) + 5) * 60 : 30 * 60);
     }
 
     getAccessToken = async (memberId) => {

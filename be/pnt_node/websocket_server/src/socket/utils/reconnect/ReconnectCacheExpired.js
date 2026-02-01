@@ -103,5 +103,4 @@ export class WebSocketReconnect {
             console.error("Error in WebSocketReconnect (game disconnect):", error.message);
         }
     }
-
 }

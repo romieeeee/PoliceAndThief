@@ -58,7 +58,7 @@ export class GameController {
             const gameId = parseInt(payload.gameId);
             const memberId = this.socket.data.memberId;
 
-            await this.gameService.findGame(gameId, GameStatus.IN_GAME);
+            const game = await this.gameService.findGame(gameId, GameStatus.IN_GAME);
 
             if (await this.redisClient.getGameEnd(gameId)) {
                 this.makeError("GameEndException", "게임이 종료되었습니다.", 400);
@@ -83,8 +83,8 @@ export class GameController {
                     isConnected: true,
                     timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
                 }
-                const token = generateMemberAccessToken(this.socket.data.memberId);
-                await this.redisClient.setAccessToken(this.socket.data.memberId, token);
+                const token = generateMemberAccessToken(this.socket.data.memberId, game.gameSetting.timeLimit);
+                await this.redisClient.setAccessToken(this.socket.data.memberId, token, game.gameSetting.timeLimit);
 
                 await this.redisClient.setLocation(this.socket.data.memberId, gameId, locationData);
             }
@@ -375,6 +375,7 @@ export class GameController {
     syncGameInfo = async (payload) => {
         try {
             const gameId = parseInt(payload.gameId) || this.socket.data.gameId;
+            console.log("sync game info", gameId, this.socket.data.memberId);
 
             const game = await this.gameService.findGame(gameId);
             const gameMissions = await this.gameMissionService.findAllByGameId(gameId);
@@ -402,6 +403,7 @@ export class GameController {
                 }),
                 missions: gameMissions
             };
+            console.log("get sync game info", res);
             this.socket.emit("get sync game info", res);
         } catch (error) {
             console.error("syncGameInfo error", error);
@@ -635,7 +637,21 @@ export class GameController {
 
     retryEndGame = async (payload) => {
         try {
-            const { gameId, winTeam } = payload;
+            const gameId = parseInt(payload.gameId);
+            const winTeam = payload.winTeam;
+
+            const isGameHaveToFinish = await this.gameService.checkGameHaveToFinish(gameId);
+            if (!isGameHaveToFinish) {
+                sendError(this.socket, {
+                    gameId: gameId,
+                    winTeam: winTeam,
+                    message: "게임이 종료되지 않았습니다.",
+                    reason: "GAME_NOT_FINISHED",
+                    code: 400
+                }, "GameError");
+                return;
+            }
+            
             await this.gameEnd(this.io, this.redisClient, gameId, winTeam);
         } catch (error) {
             console.error("retryEndGame error", error);
