@@ -100,9 +100,6 @@ public class GameResultServiceImpl implements GameResultService {
 
 			// 2. isConnected가 true인 경우 -> 스탯 업데이트 진행
 
-			// 2-1. GameMember 상태 동기화 (status 등)
-			gameMember.updateGameResultState(statReq.getIsConnected(), statReq.getStatus());
-
 			// 2-2. GameMemberStat 업데이트
 			GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(gameMember.getId())
 				.orElseGet(() -> gameMemberStatRepository.save(GameMemberStat.createInitialStat(gameMember)));

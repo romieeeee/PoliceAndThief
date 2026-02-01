@@ -1,7 +1,11 @@
 package com.pnt.pnt_spring.domain.games.game.api.resp;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
 @AllArgsConstructor
@@ -19,4 +23,14 @@ public class GameRoomSettingResponse {
 
 	private Double prisonLat;
 	private Double prisonLng;
+
+	private List<LatLng> polygon; // 폴리곤 정보 추가
+
+	@Getter
+	@Builder
+	@ToString
+	public static class LatLng {
+		private Double lat;
+		private Double lng;
+	}
 }
