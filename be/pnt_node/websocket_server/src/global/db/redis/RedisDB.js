@@ -9,10 +9,20 @@ class RedisDB {
             host: process.env.REDIS_HOST,
             port: process.env.REDIS_PORT
         });
+
+        this.pubClient.on('error', (err) => {
+            console.error('Redis Pub Client Error:', err);
+        });
+
         this.subClient = this.pubClient.duplicate();
+
+        this.subClient.on('error', (err) => {
+            console.error('Redis Sub Client Error:', err);
+        });
+
         console.log("RedisDB is connected!");
     }
-        
+
     getPubClient = () => {
         return this.pubClient;
     }

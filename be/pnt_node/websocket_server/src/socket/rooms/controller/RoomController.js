@@ -42,26 +42,21 @@ export class RoomController {
     }
 
     joinRoom = async (data) => {
-        try {
-            const roomId = parseInt(data.roomId);
+        const roomId = parseInt(data.roomId);
 
-            if (!await this.isActiveRoom(roomId)) {
-                console.log("room is not active");
-                return;
-            }
-
-            this.socket.data.roomId = roomId;
-            this.socket.join(roomId);
-
-            const accessToken = generateMemberAccessToken(this.socket.data.memberId);
-            this.redisClient.setAccessToken(this.socket.data.memberId, accessToken);
-            this.socket.data.accessToken = accessToken;
-
-            this.io.to(roomId).emit("get join room", { roomId });
-        } catch (error) {
-            console.error("joinRoom error", error);
-            sendError(this.socket, error, "RoomError");
+        if (!await this.isActiveRoom(roomId)) {
+            console.log("room is not active");
+            return;
         }
+
+        this.socket.data.roomId = roomId;
+        this.socket.join(roomId);
+
+        const accessToken = generateMemberAccessToken(this.socket.data.memberId);
+        this.redisClient.setAccessToken(this.socket.data.memberId, accessToken);
+        this.socket.data.accessToken = accessToken;
+
+        this.io.to(roomId).emit("get join room", { roomId });
     }
 
     updateRoomInfo = async (data) => {
@@ -83,7 +78,7 @@ export class RoomController {
             if (error.response) {
                 this.io.to(roomId).emit("get update room info", error.response.data);
             } else {
-                sendError(this.socket, error, "RoomError");
+                throw error;
             }
         }
     }
@@ -107,7 +102,7 @@ export class RoomController {
             if (error.response) {
                 this.io.to(roomId).emit("get update ready", error.response.data);
             } else {
-                sendError(this.socket, error, "RoomError");
+                throw error;
             }
         }
     }
@@ -129,43 +124,34 @@ export class RoomController {
             if (error.response) {
                 this.io.to(roomId).emit("get update prefer position", error.response.data);
             } else {
-                sendError(this.socket, error, "RoomError");
+                throw error;
             }
         }
     }
 
     nowReadyInfo = async (data) => {
-        try {
-            const roomId = this.socket.data.roomId;
+        const roomId = this.socket.data.roomId;
 
-            const gameMembers = await this.gameMemberService.getGameMembers(parseInt(roomId));
-            const readyInfo = gameMembers.map((gameMember) => {
-                return {
-                    memberId: gameMember.memberId,
-                    ready: gameMember.ready,
-                    preferPosition: gameMember.preferPosition
-                }
-            })
+        const gameMembers = await this.gameMemberService.getGameMembers(parseInt(roomId));
+        const readyInfo = gameMembers.map((gameMember) => {
+            return {
+                memberId: gameMember.memberId,
+                ready: gameMember.ready,
+                preferPosition: gameMember.preferPosition
+            }
+        })
 
-            this.io.to(roomId).emit("get now ready info", readyInfo);
-        } catch (error) {
-            sendError(this.socket, error, "RoomError");
-        }
+        this.io.to(roomId).emit("get now ready info", readyInfo);
     }
 
     nowRoomInfo = async (data) => {
-        try {
-            const roomId = this.socket.data.roomId;
+        const roomId = this.socket.data.roomId;
 
-            const room = await this.gameService.getGameById(roomId);
-            const roomSetting = await this.gameSettingService.findGameSetting(roomId);
-            const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
+        const room = await this.gameService.getGameById(roomId);
+        const roomSetting = await this.gameSettingService.findGameSetting(roomId);
+        const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
 
-            this.io.to(roomId).emit("get now room info", { room, roomSetting, members });
-        } catch (error) {
-            console.error("nowRoomInfo error", error);
-            sendError(this.socket, error, "RoomError");
-        }
+        this.io.to(roomId).emit("get now room info", { room, roomSetting, members });
     }
 
     memberKick = async (data) => {
@@ -187,7 +173,7 @@ export class RoomController {
             if (error.response) {
                 this.io.to(roomId).emit("get member kick", error.response.data);
             } else {
-                sendError(this.socket, error, "RoomError");
+                throw error;
             }
         }
     }
@@ -212,27 +198,22 @@ export class RoomController {
             if (error.response) {
                 this.io.to(roomId).emit("get delegate owner", error.response.data);
             } else {
-                sendError(this.socket, error, "RoomError");
+                throw error;
             }
         }
     }
 
     postUpdateAccessToken = async (data) => {
-        try {
-            const accessToken = data.accessToken;
+        const accessToken = data.accessToken;
 
-            resolveInController(accessToken);
+        resolveInController(accessToken);
 
-            this.redisClient.setAccessToken(this.socket.data.memberId, accessToken);
-            this.socket.data.accessToken = accessToken;
+        this.redisClient.setAccessToken(this.socket.data.memberId, accessToken);
+        this.socket.data.accessToken = accessToken;
 
-            console.log("update access token", this.socket.data.accessToken);
+        console.log("update access token", this.socket.data.accessToken);
 
-            this.socket.emit("get update access token", { "accessToken": data.accessToken });
-        } catch (error) {
-            sendError(this.socket, error, "RoomError");
-        }
-
+        this.socket.emit("get update access token", { "accessToken": data.accessToken });
     }
 
     updateRoomMap = async (data) => {
@@ -252,36 +233,27 @@ export class RoomController {
             if (error.response) {
                 this.io.to(roomId).emit("get update room map", error.response.data);
             } else {
-                sendError(this.socket, error, "RoomError");
+                throw error;
             }
         }
     }
 
     gameStart = async (data) => {
-        try {
-            const roomId = this.socket.data.roomId;
+        const roomId = this.socket.data.roomId;
 
-            const room = await this.gameService.getGameById(roomId);
-            const roomSetting = await this.gameSettingService.findGameSetting(roomId);
-            const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
+        const room = await this.gameService.getGameById(roomId);
+        const roomSetting = await this.gameSettingService.findGameSetting(roomId);
+        const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
 
-            this.io.to(roomId).emit("get game start", { room, roomSetting, members });
-        } catch (error) {
-            sendError(this.socket, error, "RoomError");
-        }
-
+        this.io.to(roomId).emit("get game start", { room, roomSetting, members });
     }
 
     disconnect = async (data) => {
-        try {
-            const roomId = this.socket.data.roomId;
+        const roomId = this.socket.data.roomId;
 
-            this.socket.data.isIntentionalExit = true; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
+        this.socket.data.isIntentionalExit = true; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
 
-            this.io.to(roomId).emit("get user left", { roomId: roomId, memberId: this.socket.data.memberId });
-        } catch (error) {
-            sendError(this.socket, error, "RoomError");
-        }
+        this.io.to(roomId).emit("get user left", { roomId: roomId, memberId: this.socket.data.memberId });
     }
 
 }
