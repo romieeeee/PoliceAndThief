@@ -375,6 +375,7 @@ export class GameController {
     syncGameInfo = async (payload) => {
         try {
             const gameId = parseInt(payload.gameId) || this.socket.data.gameId;
+            console.log("sync game info", gameId, this.socket.data.memberId);
 
             const game = await this.gameService.findGame(gameId);
             const gameMissions = await this.gameMissionService.findAllByGameId(gameId);
@@ -402,6 +403,7 @@ export class GameController {
                 }),
                 missions: gameMissions
             };
+            console.log("get sync game info", res);
             this.socket.emit("get sync game info", res);
         } catch (error) {
             console.error("syncGameInfo error", error);
@@ -635,7 +637,21 @@ export class GameController {
 
     retryEndGame = async (payload) => {
         try {
-            const { gameId, winTeam } = payload;
+            const gameId = parseInt(payload.gameId);
+            const winTeam = payload.winTeam;
+
+            const isGameHaveToFinish = await this.gameService.checkGameHaveToFinish(gameId);
+            if (!isGameHaveToFinish) {
+                sendError(this.socket, {
+                    gameId: gameId,
+                    winTeam: winTeam,
+                    message: "게임이 종료되지 않았습니다.",
+                    reason: "GAME_NOT_FINISHED",
+                    code: 400
+                }, "GameError");
+                return;
+            }
+            
             await this.gameEnd(this.io, this.redisClient, gameId, winTeam);
         } catch (error) {
             console.error("retryEndGame error", error);
