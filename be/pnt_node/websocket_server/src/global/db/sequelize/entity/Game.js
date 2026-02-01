@@ -67,5 +67,10 @@ export default class Game extends Model {
             foreignKey: 'gameId',
             sourceKey: 'id'
         });
+        db.Game.hasOne(db.GameSetting, {
+            foreignKey: 'gameId',
+            sourceKey: 'id',
+            as: 'gameSetting'
+        });
     }
 }
