@@ -68,7 +68,6 @@ class GameWaitingViewModel @Inject constructor(
     // 역할 변경 중 상태
     private val _changingRoleMemberIds = MutableStateFlow<Set<Long>>(emptySet())
 
-
     init {
         roomSocketManager.currentRoomId = roomId
         setupRoomCallbacks()
@@ -102,7 +101,7 @@ class GameWaitingViewModel @Inject constructor(
 
     fun resetToUndecided() {
         viewModelScope.launch {
-            // 방을 나가지 않고(leaveRoom X), 역할만 ANY로 바꿈
+            // 방을 나가지 않고, 역할만 ANY로 바꿈
             val result = gameRoomRepository.changePosition(roomId, "ANY")
             if (result is BaseResult.Success) {
                 roomSocketManager.updatePosition("ANY")
@@ -147,7 +146,20 @@ class GameWaitingViewModel @Inject constructor(
                     _uiEvent.emit(GameWaitingUiEvent.NavigateToHome("방에서 강퇴되었습니다."))
                 }
             } else {
+                // 다른 사람이 강퇴당함
                 removePlayer(memberId)
+            }
+        }
+
+        roomSocketManager.setOnMemberLeft { memberId ->
+            Timber.d("📥 멤버 퇴장: $memberId")
+            if (memberId == _myMemberId.value) {
+                viewModelScope.launch {
+                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome("연결이 종료되었습니다."))
+                }
+            } else {
+                removePlayer(memberId)
+                roomSocketManager.requestRoomInfo(roomId)
             }
         }
 
@@ -176,16 +188,13 @@ class GameWaitingViewModel @Inject constructor(
         roomSocketManager.setOnGameStarted { data ->
             viewModelScope.launch {
                 try {
-                    // 1. 서버가 준 members 배열 추출
                     val membersArray = data.optJSONArray("members") ?: return@launch
                     val myId = _myMemberId.value
                     var myFinalRole = "ANY" // 기본값
 
-                    // 2. 리스트를 돌면서 내 ID와 일치하는 객체의 역할 확인
                     for (i in 0 until membersArray.length()) {
                         val member = membersArray.getJSONObject(i)
                         if (member.optLong("memberId") == myId) {
-                            // 서버가 점지해준 최종 포지션 (givenPosition)
                             myFinalRole = member.optString("givenPosition", "ANY")
                             break
                         }
@@ -193,12 +202,8 @@ class GameWaitingViewModel @Inject constructor(
 
                     Timber.d("🎮 최종 역할 확정: $myFinalRole (ID: $myId)")
 
-                    // 3. 네임스페이스 전환 (Room 끊기)
-                    roomSocketManager.isIntentionalLeave = true
                     roomSocketManager.disconnect()
 
-                    // 4. 게임 화면으로 이동하면서 확정된 역할 전달
-                    // NavigateToGame 이벤트에 roomId와 myFinalRole을 실어 보냅니다.
                     _uiEvent.emit(GameWaitingUiEvent.NavigateToGame(roomId, myFinalRole))
 
                 } catch (e: Exception) {
@@ -400,7 +405,6 @@ class GameWaitingViewModel @Inject constructor(
      * 플레이어 Ready 상태 업데이트
      */
     private fun updatePlayerReady(memberId: Long, isReady: Boolean) {
-        // 💡 새로운 리스트를 만들어 할당해야 UI가 확실히 바뀝니다.
         val currentPlayers = _players.value
         _players.value = currentPlayers.map { player ->
             if (player.id == memberId) {
@@ -488,7 +492,6 @@ class GameWaitingViewModel @Inject constructor(
         if (!_isHost.value) return
 
         viewModelScope.launch {
-            val current = _roomInfo.value
             val safeMaxCount = maxCount.coerceAtLeast(5)
             val safePoliceCount = policeCount.coerceIn(1, safeMaxCount - 1)
             val thiefCount = safeMaxCount - safePoliceCount
@@ -547,8 +550,6 @@ class GameWaitingViewModel @Inject constructor(
     fun leaveRoom() {
         viewModelScope.launch {
             roomSocketManager.leaveRoom()
-
-            roomSocketManager.disconnect()
 
             gameRoomRepository.leaveRoom(roomId)
 

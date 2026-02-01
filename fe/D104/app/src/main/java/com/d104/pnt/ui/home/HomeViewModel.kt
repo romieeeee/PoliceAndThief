@@ -87,19 +87,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun cleanupSocket() {
-        if (roomSocketManager.isIntentionalLeave) {
-            viewModelScope.launch {
-
-                roomSocketManager.disconnect()
-                chatSocketManager.disconnect()
-
-                roomSocketManager.isIntentionalLeave = false
-                roomSocketManager.currentRoomId = null
-
-                Timber.d("🧹 [Home] 의도적 퇴장 확인: 모든 소켓 세션 파괴 및 초기화 완료")
-            }
-        } else {
-            Timber.d("🌐 [Home] 예기치 못한 단절: 재연결을 위해 세션을 유지합니다. (RoomID: ${roomSocketManager.currentRoomId})")
-        }
+        Timber.d("🧹 [Home] Room 소켓 정리 시작")
+        roomSocketManager.cleanup()
     }
 }
