@@ -64,7 +64,7 @@ public class MemberController {
 		return new CommonResponse<>(response, "프로필 수정 완료", HttpStatus.OK);
 	}
 
-	@Operation(summary = "S3 업로드 URL 발급", description = "이미지 업로드를 위한 Presigned URL과 저장될 Key를 반환합니다.")
+	@Operation(summary = "S3 업로드 URL 발급", description = "이미지 업로드를 위한 Presigned URL과 저장될 Key를 반환합니다. downloadUrl은 Mission 위해 있는거니 상관X 해주시오")
 	@GetMapping("/{id}/presigned-url")
 	public CommonResponse<PresignedUrlResponse> getPresignedUrl(@RequestParam String fileName) {
 		Long currentMemberId = SecurityUtils.currentMemberId();
