@@ -1,4 +1,5 @@
 import redisDB from "../../../global/db/redis/RedisDB.js";
+import logger from "../../../global/config/logger.js";
 
 export class RedisClient {
     constructor() {
@@ -24,7 +25,7 @@ export class RedisClient {
     }
 
     deleteByCompletedReconnect = async (socket, namespace, storedRoomId) => {
-        console.log(`[Reconnect] Restoring user ${socket.data.memberId} to room ${storedRoomId}`);
+        logger.info(`[Reconnect] Restoring user ${socket.data.memberId} to room ${storedRoomId}`);
         socket.join(storedRoomId);
 
         if (namespace === 'chat') {
@@ -112,10 +113,10 @@ export class RedisClient {
     setGameSettingLock = async (gameId, time) => {
         const duration = parseInt(time);
         if (isNaN(duration)) {
-            console.warn(`[RedisClient] Invalid duration for GameSettingLock: ${time}. Defaulting to 3600s.`);
+            logger.warn(`[RedisClient] Invalid duration for GameSettingLock: ${time}. Defaulting to 3600s.`);
             return await this.pubClient.set(`room:game:setting:lock:${gameId}`, "locked", "NX", "EX", 5);
         }
-        return await this.pubClient.set(`room:game:setting:lock:${gameId}`, "locked", "NX", "EX", duration);
+        return await this.pubClient.set(`room:game:setting:lock:${gameId}`, "locked", "NX", "EX", duration * 60);
     }
 
     deleteGameSettingLock = async (gameId) => {
@@ -207,7 +208,7 @@ export class RedisClient {
 
         const res = await this.pubClient.hincrby(this.getPenaltyKeyString(gameId), memberId, 1);
         await this.pubClient.set(lockKey, "1", "EX", 10);
-        console.log("패널티 부여, member=", memberId);
+        logger.info(`패널티 부여, member=${memberId}`);
         return res;
     }
 
@@ -296,7 +297,7 @@ export class RedisClient {
      */
     setGameTimerLock = async (gameId) => {
         // 키가 존재할땐 false 반환, 키가 존재하지 않을땐 생성후 true 반환
-        return await this.pubClient.set(this.getGameTimerLockKeyString(gameId), "locked", "NX", "EX", 2);
+        return await this.pubClient.set(this.getGameTimerLockKeyString(gameId), "locked", "NX", "EX", 5);
     }
 
     deleteGameTimerLock = async (gameId) => {
@@ -307,10 +308,10 @@ export class RedisClient {
     setGameTimer = async (gameId, time) => {
         const duration = parseInt(time);
         if (isNaN(duration)) {
-            console.warn(`[RedisClient] Invalid duration for GameTimer: ${time}. Defaulting to 600s.`);
+            logger.warn(`[RedisClient] Invalid duration for GameTimer: ${time}. Defaulting to 600s.`);
             return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", 600);
         }
-        return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", duration);
+        return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", duration * 60);
     }
 
     getGameTimer = async (gameId) => {
@@ -328,10 +329,10 @@ export class RedisClient {
     setCctvTimer = async (gameId, time) => {
         const duration = parseInt(time);
         if (isNaN(duration)) {
-            console.warn(`[RedisClient] Invalid duration for CctvTimer: ${time}. Defaulting to 60s.`);
+            logger.warn(`[RedisClient] Invalid duration for CctvTimer: ${time}. Defaulting to 60s.`);
             return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", 60);
         }
-        return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", duration * 60);
+        return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", duration);
     }
 
     deleteCctvTimer = async (gameId) => {
