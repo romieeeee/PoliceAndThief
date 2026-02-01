@@ -307,9 +307,9 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                 GamePlayScreen(
                     gameId = gameId,
                     role = GameRole.fromName(roleString),
-                    onGameEnd = {
-                        navController.navigate(Routes.buildGameResult(gameId)) {
-                            popUpTo(Routes.HOME)
+                    onGameEnd = { id ->
+                        navController.navigate(Routes.buildGameNews(id)) {
+                            popUpTo(Routes.HOME) { inclusive = false }
                         }
                     },
                     goToCamera = { navController.navigate(Routes.MISSION_CAMERA) }
