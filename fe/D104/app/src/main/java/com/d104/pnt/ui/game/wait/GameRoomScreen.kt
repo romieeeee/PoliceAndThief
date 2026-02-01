@@ -33,18 +33,21 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.domain.model.GameRoomUiEvent
+import com.d104.pnt.domain.model.WaitingPlayer
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.theme.PixelFont
 import com.google.android.gms.maps.model.LatLng
 
 @Composable
-fun GameWaitingScreen(
+fun GameRoomScreen(
     roomId: Long,
     initialRole: GameRole,
     onChangeRole: () -> Unit,
     onStartGame: (Long, GameRole) -> Unit = { _, _ -> },
-    viewModel: GameWaitingViewModel = hiltViewModel(),
+    onNavigateRole: (Long, GameRole) -> Unit,
+    viewModel: GameRoomViewModel = hiltViewModel(),
     onBackPressed: () -> Boolean = { false },
     onNavigateHome: (String?) -> Unit = { }
 ) {
@@ -74,12 +77,14 @@ fun GameWaitingScreen(
         viewModel.setInitialRole(initialRole)
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is GameWaitingUiEvent.NavigateToHome -> {
+                is GameRoomUiEvent.NavigateToHome -> {
                     if (!onBackPressed()) onNavigateHome(event.message)
                 }
 
-                is GameWaitingUiEvent.NavigateToGame -> {
-                    onStartGame(event.roomId, GameRole.fromName(event.role))
+                is GameRoomUiEvent.NavigateToGame -> {
+                    onNavigateRole(event.roomId, GameRole.fromName((event.role)))
+
+//                    onStartGame(event.roomId, GameRole.fromName(event.role))
                 }
             }
         }
@@ -133,7 +138,7 @@ fun GameWaitingScreen(
         ) {
 
             // 방 정보
-            WaitingHeaderSection(
+            GameRoomHeader(
                 roomCode = roomInfo.roomCode,
                 currentCount = players.size,
                 maxCount = roomInfo.maxCount,
@@ -146,7 +151,7 @@ fun GameWaitingScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // 보드
-            UnifiedWaitingInfoCard(
+            GameRoomBoard(
                 players = players,
                 myMemberId = myMemberId,
                 policeCount = policeCount,

@@ -1,7 +1,13 @@
 package com.d104.pnt.ui.game.wait
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccessTime
@@ -22,7 +28,7 @@ import com.d104.pnt.ui.theme.AccentYellow
 import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
-fun WaitingHeaderSection(
+fun GameRoomHeader(
     roomCode: String,
     currentCount: Int,
     maxCount: Int,
@@ -52,7 +58,9 @@ fun WaitingHeaderSection(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "방 나가기",
                     tint = Color.White,
-                    modifier = Modifier.size(22.dp).clickable { onLeaveClick() }
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clickable { onLeaveClick() }
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
@@ -80,7 +88,9 @@ fun WaitingHeaderSection(
                         imageVector = Icons.Default.Settings,
                         contentDescription = "설정",
                         tint = Color(0xFF6591E9),
-                        modifier = Modifier.size(24.dp).clickable { onSettingsClick() }
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable { onSettingsClick() }
                     )
                 }
             }
@@ -91,7 +101,12 @@ fun WaitingHeaderSection(
 @Composable
 private fun InfoIconText(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(imageVector = icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(20.dp)
+        )
         Spacer(modifier = Modifier.width(4.dp))
         Text(text = text, fontFamily = PixelFont, color = Color.White, fontSize = 16.sp)
     }

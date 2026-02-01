@@ -14,9 +14,11 @@ import com.d104.pnt.util.StepSensorManager
 import com.d104.pnt.util.socket.GameSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,7 +32,6 @@ class GamePlayViewModel @Inject constructor(
     private val gameSocketManager: GameSocketManager,
     private val stepSensorManager: StepSensorManager
 ) : ViewModel() {
-
     val polygonPoints = locationRepository.polygonPoints
     val prisonLocation = locationRepository.prisonLocation
     val userLocation = locationRepository.currentLocation
@@ -48,6 +49,14 @@ class GamePlayViewModel @Inject constructor(
 
     init{
         viewModelScope.launch {
+            val token = authRepository.getAccessToken().first()
+            if (token.isNotEmpty() && !gameSocketManager.isConnected()) {
+                gameSocketManager.connect(token)
+
+                while (!gameSocketManager.isConnected()) {
+                    delay(100)
+                }
+            }
             gameSessionRepository.gameInit()
         }
     }

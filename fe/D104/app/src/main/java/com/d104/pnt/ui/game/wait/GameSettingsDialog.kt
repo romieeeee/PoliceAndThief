@@ -1,9 +1,17 @@
 package com.d104.pnt.ui.game.wait
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -14,28 +22,26 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.d104.pnt.R
 import com.d104.pnt.data.remote.model.request.Location
 import com.d104.pnt.domain.model.DraggableLatLng
+import com.d104.pnt.domain.model.GameRoomInfoState
 import com.d104.pnt.ui.component.GoogleMaps
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.RoundedButton
 import com.d104.pnt.ui.game.create.CounterControl
 import com.d104.pnt.ui.game.create.FactionRatioBar
-import com.d104.pnt.ui.game.create.MapSettingDialog
 import com.d104.pnt.ui.game.create.SectionTitle
 import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.DialogBorderColor
@@ -106,12 +112,23 @@ fun GameSettingsDialog(
                         modifier = Modifier.fillMaxSize(),
                         inGameMinimap = false,
                         isPreview = true,
-                        polygonPoints = polygonPoints?.map { DraggableLatLng(position = LatLng(it.lat, it.lng)) } ?: emptyList(),
-                        prisonLocation = LatLng(prisonLocation?.lat ?: 37.56681969564895, prisonLocation?.lng ?: 126.97864094105321),
+                        polygonPoints = polygonPoints?.map {
+                            DraggableLatLng(
+                                position = LatLng(
+                                    it.lat,
+                                    it.lng
+                                )
+                            )
+                        } ?: emptyList(),
+                        prisonLocation = LatLng(
+                            prisonLocation?.lat ?: 37.56681969564895,
+                            prisonLocation?.lng ?: 126.97864094105321
+                        ),
                     )
 
                     Box(
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
                             .clickable { showMapPopup = true },
                         contentAlignment = Alignment.Center
                     ) {
@@ -130,7 +147,10 @@ fun GameSettingsDialog(
                 SectionTitle(text = "게임 규칙")
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     CounterControl(
                         Modifier.weight(1f), "플레이어", Icons.Default.Person,
                         totalPlayers.toString(), "명",
@@ -157,7 +177,10 @@ fun GameSettingsDialog(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     CounterControl(
                         Modifier.weight(1f), "미션 갯수", Icons.Default.List,
                         missionCount.toString(), "개",
@@ -207,9 +230,10 @@ fun GameSettingsDialog(
                     RoundedButton(
                         text = "변경 완료",
                         onClick = {
-                            onUpdateSettings(totalPlayers, gameTime, missionCount, cctvCycle, policeCount,
+                            onUpdateSettings(
+                                totalPlayers, gameTime, missionCount, cctvCycle, policeCount,
                                 Location(prisonLocation!!.lat, prisonLocation!!.lng),
-                                polygonPoints!!.map{ Location(it.lat, it.lng) }
+                                polygonPoints!!.map { Location(it.lat, it.lng) }
                             )
                             onDismiss()
                         },
@@ -222,7 +246,7 @@ fun GameSettingsDialog(
         }
     }
     if (showMapPopup) {
-        GameWaitingMapSettingDialog(
+        GameRoomMapSettingDialog(
             modifier = Modifier,
             onDismiss = { showMapPopup = false },
             onConfirm = { prison, polygon ->

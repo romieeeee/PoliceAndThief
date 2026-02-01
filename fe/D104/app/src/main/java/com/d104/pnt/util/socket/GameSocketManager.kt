@@ -13,7 +13,7 @@ import javax.inject.Singleton
 @Singleton
 class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
-    private var currentGameId: Long? = null
+    var currentGameId: Long? = null
 
     companion object {
         // Request Events (req)
