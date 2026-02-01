@@ -1,5 +1,6 @@
 import { Redis } from "ioredis";
 import dotenv from "dotenv";
+import logger from "../../config/logger.js";
 
 dotenv.config();
 
@@ -11,16 +12,16 @@ class RedisDB {
         });
 
         this.pubClient.on('error', (err) => {
-            console.error('Redis Pub Client Error:', err);
+            logger.error('Redis Pub Client Error:', err);
         });
 
         this.subClient = this.pubClient.duplicate();
 
         this.subClient.on('error', (err) => {
-            console.error('Redis Sub Client Error:', err);
+            logger.error('Redis Sub Client Error:', err);
         });
 
-        console.log("RedisDB is connected!");
+        logger.info("RedisDB is connected!");
     }
 
     getPubClient = () => {
