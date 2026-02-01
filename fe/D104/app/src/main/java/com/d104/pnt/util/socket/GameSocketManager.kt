@@ -446,7 +446,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onGameEnded = null
     }
 
-    override fun removeAllListeners() {
+    public override fun removeAllListeners() {
         super.removeAllListeners()
         off(EVENT_GET_JOIN_ROOM)
         off(EVENT_GET_GPS)

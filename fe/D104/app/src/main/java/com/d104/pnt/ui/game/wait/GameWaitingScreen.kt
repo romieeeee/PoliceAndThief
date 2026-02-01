@@ -262,6 +262,7 @@ fun GameWaitingScreen(
                     prison,
                     polygon
                 )
-            })
+            }
+        )
     }
 }

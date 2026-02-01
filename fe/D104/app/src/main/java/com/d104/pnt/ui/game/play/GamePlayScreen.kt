@@ -69,6 +69,8 @@ fun GamePlayScreen(
     val areaPoints = viewModel.polygonPoints.collectAsStateWithLifecycle().value
     val prisonLocation = viewModel.prisonLocation.collectAsState().value
 
+    val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
+
     DisposableEffect(Unit) {
         val serviceIntent = Intent(context, LocationService::class.java).apply {
             putExtra(LocationService.EXTRA_GAME_MODE, true)
@@ -291,7 +293,7 @@ fun GamePlayScreen(
             contentAlignment = Alignment.Center
         ) {
             PhoneFrame(
-                phoneScreen,
+                screen = phoneScreen, // (변수명 screen으로 매칭)
                 onScanSuccess = { result ->
                     phoneScreen = PhoneScreen.THIEF_LIST
                 },
@@ -304,7 +306,9 @@ fun GamePlayScreen(
                 prisonLocation = LatLng(
                     prisonLocation!!.latitude,
                     prisonLocation!!.longitude
-                )
+                ),
+
+                thiefMembers = thiefMembers
             )
         }
     }
