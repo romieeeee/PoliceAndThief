@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { MissionController } from "./mission/controller/MissionController.js";
-import { NewController } from "./news/controller/NewController.js";
+import { NewController } from "./news/controller/NewsController.js";
 
 const router = Router();
 

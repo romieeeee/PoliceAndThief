@@ -37,6 +37,10 @@ export default class GameSetting extends Model {
                     type: DataTypes.DOUBLE,
                     allowNull: true,
                 },
+                cctvInterval: {
+                    type: DataTypes.INTEGER,
+                    allowNull: true,
+                },
                 isDeleted: {
                     type: DataTypes.BOOLEAN,
                     allowNull: false,

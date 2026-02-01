@@ -11,7 +11,7 @@ const URL = `amqp://${USER}:${PASSWORD}@${HOST}:${PORT}`;
 
 export const MQConfig = {
     URL: URL,
-    MQ_IMAGE: process.env.MQ_IMAGE,
+    MQ_MISSION: process.env.MQ_MISSION,
     MQ_ALARM: process.env.MQ_ALARM,
     MQ_NEWS: process.env.MQ_NEWS,
     EXCHANGE_NAME: process.env.EXCHANGE_NAME

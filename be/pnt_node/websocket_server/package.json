@@ -24,6 +24,7 @@
     "moment-timezone": "^0.6.0",
     "mongoose": "^9.1.5",
     "mongoose-sequence": "^6.0.1",
+    "morgan": "^1.10.1",
     "pg": "^8.17.2",
     "pg-hstore": "^2.3.4",
     "pm2": "^6.0.14",
@@ -31,6 +32,8 @@
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
   }
 }

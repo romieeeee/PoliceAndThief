@@ -255,11 +255,11 @@ export class RedisClient {
      * news 관련
      */
     setNews = async (gameId, newsId) => {
-        await this.pubClient.hset(this.getNewsKeyString(gameId), newsId, "EX", 60 * 5);
+        await this.pubClient.set(this.getNewsKeyString(gameId), newsId, "EX", 60 * 5);
     }
 
     getNews = async (gameId) => {
-        const newsId = await this.pubClient.hget(this.getNewsKeyString(gameId));
+        const newsId = await this.pubClient.get(this.getNewsKeyString(gameId));
         return parseInt(newsId);
     }
 
