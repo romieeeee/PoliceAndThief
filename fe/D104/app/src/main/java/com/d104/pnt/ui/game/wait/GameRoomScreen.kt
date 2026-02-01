@@ -289,6 +289,7 @@ fun GameRoomScreen(
                     prison,
                     polygon
                 )
-            })
+            }
+        )
     }
 }
