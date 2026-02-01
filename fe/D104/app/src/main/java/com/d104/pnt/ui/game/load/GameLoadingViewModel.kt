@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.navigation.NavArgs
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +20,7 @@ class GameLoadingViewModel @Inject constructor(
 
     companion object {
         private const val KEY_ROLE = "role"
-        private const val TOTAL_SECONDS = 5
+        private const val TOTAL_SECONDS = 60
     }
 
     // Navigation argument에서 role 가져오기

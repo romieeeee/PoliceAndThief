@@ -201,20 +201,10 @@ abstract class BaseSocketManager(
     }
 
     /**
-     * 일회성 이벤트 리스너 등록
-     */
-    protected fun once(event: String, handler: (Array<Any>) -> Unit) {
-        socket?.once(event) { args ->
-            Timber.d("[$namespace] 이벤트 수신 (once): $event")
-            handler(args)
-        }
-    }
-
-    /**
      * 이벤트 리스너 제거
      */
     protected fun off(event: String) {
         socket?.off(event)
-        Timber.d("[$namespace] 이벤트 리스너 제거: $event")
+//        Timber.d("[$namespace] 이벤트 리스너 제거: $event")
     }
 }
