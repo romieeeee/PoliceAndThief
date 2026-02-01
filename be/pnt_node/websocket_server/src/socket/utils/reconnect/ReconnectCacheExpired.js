@@ -61,15 +61,15 @@ export class WebSocketReconnect {
 
             this.chatIo.to(roomId).emit("user left", { memberId });
         } catch (error) {
-            console.error("Error in WebSocketReconnect (chat disconnect):", error.data);
+            console.error("Error in WebSocketReconnect (chat disconnect):", error.message);
         }
     }
 
     roomDisconnect = async (memberId, roomId) => {
         try {
             const accessToken = await this.redisClient.getAccessToken(memberId);
+
             await this.redisClient.deleteKeys("room", roomId, memberId);
-            await this.redisClient.deleteAccessToken(memberId);
 
             const response = await axios.delete(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/members/me`, {
                 headers: {
@@ -78,10 +78,12 @@ export class WebSocketReconnect {
                 }
             });
 
+            await this.redisClient.deleteAccessToken(memberId);
+
             console.log("user_left", { memberId, roomId });
             this.roomIo.to(roomId).emit("get user left", { roomId: roomId, memberId: memberId });
         } catch (error) {
-            console.error("Error in WebSocketReconnect (room disconnect):", error.data);
+            console.error("Error in WebSocketReconnect (room disconnect):", error.response?.data || error.message);
         }
     }
 
@@ -98,10 +100,8 @@ export class WebSocketReconnect {
             console.log("user_left", { memberId, roomId });
             this.gameIo.to(roomId).emit("get user left", { roomId: roomId, memberId: memberId });
         } catch (error) {
-            console.error("Error in WebSocketReconnect (game disconnect):", error.data);
+            console.error("Error in WebSocketReconnect (game disconnect):", error.message);
         }
     }
 
 }
-
-
