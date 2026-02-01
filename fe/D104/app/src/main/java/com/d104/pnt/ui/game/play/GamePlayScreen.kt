@@ -66,8 +66,6 @@ fun GamePlayScreen(
     val context = LocalContext.current
 
     val currentLocation = viewModel.userLocation.collectAsState().value
-    val areaPoints = viewModel.polygonPoints.collectAsStateWithLifecycle().value
-    val prisonLocation = viewModel.prisonLocation.collectAsState().value
 
     val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
 
@@ -85,12 +83,6 @@ fun GamePlayScreen(
         onDispose {
             context.stopService(serviceIntent)
         }
-    }
-
-    // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
-    LaunchedEffect(Unit) {
-        viewModel.setDefaultArea(context)
-        viewModel.initGame(gameId)
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -294,10 +286,10 @@ fun GamePlayScreen(
                     currentLocation!!.latitude,
                     currentLocation!!.longitude
                 ),
-                areaPoints = areaPoints,
+                areaPoints = listOf(LatLng(36.10714240767934, 128.41581273855473 ), LatLng(36.1071965481732, 128.41656884646858), LatLng(36.106574725807235, 128.41619121949233) ),
                 prisonLocation = LatLng(
-                    prisonLocation!!.latitude,
-                    prisonLocation!!.longitude
+                    36.106908664851346, // TODO: 임시값
+                    128.41614724274035
                 ),
 
                 thiefMembers = thiefMembers
