@@ -41,6 +41,7 @@ const chatSocketServer = (io) => {
 
                     if (socket.data.chatRoomId) {
                         await redisClient.pubReconnectTimer("chat", socket, socket.data.chatRoomId);
+                        console.log("[CHAT] pubReconnectTimer", socket.data.chatRoomId);
                     }
                 }
             });
