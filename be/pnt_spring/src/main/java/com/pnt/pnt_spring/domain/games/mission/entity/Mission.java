@@ -27,4 +27,7 @@ public class Mission extends BaseEntity {
 
 	@Column(length = 255)
 	private String description;
+
+	@Column(length = 20)
+	private String keyword;
 }
