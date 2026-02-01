@@ -28,4 +28,9 @@ data class GameRoomInfoState(
 // UI 이벤트 정의
 sealed interface GameWaitingUiEvent {
     data class NavigateToHome(val message: String? = null) : GameWaitingUiEvent
+    data class NavigateToGame(
+        val roomId: Long,
+        val role: String
+    ) : GameWaitingUiEvent
+
 }

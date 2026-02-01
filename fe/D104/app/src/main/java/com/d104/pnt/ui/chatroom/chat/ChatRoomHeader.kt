@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,32 +36,31 @@ fun ChatRoomHeader(
     modifier: Modifier,
     roomData: ChatsData,
     onLeaveClick: () -> Unit,
+    onMenuClick: () -> Unit,
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .background(DarkBackground)
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-
         PixelContainer(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             cornerSize = 10f,
             backgroundColor = DarkCard,
             borderColor = TextSecondary,
             innerVerticalPadding = 16
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // 뒤로가기
                 PixelContainer(
                     modifier = Modifier
                         .size(36.dp)
-                        .clickable(onClick = { onLeaveClick() }),
+                        .clickable(onClick = onLeaveClick),
                     backgroundColor = DarkCard,
                     borderColor = Color.White,
                     innerVerticalPadding = 10,
@@ -79,6 +80,8 @@ fun ChatRoomHeader(
                 }
 
                 Spacer(Modifier.width(20.dp))
+
+                // 제목
                 Text(
                     modifier = Modifier.weight(1f),
                     text = roomData.title,
@@ -87,8 +90,9 @@ fun ChatRoomHeader(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+
+                // 인원수 + 메뉴
                 Row(
-                    modifier = Modifier,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -98,6 +102,15 @@ fun ChatRoomHeader(
                         color = TextSecondary,
                     )
 
+                    // 멤버 목록(드로어 열기)
+                    Icon(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clickable(onClick = onMenuClick),
+                        imageVector = Icons.Filled.Menu,
+                        contentDescription = "멤버 목록",
+                        tint = TextPrimary
+                    )
                 }
             }
         }
