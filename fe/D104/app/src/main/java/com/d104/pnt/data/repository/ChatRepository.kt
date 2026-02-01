@@ -1,6 +1,7 @@
 package com.d104.pnt.data.repository
 
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
+import com.d104.pnt.data.remote.model.response.ChatRoomMemberResponse
 import com.d104.pnt.data.remote.model.response.ChatRoomResponse
 import com.d104.pnt.data.remote.model.response.ChatSearchResponse
 import com.d104.pnt.data.remote.model.response.JoinChatRoomResponse
@@ -32,6 +33,11 @@ interface ChatRepository {
         chatRoomId: Long
     ): BaseResult<ChatRoomResponse>
 
+    suspend fun getChatRoomMembers(
+        chatRoomId: Long
+    ): BaseResult<List<ChatRoomMemberResponse>>
+
+
     /**
      * 채팅방 입장
      */
@@ -59,4 +65,8 @@ interface ChatRepository {
      * 채팅방 퇴장
      */
     suspend fun leaveChatRoom()
+
+    suspend fun leaveChatRoom(chatRoomId: Long): BaseResult<Unit>
+    suspend fun disconnectChatRoom(chatRoomId: Long): BaseResult<Unit>
+
 }
