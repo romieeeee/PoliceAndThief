@@ -43,8 +43,13 @@ export class RedisClient {
         await this.pubClient.del(timerKey);
     }
 
-    getStoredRoomId = async (socket, namespace) => {
-        const infoKey = `websocket:reconnect:info:${namespace}:${socket.data.memberId}`;
+    getStoredRoomId = async (socketOrMemberId, namespace) => {
+        let memberId = socketOrMemberId;
+        if (socketOrMemberId.data && socketOrMemberId.data.memberId) {
+            memberId = socketOrMemberId.data.memberId;
+        }
+
+        const infoKey = `websocket:reconnect:info:${namespace}:${memberId}`;
         const storedRoomId = await this.pubClient.get(infoKey);
         return parseInt(storedRoomId);
     }
