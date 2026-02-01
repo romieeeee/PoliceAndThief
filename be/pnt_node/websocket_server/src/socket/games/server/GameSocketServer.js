@@ -69,6 +69,7 @@ const gameSocketServer = (io) => {
 
                     if (socket.data.gameId) {
                         await redisClient.pubReconnectTimer("game", socket, socket.data.gameId);
+                        console.log("[GAME] pubReconnectTimer", socket.data.gameId);
                     }
                 }
             });
