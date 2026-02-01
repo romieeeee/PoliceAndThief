@@ -6,6 +6,7 @@ import com.d104.pnt.data.remote.model.response.ChatCreateResponse
 import com.d104.pnt.data.remote.model.response.ChatRoomResponse
 import com.d104.pnt.data.remote.model.response.ChatSearchResponse
 import com.d104.pnt.data.remote.model.response.JoinChatRoomResponse
+import com.d104.pnt.data.remote.model.response.ChatRoomMemberResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +37,14 @@ class ChatRepositoryImpl @Inject constructor(
             }
         ) {
             chatApiService.getChatRoom(chatRoomId)
+        }
+    }
+
+    override suspend fun getChatRoomMembers(
+        chatRoomId: Long
+    ): BaseResult<List<ChatRoomMemberResponse>> {
+        return safeApiCall {
+            chatApiService.getChatRoomMembers(chatRoomId)
         }
     }
 
@@ -104,4 +113,23 @@ class ChatRepositoryImpl @Inject constructor(
         currentChatRoomRegionCode = null
         currentChatRoomMaxMember = null
     }
+
+    override suspend fun leaveChatRoom(chatRoomId: Long): BaseResult<Unit> {
+        return safeApiCall(
+            onSuccess = {
+                // 나가기 성공 시 로컬 상태 정리(기존 함수 재사용)
+                leaveChatRoom()
+            }
+        ) {
+            chatApiService.leaveChatRoom(chatRoomId)
+        }
+    }
+
+    override suspend fun disconnectChatRoom(chatRoomId: Long): BaseResult<Unit> {
+        return safeApiCall {
+            chatApiService.disconnectChatRoom(chatRoomId)
+        }
+    }
+
+
 }
