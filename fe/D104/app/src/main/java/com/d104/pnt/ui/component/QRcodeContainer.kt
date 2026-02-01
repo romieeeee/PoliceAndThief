@@ -27,7 +27,7 @@ fun QRcodeContainer(
     }
 
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(TextPrimary)
             .border(4.dp, BorderDefault)
@@ -37,7 +37,7 @@ fun QRcodeContainer(
             Image(
                 bitmap = qrCode.asImageBitmap(),
                 contentDescription = "Thief QR Code",
-                modifier = Modifier
+                modifier = modifier
                     .fillMaxSize()
                     .aspectRatio(1f)
             )
