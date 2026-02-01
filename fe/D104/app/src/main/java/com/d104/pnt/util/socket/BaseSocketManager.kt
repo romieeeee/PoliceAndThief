@@ -30,7 +30,6 @@ abstract class BaseSocketManager(
             return
         }
 
-        // 2. [핵심] 기존 소켓이 있다면 확실히 정리하고 시작
         socket?.let {
             Timber.d("[$namespace] 기존 소켓 인스턴스 정리")
             it.off()
