@@ -45,6 +45,7 @@ export class GameService {
             include: [
                 {
                     model: GameSetting,
+                    as: 'gameSetting',
                     where: {
                         isDeleted: false
                     }
