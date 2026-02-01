@@ -1,0 +1,45 @@
+package com.d104.pnt.data.remote.model.response
+
+import com.d104.pnt.domain.model.GameRole
+import org.json.JSONObject
+
+// 도둑 상태
+enum class ThiefStatus(val key: String, val uiText: String) {
+    FREE("FREE", "수배"),
+    TRANSFER("TRANSFER", "이송"),
+    PRISON("PRISON", "검거"),
+    UNKNOWN("UNKNOWN", "-");
+
+    companion object {
+        fun fromKey(key: String?): ThiefStatus {
+            return entries.find { it.key == key } ?: UNKNOWN
+        }
+    }
+}
+
+// 플레이어 정보 소켓
+data class GameMemberSocketDto(
+    val memberId: Long,
+    val nickname: String,
+    val avatarUrl: String,
+    val position: String,
+    val rawStatus: String?,
+    val isConnected: Boolean
+) {
+
+    val status: ThiefStatus
+        get() = ThiefStatus.fromKey(rawStatus)
+
+    companion object {
+        fun fromJson(json: JSONObject): GameMemberSocketDto {
+            return GameMemberSocketDto(
+                memberId = json.optLong("memberId"),
+                nickname = json.optString("nickname", "알수없음"),
+                avatarUrl = json.optString("avatarUrl", ""),
+                position = json.optString("position", "THIEF"),
+                rawStatus = json.optString("status", "FREE"),
+                isConnected = json.optBoolean("isConnected", true)
+            )
+        }
+    }
+}
