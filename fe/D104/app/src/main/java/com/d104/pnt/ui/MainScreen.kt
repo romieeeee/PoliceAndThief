@@ -43,7 +43,7 @@ import com.d104.pnt.ui.game.load.GameLoadingScreen
 import com.d104.pnt.ui.game.play.GamePlayScreen
 import com.d104.pnt.ui.game.play.GameRoleScreen
 import com.d104.pnt.ui.game.play.mission.CameraScreen
-import com.d104.pnt.ui.game.wait.GameWaitingScreen
+import com.d104.pnt.ui.game.wait.GameRoomScreen
 import com.d104.pnt.ui.game.wait.role.RoleSelectScreen
 import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
@@ -173,7 +173,7 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                 val roomId = backStackEntry.arguments?.getLong(NavArgs.ROOM_ID) ?: 0L
                 val roleString = backStackEntry.arguments?.getString(NavArgs.ROLE) ?: "THIEF"
 
-                GameWaitingScreen(
+                GameRoomScreen(
                     roomId = roomId,
                     initialRole = GameRole.fromName(roleString),
                     onStartGame = { gameId, role ->

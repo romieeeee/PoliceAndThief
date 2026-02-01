@@ -25,18 +25,17 @@ import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.ui.component.GoogleMaps
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
-import com.d104.pnt.ui.game.create.MapSettingViewModel
 import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.DialogBorderColor
 import com.d104.pnt.ui.theme.TextPrimary
 import com.google.android.gms.maps.model.LatLng
 
 @Composable
-fun GameWaitingMapSettingDialog(
+fun GameRoomMapSettingDialog(
     modifier: Modifier,
     onDismiss: () -> Unit,
     onConfirm: (Location, List<Location>) -> Unit,
-    viewModel: GameWaitingViewModel = hiltViewModel()
+    viewModel: GameRoomViewModel = hiltViewModel()
 ) {
     val originInfo by viewModel.roomInfo.collectAsStateWithLifecycle()
     val originPoints = originInfo.polygon ?: emptyList()

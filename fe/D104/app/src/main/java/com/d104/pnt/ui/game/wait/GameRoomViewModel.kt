@@ -9,7 +9,10 @@ import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.domain.model.GameRoomInfoState
+import com.d104.pnt.domain.model.GameRoomUiEvent
 import com.d104.pnt.domain.model.RoomInfoResponse
+import com.d104.pnt.domain.model.WaitingPlayer
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.navigation.NavArgs
@@ -30,7 +33,7 @@ import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
-class GameWaitingViewModel @Inject constructor(
+class GameRoomViewModel @Inject constructor(
     private val gameRoomRepository: GameRoomRepository,
     private val authRepository: AuthRepository,
     private val locationRepository: LocationRepository,
@@ -62,8 +65,8 @@ class GameWaitingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val uiState: StateFlow<UiState<Unit>> = _uiState.asStateFlow()
 
-    private val _uiEvent = MutableSharedFlow<GameWaitingUiEvent>()
-    val uiEvent: SharedFlow<GameWaitingUiEvent> = _uiEvent.asSharedFlow()
+    private val _uiEvent = MutableSharedFlow<GameRoomUiEvent>()
+    val uiEvent: SharedFlow<GameRoomUiEvent> = _uiEvent.asSharedFlow()
 
     // 역할 변경 중 상태
     private val _changingRoleMemberIds = MutableStateFlow<Set<Long>>(emptySet())
@@ -143,7 +146,7 @@ class GameWaitingViewModel @Inject constructor(
             Timber.d("📥 멤버 강퇴: $memberId")
             if (memberId == _myMemberId.value) {
                 viewModelScope.launch {
-                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome("방에서 강퇴되었습니다."))
+                    _uiEvent.emit(GameRoomUiEvent.NavigateToHome("방에서 강퇴되었습니다."))
                 }
             } else {
                 // 다른 사람이 강퇴당함
@@ -155,7 +158,7 @@ class GameWaitingViewModel @Inject constructor(
             Timber.d("📥 멤버 퇴장: $memberId")
             if (memberId == _myMemberId.value) {
                 viewModelScope.launch {
-                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome("연결이 종료되었습니다."))
+                    _uiEvent.emit(GameRoomUiEvent.NavigateToHome("연결이 종료되었습니다."))
                 }
             } else {
                 removePlayer(memberId)
@@ -204,7 +207,7 @@ class GameWaitingViewModel @Inject constructor(
 
                     roomSocketManager.disconnect()
 
-                    _uiEvent.emit(GameWaitingUiEvent.NavigateToGame(roomId, myFinalRole))
+                    _uiEvent.emit(GameRoomUiEvent.NavigateToGame(roomId, myFinalRole))
 
                 } catch (e: Exception) {
                     Timber.e(e, "❌ 게임 시작 데이터 파싱 실패")
@@ -295,7 +298,7 @@ class GameWaitingViewModel @Inject constructor(
             // 내 강퇴 여부 체크 (팀원 로직 반영)
             val isMeInList = data.members.any { it.memberId == myId }
             if (myId != 0L && !isMeInList) {
-                viewModelScope.launch { _uiEvent.emit(GameWaitingUiEvent.NavigateToHome("강퇴되었습니다!")) }
+                viewModelScope.launch { _uiEvent.emit(GameRoomUiEvent.NavigateToHome("강퇴되었습니다!")) }
                 return
             }
 
@@ -342,7 +345,7 @@ class GameWaitingViewModel @Inject constructor(
             if (myId != 0L && _players.value.none { it.id == myId }) {
                 Timber.w("🚨 내 ID가 서버 명단에 없습니다. 강퇴된 것으로 판단하여 홈으로 이동합니다.")
                 viewModelScope.launch {
-                    _uiEvent.emit(GameWaitingUiEvent.NavigateToHome("방에서 강퇴되었습니다."))
+                    _uiEvent.emit(GameRoomUiEvent.NavigateToHome("방에서 강퇴되었습니다."))
                 }
                 return // 이후 로직 중단
             }
@@ -553,7 +556,7 @@ class GameWaitingViewModel @Inject constructor(
 
             gameRoomRepository.leaveRoom(roomId)
 
-            _uiEvent.emit(GameWaitingUiEvent.NavigateToHome())
+            _uiEvent.emit(GameRoomUiEvent.NavigateToHome())
         }
     }
 

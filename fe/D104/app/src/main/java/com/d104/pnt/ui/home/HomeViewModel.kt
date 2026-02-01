@@ -87,7 +87,6 @@ class HomeViewModel @Inject constructor(
     }
 
     fun cleanupSocket() {
-        Timber.d("🧹 [Home] Room 소켓 정리 시작")
         roomSocketManager.cleanup()
     }
 }
