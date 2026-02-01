@@ -28,8 +28,13 @@ export class RoomController {
     isActiveRoom = async (roomId) => {
         const room = await this.gameService.getGameById(roomId);
 
-        if (room.status !== "WAITING") {
-            sendError(this.socket, { code: 404, message: "방을 찾을 수 없습니다." }, "NotFoundException");
+        if (room.status === "IN_GAME") {
+            sendError(this.socket, { code: 404, message: "게임중인 방입니다." }, "NotFoundException");
+            return false;
+        }
+
+        if (room.status === "ENDED") {
+            sendError(this.socket, { code: 404, message: "종료 상태인 방입니다." }, "NotFoundException");
             return false;
         }
 
@@ -40,8 +45,12 @@ export class RoomController {
         try {
             const roomId = parseInt(data.roomId);
 
-            this.socket.data.roomId = roomId;
+            if (!await this.isActiveRoom(roomId)) {
+                console.log("room is not active");
+                return;
+            }
 
+            this.socket.data.roomId = roomId;
             this.socket.join(roomId);
 
             const accessToken = generateMemberAccessToken(this.socket.data.memberId);
@@ -126,18 +135,22 @@ export class RoomController {
     }
 
     nowReadyInfo = async (data) => {
-        const roomId = this.socket.data.roomId;
+        try {
+            const roomId = this.socket.data.roomId;
 
-        const gameMembers = await this.gameMemberService.getGameMembers(parseInt(roomId));
-        const readyInfo = gameMembers.map((gameMember) => {
-            return {
-                memberId: gameMember.memberId,
-                ready: gameMember.ready,
-                preferPosition: gameMember.preferPosition
-            }
-        })
+            const gameMembers = await this.gameMemberService.getGameMembers(parseInt(roomId));
+            const readyInfo = gameMembers.map((gameMember) => {
+                return {
+                    memberId: gameMember.memberId,
+                    ready: gameMember.ready,
+                    preferPosition: gameMember.preferPosition
+                }
+            })
 
-        this.io.to(roomId).emit("get now ready info", readyInfo);
+            this.io.to(roomId).emit("get now ready info", readyInfo);
+        } catch (error) {
+            sendError(this.socket, error, "RoomError");
+        }
     }
 
     nowRoomInfo = async (data) => {
@@ -148,7 +161,7 @@ export class RoomController {
             const roomSetting = await this.gameSettingService.findGameSetting(roomId);
             const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
 
-        this.io.to(roomId).emit("get now room info", { room, roomSetting, members });
+            this.io.to(roomId).emit("get now room info", { room, roomSetting, members });
         } catch (error) {
             console.error("nowRoomInfo error", error);
             sendError(this.socket, error, "RoomError");
@@ -158,9 +171,11 @@ export class RoomController {
     memberKick = async (data) => {
         const roomId = this.socket.data.roomId;
 
-        const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
-
         try {
+
+            const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+
+
             const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/members/kick`, data, {
                 headers: {
                     "Content-Type": "application/json",
@@ -178,12 +193,13 @@ export class RoomController {
     }
 
     delegateOwner = async (data) => {
+        const roomId = this.socket.data.roomId;
         try {
-            const roomId = this.socket.data.roomId;
+            console.log(roomId);
 
             const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
 
-            const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/deletegate-host`, {
+            const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/delegate-host`, {
                 "targetMemberId": parseInt(data.targetMemberId)
             }, {
                 headers: {
@@ -249,20 +265,20 @@ export class RoomController {
             const roomSetting = await this.gameSettingService.findGameSetting(roomId);
             const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
 
-        this.io.to(roomId).emit("get game start", { room, roomSetting, members });
+            this.io.to(roomId).emit("get game start", { room, roomSetting, members });
         } catch (error) {
             sendError(this.socket, error, "RoomError");
         }
-       
+
     }
 
     disconnect = async (data) => {
         try {
-        const roomId = this.socket.data.roomId;
+            const roomId = this.socket.data.roomId;
 
-        this.socket.data.isIntentionalExit = true; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
+            this.socket.data.isIntentionalExit = true; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
 
-        this.io.to(roomId).emit("get user left", { roomId: roomId, memberId: this.socket.data.memberId });
+            this.io.to(roomId).emit("get user left", { roomId: roomId, memberId: this.socket.data.memberId });
         } catch (error) {
             sendError(this.socket, error, "RoomError");
         }
