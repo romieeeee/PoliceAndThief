@@ -53,7 +53,6 @@ fun HomeScreen(
     val joinCode by viewModel.joinCode.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        // 홈 화면이 보일 때마다 청소 여부 판단
         viewModel.cleanupSocket()
 
         viewModel.uiEvent.collect { event ->
