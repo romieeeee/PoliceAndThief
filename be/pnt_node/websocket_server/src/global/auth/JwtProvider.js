@@ -27,7 +27,7 @@ export const generateToken = (gameId, time) => {
     }
 };
 
-export const generateMemberAccessToken = (memberId) => {
+export const generateMemberAccessToken = (memberId, timeLimit) => {
     const payload = {
         sub: "memberId",
         memberId: memberId,
@@ -36,7 +36,7 @@ export const generateMemberAccessToken = (memberId) => {
 
     const options = {
         algorithm: 'HS512',
-        expiresIn: '1h',
+        expiresIn: timeLimit ? `${timeLimit + 5}m` : '30m',
         issuer: 'pnt-websocket'
     };
 
