@@ -58,7 +58,7 @@ export class GameController {
             const gameId = parseInt(payload.gameId);
             const memberId = this.socket.data.memberId;
 
-            await this.gameService.findGame(gameId, GameStatus.IN_GAME);
+            const game = await this.gameService.findGame(gameId, GameStatus.IN_GAME);
 
             if (await this.redisClient.getGameEnd(gameId)) {
                 this.makeError("GameEndException", "게임이 종료되었습니다.", 400);
@@ -83,8 +83,8 @@ export class GameController {
                     isConnected: true,
                     timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
                 }
-                const token = generateMemberAccessToken(this.socket.data.memberId);
-                await this.redisClient.setAccessToken(this.socket.data.memberId, token);
+                const token = generateMemberAccessToken(this.socket.data.memberId, game.gameSetting.timeLimit);
+                await this.redisClient.setAccessToken(this.socket.data.memberId, token, game.gameSetting.timeLimit);
 
                 await this.redisClient.setLocation(this.socket.data.memberId, gameId, locationData);
             }
