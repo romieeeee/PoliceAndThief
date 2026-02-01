@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,6 +28,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.R
+import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
+import com.d104.pnt.data.remote.model.response.ThiefStatus
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.ui.component.GoogleMaps
@@ -40,7 +43,6 @@ import com.d104.pnt.ui.theme.PastelBlue
 import com.d104.pnt.ui.theme.WantedRed
 import com.google.android.gms.maps.model.LatLng
 
-
 @Composable
 fun PhoneFrame(
     screen: PhoneScreen,
@@ -48,7 +50,8 @@ fun PhoneFrame(
     role: GameRole = GameRole.POLICE,
     currentLocation: LatLng,
     areaPoints: List<LatLng> = emptyList(),
-    prisonLocation: LatLng
+    prisonLocation: LatLng,
+    thiefMembers: List<GameMemberSocketDto> = emptyList()
 ) {
     Box(
         modifier = Modifier,
@@ -71,7 +74,7 @@ fun PhoneFrame(
             contentAlignment = Alignment.Center
         ) {
             when (screen) {
-                NO_SIGNAL -> ThiefListScreen()
+                NO_SIGNAL, THIEF_LIST -> ThiefListScreen(thiefMembers)
                 MAP -> MiniMapScreen(
                     role,
                     currentLocation = currentLocation,
@@ -80,28 +83,24 @@ fun PhoneFrame(
                 )
 
                 CAMERA -> CameraScanScreen(onScanSuccess)
-                THIEF_LIST -> ThiefListScreen()
             }
         }
     }
 }
 
 @Composable
-fun ThiefListScreen() {
+fun ThiefListScreen(
+    thiefList: List<GameMemberSocketDto> = emptyList()
+) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item { ThiefRow() }
-        item { ThiefRow() }
-        item { ThiefRow() }
-        item { ThiefRow() }
-        item { ThiefRow() }
-        item { ThiefRow() }
-        item { ThiefRow() }
-        item { ThiefRow() }
+        items(thiefList) { thief ->
+            ThiefRow(thief)
+        }
     }
 }
 
@@ -151,7 +150,15 @@ fun CameraScanScreen(
 
 
 @Composable
-fun ThiefRow() {
+fun ThiefRow(thief: GameMemberSocketDto) {
+
+    val (statusText, statusColor) = when (thief.status) {
+        ThiefStatus.FREE -> "수배" to WantedRed
+        ThiefStatus.TRANSFER -> "이송" to Color(0xFF4CAF50)
+        ThiefStatus.PRISON -> "검거" to Color.Gray
+        else -> "-" to Color.DarkGray
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -174,27 +181,24 @@ fun ThiefRow() {
                 )
 
                 Text(
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    text = "개구리중사래로로래로",
+                    modifier = Modifier.fillMaxWidth(),
+                    text = thief.nickname,
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White,
                 )
             }
-
-
         }
 
         PixelContainer(
             innerHorizontalPadding = 10,
-            backgroundColor = WantedRed,
+            backgroundColor = statusColor,
             borderWidth = 1f
         ) {
             Text(
                 modifier = Modifier
                     .align(Alignment.Center)
                     .padding(vertical = 2.dp),
-                text = "검거",
+                text = statusText,
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White,
                 textAlign = TextAlign.Center
@@ -202,4 +206,3 @@ fun ThiefRow() {
         }
     }
 }
-
