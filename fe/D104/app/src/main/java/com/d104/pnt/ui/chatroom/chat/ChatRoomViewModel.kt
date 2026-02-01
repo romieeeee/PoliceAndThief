@@ -44,6 +44,10 @@ class ChatRoomViewModel @Inject constructor(
 
     val myMemberId = MutableStateFlow<Long>(0)
 
+    // ✅ 멤버 목록(우측 드로어에서 사용)
+    private val _members = MutableStateFlow<List<ChatRoomMemberUi>>(emptyList())
+    val members: StateFlow<List<ChatRoomMemberUi>> = _members.asStateFlow()
+
     init {
         Timber.d("ChatRoomViewModel 초기화 - chatRoomId: $chatRoomId")
 
@@ -101,7 +105,6 @@ class ChatRoomViewModel @Inject constructor(
             val newMessage = parseMessage(data) ?: return@setOnNewMessage
             viewModelScope.launch {
                 if (_chatMessages.value.none { it.id == newMessage.id }) {
-                    // 새 메시지는 리스트 맨 뒤에 추가
                     _chatMessages.value = (_chatMessages.value + newMessage).sortedBy { it.id }
                     Timber.d("✅ 새 메시지 추가: id=${newMessage.id}")
                 }
@@ -118,7 +121,6 @@ class ChatRoomViewModel @Inject constructor(
                 val newMessages = parsedMessages.filter { it.id !in currentIds }
 
                 if (newMessages.isNotEmpty()) {
-                    // 이전 메시지는 리스트 앞에 추가 후 정렬
                     _chatMessages.value = (_chatMessages.value + newMessages).sortedBy { it.id }
                     Timber.d("✅ 이전 메시지 추가: ${newMessages.size}개 (전체: ${_chatMessages.value.size}개)")
                 } else {
@@ -150,7 +152,6 @@ class ChatRoomViewModel @Inject constructor(
             Timber.d("🔄 재입장 완료: chatRoomId=$reconnectedRoomId")
 
             viewModelScope.launch {
-                // 가장 최신 메시지 id (리스트에서 제일 큰 값)
                 val lastMessageId = _chatMessages.value.lastOrNull()?.id
 
                 if (lastMessageId != null && lastMessageId > 0) {
@@ -192,7 +193,6 @@ class ChatRoomViewModel @Inject constructor(
             return
         }
 
-        // 가장 오래된 메시지 id (리스트에서 제일 작은 값)
         val oldestMessageId = _chatMessages.value.firstOrNull()?.id
         Timber.d("📜 loadMoreMessages - oldestMessageId: $oldestMessageId, 현재: ${_chatMessages.value.size}개")
 
@@ -215,6 +215,55 @@ class ChatRoomViewModel @Inject constructor(
         chatSocketManager.sendMessage(messageText)
         _message.value = ""
     }
+
+    /**
+     * 우측 드로어에서 호출 (멤버 목록 갱신)
+     */
+    fun loadMembers() {
+        viewModelScope.launch {
+            when (val result = chatRepository.getChatRoomMembers(chatRoomId)) {
+                is BaseResult.Success -> {
+                    _members.value = result.data.map { m ->
+                        ChatRoomMemberUi(
+                            memberId = m.memberId,
+                            nickname = m.nickname,
+//                            avatarUrl = m.avatarUrl,
+                            isHost = m.owner
+                        )
+                    }
+                }
+                is BaseResult.Error -> {
+                    Timber.e("채팅방 멤버 목록 로드 실패: ${result.error.message}")
+                }
+            }
+        }
+    }
+
+    fun leaveRoom(
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            when (val result = chatRepository.leaveChatRoom(chatRoomId)) {
+                is BaseResult.Success -> {
+                    Timber.d("채팅방 나가기 성공")
+                    onSuccess()
+                }
+                is BaseResult.Error -> {
+                    Timber.e("채팅방 나가기 실패: ${result.error.message}")
+                }
+            }
+        }
+    }
+
+//    fun disconnectRoom() {
+//        viewModelScope.launch {
+//            when (val result = chatRepository.disconnectChatRoom(chatRoomId)) {
+//                is BaseResult.Success -> Timber.d("채팅방 disconnect 성공")
+//                is BaseResult.Error -> Timber.e("채팅방 disconnect 실패: ${result.error.message}")
+//            }
+//        }
+//    }
+
 
     override fun onCleared() {
         super.onCleared()

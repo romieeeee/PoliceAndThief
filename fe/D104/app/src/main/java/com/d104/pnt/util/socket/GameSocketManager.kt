@@ -13,7 +13,7 @@ import javax.inject.Singleton
 @Singleton
 class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
-    private var currentGameId: Long? = null
+    var currentGameId: Long? = null
 
     companion object {
         // Request Events (req)
@@ -446,7 +446,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onGameEnded = null
     }
 
-    override fun removeAllListeners() {
+    public override fun removeAllListeners() {
         super.removeAllListeners()
         off(EVENT_GET_JOIN_ROOM)
         off(EVENT_GET_GPS)

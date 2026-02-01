@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,10 +29,12 @@ fun ChatRoomScreen(
     val message by viewModel.message.collectAsStateWithLifecycle()
     val chatMessages by viewModel.chatMessages.collectAsStateWithLifecycle()
     val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
-
     val roomInfo by viewModel.roomInfo.collectAsStateWithLifecycle()
-
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+
+    //  우측 드로어 상태 + 멤버 목록
+    var drawerOpen by remember { mutableStateOf(false) }
+    val members by viewModel.members.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier
@@ -48,19 +53,19 @@ fun ChatRoomScreen(
                         maxMember = info.maxMembers,
                         currentMember = info.currentMembers
                     ),
-                    onLeaveClick = { onBackPressed() }
+                    onLeaveClick = { onBackPressed() },
+                    onMenuClick = {
+                        drawerOpen = true
+                        viewModel.loadMembers()
+                    }
                 )
             }
         },
         bottomBar = {
             ChatRoomFooter(
                 modifier = Modifier.imePadding(),
-                onSendMessage = {
-                    viewModel.sendMessage()
-                },
-                onValueChange = {
-                    viewModel.writeMessage(it)
-                },
+                onSendMessage = { viewModel.sendMessage() },
+                onValueChange = { viewModel.writeMessage(it) },
                 message = message
             )
         }
@@ -77,6 +82,20 @@ fun ChatRoomScreen(
                 isLoading = isLoading,
                 onLoadMore = { viewModel.loadMoreMessages() }
             )
+
+            // 우측 멤버 드로어 오버레이
+            ChatRoomMemberDrawer(
+                visible = drawerOpen,
+                members = members,
+                onDismiss = { drawerOpen = false },
+                onLeaveRoom = {
+                    drawerOpen = false
+                    viewModel.leaveRoom {
+                        onBackPressed()
+                    }
+                }
+            )
+
         }
     }
 }
