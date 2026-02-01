@@ -1,5 +1,6 @@
 package com.d104.pnt.ui.game.wait
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,6 +48,9 @@ fun GameWaitingScreen(
     onBackPressed: () -> Boolean = { false },
     onNavigateHome: (String?) -> Unit = { }
 ) {
+    val context = LocalContext.current
+    var backPressedTime by remember { mutableLongStateOf(0L) }
+
     val players by viewModel.players.collectAsStateWithLifecycle()
     val roomInfo by viewModel.roomInfo.collectAsStateWithLifecycle()
     val isHost by viewModel.isHost.collectAsStateWithLifecycle()
@@ -77,8 +82,18 @@ fun GameWaitingScreen(
     }
 
     BackHandler {
-        viewModel.leaveRoom()
+        if (System.currentTimeMillis() - backPressedTime <= 1500) {
+            viewModel.leaveRoom()
+        } else {
+            backPressedTime = System.currentTimeMillis()
+            Toast.makeText(
+                context,
+                "한 번 더 누르면 방에서 나갑니다",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
+
 
     LaunchedEffect(uiState) {
         if (uiState is UiState.Success) {
@@ -135,7 +150,10 @@ fun GameWaitingScreen(
                 anyCount = anyCount,
                 isHost = isHost,
                 selectedPlayerId = selectedPlayerId,
-                prisonLocation = LatLng(roomInfo.prison?.lat ?: 37.56681969564895, roomInfo.prison?.lng ?: 126.97864094105321),
+                prisonLocation = LatLng(
+                    roomInfo.prison?.lat ?: 37.56681969564895,
+                    roomInfo.prison?.lng ?: 126.97864094105321
+                ),
                 polygonPoints = roomInfo.polygon?.map { LatLng(it.lat, it.lng) } ?: emptyList(),
                 onPlayerClick = { player ->
                     val now = System.currentTimeMillis()
