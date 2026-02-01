@@ -313,7 +313,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
         val data = JSONObject().apply {
             put("roomId", roomId)
             put("playerCount", playerCount)
-            put("timeLimit", timeLimit * 60)
+            put("timeLimit", timeLimit)
             put("policeCount", policeCount)
             put("thiefCount", thiefCount)
             put("cctvInterval", cctvInterval)

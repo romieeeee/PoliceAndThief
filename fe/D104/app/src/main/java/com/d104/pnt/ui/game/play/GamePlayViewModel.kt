@@ -1,18 +1,22 @@
 package com.d104.pnt.ui.game.play
 
 import android.content.Context
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.LocationRepository
+import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.util.getSingleLocation
 import com.d104.pnt.util.socket.GameSocketManager
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -23,8 +27,15 @@ import javax.inject.Inject
 class GamePlayViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
     private val authRepository: AuthRepository,
-    private val gameSocketManager: GameSocketManager
+    private val gameSocketManager: GameSocketManager,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+    private val gameId: Long = savedStateHandle.get<Long>(NavArgs.GAME_ID) ?: 0L
+
+    // UI 이벤트
+    private val _uiEvent = MutableSharedFlow<GamePlayUiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
+
     val userLocation = locationRepository.currentLocation
     val polygonPoints = locationRepository.polygonPoints
     val prisonLocation = locationRepository.prisonLocation
@@ -38,7 +49,7 @@ class GamePlayViewModel @Inject constructor(
         setupSocketListeners()
     }
 
-    fun initGame(gameId: Long) {
+    fun initGame() {
         viewModelScope.launch {
             val token = authRepository.getAccessToken().first()
             if (token.isNotEmpty() && !gameSocketManager.isConnected()) {
@@ -48,11 +59,9 @@ class GamePlayViewModel @Inject constructor(
                     delay(100)
                 }
             }
-
             gameSocketManager.joinGame(gameId)
-            Timber.d("GamePlayViewModel: 게임($gameId) 입장 요청 보냄")
 
-            delay(500)
+            delay(300)
             gameSocketManager.syncGameInfo()
         }
     }
@@ -95,6 +104,24 @@ class GamePlayViewModel @Inject constructor(
                 }
             }
         }
+
+        gameSocketManager.setOnGameEnded { winnerPosition, message ->
+            Timber.d("🏁 게임 종료 수신: $winnerPosition 승리")
+
+            // 2. 상세 결과 요청 (post after game end)
+            gameSocketManager.postAfterGameEnd(gameId)
+        }
+
+        // 3. 게임 상세 결과 수신
+        gameSocketManager.setOnEndGameAfter { data ->
+            viewModelScope.launch {
+                // 상세 결과를 저장하거나 처리 (MVP 정보 등)
+                // data.optJSONObject("mvp") ...
+
+                // 4. 뉴스 화면으로 이동 이벤트 발생
+                _uiEvent.emit(GamePlayUiEvent.NavigateToNews(gameId))
+            }
+        }
     }
 
     private fun updateMembersList(newList: List<GameMemberSocketDto>) {
@@ -134,4 +161,8 @@ class GamePlayViewModel @Inject constructor(
         gameSocketManager.removeAllListeners()
     }
 
+}
+
+sealed class GamePlayUiEvent {
+    data class NavigateToNews(val gameId: Long) : GamePlayUiEvent()
 }

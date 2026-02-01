@@ -33,6 +33,7 @@ fun GameRoleScreen(
     onIntroFinished: () -> Unit,
 ) {
     val status by viewModel.flowStatus.collectAsStateWithLifecycle()
+    val connectionStatus by viewModel.connectionStatus.collectAsStateWithLifecycle()
 
     // Countdown 상태가 되면 다음 화면으로 이동
     LaunchedEffect(status) {
@@ -59,6 +60,60 @@ fun GameRoleScreen(
                 // 다음 화면으로 이동 중 (잠깐만 보임)
                 RoleRevealContent(role = role)
             }
+        }
+
+        when (val connStatus = connectionStatus) {
+            is ConnectionStatus.Connecting -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    Text(
+                        text = "서버 연결 중...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            is ConnectionStatus.Error -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "⚠️ 연결 오류",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.Red
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = connStatus.message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
+            is ConnectionStatus.WillStart -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    Text(
+                        text = "곧 게임이 시작됩니다...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            else -> { /* 정상 상태 - 아무것도 표시 안함 */ }
         }
     }
 }
