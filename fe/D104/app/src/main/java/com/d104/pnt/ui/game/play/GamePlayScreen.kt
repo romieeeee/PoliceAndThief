@@ -57,13 +57,14 @@ import com.google.android.gms.maps.model.LatLng
 fun GamePlayScreen(
     gameId: Long,
     role: GameRole,
-    onGameEnd: () -> Unit,
+    onGameEnd: (Long) -> Unit,
     goToCamera: () -> Unit,
     viewModel: GamePlayViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+
     var clicked by remember { mutableStateOf(false) }
     var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
-    val context = LocalContext.current
 
     val currentLocation = viewModel.userLocation.collectAsState().value
     val areaPoints = viewModel.polygonPoints.collectAsStateWithLifecycle().value
@@ -90,7 +91,16 @@ fun GamePlayScreen(
     // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
     LaunchedEffect(Unit) {
         viewModel.setDefaultArea(context)
-        viewModel.initGame(gameId)
+        viewModel.initGame()
+
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is GamePlayUiEvent.NavigateToNews -> {
+                    // 게임 종료 후 뉴스 화면으로 이동
+                    onGameEnd(event.gameId)
+                }
+            }
+        }
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
