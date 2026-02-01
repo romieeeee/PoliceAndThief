@@ -39,10 +39,11 @@ object Routes {
 
     // ===== 게임 플로우 =====
     const val GAME_ROLE = "game_role"                  // 역할 안내
-    fun buildGameIntro(role: String) = "$GAME_ROLE/$role"
+    fun buildGameIntro(roomId: Long, role: String) = "$GAME_ROLE/$roomId/$role"
 
     const val GAME_LOADING = "game_loading"              // 카운트다운
-    fun buildGameLoading(role: String) = "$GAME_LOADING/$role"
+    // 로딩 화면에서도 방 번호를 유지해야 한다면 수정
+    fun buildGameLoading(roomId: Long, role: String) = "$GAME_LOADING/$roomId/$role"
 
     const val GAME_PLAY = "game_play"                    // 게임 플레이
     fun buildGamePlay(gameId: Long, role: String): String {

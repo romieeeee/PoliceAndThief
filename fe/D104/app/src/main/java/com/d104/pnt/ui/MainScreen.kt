@@ -185,6 +185,9 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                         navController.navigate(Routes.buildRoleSelect(roomId))
                     },
                     onBackPressed = { navController.popBackStack() },
+                    onNavigateRole = { roomId, role ->
+                        navController.navigate(Routes.buildGameIntro(roomId, role.name))
+                    },
                     onNavigateHome = { message ->
                         if (message != null) {
                             navController.previousBackStackEntry
@@ -219,36 +222,44 @@ fun MainScreen(navigateToIntro: () -> Unit) {
 
             // 게임 인트로 (역할 안내)
             composable(
-                route = "${Routes.GAME_ROLE}/{${NavArgs.ROLE}}",
+                route = "${Routes.GAME_ROLE}/{${NavArgs.ROOM_ID}}/{${NavArgs.ROLE}}",
                 arguments = listOf(
+                    navArgument(NavArgs.ROOM_ID) { type = NavType.LongType },
                     navArgument(NavArgs.ROLE) { type = NavType.StringType }
                 )
             ) { backStackEntry ->
+                val roomId = backStackEntry.arguments?.getLong(NavArgs.ROOM_ID) ?: 0L
                 val roleName = backStackEntry.arguments?.getString(NavArgs.ROLE) ?: "THIEF"
                 val role = GameRole.fromName(roleName)
 
                 GameRoleScreen(
                     role = role,
-                    onIntroFinished = {
-                        navController.navigate(Routes.buildGameLoading(role.name))
+                    onIntroFinished = { // 역할 안내가 끝나면 로딩화면으로 이동
+                        navController.navigate(Routes.buildGameLoading(roomId, role.name)){
+                            popUpTo(Routes.HOME) { inclusive = false }
+                        }
                     }
                 )
             }
 
             // 게임 로딩 (카운트다운)
             composable(
-                route = "${Routes.GAME_LOADING}/{${NavArgs.ROLE}}",
+                route = "${Routes.GAME_LOADING}/{${NavArgs.ROOM_ID}}/{${NavArgs.ROLE}}",
                 arguments = listOf(
+                    navArgument(NavArgs.ROOM_ID) { type = NavType.LongType },
                     navArgument(NavArgs.ROLE) { type = NavType.StringType }
                 )
             ) { backStackEntry ->
+                val roomId = backStackEntry.arguments?.getLong(NavArgs.ROOM_ID) ?: 0L
                 val roleName = backStackEntry.arguments?.getString(NavArgs.ROLE) ?: "THIEF"
                 val role = GameRole.fromName(roleName)
 
                 GameLoadingScreen(
+                    roomId = roomId,
+                    role = role,
                     onLoadingComplete = { gameId ->
                         navController.navigate(Routes.buildGamePlay(gameId, role.name)) {
-                            popUpTo(Routes.HOME)
+                            popUpTo(Routes.HOME) { inclusive = false }
                         }
                     }
                 )

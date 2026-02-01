@@ -27,7 +27,7 @@ fun GameRoleScreen(
     onIntroFinished: () -> Unit
 ) {
     LaunchedEffect(Unit) {
-        delay(2000L)
+        delay(3000L)
         onIntroFinished()
     }
 

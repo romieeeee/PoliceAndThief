@@ -46,6 +46,7 @@ fun GameRoomScreen(
     initialRole: GameRole,
     onChangeRole: () -> Unit,
     onStartGame: (Long, GameRole) -> Unit = { _, _ -> },
+    onNavigateRole: (Long, GameRole) -> Unit,
     viewModel: GameRoomViewModel = hiltViewModel(),
     onBackPressed: () -> Boolean = { false },
     onNavigateHome: (String?) -> Unit = { }
@@ -81,7 +82,9 @@ fun GameRoomScreen(
                 }
 
                 is GameRoomUiEvent.NavigateToGame -> {
-                    onStartGame(event.roomId, GameRole.fromName(event.role))
+                    onNavigateRole(event.roomId, GameRole.fromName((event.role)))
+
+//                    onStartGame(event.roomId, GameRole.fromName(event.role))
                 }
             }
         }
