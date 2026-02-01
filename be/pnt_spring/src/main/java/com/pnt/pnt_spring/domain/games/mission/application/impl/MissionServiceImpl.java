@@ -33,6 +33,7 @@ public class MissionServiceImpl implements MissionService {
 				.missionId(mission.getId())
 				.title(mission.getTitle())
 				.description(mission.getDescription())
+				.keyword(mission.getKeyword())
 				.build())
 			.collect(Collectors.toList());
 	}
@@ -48,6 +49,7 @@ public class MissionServiceImpl implements MissionService {
 			.missionId(mission.getId())
 			.title(mission.getTitle())
 			.description(mission.getDescription())
+			.keyword(mission.getKeyword())
 			.build();
 	}
 
@@ -63,6 +65,7 @@ public class MissionServiceImpl implements MissionService {
 				.missionId(gm.getMission().getId()) // 미션 원본 ID
 				.title(gm.getMission().getTitle())
 				.description(gm.getMission().getDescription())
+				.keyword(gm.getMission().getKeyword())
 				.build())
 			.collect(Collectors.toList());
 	}
@@ -79,6 +82,7 @@ public class MissionServiceImpl implements MissionService {
 			.missionId(mission.getId())
 			.title(mission.getTitle())
 			.description(mission.getDescription())
+			.keyword(mission.getKeyword())
 			.build();
 	}
 }
