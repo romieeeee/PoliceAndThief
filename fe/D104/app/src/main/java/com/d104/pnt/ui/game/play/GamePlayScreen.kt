@@ -59,6 +59,7 @@ import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
 import com.d104.pnt.ui.theme.PixelFont
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.delay
 
 @Composable
 fun GamePlayScreen(
@@ -80,6 +81,11 @@ fun GamePlayScreen(
     val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
 
     val isOutOfBoundary by viewModel.isOutOfBoundary.collectAsStateWithLifecycle()
+
+    var showThiefEscaped by remember { mutableStateOf(false) }
+    var escapedThiefNickname by remember { mutableStateOf("") }
+
+    val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
 
     // 위치서비스 시작 / 종료
     DisposableEffect(Unit) {
@@ -107,9 +113,30 @@ fun GamePlayScreen(
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is GamePlayUiEvent.NavigateToNews -> {
-                    // 게임 종료 후 뉴스 화면으로 이동
                     onGameEnd(event.gameId)
                 }
+
+                is GamePlayUiEvent.ThiefEscaped -> {
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            if (escapeQueue.isNotEmpty() && !showThiefEscaped) {
+                escapedThiefNickname = escapeQueue.first()
+                showThiefEscaped = true
+
+                delay(3000)
+
+                showThiefEscaped = false
+
+                viewModel.removeFirstEscape()
+
+                delay(500)
+            } else {
+                delay(100)
             }
         }
     }
@@ -125,7 +152,7 @@ fun GamePlayScreen(
 
         Box(modifier = Modifier.fillMaxSize()) {
 
-            // 상단 버튼 영역 (고정)
+            // 상단 버튼 영역
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -278,7 +305,6 @@ fun GamePlayScreen(
                         }
                     }
 
-                    // 마지막 아이템 뒤 여백 추가
                     item {
                         Spacer(modifier = Modifier.height(100.dp))
                     }
@@ -306,7 +332,7 @@ fun GamePlayScreen(
             contentAlignment = Alignment.Center
         ) {
             PhoneFrame(
-                screen = phoneScreen, // (변수명 screen으로 매칭)
+                screen = phoneScreen,
                 onScanSuccess = { result ->
                     phoneScreen = PhoneScreen.THIEF_LIST
                 },
@@ -369,6 +395,39 @@ fun GamePlayScreen(
 
                 Spacer(modifier = Modifier.height(130.dp))
             }
+        }
+    }
+
+    // 도둑 탈출 알림
+    if (showThiefEscaped && role == GameRole.POLICE) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(100f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.fillMaxHeight(0.75f))
+
+            Text(
+                text = "도둑이 탈출에\n성공했습니다!",
+                fontFamily = PixelFont,
+                color = Color.Yellow,
+                fontSize = 40.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                lineHeight = 45.sp
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = escapedThiefNickname,
+                fontFamily = PixelFont,
+                color = Color.White,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
