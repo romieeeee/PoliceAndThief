@@ -7,13 +7,20 @@ import javax.inject.Inject
 
 class GameRepositoryImpl @Inject constructor(
     private val gameApiService: GameApiService
-): GameRepository, BaseRepository() {
+) : GameRepository, BaseRepository() {
 
     override suspend fun getMissionList(gameId: Long): BaseResult<List<MissionResponse>> {
         return safeApiCall { gameApiService.getMissionList(gameId) }
     }
 
-    override suspend fun getMissionDetail(gameId: Long, missionsId: Long): BaseResult<MissionResponse> {
+    override suspend fun getMissionDetail(
+        gameId: Long,
+        missionsId: Long
+    ): BaseResult<MissionResponse> {
         return safeApiCall { gameApiService.getMissionDetail(gameId, missionsId) }
+    }
+
+    override suspend fun gameHardDelete(gameId: Long): BaseResult<Unit> {
+        return safeApiCall { gameApiService.deleteGame(gameId) }
     }
 }

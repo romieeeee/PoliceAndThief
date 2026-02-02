@@ -39,7 +39,6 @@ class GameLoadingViewModel @Inject constructor(
     private val _message = MutableStateFlow(getInitialMessage())
     val message: StateFlow<String> = _message
 
-    // ⭐ 실제 게임 시작 시간 추적
     private var gameStartTime: Long? = null
 
     init {
@@ -54,8 +53,25 @@ class GameLoadingViewModel @Inject constructor(
         gameSocketManager.setOnGameStarted { gameId, startTime ->
             Timber.d("🏁 [Loading] 게임 시작 신호 수신: $startTime")
             gameStartTime = System.currentTimeMillis()
-            // ⭐ 서버 시작과 동기화 - 남은 시간 재조정
             _remainingTime.value = TOTAL_SECONDS
+        }
+
+        // 서버로부터 싱크를 받았을 때 현재 남은 시간을 계산
+        gameSocketManager.setOnGameInfoSynced { data ->
+            val startTime = data.optLong("startTime") // 서버에서 게임이 실제 시작된 Timestamp
+            val currentTime = System.currentTimeMillis()
+
+            // (시작시간 + 60초) - 현재시간 = 내가 화면에서 보여줘야 할 남은 시간
+            val elapsedSeconds = (currentTime - startTime) / 1000
+            val remaining = (TOTAL_SECONDS - elapsedSeconds).toInt()
+
+            if (remaining > 0) {
+                _remainingTime.value = remaining
+                Timber.d("⏰ 서버와 시간 동기화: 남은 시간 ${remaining}초")
+            } else {
+                // 이미 1분이 지났다면 즉시 인게임 진입
+                _isFinished.value = true
+            }
         }
     }
 
