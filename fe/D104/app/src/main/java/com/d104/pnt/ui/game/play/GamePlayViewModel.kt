@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -80,6 +81,9 @@ class GamePlayViewModel @Inject constructor(
     )
 
     private val _isOutOfBoundary = MutableStateFlow(false)
+
+    private val _escapeQueue = MutableStateFlow<List<String>>(emptyList())
+    val escapeQueue = _escapeQueue.asStateFlow()
 
     private var myMemberId: Long = 0L
     private var warningJob: Job? = null
@@ -196,22 +200,35 @@ class GamePlayViewModel @Inject constructor(
             }
         }
 
+        // 도둑 탈출 수신
+        gameSocketManager.setOnThiefEscaped { gameId, thiefId, escapedAt ->
+            viewModelScope.launch {
+                Timber.d("🏃 도둑 탈출 알림 수신: thiefId=$thiefId, escapedAt=$escapedAt")
+
+                val escapedThief = _allMembers.value.find { it.memberId == thiefId }
+                val thiefNickname = escapedThief?.nickname ?: "도둑"
+
+                _escapeQueue.value = _escapeQueue.value + thiefNickname
+                Timber.d("📋 탈출 큐에 추가: $thiefNickname (현재 큐 크기: ${_escapeQueue.value.size})")
+            }
+        }
+
         // 게임 종료 수신 → 상세결과 요청
         gameSocketManager.setOnGameEnded { winnerPosition, message ->
             Timber.d("🏁 게임 종료 수신: $winnerPosition 승리")
 
-            // 2. 상세 결과 요청 (post after game end)
+            // 상세 결과 요청 (post after game end)
             gameSocketManager.postAfterGameEnd(gameId)
 
         }
 
-        // 3. 게임 상세 결과 수신
+        // 게임 상세 결과 수신
         gameSocketManager.setOnEndGameAfter { data ->
             viewModelScope.launch {
                 // 상세 결과를 저장하거나 처리 (MVP 정보 등)
                 // data.optJSONObject("mvp") ...
 
-                // 4. 뉴스 화면으로 이동 이벤트 발생
+                // 뉴스 화면으로 이동 이벤트 발생
                 _uiEvent.emit(GamePlayUiEvent.NavigateToNews(gameId))
 
                 viewModelScope.launch {
@@ -219,6 +236,11 @@ class GamePlayViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun removeFirstEscape() {
+        _escapeQueue.value = _escapeQueue.value.drop(1)
+        Timber.d("📋 탈출 큐에서 제거 (남은 큐 크기: ${_escapeQueue.value.size})")
     }
 
     private fun updateMembersList(newList: List<GameMemberSocketDto>) {
@@ -268,7 +290,7 @@ class GamePlayViewModel @Inject constructor(
 
             // Android 8.0 (Oreo) 이상 대응
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                context.startForegroundService(intent) // ★ 이걸로 바꿔야 함!
+                context.startForegroundService(intent) // 이걸로 바꿔야 함!
             } else {
                 context.startService(intent)
             }
@@ -278,4 +300,5 @@ class GamePlayViewModel @Inject constructor(
 
 sealed class GamePlayUiEvent {
     data class NavigateToNews(val gameId: Long) : GamePlayUiEvent()
+    data class ThiefEscaped(val thiefId: Long, val thiefNickname: String) : GamePlayUiEvent()
 }
