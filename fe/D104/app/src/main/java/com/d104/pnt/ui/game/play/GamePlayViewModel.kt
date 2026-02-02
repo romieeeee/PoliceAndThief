@@ -17,7 +17,9 @@ import com.d104.pnt.domain.model.PlayerData
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.service.game.GameActiveService
 import com.d104.pnt.util.StepSensorManager
+import com.d104.pnt.util.getSingleLocation
 import com.d104.pnt.util.socket.GameSocketManager
+import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -284,13 +286,13 @@ class GamePlayViewModel @Inject constructor(
             gameSocketManager.postAfterGameEnd(gameId)
         }
 
-        // 게임 종료 상세
-        gameSocketManager.setOnEndGameAfter {
-            viewModelScope.launch {
-                _uiEvent.emit(GamePlayUiEvent.NavigateToNews(gameId))
-                viewModelScope.launch { gameRepository.gameHardDelete(gameId) } // TODO: 개발용
-            }
-        }
+//        // 게임 종료 상세
+//        gameSocketManager.setOnEndGameAfter {
+//            viewModelScope.launch {
+//                _uiEvent.emit(GameSessionEvent.NavigateToNews(gameId))
+//                viewModelScope.launch { gameRepository.gameHardDelete(gameId) } // TODO: 개발용
+//            }
+//        }
     }
 
     fun removeFirstEscape() {
