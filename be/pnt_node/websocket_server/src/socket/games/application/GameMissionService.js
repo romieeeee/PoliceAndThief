@@ -24,15 +24,18 @@ export class GameMissionService {
         return res;
     }
 
-    findMission = async (missionId) => {
+    findMission = async (gameMissionId) => {
         const res = await GameMission.findOne({
             where: {
-                id: missionId,
+                id: gameMissionId,
                 isDeleted: false,
-                include: [
-
-                ]
-            }
+            },
+            include: [
+                {
+                    model: Mission,
+                    attributes: ["id", "keyword"]
+                }
+            ]
         });
 
         if (!res) {
