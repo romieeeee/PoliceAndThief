@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
 import com.d104.pnt.data.repository.AuthRepository
+import com.d104.pnt.data.repository.GameRepository
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.util.getSingleLocation
@@ -27,6 +28,7 @@ import javax.inject.Inject
 class GamePlayViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
     private val authRepository: AuthRepository,
+    private val gameRepository: GameRepository,
     private val gameSocketManager: GameSocketManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -110,6 +112,7 @@ class GamePlayViewModel @Inject constructor(
 
             // 2. 상세 결과 요청 (post after game end)
             gameSocketManager.postAfterGameEnd(gameId)
+
         }
 
         // 3. 게임 상세 결과 수신
@@ -120,6 +123,10 @@ class GamePlayViewModel @Inject constructor(
 
                 // 4. 뉴스 화면으로 이동 이벤트 발생
                 _uiEvent.emit(GamePlayUiEvent.NavigateToNews(gameId))
+
+                viewModelScope.launch {
+                    gameRepository.gameHardDelete(gameId) // TODO: 개발용 제거
+                }
             }
         }
     }
