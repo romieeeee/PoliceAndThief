@@ -179,12 +179,12 @@ export class GameController {
             const cctvInterval = gameSetting.cctvInterval || 60;
             await this.redisClient.setCctvTimer(gameId, cctvInterval);
 
-            await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString(), status: GameStatus.IN_GAME });
+            await this.gameService.updateGame({ gameId: gameId, startTime: new Date().toISOString(), status: GameStatus.IN_GAME });
 
             logger.info("game started", gameId);
             this.io.to(gameId).emit("get start game", {
                 message: "start game",
-                gameId: integerGameId,
+                gameId: gameId,
                 startTime: new Date().toISOString(),
             });
         }, 5000);
