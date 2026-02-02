@@ -43,6 +43,8 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         private const val EVENT_GET_END_GAME_AFTER = "get end game after"
         private const val EVENT_GET_NEWS = "get news"
         private const val EVENT_GET_RECONNECT = "reconnect"
+
+        private const val EVENT_GET_RESET_GAME = "get reset game"
     }
 
     // Callbacks
@@ -254,7 +256,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 Timber.d("📰 뉴스 생성 완료: gameId=$gameId, newsId=$newsId")
                 onNewsReceived?.invoke(gameId, newsId)
             } catch (e: Exception) {
-                Timber.e(e, "뉴스 데이터 파싱 실패")
+                Timber.e(e, "게임 종료 파싱 실패")
             }
         }
 
