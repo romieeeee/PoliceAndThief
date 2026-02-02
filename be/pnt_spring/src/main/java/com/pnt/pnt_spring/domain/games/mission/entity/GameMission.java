@@ -49,4 +49,12 @@ public class GameMission extends BaseEntity {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status")
 	private MissionStatus status; // Enum: IN_PROGRESS, DONE 등
+
+	public static GameMission create(Game game, Mission mission) {
+		GameMission gameMission = new GameMission();
+		gameMission.game = game;
+		gameMission.mission = mission;
+		gameMission.status = MissionStatus.IN_PROGRESS; // 초기 상태 진행 중
+		return gameMission;
+	}
 }
