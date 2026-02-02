@@ -39,6 +39,8 @@ import com.d104.pnt.ui.chatroomlist.ChatRoomListScreen
 import com.d104.pnt.ui.component.KickedNoticeDialog
 import com.d104.pnt.ui.game.create.GameCreateScreen
 import com.d104.pnt.ui.game.end.GameResultScreen
+import com.d104.pnt.ui.game.end.news.NewsLoadingScreen
+import com.d104.pnt.ui.game.end.news.NewsScreen
 import com.d104.pnt.ui.game.load.GameLoadingScreen
 import com.d104.pnt.ui.game.play.GamePlayScreen
 import com.d104.pnt.ui.game.play.GameRoleScreen
@@ -235,7 +237,7 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                 GameRoleScreen(
                     role = role,
                     onIntroFinished = {
-                        navController.navigate(Routes.buildGameLoading(roomId, role.name)){
+                        navController.navigate(Routes.buildGameLoading(roomId, role.name)) {
                             popUpTo(Routes.HOME) { inclusive = false }
                         }
                     }
@@ -307,12 +309,56 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                 GamePlayScreen(
                     gameId = gameId,
                     role = GameRole.fromName(roleString),
-                    onGameEnd = { id ->
-                        navController.navigate(Routes.buildGameNews(id)) {
+                    onBackToHome = {
+                        navController.popBackStack(Routes.HOME, inclusive = false)
+                    },
+                    onNavigateToLoading = { id ->
+                        navController.navigate(Routes.buildNewsLoading(id)) {
                             popUpTo(Routes.HOME) { inclusive = false }
                         }
                     },
                     goToCamera = { navController.navigate(Routes.MISSION_CAMERA) }
+                )
+            }
+
+            composable(
+                route = "${Routes.GAME_NEWS_LOADING}/{${NavArgs.GAME_ID}}",
+                arguments = listOf(
+                    navArgument(NavArgs.GAME_ID) { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val gameId = backStackEntry.arguments?.getLong(NavArgs.GAME_ID) ?: 0L
+
+                NewsLoadingScreen(
+                    gameId = gameId,
+                    onNewsReady = { gId, nId ->
+                        // 분석(소켓+HTTP) 완료 시 gameId와 newsId를 가지고 실제 뉴스로 이동
+                        navController.navigate(Routes.buildGameNews(gId, nId)) {
+                            popUpTo(Routes.GAME_NEWS_LOADING) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // 게임 뉴스
+            composable(
+                route = "${Routes.GAME_NEWS}/{${NavArgs.GAME_ID}}/{${NavArgs.NEWS_ID}}",
+                arguments = listOf(
+                    navArgument(NavArgs.GAME_ID) { type = NavType.LongType },
+                    navArgument(NavArgs.NEWS_ID) { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val gameId = backStackEntry.arguments?.getLong(NavArgs.GAME_ID) ?: 0L
+                val newsId = backStackEntry.arguments?.getLong(NavArgs.NEWS_ID) ?: 0L
+
+                NewsScreen(
+                    gameId = gameId,
+                    newsId = newsId,
+                    onNextClick = {
+                        navController.navigate(Routes.buildGameResult(gameId)) {
+                            popUpTo(Routes.GAME_NEWS_LOADING) { inclusive = true }
+                        }
+                    }
                 )
             }
 
@@ -324,34 +370,21 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                 )
             ) { backStackEntry ->
                 val gameId = backStackEntry.arguments?.getLong(NavArgs.GAME_ID) ?: 0L
-                GameResultScreen(
-//                    gameId = gameId,
-//                    onViewNews = { newsId ->
-//                        navController.navigate(Routes.buildGameNews(newsId))
-//                    },
-//                    onBackToHome = {
-//                        navController.navigate(Routes.HOME) {
-//                            popUpTo(Routes.HOME) { inclusive = true }
-//                        }
-//                    },
-//                    onPlayAgain = {
-//                        navController.navigate(Routes.ROLE_SELECT)
-//                    }
-                )
-            }
 
-            // 게임 뉴스
-            composable(
-                route = "${Routes.GAME_NEWS}/{${NavArgs.NEWS_ID}}",
-                arguments = listOf(
-                    navArgument(NavArgs.NEWS_ID) { type = NavType.LongType }
+                GameResultScreen(
+                    gameId = gameId,
+                    onBackToHome = {
+                        // 홈으로 - DisposableEffect에서 이미 게임 소켓 정리됨
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.HOME) { inclusive = true }
+                        }
+                    },
+                    onBackToWaitingRoom = { roomId ->
+                        navController.navigate(Routes.buildGameRoom(roomId, GameRole.ANY.roleNameEn)) {
+                            popUpTo(Routes.HOME) { inclusive = false }
+                        }
+                    }
                 )
-            ) { backStackEntry ->
-                val newsId = backStackEntry.arguments?.getLong(NavArgs.NEWS_ID) ?: 0L
-//                GameNewsScreen(
-//                    newsId = newsId,
-//                    onBackPressed = { navController.popBackStack() }
-//                )
             }
 
 
