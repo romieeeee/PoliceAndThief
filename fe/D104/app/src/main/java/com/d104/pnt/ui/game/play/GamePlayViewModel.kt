@@ -1,42 +1,56 @@
 package com.d104.pnt.ui.game.play
 
 import android.content.Context
+import android.content.Intent
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.response.BeepUseResponse
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
 import com.d104.pnt.data.repository.AuthRepository
+import com.d104.pnt.data.repository.GameRepository
+import com.d104.pnt.data.repository.GameSessionEvent
+import com.d104.pnt.data.repository.GameSessionRepository
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.navigation.NavArgs
+import com.d104.pnt.service.game.GameActiveService
+import com.d104.pnt.util.StepSensorManager
 import com.d104.pnt.util.getSingleLocation
 import com.d104.pnt.util.socket.GameSocketManager
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
 class GamePlayViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val locationRepository: LocationRepository,
     private val authRepository: AuthRepository,
     private val gameSocketManager: GameSocketManager,
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
+    private val gameRepository: GameRepository,
+    private val gameSessionRepository: GameSessionRepository,
+    private val stepSensorManager: StepSensorManager
 ) : ViewModel() {
 
     private val gameId: Long = savedStateHandle.get<Long>(NavArgs.GAME_ID) ?: 0L
 
-    // UI 이벤트(네비게이션 등)
+    // UI 이벤트
     private val _uiEvent = MutableSharedFlow<GamePlayUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
+    val isOutOfBoundary = gameSessionRepository.isOutOfBoundary
 
     // ✅ Beep 이벤트 (도둑 쪽에서만 화면이 소리 재생하도록 Screen에서 필터)
     private val _beepEvent = MutableSharedFlow<BeepUseResponse>(extraBufferCapacity = 16)
@@ -48,12 +62,70 @@ class GamePlayViewModel @Inject constructor(
 
     private val _allMembers = MutableStateFlow<List<GameMemberSocketDto>>(emptyList())
 
+    val members = gameSessionRepository.members
+
+//    val gameRepoId = gameSessionRepository.gameId
+
+    val gameStatus = gameSessionRepository.gameStatus
+
+    val missions = gameSessionRepository.missions
+
     private val _thiefMembers = MutableStateFlow<List<GameMemberSocketDto>>(emptyList())
-    val thiefMembers: StateFlow<List<GameMemberSocketDto>> = _thiefMembers.asStateFlow()
+    val thiefMembers = members.map { list ->
+        list.filter { it.position.equals("THIEF", ignoreCase = true) }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    private val _isOutOfBoundary = MutableStateFlow(false)
+
+    private var myMemberId: Long = 0L
+    private var warningJob: Job? = null
 
     init {
         setupSocketListeners()
+        gameSessionRepository.gameInit()
+        observeRepositoryEvents()
+        startService(GameActiveService.ACTION_START)
+        Timber.d("GameAction 시작")
     }
+
+    private fun observeRepositoryEvents() {
+        viewModelScope.launch {
+            gameSessionRepository.eventFlow.collect { event ->
+                when (event) {
+                    is GameSessionEvent.NavigateToNews -> {
+                        Timber.d("📰 뉴스 화면 이동 이벤트 수신")
+                        _uiEvent.emit(GamePlayUiEvent.NavigateToNews(event.gameId))
+                    }
+
+                    is GameSessionEvent.GameStarted -> {
+                        // 혹시 재접속해서 들어온 경우 여기서 서비스 시작 가능
+                        startService(GameActiveService.ACTION_START)
+                    }
+
+                    is GameSessionEvent.GameEnded -> {
+                        Timber.d("SessionEvent: GameEnded")
+                    }
+
+                    is GameSessionEvent.ErrorOccurred -> {
+                        Timber.d("SessionEvent: ErrorOccurred - ${event.message}")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun fetchMyId() {
+        viewModelScope.launch {
+            authRepository.getMemberId().collect { id ->
+                if (id != 0L) myMemberId = id
+            }
+        }
+    }
+
 
     fun initGame() {
         viewModelScope.launch {
@@ -127,13 +199,24 @@ class GamePlayViewModel @Inject constructor(
         // 게임 종료 수신 → 상세결과 요청
         gameSocketManager.setOnGameEnded { winnerPosition, message ->
             Timber.d("🏁 게임 종료 수신: $winnerPosition 승리")
+
+            // 2. 상세 결과 요청 (post after game end)
             gameSocketManager.postAfterGameEnd(gameId)
+
         }
 
-        // 게임 상세 결과 수신 → 뉴스 화면 이동 이벤트 발생
+        // 3. 게임 상세 결과 수신
         gameSocketManager.setOnEndGameAfter { data ->
             viewModelScope.launch {
+                // 상세 결과를 저장하거나 처리 (MVP 정보 등)
+                // data.optJSONObject("mvp") ...
+
+                // 4. 뉴스 화면으로 이동 이벤트 발생
                 _uiEvent.emit(GamePlayUiEvent.NavigateToNews(gameId))
+
+                viewModelScope.launch {
+                    gameRepository.gameHardDelete(gameId) // TODO: 개발용 제거
+                }
             }
         }
     }
@@ -170,8 +253,26 @@ class GamePlayViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+
+        startService(GameActiveService.ACTION_STOP)
+        gameSessionRepository.leaveGame()
+
         gameSocketManager.leaveGame()
         gameSocketManager.removeAllListeners()
+    }
+
+
+    private fun startService(action: String) {
+        Intent(context, GameActiveService::class.java).also { intent ->
+            intent.action = action
+
+            // Android 8.0 (Oreo) 이상 대응
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                context.startForegroundService(intent) // ★ 이걸로 바꿔야 함!
+            } else {
+                context.startService(intent)
+            }
+        }
     }
 }
 

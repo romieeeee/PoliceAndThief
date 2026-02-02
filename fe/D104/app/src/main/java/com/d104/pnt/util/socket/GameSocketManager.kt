@@ -24,8 +24,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         private const val EVENT_POST_MISSION_IMAGE = "post mission image"
         private const val EVENT_POST_SYNC_GAME_INFO = "post sync game info"
         private const val EVENT_POST_RESET_GAME = "post reset game"
-        private const val EVENT_POST_AFTER_GAME_END = "post after game end" // 추가
-
+        private const val EVENT_POST_AFTER_GAME_END = "post after game end"
         private const val EVENT_POST_DISCONNECT = "post disconnect"
 
         // Response Events (res)
@@ -42,6 +41,8 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         private const val EVENT_GET_SKILL_USE = "get skill use"
         private const val EVENT_GET_END_GAME = "get end game"
         private const val EVENT_GET_END_GAME_AFTER = "get end game after"
+        private const val EVENT_GET_NEWS = "get news"
+        private const val EVENT_GET_RECONNECT = "reconnect"
 
         private const val EVENT_GET_RESET_GAME = "get reset game"
     }
@@ -60,6 +61,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     private var onSkillResult: ((String, String?, Long, String?) -> Unit)? = null
     private var onEndGameAfter: ((JSONObject) -> Unit)? = null
     private var onGameEnded: ((String, String) -> Unit)? = null
+    private var onNewsReceived: ((Long, Long) -> Unit)? = null
+
+    private var onReconnected: ((Long) -> Unit)? = null
 
     private var onBeepUse: ((org.json.JSONObject) -> Unit)? = null
 
@@ -245,7 +249,37 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 Timber.e(e, "게임 결과 파싱 실패")
             }
         }
+
+        on(EVENT_GET_NEWS) { args ->
+            try {
+                val data = args[0] as JSONObject
+                val gameId = data.getLong("gameId")
+                val newsId = data.getLong("newsId")
+
+                Timber.d("📰 뉴스 생성 완료: gameId=$gameId, newsId=$newsId")
+                onNewsReceived?.invoke(gameId, newsId)
+            } catch (e: Exception) {
+                Timber.e(e, "게임 종료 파싱 실패")
+            }
+        }
+
+        on(EVENT_GET_RECONNECT) { args ->
+            try {
+                val data = args[0] as JSONObject
+                val gameId = data.optLong("gameId")
+                Timber.d("🔄 서버로부터 재연결 승인 수신: gameId=$gameId")
+
+                // 기존에 정의하신 onReconnect 호출 (내부에서 syncGameInfo() 실행)
+                onReconnect(data)
+
+                // ViewModel 등에 알림
+                onReconnected?.invoke(gameId)
+            } catch (e: Exception) {
+                Timber.e(e, "재연결 데이터 파싱 실패")
+            }
+        }
     }
+
 
     override fun onReconnect(data: JSONObject) {
         super.onReconnect(data)
@@ -415,6 +449,10 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         Timber.d("📤 post after game end 송신 완료")
     }
 
+    fun setOnReconnected(callback: (gameId: Long) -> Unit) {
+        onReconnected = callback
+    }
+
 
     // ==================== Callback Setters ====================
 
@@ -469,6 +507,10 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     fun setOnGameEnded(callback: (winnerPosition: String, message: String) -> Unit) {
         onGameEnded = callback
+    }
+
+    fun setOnNewsReceived(callback: (gameId: Long, newsId: Long) -> Unit) {
+        onNewsReceived = callback
     }
 
     private fun clearCallbacks() {
