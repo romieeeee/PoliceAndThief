@@ -49,10 +49,10 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     // Callbacks
     private var onJoinedRoom: ((Long, Long, String) -> Unit)? = null
-    private var onGpsReceived: ((Int, JSONArray) -> Unit)? = null
+    private var onGpsReceived: ((Long?, String?,Int, JSONArray) -> Unit)? = null
     private var onWillStartGame: ((Long, String) -> Unit)? = null
     private var onGameStarted: ((Long, String) -> Unit)? = null
-    private var onThiefEscaped: ((Long, Long, Int, String) -> Unit)? = null
+    private var onThiefEscaped: ((gameId: Long, thiefId: Long, escapedAt: String) -> Unit)? = null
     private var onOutOfBoundary: ((Long, Long) -> Unit)? = null
     private var onArrestResult: ((String, String?, Long, Long, String?) -> Unit)? = null
     private var onMemberStatusChanged: ((Long, Long, String, String) -> Unit)? = null
@@ -64,6 +64,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     private var onNewsReceived: ((Long, Long) -> Unit)? = null
 
     private var onReconnected: ((Long) -> Unit)? = null
+
+    private var onBeepUse: ((org.json.JSONObject) -> Unit)? = null
+
 
     override fun setupCustomListeners() {
         // 게임 입장 확인
@@ -85,10 +88,12 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             try {
                 val data = args[0] as JSONObject
                 val gameId = data.getInt("gameId")
+                val cctvThiefId = data.getLong("cctvThiefId")
+                val skillUsedAt = data.getString("skillUsedAt")
                 val sec = data.getInt("sec")
                 val locations = data.getJSONArray("locations")
                 Timber.d("GPS 위치 정보: gameId=$gameId, sec=$sec, 참여자=${locations.length()}명")
-                onGpsReceived?.invoke(sec, locations)
+                onGpsReceived?.invoke(cctvThiefId, skillUsedAt, sec, locations)
             } catch (e: Exception) {
                 Timber.e(e, "GPS 정보 파싱 실패")
             }
@@ -126,10 +131,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val data = args[0] as JSONObject
                 val gameId = data.getLong("gameId")
                 val thiefId = data.getLong("thiefId")
-                val escapePointId = data.getInt("escapePointId")
                 val escapedAt = data.getString("escapedAt")
-                Timber.d("도둑 탈출: thiefId=$thiefId, escapePoint=$escapePointId")
-                onThiefEscaped?.invoke(gameId, thiefId, escapePointId, escapedAt)
+                Timber.d("🏃 도둑 탈출 알림: thiefId=$thiefId,  escapedAt=$escapedAt")
+                onThiefEscaped?.invoke(gameId, thiefId, escapedAt)
             } catch (e: Exception) {
                 Timber.e(e, "도둑 탈출 파싱 실패")
             }
@@ -154,7 +158,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val data = args[0] as JSONObject
                 val result = data.getString("result")
                 val reason = data.optString("reason", null)
-                val policeId = data.getLong("policeId")
+                val policeId = data.optLong("policeId", -1L)
                 val thiefId = data.getLong("thiefId")
                 val arrestedAt = data.optString("arrestedAt", null)
                 Timber.d("체포 결과: result=$result, reason=$reason")
@@ -457,7 +461,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onJoinedRoom = callback
     }
 
-    fun setOnGpsReceived(callback: (sec: Int, locations: JSONArray) -> Unit) {
+    fun setOnGpsReceived(callback: (cctvThiefId: Long?, skillUsedAt: String?, sec: Int, locations: JSONArray) -> Unit) {
         onGpsReceived = callback
     }
 
@@ -469,7 +473,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onGameStarted = callback
     }
 
-    fun setOnThiefEscaped(callback: (gameId: Long, thiefId: Long, escapePointId: Int, escapedAt: String) -> Unit) {
+    fun setOnThiefEscaped(callback: (gameId: Long, thiefId: Long, escapedAt: String) -> Unit) {
         onThiefEscaped = callback
     }
 
