@@ -1,0 +1,15 @@
+{
+  "name": "gps_worker",
+  "version": "1.0.0",
+  "description": "Dedicate process for broadcasting GPS data via Redis",
+  "main": "src/worker.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/worker.js"
+  },
+  "dependencies": {
+    "@socket.io/redis-emitter": "^5.1.0",
+    "dotenv": "^16.4.5",
+    "ioredis": "^5.4.1"
+  }
+}
