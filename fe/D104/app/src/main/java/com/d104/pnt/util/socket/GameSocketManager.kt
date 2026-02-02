@@ -49,7 +49,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     // Callbacks
     private var onJoinedRoom: ((Long, Long, String) -> Unit)? = null
-    private var onGpsReceived: ((Int, JSONArray) -> Unit)? = null
+    private var onGpsReceived: ((Long?, String?,Int, JSONArray) -> Unit)? = null
     private var onWillStartGame: ((Long, String) -> Unit)? = null
     private var onGameStarted: ((Long, String) -> Unit)? = null
     private var onThiefEscaped: ((gameId: Long, thiefId: Long, escapedAt: String) -> Unit)? = null
@@ -88,10 +88,12 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             try {
                 val data = args[0] as JSONObject
                 val gameId = data.getInt("gameId")
+                val cctvThiefId = data.getLong("cctvThiefId")
+                val skillUsedAt = data.getString("skillUsedAt")
                 val sec = data.getInt("sec")
                 val locations = data.getJSONArray("locations")
                 Timber.d("GPS 위치 정보: gameId=$gameId, sec=$sec, 참여자=${locations.length()}명")
-                onGpsReceived?.invoke(sec, locations)
+                onGpsReceived?.invoke(cctvThiefId, skillUsedAt, sec, locations)
             } catch (e: Exception) {
                 Timber.e(e, "GPS 정보 파싱 실패")
             }
@@ -459,7 +461,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onJoinedRoom = callback
     }
 
-    fun setOnGpsReceived(callback: (sec: Int, locations: JSONArray) -> Unit) {
+    fun setOnGpsReceived(callback: (cctvThiefId: Long?, skillUsedAt: String?, sec: Int, locations: JSONArray) -> Unit) {
         onGpsReceived = callback
     }
 

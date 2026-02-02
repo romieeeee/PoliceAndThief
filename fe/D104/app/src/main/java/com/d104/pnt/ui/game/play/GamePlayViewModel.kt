@@ -257,22 +257,6 @@ class GamePlayViewModel @Inject constructor(
         Timber.d("📋 필터링된 도둑 수: ${_thiefMembers.value.size}명")
     }
 
-    fun setDefaultArea(context: Context) {
-        viewModelScope.launch {
-            val location = context.getSingleLocation()
-            if (location != null) {
-                locationRepository.updateCurrentLocation(location)
-                locationRepository.createDefaultPolygon(location)
-                locationRepository.setPrisonLocation(
-                    LatLng(
-                        location.latitude,
-                        location.longitude
-                    )
-                )
-            }
-        }
-    }
-
     override fun onCleared() {
         super.onCleared()
 

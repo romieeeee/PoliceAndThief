@@ -71,7 +71,7 @@ class StepSensorManager @Inject constructor(
                 }
 
                 _stepCountFlow.value = stepsInGame
-                // Timber.d("게임 내 걸음 수: $stepsInGame (총: $currentTotalSteps, 기준: $initialSteps)")
+                 Timber.d("게임 내 걸음 수: $stepsInGame (총: $currentTotalSteps, 기준: $initialSteps)")
             }
         }
     }
