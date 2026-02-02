@@ -40,7 +40,8 @@ export class GameController {
 
     isActiveRoom = async (gameId) => {
         try {
-            await this.gameService.findGame(gameId, GameStatus.IN_GAME);
+            const integerGameId = parseInt(gameId);
+            await this.gameService.findGame(integerGameId, GameStatus.IN_GAME);
             return true;
         } catch (error) {
             return false;
@@ -55,7 +56,7 @@ export class GameController {
      */
     joinRoom = async (payload) => {
         const gameId = parseInt(payload.gameId);
-        const memberId = this.socket.data.memberId;
+        const memberId = parseInt(this.socket.data.memberId);
 
         const game = await this.gameService.findGame(gameId, GameStatus.IN_GAME);
 
@@ -63,9 +64,9 @@ export class GameController {
             this.makeError("GameEndException", "게임이 종료되었습니다.", 400);
         }
 
-        const location = await this.redisClient.getLocation(this.socket.data.memberId);
+        const location = await this.redisClient.getLocation(memberId);
         if (!location) {
-            const memberGame = await this.gameMemberService.findMemberGameInDB(this.socket.data.memberId, gameId);
+            const memberGame = await this.gameMemberService.findMemberGameInDB(memberId, gameId);
             if (!memberGame) {
                 this.makeError("NotFoundException", "게임에 참여하지 않았습니다.", 404);
             }
@@ -82,12 +83,12 @@ export class GameController {
                 isConnected: true,
                 timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
             }
-            const token = generateMemberAccessToken(this.socket.data.memberId, game.gameSetting.timeLimit);
-            await this.redisClient.setAccessToken(this.socket.data.memberId, token, game.gameSetting.timeLimit);
+            const token = generateMemberAccessToken(memberId, game.gameSetting.timeLimit);
+            await this.redisClient.setAccessToken(memberId, token, game.gameSetting.timeLimit);
 
-            await this.redisClient.setLocation(this.socket.data.memberId, gameId, locationData);
+            await this.redisClient.setLocation(memberId, gameId, locationData);
         }
-        await this.gameMemberService.updateInGameConnected(payload.gameId, this.socket.data.memberId, true);
+        await this.gameMemberService.updateInGameConnected(gameId, memberId, true);
         const locations = await this.redisClient.getAllLocations(gameId);
 
         this.socket.join(gameId);
@@ -96,15 +97,15 @@ export class GameController {
         const data = {
             message: "joined room",
             gameId: payload.gameId,
-            memberId: this.socket.data.memberId,
+            memberId: memberId,
             connectedMembers: locations.length,
         }
 
         // gameSetting에서 참여자 수 들고오기
         // isGaneConnected true로 변경 => 변경이 됐는지 안됐는지 판별하여 
         // 게임 시작 시간 db에 저장
-        if (!await this.redisClient.getGameTimer(payload.gameId)) {
-            await this.redisClient.setStarted(payload.gameId, this.socket.data.memberId);
+        if (!await this.redisClient.getGameTimer(gameId)) {
+            await this.redisClient.setStarted(gameId, memberId);
             await this.startGame();
         }
 
@@ -139,43 +140,41 @@ export class GameController {
      * 현재 시간으로 부터 5초 뒤에 시작.
      */
     startGame = async () => {
-        const gameId = this.socket.data.gameId;
+        const gameId = parseInt(this.socket.data.gameId);
 
-        const integerGameId = parseInt(gameId);
-
-        const gameTimer = await this.redisClient.getGameTimer(integerGameId);
+        const gameTimer = await this.redisClient.getGameTimer(gameId);
 
         if (gameTimer) {
             return;
         }
 
-        const gameSetting = await this.gameSettingService.findGameSetting(integerGameId);
-        const startedCount = await this.redisClient.getStartedCount(integerGameId);
+        const gameSetting = await this.gameSettingService.findGameSetting(gameId);
+        const startedCount = await this.redisClient.getStartedCount(gameId);
 
         if (startedCount < gameSetting.policeCount + gameSetting.thiefCount) {
             return;
         }
 
-        const isMine = await this.redisClient.setGameSettingLock(integerGameId, 60);
+        const isMine = await this.redisClient.setGameSettingLock(gameId, 60);
 
         if (!isMine) {
             return;
         }
 
-        await this.redisClient.setGameSetting(integerGameId, gameSetting);
+        await this.redisClient.setGameSetting(gameId, gameSetting);
         this.io.to(gameId).emit("get will start game", {
             message: "start game",
-            gameId: integerGameId,
+            gameId: gameId,
             willStartAt: new Date(Date.now() + 5000).toISOString(),
         });
 
         setTimeout(async () => {
-            await this.redisClient.setGameTimer(integerGameId, gameSetting.timeLimit * 60);
-            await this.redisClient.setGameToken(integerGameId, generateToken(integerGameId, gameSetting.timeLimit), gameSetting.timeLimit);
+            await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit * 60);
+            await this.redisClient.setGameToken(gameId, generateToken(gameId, gameSetting.timeLimit), gameSetting.timeLimit);
 
             // cctv 작동
             const cctvInterval = gameSetting.cctvInterval || 60;
-            await this.redisClient.setCctvTimer(integerGameId, cctvInterval);
+            await this.redisClient.setCctvTimer(gameId, cctvInterval);
 
             await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString(), status: GameStatus.IN_GAME });
 
@@ -209,7 +208,7 @@ export class GameController {
             return;
         }
 
-        const gameId = this.socket.data.gameId;
+        const gameId = parseInt(this.socket.data.gameId);
         const gameTimer = await this.redisClient.getGameTimer(gameId);
         if (!gameTimer) {
             sendError(this.socket, { code: 400, message: "Game is not started or is finished" }, "GameError");
@@ -359,7 +358,7 @@ export class GameController {
     }
 
     syncGameInfo = async (payload) => {
-        const gameId = parseInt(payload.gameId) || this.socket.data.gameId;
+        const gameId = parseInt(payload.gameId) || parseInt(this.socket.data.gameId);
 
         const game = await this.gameService.findGame(gameId);
         const gameMissions = await this.gameMissionService.findAllByGameId(gameId);
@@ -391,8 +390,8 @@ export class GameController {
     }
 
     postArrest = async (payload) => {
-        const gameId = parseInt(payload.gameId) || this.socket.data.gameId;
-        const policeId = parseInt(payload.policeId) || this.socket.data.memberId;
+        const gameId = parseInt(payload.gameId) || parseInt(this.socket.data.gameId);
+        const policeId = parseInt(payload.policeId) || parseInt(this.socket.data.memberId);
         const thiefId = parseInt(payload.thiefId);
 
         const thief = await this.gameMemberService.findMemberGame(gameId, thiefId);
@@ -499,7 +498,17 @@ export class GameController {
         this.io.to(gameId).emit("get skill use", res);
     }
 
+    /**
+     * 
+     */
     postMissionImage = async (payload) => {
+        const gameId = parseInt(payload.gameId) || parseInt(this.socket.data.gameId);
+        const memberId = parseInt(payload.memberId) || parseInt(this.socket.data.memberId);
+        const missionId = parseInt(payload.missionId);
+        const image = String(payload.image);
+
+        this.gameMissionService.findMission(missionId);
+
         this.mq.sendMessage(payload, MQConfig.MQ_MISSION);
     }
 
@@ -664,6 +673,16 @@ export class GameController {
         }
 
         this.socket.disconnect();
+    }
+
+    postRadio = async () => {
+        const gameId = parseInt(this.socket.data.gameId);
+        const memberId = parseInt(this.socket.data.memberId);
+
+        this.io.to(gameId).emit("get radio", {
+            gameId: gameId,
+            memberId: memberId
+        });
     }
 
     makeError = (message, text, code) => {
