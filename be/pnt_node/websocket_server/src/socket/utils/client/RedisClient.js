@@ -148,8 +148,8 @@ export class RedisClient {
     /**
      * 게임 시작
      */
-    setStarted = async (gameId, memberId) => {
-        await this.pubClient.sadd(this.getStartedString(gameId), memberId);
+    setStartedCount = async (gameId, memberId) => {
+        return parseInt(await this.pubClient.sadd(this.getStartedString(gameId), memberId));
     }
 
     getStartedCount = async (gameId) => {
@@ -256,12 +256,12 @@ export class RedisClient {
      * news 관련
      */
     setNews = async (gameId, newsId) => {
-        await this.pubClient.set(this.getNewsKeyString(gameId), newsId, "EX", 60 * 5);
+        await this.pubClient.set(this.getNewsKeyString(gameId), newsId, "EX", 60);
     }
 
     getNews = async (gameId) => {
         const newsId = await this.pubClient.get(this.getNewsKeyString(gameId));
-        return parseInt(newsId);
+        return newsId ? parseInt(newsId) : null;
     }
 
     deleteNews = async (gameId) => {
@@ -272,7 +272,47 @@ export class RedisClient {
         return `room:game:news:${gameId}`;
     }
 
+    /**
+     * skill use lock
+     */
+    setSkillUsedAt = async (gameId, timeLimit) => {
+        logger.info(`skill use lock set, game=${gameId}, timeLimit=${new Date().toISOString()}`);
+        await this.pubClient.set(this.getSkillUseLockString(gameId), new Date().toISOString(), "EX", timeLimit * 60);
+    }
 
+    getSkillUsedAt = async (gameId) => {
+        const skillUseLock = await this.pubClient.get(this.getSkillUseLockString(gameId));
+        return skillUseLock;
+    }
+
+    deleteSkillUsedAt = async (gameId) => {
+        await this.pubClient.del(this.getSkillUseLockString(gameId));
+    }
+
+    getSkillUseLockString = (gameId) => {
+        return `room:game:skill:use:lock:${gameId}`;
+    }
+
+    /**
+     * cctv user 
+     */
+
+    setCctvUser = async (gameId, memberId) => {
+        await this.pubClient.set(this.getCctvUserString(gameId), memberId);
+    }
+
+    getCctvUser = async (gameId) => {
+        const memberId = await this.pubClient.get(this.getCctvUserString(gameId));
+        return memberId;
+    }
+
+    deleteCctvUser = async (gameId) => {
+        await this.pubClient.del(this.getCctvUserString(gameId));
+    }
+
+    getCctvUserString = (gameId) => {
+        return `room:game:cctv:user:${gameId}`;
+    }
 
     // 이 함수는 게임이 종료됐을때만 실행.
     deleteGameCachesByMemberId = async (memberId, gameId) => {
@@ -291,6 +331,8 @@ export class RedisClient {
         await this.deleteGameTimer(gameId);
         await this.deleteGameTimerLock(gameId);
         await this.deleteGameSettingLock(gameId);
+        await this.deleteSkillUsedAt(gameId);
+        await this.deleteCctvUser(gameId);
     }
     /**
      * 게임 타이머 => 게임 진행 시간 관리
@@ -308,9 +350,10 @@ export class RedisClient {
     setGameTimer = async (gameId, time) => {
         const duration = parseInt(time);
         if (isNaN(duration)) {
-            logger.warn(`[RedisClient] Invalid duration for GameTimer: ${time}. Defaulting to 600s.`);
-            return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", 600);
+            logger.warn(`[RedisClient] Invalid duration for GameTimer: ${time}. Defaulting to 300s.`);
+            return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", 300);
         }
+        logger.info(`[RedisClient] Set GameTimer: ${gameId}, ${duration * 60}초`);
         return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", duration * 60);
     }
 
@@ -332,7 +375,7 @@ export class RedisClient {
             logger.warn(`[RedisClient] Invalid duration for CctvTimer: ${time}. Defaulting to 60s.`);
             return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", 60);
         }
-        return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", duration);
+        return await this.pubClient.set(this.getCctvTimerKeyString(gameId), "timer", "EX", duration * 60);
     }
 
     deleteCctvTimer = async (gameId) => {

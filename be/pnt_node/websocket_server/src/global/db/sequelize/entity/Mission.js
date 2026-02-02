@@ -17,6 +17,10 @@ export default class Mission extends Model {
                     type: DataTypes.STRING(255),
                     allowNull: true,
                 },
+                keyword: {
+                    type: DataTypes.STRING(20),
+                    allowNull: true,
+                },
                 isDeleted: {
                     type: DataTypes.BOOLEAN,
                     allowNull: false,

@@ -58,14 +58,10 @@ const expiredChannel = withFunctionLogging("ExpiredChannel", async (message, pub
             const randomIndex = Math.floor(Math.random() * thieves.length);
             const randomThief = thieves[randomIndex];
 
-            gameIo.to(gameId).emit("get cctv", {
-                gameId: parseInt(gameId),
-                thiefId: randomThief.memberId,
-                lng: randomThief.lng,
-                lat: randomThief.lat
-            });
+            await redisClient.setCctvUser(gameId, randomThief.memberId);
             logger.info(`[CCTV] Game ${gameId}: Sent CCTV data for thief ${randomThief.memberId}`);
         } else {
+            await redisClient.deleteCctvUser(gameId);
             logger.info(`[CCTV] Game ${gameId}: No free thieves found.`);
         }
 

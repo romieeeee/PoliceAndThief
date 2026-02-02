@@ -61,6 +61,8 @@ const gameSocketServer = (io) => {
 
             socket.on("post update access token", withLogging("postUpdateAccessToken", gameController.postUpdateAccessToken, socket, "GameError"));
 
+            socket.on("post radio", withLogging("postRadio", gameController.postRadio, socket, "GameError"));
+
             socket.on("disconnect", async () => {
                 if (socket.data.isIntentionalExit) {
                     logger.info("socket의 연결이 정상적으로 끊어졌습니다.");
