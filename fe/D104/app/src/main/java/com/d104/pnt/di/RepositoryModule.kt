@@ -8,6 +8,8 @@ import com.d104.pnt.data.repository.GameRepository
 import com.d104.pnt.data.repository.GameRepositoryImpl
 import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.data.repository.GameRoomRepositoryImpl
+import com.d104.pnt.data.repository.GameSessionRepository
+import com.d104.pnt.data.repository.GameSessionRepositoryImpl
 import com.d104.pnt.data.repository.ImageRepository
 import com.d104.pnt.data.repository.ImageRepositoryImpl
 import com.d104.pnt.data.repository.LocationRepository
@@ -81,4 +83,10 @@ abstract class RepositoryModule {
     abstract fun bindGameRepository(
         impl: GameRepositoryImpl
     ): GameRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGameSessionRepository(
+        impl: GameSessionRepositoryImpl
+    ): GameSessionRepository
 }
