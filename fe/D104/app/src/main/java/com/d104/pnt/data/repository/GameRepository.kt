@@ -8,4 +8,6 @@ interface GameRepository {
     suspend fun getMissionList(gameId: Long): BaseResult<List<MissionResponse>>
 
     suspend fun getMissionDetail(gameId: Long, missionsId: Long): BaseResult<MissionResponse>
+
+    suspend fun gameHardDelete(gameId: Long): BaseResult<Unit>
 }
