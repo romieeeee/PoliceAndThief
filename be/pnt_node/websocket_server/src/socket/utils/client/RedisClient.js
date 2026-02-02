@@ -80,6 +80,7 @@ export class RedisClient {
 
     deleteAccessToken = async (memberId) => {
         const infoKey = `websocket:access:token:${memberId}`;
+        logger.info(`[RedisClient] Deleting access token for member ${memberId}`);
         await this.pubClient.del(infoKey);
     }
 

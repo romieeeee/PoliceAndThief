@@ -707,6 +707,7 @@ export class GameController {
             await this.gameEnd(this.io, this.redisClient, gameId, isGameEnd);
         }
 
+        await this.redisClient.deleteAccessToken(memberId);
         this.socket.disconnect();
     }
 
