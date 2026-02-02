@@ -148,8 +148,8 @@ export class RedisClient {
     /**
      * 게임 시작
      */
-    setStarted = async (gameId, memberId) => {
-        await this.pubClient.sadd(this.getStartedString(gameId), memberId);
+    setStartedCount = async (gameId, memberId) => {
+        return parseInt(await this.pubClient.sadd(this.getStartedString(gameId), memberId));
     }
 
     getStartedCount = async (gameId) => {
