@@ -57,6 +57,7 @@ class GameRoomViewModel @Inject constructor(
     private val _roomInfo = MutableStateFlow(GameRoomInfoState())
     val roomInfo: StateFlow<GameRoomInfoState> = _roomInfo.asStateFlow()
 
+
     private val _isHost = MutableStateFlow(false)
     val isHost: StateFlow<Boolean> = _isHost.asStateFlow()
 
@@ -211,6 +212,9 @@ class GameRoomViewModel @Inject constructor(
         roomSocketManager.setOnGameStarted { data ->
             viewModelScope.launch {
                 try {
+                    val currentCode = _roomInfo.value.roomCode
+                    gameSessionRepository.setRoomCode(currentCode)
+
                     val membersArray = data.optJSONArray("members") ?: return@launch
                     val myId = _myMemberId.value
                     var myFinalRole = "ANY" // 기본값
@@ -386,6 +390,10 @@ class GameRoomViewModel @Inject constructor(
                 prison = Location(data.roomSetting.prisonLat, data.roomSetting.prisonLng),
                 polygon = data.roomSetting.boundaryGeo.coordinates[0].map { Location(it[1], it[0]) }
             )
+
+            val currentCode = _roomInfo.value.roomCode
+            gameSessionRepository.setRoomCode(currentCode)
+
             Timber.d("감옥 위치 ${_roomInfo.value.prison}, 폴리곤 ${_roomInfo.value.polygon}")
 
         } catch (e: Exception) {

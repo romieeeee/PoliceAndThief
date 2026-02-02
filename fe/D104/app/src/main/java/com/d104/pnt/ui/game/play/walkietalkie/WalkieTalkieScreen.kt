@@ -23,8 +23,6 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,8 +34,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import timber.log.Timber
 
 object WalkieColor {
     val Panel = Color(0xFF2A2A2A)
@@ -47,61 +44,13 @@ object WalkieColor {
 }
 
 /**
- * 무전기 화면
- *
- * @param gameId 게임 ID
- * @param teamType 팀 타입 ("POLICE" 또는 "THIEF")
- */
-@Composable
-fun WalkieTalkieScreen(
-    gameId: String,
-    teamType: String,
-    viewModel: WalkieViewModel = hiltViewModel()
-) {
-    // ViewModel 상태 구독
-    val isConnected by viewModel.isConnected.collectAsStateWithLifecycle()
-    val isMicEnabled by viewModel.isMicEnabled.collectAsStateWithLifecycle()
-    val participantCount by viewModel.participantCount.collectAsStateWithLifecycle()
-
-    // 게임 시작 시 무전기 연결
-    LaunchedEffect(gameId, teamType) {
-        // TODO: 서버에서 token 받아오기
-        viewModel.connect(
-            serverUrl = "wss://mock",  // TODO: Constants.WALKIE_SERVER_URL
-            token = "mock",  // TODO: authRepository.getWalkieToken(gameId, teamType)
-            roomName = "game_${gameId}_${teamType.lowercase()}"
-        )
-    }
-
-    // 게임 종료 시 연결 해제
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.disconnect()
-        }
-    }
-
-    // UI
-    WalkieTalkieContent(
-        channel = if (isConnected) {
-            "CH 00 · MAIN (${participantCount}명)"
-        } else {
-            "CH 00 · 연결 중..."
-        },
-        isTalking = isMicEnabled,
-        onPttDown = { if (isConnected) viewModel.startTalking() },
-        onPttUp = { if (isConnected) viewModel.stopTalking() },
-        onChannelDown = { /* 채널 변경 (추후) */ },
-        onChannelUp = { /* 채널 변경 (추후) */ }
-    )
-}
-
-/**
  * 무전기 UI (내부용)
  */
 @Composable
-private fun WalkieTalkieContent(
+fun WalkieTalkieContent(
     channel: String,
     isTalking: Boolean,
+    isSomeoneTalking: Boolean,
     onPttDown: () -> Unit,
     onPttUp: () -> Unit,
     onChannelDown: () -> Unit,
@@ -120,6 +69,7 @@ private fun WalkieTalkieContent(
 
         PttCircle(
             isTalking = isTalking,
+            isSomeoneTalking = isSomeoneTalking,
             onDown = onPttDown,
             onUp = onPttUp
         )
@@ -152,6 +102,7 @@ private fun ChannelHeader(text: String) {
 @Composable
 private fun PttCircle(
     isTalking: Boolean,
+    isSomeoneTalking: Boolean,
     onDown: () -> Unit,
     onUp: () -> Unit
 ) {
@@ -163,6 +114,18 @@ private fun PttCircle(
         label = "ptt-scale"
     )
 
+    val circleColor = when {
+        isTalking -> WalkieColor.Danger // 내가 말하는 중 - 빨강
+        isSomeoneTalking -> Color(0xFFFFA500) // 다른 사람 말하는 중 - 주황
+        else -> WalkieColor.Panel // 대기 중 - 회색
+    }
+
+    val displayText = when {
+        isTalking -> "송신 중…"
+        isSomeoneTalking -> "다른 경찰 송신 중"
+        else -> "누르고 말하세요"
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -172,9 +135,14 @@ private fun PttCircle(
                 scaleX = scale
                 scaleY = scale
             }
-            .pointerInput(Unit) {
+            .pointerInput(isSomeoneTalking) {
                 detectTapGestures(
                     onPress = {
+                        if (isSomeoneTalking) {
+                            Timber.d("📻 다른 경찰 송신 중 - 버튼 무시")
+                            return@detectTapGestures
+                        }
+
                         isPressed = true
                         onDown()
 
@@ -186,7 +154,7 @@ private fun PttCircle(
                 )
             }
             .background(
-                color = if (isTalking) WalkieColor.Danger else WalkieColor.Panel,
+                color = circleColor,
                 shape = CircleShape
             ),
         verticalArrangement = Arrangement.Center,
@@ -202,7 +170,7 @@ private fun PttCircle(
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text = if (isTalking) "송신 중…" else "누르고 말하세요",
+            text = displayText,
             color = WalkieColor.TextPrimary,
             fontSize = 12.sp
         )

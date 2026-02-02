@@ -61,7 +61,7 @@ import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.game.play.PhoneScreen.THIEF_LIST
 import com.d104.pnt.ui.game.play.mission.MissionBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
-import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieScreen
+import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieContent
 import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
 import com.d104.pnt.ui.theme.PixelFont
@@ -103,6 +103,13 @@ fun GamePlayScreen(
 
     val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
 
+    val walkieState by viewModel.walkieState.collectAsStateWithLifecycle()
+    val walkieConnected by viewModel.walkieConnected.collectAsStateWithLifecycle()
+    val walkieMicEnabled by viewModel.walkieMicEnabled.collectAsStateWithLifecycle()
+    val walkieParticipantCount by viewModel.walkieParticipantCount.collectAsStateWithLifecycle()
+    val isSomeoneTalking by viewModel.isSomeoneTalking.collectAsStateWithLifecycle()
+
+
     // ✅ ToneGenerator 직접 생성 금지 -> GameFeedbackManager로 통일
     // (테스트용이라도 여기서 직접 ToneGenerator 만들면 연타 시 AudioTrack(-12) 가능)
     val feedbackManager = remember { GameFeedbackManager(context.applicationContext) }
@@ -121,6 +128,7 @@ fun GamePlayScreen(
     // =========================================================
     val TEST_FORCE_BEEP = false
 
+
     LaunchedEffect(TEST_FORCE_BEEP, role) {
         if (!TEST_FORCE_BEEP) return@LaunchedEffect
         if (role != GameRole.THIEF) return@LaunchedEffect
@@ -131,6 +139,26 @@ fun GamePlayScreen(
     }
     // ===== TEST ONLY (BEEP) END ===============================
     // =========================================================
+
+
+    LaunchedEffect(Unit) {
+        viewModel.initGame()
+
+        if (role == GameRole.POLICE) {
+            delay(500) // 게임 정보 동기화 대기
+            viewModel.connectWalkie()
+        }
+
+        viewModel.uiEvent.collect { event ->
+            if (event is GameSessionEvent.NavigateToLoading) {
+                showGameOverOverlay = true
+
+                delay(5000L)
+
+                onNavigateToLoading(event.gameId)
+            }
+        }
+    }
 
 
     BackHandler {
@@ -161,20 +189,7 @@ fun GamePlayScreen(
 
         onDispose {
             context.stopService(serviceIntent)
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.initGame()
-
-        viewModel.uiEvent.collect { event ->
-            if (event is GameSessionEvent.NavigateToLoading) {
-                showGameOverOverlay = true
-
-                delay(5000L)
-
-                onNavigateToLoading(event.gameId)
-            }
+            viewModel.disconnectWalkie()
         }
     }
 
@@ -424,9 +439,28 @@ fun GamePlayScreen(
 
         } else {
             WalkieBottomSheet {
-                WalkieTalkieScreen(
-                    gameId = "1f",
-                    teamType = "police"
+                WalkieTalkieContent(
+                    channel = when (walkieState) {
+                        is WalkieConnectionState.Idle -> "CH 00 · 대기 중"
+                        is WalkieConnectionState.Connecting -> "CH 00 · 연결 중..."
+                        is WalkieConnectionState.Connected -> "CH 00 · MAIN (${walkieParticipantCount}명)"
+                        is WalkieConnectionState.Error -> "CH 00 · 오류 발생"
+                    },
+                    isTalking = walkieMicEnabled,
+                    isSomeoneTalking = isSomeoneTalking, // ✅ 추가
+                    onPttDown = {
+                        // ✅ 누군가 말하고 있으면 무시
+                        if (walkieConnected && !isSomeoneTalking) {
+                            viewModel.startTalking()
+                        } else if (isSomeoneTalking) {
+                            Timber.d("📻 다른 경찰이 말하는 중 - PTT 무시")
+                        }
+                    },
+                    onPttUp = {
+                        if (walkieConnected) viewModel.stopTalking()
+                    },
+                    onChannelDown = { /* 채널 변경 (추후) */ },
+                    onChannelUp = { /* 채널 변경 (추후) */ }
                 )
 
             }

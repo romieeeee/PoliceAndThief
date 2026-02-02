@@ -14,10 +14,11 @@ interface GameSessionRepository {
     val isOutOfBoundary: StateFlow<Boolean>
     val myMemberId: StateFlow<Long>
     val myRole: StateFlow<String>
-
+    val roomCode: StateFlow<String>
 
     fun setMemberId(memberId: Long)
     fun setFinalRole(role: String)
+    fun setRoomCode(code: String)
     fun connectAndJoin(gameId: Long)
     fun gameInit()
     fun startGameSession()

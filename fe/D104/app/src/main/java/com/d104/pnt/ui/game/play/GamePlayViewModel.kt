@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.model.response.BeepUseResponse
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
 import com.d104.pnt.data.repository.AuthRepository
@@ -12,6 +13,8 @@ import com.d104.pnt.data.repository.GameRepository
 import com.d104.pnt.data.repository.GameSessionEvent
 import com.d104.pnt.data.repository.GameSessionRepository
 import com.d104.pnt.data.repository.LocationRepository
+import com.d104.pnt.data.repository.WalkieRepository
+import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.service.game.GameActiveService
 import com.d104.pnt.util.StepSensorManager
@@ -42,11 +45,12 @@ class GamePlayViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val gameRepository: GameRepository,
     private val gameSessionRepository: GameSessionRepository,
-    private val stepSensorManager: StepSensorManager
+    private val stepSensorManager: StepSensorManager,
+    private val walkieRepository: WalkieRepository
 ) : ViewModel() {
     private val gameId: Long = savedStateHandle.get<Long>(NavArgs.GAME_ID) ?: 0L
+    private val roleString: String = savedStateHandle.get<String>(NavArgs.ROLE) ?: "THIEF"
 
-    // UI 이벤트
     private val _uiEvent = MutableSharedFlow<GameSessionEvent>(
         replay = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
@@ -55,7 +59,7 @@ class GamePlayViewModel @Inject constructor(
     val uiEvent = _uiEvent.asSharedFlow()
     val isOutOfBoundary = gameSessionRepository.isOutOfBoundary
 
-    // ✅ Beep 이벤트 (도둑 쪽에서만 화면이 소리 재생하도록 Screen에서 필터)
+    // ===== Beep 이벤트 (도둑 쪽에서만 화면이 소리 재생하도록 Screen에서 필터) =====
     private val _beepEvent = MutableSharedFlow<BeepUseResponse>(extraBufferCapacity = 16)
     val beepEvent = _beepEvent.asSharedFlow()
 
@@ -85,7 +89,24 @@ class GamePlayViewModel @Inject constructor(
     private val _escapeQueue = MutableStateFlow<List<String>>(emptyList())
     val escapeQueue = _escapeQueue.asStateFlow()
 
+    // ===== 무전기 =====
+    val walkieConnected = walkieRepository.isConnected
+    val walkieMicEnabled = walkieRepository.isMicEnabled
+    val walkieParticipantCount = walkieRepository.participantCount
+
+    private val _walkieState = MutableStateFlow<WalkieConnectionState>(WalkieConnectionState.Idle)
+    val walkieState = _walkieState.asStateFlow()
+
+    private val _isSomeoneTalking = MutableStateFlow(false)
+
+    val isSomeoneTalking = _isSomeoneTalking.asStateFlow()
+
+    private val _talkingMemberId = MutableStateFlow<Long?>(null)
+
+    val talkingMemberId = _talkingMemberId.asStateFlow()
+
     private var myMemberId: Long = 0L
+
     private var warningJob: Job? = null
 
     init {
@@ -206,6 +227,14 @@ class GamePlayViewModel @Inject constructor(
                 Timber.d("📋 탈출 큐에 추가: $thiefNickname (현재 큐 크기: ${_escapeQueue.value.size})")
             }
         }
+
+        gameSocketManager.setOnRadioReceived { gameId, memberId ->
+            viewModelScope.launch {
+                Timber.d("📻 다른 경찰(memberId=$memberId)이 말하기 시작")
+                _isSomeoneTalking.value = true
+                _talkingMemberId.value = memberId
+            }
+        }
     }
 
     fun removeFirstEscape() {
@@ -225,11 +254,6 @@ class GamePlayViewModel @Inject constructor(
         }
 
         Timber.d("📋 필터링된 도둑 수: ${_thiefMembers.value.size}명")
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        startService(GameActiveService.ACTION_STOP)
     }
 
     private fun startService(action: String) {
@@ -258,4 +282,123 @@ class GamePlayViewModel @Inject constructor(
             gameSessionRepository.leaveGame()
         }
     }
+
+    /**
+     * ====================
+     * 무전기 연결 (경찰만)
+     * ====================
+     */
+    fun connectWalkie() {
+        // 경찰이 아니면 무시
+        if (roleString != "POLICE") {
+            Timber.d("🎙️ 도둑은 무전기 연결 안함")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _walkieState.value = WalkieConnectionState.Connecting
+
+                // 1. roomCode 가져오기
+                val roomCode = gameSessionRepository.roomCode.first()
+                if (roomCode.isBlank()) {
+                    _walkieState.value = WalkieConnectionState.Error("방 코드가 없습니다")
+                    Timber.e("🎙️ 무전기 연결 실패: roomCode 없음")
+                    return@launch
+                }
+
+                Timber.d("🎙️ LiveKit 토큰 요청: roomCode=$roomCode")
+
+                // 2. 토큰 발급
+                when (val result = gameRepository.getLiveKitToken(roomCode)) {
+                    is BaseResult.Success -> {
+                        val tokenResponse = result.data
+                        Timber.d("🎙️ 토큰 발급 성공: ${tokenResponse.identity}")
+
+                        // 3. LiveKit 연결
+                        walkieRepository.connect(
+                            serverUrl = Constants.LIVEKIT_URL,
+                            token = tokenResponse.token,
+                            roomName = tokenResponse.roomCode
+                        )
+
+                        _walkieState.value = WalkieConnectionState.Connected
+                        Timber.d("🎙️ 무전기 연결 완료")
+                    }
+
+                    is BaseResult.Error -> {
+                        val errorMsg = result.error.message ?: "토큰 발급 실패"
+                        _walkieState.value = WalkieConnectionState.Error(errorMsg)
+                        Timber.e("🎙️ 토큰 발급 실패: $errorMsg")
+                    }
+                }
+            } catch (e: Exception) {
+                _walkieState.value = WalkieConnectionState.Error(e.message ?: "연결 실패")
+                Timber.e(e, "🎙️ 무전기 연결 실패")
+            }
+        }
+    }
+
+    fun disconnectWalkie() {
+        viewModelScope.launch {
+            try {
+                walkieRepository.disconnect()
+                _walkieState.value = WalkieConnectionState.Idle
+                Timber.d("🎙️ 무전기 연결 해제")
+            } catch (e: Exception) {
+                Timber.e(e, "🎙️ 연결 해제 실패")
+            }
+        }
+    }
+
+    fun startTalking() {
+        if (roleString != "POLICE") return
+
+        viewModelScope.launch {
+            try {
+                // 1. 소켓으로 "내가 말한다" 신호 보내기
+                gameSocketManager.sendRadio()
+
+                // 2. LiveKit 마이크 켜기
+                walkieRepository.enableMic()
+
+                Timber.d("🎙️ 송신 시작 (소켓 + LiveKit)")
+            } catch (e: Exception) {
+                Timber.e(e, "🎙️ PTT 시작 실패")
+            }
+        }
+    }
+
+    fun stopTalking() {
+        if (roleString != "POLICE") return
+
+        viewModelScope.launch {
+            try {
+                // LiveKit 마이크만 끄기 (소켓은 post radio 없음)
+                walkieRepository.disableMic()
+
+                // 내 상태 초기화
+                _isSomeoneTalking.value = false
+                _talkingMemberId.value = null
+
+                Timber.d("🎙️ 송신 중지")
+            } catch (e: Exception) {
+                Timber.e(e, "🎙️ PTT 중지 실패")
+            }
+        }
+    }
+
+
+    override fun onCleared() {
+        super.onCleared()
+        disconnectWalkie()
+        startService(GameActiveService.ACTION_STOP)
+    }
+}
+
+sealed class WalkieConnectionState {
+    object Idle : WalkieConnectionState()
+    object Connecting : WalkieConnectionState()
+    object Connected : WalkieConnectionState()
+    data class Error(val message: String) : WalkieConnectionState()
 }

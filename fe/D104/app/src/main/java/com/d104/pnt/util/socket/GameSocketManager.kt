@@ -23,6 +23,8 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         private const val EVENT_POST_SKILL_USE = "post skill use"
         private const val EVENT_POST_MISSION_IMAGE = "post mission image"
         private const val EVENT_POST_SYNC_GAME_INFO = "post sync game info"
+
+        private const val EVENT_POST_RADIO = "post radio"
         private const val EVENT_POST_RESET_GAME = "post reset game"
         private const val EVENT_POST_AFTER_GAME_END = "post after game end"
         private const val EVENT_POST_DISCONNECT = "post disconnect"
@@ -39,6 +41,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         private const val EVENT_GET_BEEP_USE = "get beep use"
         private const val EVENT_GET_SYNC_GAME_INFO = "get sync game info"
         private const val EVENT_GET_SKILL_USE = "get skill use"
+        private const val EVENT_GET_RADIO = "get radio"
         private const val EVENT_GET_END_GAME = "get end game"
         private const val EVENT_GET_END_GAME_AFTER = "get end game after"
         private const val EVENT_GET_NEWS = "get news"
@@ -57,11 +60,12 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     private var onBeepReceived: ((Long, Long, Double) -> Unit)? = null
     private var onGameInfoSynced: ((JSONObject) -> Unit)? = null
     private var onSkillResult: ((String, String?, Long, String?) -> Unit)? = null
+    private var onRadioReceived: ((Long, Long) -> Unit)? = null
     private var onEndGameAfter: ((JSONObject) -> Unit)? = null
     private var onGameEnded: ((String, String) -> Unit)? = null
     private var onNewsReceived: ((Long, Long) -> Unit)? = null
-    private var onReconnected: ((Long) -> Unit)? = null
 
+    private var onReconnected: ((Long) -> Unit)? = null
     private var onBeepUse: ((org.json.JSONObject) -> Unit)? = null
 
 
@@ -217,6 +221,18 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 onSkillResult?.invoke(result, reason, policeId, startedAt)
             } catch (e: Exception) {
                 Timber.e(e, "스킬 사용 결과 파싱 실패")
+            }
+        }
+
+        on(EVENT_GET_RADIO) { args ->
+            try {
+                val data = args[0] as JSONObject
+                val gameId = data.getLong("gameId")
+                val memberId = data.getLong("memberId")
+                Timber.d("📻 무전 신호 수신: gameId=$gameId, memberId=$memberId (말하는 중)")
+                onRadioReceived?.invoke(gameId, memberId)
+            } catch (e: Exception) {
+                Timber.e(e, "📻 Radio 신호 파싱 실패")
             }
         }
 
@@ -438,6 +454,23 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     }
 
     /**
+    * ✅ Radio 송신 (PTT 눌렀을 때)
+    */
+    fun sendRadio() {
+        val gameId = currentGameId ?: run {
+            Timber.e("gameId가 없어서 Radio 전송 불가")
+            return
+        }
+
+        val data = JSONObject().apply {
+            put("gameId", gameId)
+        }
+
+        emit(EVENT_POST_RADIO, data)
+        Timber.d("📻 Radio 송신: gameId=$gameId")
+    }
+
+    /**
      * 게임 종료 후 상세 결과 요청
      */
     fun postAfterGameEnd(gameId: Long) {
@@ -498,6 +531,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onSkillResult = callback
     }
 
+    fun setOnRadioReceived(callback: (gameId: Long, memberId: Long) -> Unit) {
+        onRadioReceived = callback
+    }
 
     fun setOnEndGameAfter(callback: (JSONObject) -> Unit) {
         onEndGameAfter = callback
@@ -531,6 +567,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onBeepReceived = null
         onGameInfoSynced = null
         onSkillResult = null
+        onRadioReceived = null
         onGameEnded = null
     }
 
@@ -547,6 +584,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         off(EVENT_GET_BEEP_USE)
         off(EVENT_GET_SYNC_GAME_INFO)
         off(EVENT_GET_SKILL_USE)
+        off(EVENT_GET_RADIO)
         off(EVENT_GET_END_GAME)
     }
 }
