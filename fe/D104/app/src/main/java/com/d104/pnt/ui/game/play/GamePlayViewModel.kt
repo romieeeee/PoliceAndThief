@@ -12,6 +12,7 @@ import com.d104.pnt.util.getSingleLocation
 import com.d104.pnt.util.socket.GameSocketManager
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,8 +46,23 @@ class GamePlayViewModel @Inject constructor(
     private val _thiefMembers = MutableStateFlow<List<GameMemberSocketDto>>(emptyList())
     val thiefMembers: StateFlow<List<GameMemberSocketDto>> = _thiefMembers.asStateFlow()
 
+    private val _isOutOfBoundary = MutableStateFlow(false)
+    val isOutOfBoundary: StateFlow<Boolean> = _isOutOfBoundary.asStateFlow()
+
+    private var myMemberId: Long = 0L
+    private var warningJob: Job? = null
+
     init {
+        fetchMyId()
         setupSocketListeners()
+    }
+
+    private fun fetchMyId() {
+        viewModelScope.launch {
+            authRepository.getMemberId().collect { id ->
+                if (id != 0L) myMemberId = id
+            }
+        }
     }
 
     fun initGame() {
@@ -105,37 +121,42 @@ class GamePlayViewModel @Inject constructor(
             }
         }
 
+        gameSocketManager.setOnOutOfBoundary { gameId, memberId ->
+            if (memberId == myMemberId) {
+                Timber.w("⚠️ 경고: 구역 이탈 발생! (Game: $gameId)")
+                showWarningEffect()
+            }
+        }
+
         gameSocketManager.setOnGameEnded { winnerPosition, message ->
             Timber.d("🏁 게임 종료 수신: $winnerPosition 승리")
 
-            // 2. 상세 결과 요청 (post after game end)
             gameSocketManager.postAfterGameEnd(gameId)
         }
 
-        // 3. 게임 상세 결과 수신
         gameSocketManager.setOnEndGameAfter { data ->
             viewModelScope.launch {
                 // 상세 결과를 저장하거나 처리 (MVP 정보 등)
                 // data.optJSONObject("mvp") ...
 
-                // 4. 뉴스 화면으로 이동 이벤트 발생
+                // 뉴스 화면으로 이동 이벤트 발생
                 _uiEvent.emit(GamePlayUiEvent.NavigateToNews(gameId))
             }
         }
     }
 
+    private fun showWarningEffect() {
+        warningJob?.cancel()
+        warningJob = viewModelScope.launch {
+            _isOutOfBoundary.value = true
+            delay(3000) // 3초간 유지
+            _isOutOfBoundary.value = false
+        }
+    }
+
     private fun updateMembersList(newList: List<GameMemberSocketDto>) {
         _allMembers.value = newList
-
-        newList.forEach { member ->
-            Timber.d("🕵️ 멤버 확인: ${member.nickname} / 포지션: [${member.position}] / 상태: ${member.rawStatus}")
-        }
-
-        _thiefMembers.value = newList.filter {
-            it.position.equals("THIEF", ignoreCase = true)
-        }
-
-        Timber.d("📋 필터링된 도둑 수: ${_thiefMembers.value.size}명")
+        _thiefMembers.value = newList.filter { it.position.equals("THIEF", ignoreCase = true) }
     }
 
     fun setDefaultArea(context: Context) {
