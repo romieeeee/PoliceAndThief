@@ -45,6 +45,19 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _isOutOfBoundary = MutableStateFlow(false)
     override val isOutOfBoundary = _isOutOfBoundary.asStateFlow()
 
+    private val _myMemberId = MutableStateFlow(0L)
+    override val myMemberId = _myMemberId.asStateFlow()
+
+    private val _myRole = MutableStateFlow("")
+    override val myRole = _myRole.asStateFlow()
+
+    override fun setMemberId(memberId: Long) {
+        _myMemberId.value = memberId
+    }
+
+    override fun setFinalRole(role: String) {
+        _myRole.value = role
+    }
 
     private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var gpsJob: Job? = null
@@ -52,15 +65,11 @@ class GameSessionRepositoryImpl @Inject constructor(
     private var gameStartTime: Long = 0L
 
     override fun gameInit(){
-//        // 1. 기존 리스너 정리 (혹시 남아있을 수 있으므로)
-//        gameSocketManager.removeAllListeners()
-//        // 2. 리스너 등록
-//        setupSocketListeners()
-//        // 3. 정보 동기화 요청 (약간의 딜레이 후)
         repositoryScope.launch {
             delay(500L)
             gameSocketManager.syncGameInfo()
         }
+        stepSensorManager.startListening()
     }
 
     override fun connectAndJoin(gameId: Long) {
@@ -96,17 +105,11 @@ class GameSessionRepositoryImpl @Inject constructor(
                 return@launch
             }
 
-            // 3. 리스너 세팅 (기존 것 지우고 새로 등록)
-//            gameSocketManager.removeAllListeners()
-//            setupSocketListeners() // 여기에 setOnGameStarted 등 포함됨
 
             // 4. 게임 입장 요청
             Timber.d("socket 🚪 게임($gameId) 입장 요청")
             gameSocketManager.joinGame(gameId)
 
-            // 5. [안전장치] 방장이 5초 이벤트를 놓쳤을 경우를 대비한 동기화 요청
-//            delay(500)
-//            gameSocketManager.syncGameInfo()
         }
     }
 
@@ -116,6 +119,9 @@ class GameSessionRepositoryImpl @Inject constructor(
                 // 뷰모델에게 "넘어가라"고 신호 보냄
                 _eventFlow.emit(GameSessionEvent.GameStarted(gameId, startTime))
             }
+        }
+        gameSocketManager.setOnGpsReceived {cctvThiefId, skillUsedAt, sec, locations ->
+            Timber.d("socket GPS 수신: ${sec}초 경과, 위치 목록${locations}")
         }
 
         gameSocketManager.setOnJoinedRoom { gameId, memberId, message -> }
@@ -182,7 +188,7 @@ class GameSessionRepositoryImpl @Inject constructor(
 
         gpsJob?.cancel()
 
-        // 걸음 수 리셋 (이전에 만든 기능 활용)
+        // 걸음 수 리셋
         stepSensorManager.resetGameSteps()
         gameStartTime = System.currentTimeMillis()
 
@@ -194,8 +200,9 @@ class GameSessionRepositoryImpl @Inject constructor(
                 val steps = stepSensorManager.stepCountFlow.value
 
                 if (location != null) {
-                    val longestSurvived =
+                    val longestSurvived = if (_myRole.value == "THIEF") {
                         ((System.currentTimeMillis() - gameStartTime) / 1000).toInt()
+                    } else 0
 
                     gameSocketManager.sendGPS(
                         lat = location.latitude,
@@ -215,6 +222,7 @@ class GameSessionRepositoryImpl @Inject constructor(
         gpsJob?.cancel()
         gpsJob = null
         gameStartTime = 0L
+        stepSensorManager.stopListening()
         Timber.d("socket 레포지토리: GPS 전송 중단")
     }
 
