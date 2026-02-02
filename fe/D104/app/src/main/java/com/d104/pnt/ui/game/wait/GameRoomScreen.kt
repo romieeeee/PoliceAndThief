@@ -116,7 +116,7 @@ fun GameRoomScreen(
 
     val thiefCount = players.count { it.role == GameRole.THIEF && !it.isChangingRole }
 
-    val anyCount = 0 // TODO: ANY 카운팅 수정 필요
+    val anyCount = players.count { it.role == GameRole.ANY && !it.isChangingRole }
 
     val isAllReady = players.isNotEmpty() && players.filter { it.id != myMemberId }.all {
         it.isReady && !it.isChangingRole && it.role != GameRole.ANY && it.role != GameRole.UNDECIDED

@@ -32,6 +32,11 @@ class WalkieViewModel @Inject constructor(
      * 무전기 연결
      */
     fun connect(serverUrl: String, token: String, roomName: String) {
+        if (serverUrl == "mock" || serverUrl.isEmpty()) {
+            Timber.e("⚠️ 워키토키 주소가 유효하지 않아 연결을 건너뜁니다.")
+            return
+        }
+
         viewModelScope.launch {
             try {
                 _walkieState.value = WalkieState.Connecting

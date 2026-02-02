@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 class StepSensorManager @Inject constructor(
     @ApplicationContext private val context: Context
-): SensorEventListener {
+) : SensorEventListener {
     private val sensorManager = ContextCompat.getSystemService(context, SensorManager::class.java)
     private val stepSensor = sensorManager!!.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
 
@@ -39,7 +39,7 @@ class StepSensorManager @Inject constructor(
     }
 
     fun stopListening() {
-        sensorManager.unregisterListener(this)
+        sensorManager?.unregisterListener(this)
     }
 
     fun resetGameSteps() {
@@ -71,10 +71,10 @@ class StepSensorManager @Inject constructor(
                 }
 
                 _stepCountFlow.value = stepsInGame
-                // Timber.d("게임 내 걸음 수: $stepsInGame (총: $currentTotalSteps, 기준: $initialSteps)")
+                Timber.d("게임 내 걸음 수: $stepsInGame (총: $currentTotalSteps, 기준: $initialSteps)")
             }
         }
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {  }
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 }

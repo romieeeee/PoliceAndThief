@@ -2,8 +2,12 @@ package com.d104.pnt.ui.game.play
 
 import android.content.Intent
 import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,6 +31,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,10 +50,12 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
+import com.d104.pnt.data.repository.GameSessionEvent
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.service.location.LocationService
 import com.d104.pnt.ui.component.ContDownUI
 import com.d104.pnt.ui.component.ExpandableCard
+import com.d104.pnt.ui.component.GameEndOverlay
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.game.play.PhoneScreen.THIEF_LIST
@@ -58,8 +64,8 @@ import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieScreen
 import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
-import com.d104.pnt.util.GameFeedbackManager
 import com.d104.pnt.ui.theme.PixelFont
+import com.d104.pnt.util.GameFeedbackManager
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -69,12 +75,15 @@ import timber.log.Timber
 fun GamePlayScreen(
     gameId: Long,
     role: GameRole,
-    onGameEnd: (Long) -> Unit,
+    onBackToHome: () -> Unit,
+    onNavigateToLoading: (Long) -> Unit,
     goToCamera: () -> Unit,
     viewModel: GamePlayViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    var backPressedTime by remember { mutableLongStateOf(0L) }
 
     var clicked by remember { mutableStateOf(false) }
     var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
@@ -86,6 +95,8 @@ fun GamePlayScreen(
     val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
 
     val isOutOfBoundary by viewModel.isOutOfBoundary.collectAsStateWithLifecycle()
+
+    var showGameOverOverlay by remember { mutableStateOf(false) }
 
     var showThiefEscaped by remember { mutableStateOf(false) }
     var escapedThiefNickname by remember { mutableStateOf("") }
@@ -121,6 +132,21 @@ fun GamePlayScreen(
     // ===== TEST ONLY (BEEP) END ===============================
     // =========================================================
 
+
+    BackHandler {
+        if (System.currentTimeMillis() - backPressedTime <= 1500) {
+            viewModel.manualLeaveGame()
+            onBackToHome()
+        } else {
+            backPressedTime = System.currentTimeMillis()
+            Toast.makeText(
+                context,
+                "한 번 더 누르면 게임에서 나갑니다",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     // 위치서비스 시작 / 종료
     DisposableEffect(Unit) {
         val serviceIntent = Intent(context, LocationService::class.java).apply {
@@ -138,21 +164,29 @@ fun GamePlayScreen(
         }
     }
 
-    // 게임 초기화
-    // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
     LaunchedEffect(Unit) {
-        viewModel.setDefaultArea(context)
         viewModel.initGame()
 
         viewModel.uiEvent.collect { event ->
-            when (event) {
-                is GamePlayUiEvent.NavigateToNews -> {
-                    onGameEnd(event.gameId)
-                }
+            if (event is GameSessionEvent.NavigateToLoading) {
+                showGameOverOverlay = true
 
-                is GamePlayUiEvent.ThiefEscaped -> {
-                }
+                delay(5000L)
+
+                onNavigateToLoading(event.gameId)
             }
+        }
+    }
+
+    // beep 이벤트 collect (도둑만)
+    LaunchedEffect(role) {
+        if (role != GameRole.THIEF) return@LaunchedEffect
+
+        viewModel.beepEvent.collect { beep ->
+            Timber.d("🚨 beepEvent: policeId=${beep.policeId}, thiefId=${beep.thiefId}, distance=${beep.distance}")
+
+            // distance 기반 난이도 패턴 적용
+            feedbackManager.playBeepAlert(distance = beep.distance)
         }
     }
 
@@ -172,18 +206,6 @@ fun GamePlayScreen(
             } else {
                 delay(100)
             }
-        }
-    }
-
-    // ✅ beep 이벤트 collect (도둑만)
-    LaunchedEffect(role) {
-        if (role != GameRole.THIEF) return@LaunchedEffect
-
-        viewModel.beepEvent.collect { beep ->
-            Timber.d("🚨 beepEvent: policeId=${beep.policeId}, thiefId=${beep.thiefId}, distance=${beep.distance}")
-
-            // distance 기반 난이도 패턴 적용
-            feedbackManager.playBeepAlert(distance = beep.distance)
         }
     }
 
@@ -254,6 +276,7 @@ fun GamePlayScreen(
                     onClick = {
                         phoneScreen = PhoneScreen.MAP
                         clicked = !clicked
+
                     }
                 ) {
                     Icon(
@@ -299,6 +322,8 @@ fun GamePlayScreen(
                         )
                     }
                 }
+
+
             }
 
             // 중앙 컨텐츠
@@ -320,6 +345,7 @@ fun GamePlayScreen(
                     role = role,
                     memberId = 16L // TODO: 여기에 본인 멤버 아이디 넣기
                 )
+
             }
         }
 
@@ -389,19 +415,24 @@ fun GamePlayScreen(
                         }
                     }
 
+                    // 마지막 아이템 뒤 여백 추가
                     item {
                         Spacer(modifier = Modifier.height(100.dp))
                     }
                 }
             }
+
         } else {
             WalkieBottomSheet {
                 WalkieTalkieScreen(
                     gameId = "1f",
                     teamType = "police"
                 )
+
             }
+
         }
+
     }
 
     if (clicked) {
@@ -426,6 +457,7 @@ fun GamePlayScreen(
                     prisonLocation!!.latitude,
                     prisonLocation!!.longitude
                 ),
+
                 thiefMembers = thiefMembers
             )
         }
@@ -508,6 +540,13 @@ fun GamePlayScreen(
                 textAlign = TextAlign.Center
             )
         }
+    }
+
+    AnimatedVisibility(
+        visible = showGameOverOverlay,
+        enter = slideInHorizontally() + fadeIn()
+    ) {
+        GameEndOverlay()
     }
 }
 
