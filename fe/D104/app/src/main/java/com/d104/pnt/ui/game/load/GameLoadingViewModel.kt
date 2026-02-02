@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.navigation.NavArgs
+import com.d104.pnt.util.socket.GameSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,12 +16,13 @@ import javax.inject.Inject
 
 @HiltViewModel
 class GameLoadingViewModel @Inject constructor(
+    private val gameSocketManager: GameSocketManager,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     companion object {
         private const val KEY_ROLE = "role"
-        private const val TOTAL_SECONDS = 5
+        private const val TOTAL_SECONDS = 60
     }
 
     // Navigation argument에서 role 가져오기
@@ -36,9 +39,24 @@ class GameLoadingViewModel @Inject constructor(
     private val _message = MutableStateFlow(getInitialMessage())
     val message: StateFlow<String> = _message
 
+    // ⭐ 실제 게임 시작 시간 추적
+    private var gameStartTime: Long? = null
+
     init {
         Timber.d("GameLoadingViewModel initialized with role: $role")
+
+        setupGameStartListener()
+
         startCountdown()
+    }
+
+    private fun setupGameStartListener() {
+        gameSocketManager.setOnGameStarted { gameId, startTime ->
+            Timber.d("🏁 [Loading] 게임 시작 신호 수신: $startTime")
+            gameStartTime = System.currentTimeMillis()
+            // ⭐ 서버 시작과 동기화 - 남은 시간 재조정
+            _remainingTime.value = TOTAL_SECONDS
+        }
     }
 
     private fun startCountdown() {
@@ -49,7 +67,7 @@ class GameLoadingViewModel @Inject constructor(
                 updateMessage()
             }
             _isFinished.value = true
-            Timber.d("Countdown finished")
+            Timber.d("✅ 도둑 도망 시간 종료 - 인게임 진입")
         }
     }
 

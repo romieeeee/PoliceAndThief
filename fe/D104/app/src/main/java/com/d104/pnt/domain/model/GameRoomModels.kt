@@ -1,7 +1,5 @@
-package com.d104.pnt.ui.game.wait
-
+package com.d104.pnt.domain.model
 import com.d104.pnt.data.remote.model.request.Location
-import com.d104.pnt.domain.model.GameRole
 
 data class WaitingPlayer(
     val id: Long,
@@ -26,11 +24,11 @@ data class GameRoomInfoState(
 )
 
 // UI 이벤트 정의
-sealed interface GameWaitingUiEvent {
-    data class NavigateToHome(val message: String? = null) : GameWaitingUiEvent
+sealed interface GameRoomUiEvent {
+    data class NavigateToHome(val message: String? = null) : GameRoomUiEvent
     data class NavigateToGame(
         val roomId: Long,
         val role: String
-    ) : GameWaitingUiEvent
+    ) : GameRoomUiEvent
 
 }

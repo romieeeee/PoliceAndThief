@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,10 +21,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
+import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.ui.component.ContDownUI
 
 @Composable
 fun GameLoadingScreen(
+    roomId: Long,
+    role: GameRole,
     viewModel: GameLoadingViewModel = hiltViewModel(),
     onLoadingComplete: (gameId: Long) -> Unit
 ) {
@@ -33,7 +37,7 @@ fun GameLoadingScreen(
 
     LaunchedEffect(isFinished) {
         if (isFinished) {
-            onLoadingComplete(1L) // TODO: 실제 gameId 연결
+            onLoadingComplete(roomId)
         }
     }
 
@@ -53,8 +57,6 @@ fun GameLoadingScreen(
             verticalArrangement = Arrangement.Center
         ) {
 
-            // TODO: 경찰 도둑 애니메이션 (나중에 GIF로 교체 가능)
-
             ContDownUI(
                 remainingSeconds = remainingTime
             )
@@ -68,6 +70,10 @@ fun GameLoadingScreen(
                 painter = painterResource(R.drawable.img_pnt_run),
                 contentDescription = null,
                 contentScale = ContentScale.Crop
+            )
+
+            Text(
+                text = role.description
             )
         }
     }
