@@ -19,4 +19,7 @@ public interface GameNewsRepository extends JpaRepository<GameNews, Long> {
 	@Modifying(clearAutomatically = true)
 	@Query("UPDATE GameNews n SET n.isDeleted = true WHERE n.game.id = :gameId")
 	void softDeleteAllByGameId(@Param("gameId") Long gameId);
+
+	// 개발 용, 게임방 삭제할때 함께 지워지도록
+	void deleteByGameId(Long gameId);
 }
