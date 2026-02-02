@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 
-dotenv.config();
+if (process.env.NODE_ENV !== 'production') {
+    dotenv.config();
+}
 
 const HOST = process.env.MQ_HOST;
 const PORT = process.env.MQ_PORT;

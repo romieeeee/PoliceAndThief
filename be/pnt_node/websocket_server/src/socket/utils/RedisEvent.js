@@ -1,6 +1,6 @@
 import redisDB from "../../global/db/redis/RedisDB.js";
 import expiredChannel from "./channels/ExpiredChannel.js";
-import { GpsChannel } from "./channels/GpsChannel.js";
+
 import { ChatRoomService } from "../chats/application/ChatRoomService.js";
 import { WebSocketReconnect } from "./reconnect/ReconnectCacheExpired.js";
 
@@ -12,13 +12,12 @@ export class RedisEvent {
         this.readyRoomIo = readyRoomIo;
         this.gameIo = gameIo;
         this.chatRoomService = new ChatRoomService();
-        this.gpsChannel = new GpsChannel(this.gameIo);
+
         this.webSocketReconnect = new WebSocketReconnect(chatIo, readyRoomIo, gameIo);
     }
 
     listen = async () => {
-        // 1. GPS Channel
-        this.gpsChannel.start();
+
 
         // 2. 만료 이벤트 설정
         await this.pubClient.config("SET", "notify-keyspace-events", "Ex");

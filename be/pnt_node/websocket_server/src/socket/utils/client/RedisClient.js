@@ -426,6 +426,7 @@ export class RedisClient {
         return `room:game:end:${gameId}`;
     }
 
+
     getGameTimerLock = async (gameId) => {
         return await this.pubClient.get(this.getGameTimerLockKeyString(gameId));
     }
@@ -437,6 +438,26 @@ export class RedisClient {
     getGameTimerLockKeyString = (gameId) => {
         return `room:game:timer:lock:${gameId}`;
     }
+
+    /**
+     * Active Game Management for GPS Worker
+     */
+    addActiveGame = async (gameId) => {
+        await this.pubClient.sadd(this.getActiveGameKeyString(), gameId);
+    }
+
+    removeActiveGame = async (gameId) => {
+        await this.pubClient.srem(this.getActiveGameKeyString(), gameId);
+    }
+
+    getActiveGames = async () => {
+        return await this.pubClient.smembers(this.getActiveGameKeyString());
+    }
+
+    getActiveGameKeyString = () => {
+        return "room:game:active:list";
+    }
+
 
 
     getPenaltyKeyString = (gameId, memberId) => {
