@@ -4,7 +4,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -109,20 +110,20 @@ private fun PttCircle(
     var isPressed by remember { mutableStateOf(false) }
 
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 1.06f else 1f,
-        animationSpec = tween(durationMillis = 120),
+        targetValue = if (isPressed && !isSomeoneTalking) 1.1f else 1f,
+        animationSpec = tween(durationMillis = 80),
         label = "ptt-scale"
     )
 
     val circleColor = when {
-        isTalking -> WalkieColor.Danger // 내가 말하는 중 - 빨강
-        isSomeoneTalking -> Color(0xFFFFA500) // 다른 사람 말하는 중 - 주황
-        else -> WalkieColor.Panel // 대기 중 - 회색
+        isSomeoneTalking -> Color(0xFFFFA500) // 남이 말하면 주황색
+        isPressed || isTalking -> WalkieColor.Danger
+        else -> WalkieColor.Panel
     }
 
     val displayText = when {
-        isTalking -> "송신 중…"
         isSomeoneTalking -> "다른 경찰 송신 중"
+        isPressed || isTalking -> "송신 중…"
         else -> "누르고 말하세요"
     }
 
@@ -134,29 +135,25 @@ private fun PttCircle(
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
+                alpha = if (isSomeoneTalking) 0.6f else 1f
             }
             .pointerInput(isSomeoneTalking) {
-                detectTapGestures(
-                    onPress = {
-                        if (isSomeoneTalking) {
-                            Timber.d("📻 다른 경찰 송신 중 - 버튼 무시")
-                            return@detectTapGestures
-                        }
+                if (isSomeoneTalking) return@pointerInput
 
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitFirstDown()
                         isPressed = true
                         onDown()
 
-                        tryAwaitRelease()
+                        waitForUpOrCancellation()
 
                         isPressed = false
                         onUp()
                     }
-                )
+                }
             }
-            .background(
-                color = circleColor,
-                shape = CircleShape
-            ),
+            .background(color = circleColor, shape = CircleShape),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

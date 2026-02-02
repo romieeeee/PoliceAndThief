@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -108,8 +109,11 @@ class GamePlayViewModel @Inject constructor(
     private var myMemberId: Long = 0L
 
     private var warningJob: Job? = null
+    private var pttHeartbeatJob: Job? = null
+    private var radioTimeoutJob: Job? = null
 
     init {
+        fetchMyId()
         setupSocketListeners()
         gameSessionRepository.gameInit()
         observeRepositoryEvents()
@@ -228,12 +232,8 @@ class GamePlayViewModel @Inject constructor(
             }
         }
 
-        gameSocketManager.setOnRadioReceived { gameId, memberId ->
-            viewModelScope.launch {
-                Timber.d("📻 다른 경찰(memberId=$memberId)이 말하기 시작")
-                _isSomeoneTalking.value = true
-                _talkingMemberId.value = memberId
-            }
+        gameSocketManager.setOnRadioReceived { _, memberId ->
+            handleRadioSignal(memberId)
         }
     }
 
@@ -272,6 +272,7 @@ class GamePlayViewModel @Inject constructor(
             }
         }
     }
+
 
     fun manualLeaveGame() {
         viewModelScope.launch {
@@ -351,18 +352,41 @@ class GamePlayViewModel @Inject constructor(
         }
     }
 
+    private fun handleRadioSignal(memberId: Long) {
+        // 1. 내 아이디면 무시 (내가 보낸 신호에 내가 반응하지 않게)
+        if (memberId == myMemberId || myMemberId == 0L) return
+
+        viewModelScope.launch {
+            // 2. 상태 즉시 변경 (누군가 말하고 있음)
+            _isSomeoneTalking.value = true
+            _talkingMemberId.value = memberId
+
+            // 3. 타이머 리셋: 1.5초(주기+여유분) 동안 다음 신호가 안 오면 종료로 간주
+            radioTimeoutJob?.cancel()
+            radioTimeoutJob = launch {
+                delay(1500)
+                _isSomeoneTalking.value = false
+                _talkingMemberId.value = null
+                Timber.d("📻 무전 신호 끊김 (자동 종료)")
+            }
+        }
+    }
+
     fun startTalking() {
         if (roleString != "POLICE") return
 
         viewModelScope.launch {
             try {
-                // 1. 소켓으로 "내가 말한다" 신호 보내기
-                gameSocketManager.sendRadio()
+                launch { walkieRepository.enableMic() }
 
-                // 2. LiveKit 마이크 켜기
-                walkieRepository.enableMic()
-
-                Timber.d("🎙️ 송신 시작 (소켓 + LiveKit)")
+                pttHeartbeatJob?.cancel()
+                pttHeartbeatJob = launch {
+                    while (isActive) {
+                        gameSocketManager.sendRadio()
+                        Timber.d("📻 [PTT] Heartbeat 송신 중...")
+                        delay(1000) // 서버 전송 주기
+                    }
+                }
             } catch (e: Exception) {
                 Timber.e(e, "🎙️ PTT 시작 실패")
             }
@@ -374,14 +398,14 @@ class GamePlayViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                // LiveKit 마이크만 끄기 (소켓은 post radio 없음)
+                // 1. Heartbeat 중단
+                pttHeartbeatJob?.cancel()
+                pttHeartbeatJob = null
+
+                // 2. LiveKit 마이크 비활성화
                 walkieRepository.disableMic()
 
-                // 내 상태 초기화
-                _isSomeoneTalking.value = false
-                _talkingMemberId.value = null
-
-                Timber.d("🎙️ 송신 중지")
+                Timber.d("🎙️ [PTT] 송신 중지")
             } catch (e: Exception) {
                 Timber.e(e, "🎙️ PTT 중지 실패")
             }
