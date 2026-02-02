@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.game.end.ainews
+package com.d104.pnt.ui.game.end.news
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee

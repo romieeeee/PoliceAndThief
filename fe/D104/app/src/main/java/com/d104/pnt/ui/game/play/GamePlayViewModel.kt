@@ -20,6 +20,7 @@ import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,7 +47,11 @@ class GamePlayViewModel @Inject constructor(
     private val gameId: Long = savedStateHandle.get<Long>(NavArgs.GAME_ID) ?: 0L
 
     // UI 이벤트
-    private val _uiEvent = MutableSharedFlow<GamePlayUiEvent>()
+    private val _uiEvent = MutableSharedFlow<GameSessionEvent>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
     val uiEvent = _uiEvent.asSharedFlow()
     val isOutOfBoundary = gameSessionRepository.isOutOfBoundary
 
@@ -57,8 +62,6 @@ class GamePlayViewModel @Inject constructor(
     private val _allMembers = MutableStateFlow<List<GameMemberSocketDto>>(emptyList())
 
     val members = gameSessionRepository.members
-
-//    val gameRepoId = gameSessionRepository.gameId
 
     val gameStatus = gameSessionRepository.gameStatus
 
@@ -79,33 +82,29 @@ class GamePlayViewModel @Inject constructor(
     private var warningJob: Job? = null
 
     init {
-        setupSocketListeners()
         gameSessionRepository.gameInit()
         observeRepositoryEvents()
         startService(GameActiveService.ACTION_START)
-        Timber.d("GameAction 시작")
     }
 
     private fun observeRepositoryEvents() {
         viewModelScope.launch {
             gameSessionRepository.eventFlow.collect { event ->
                 when (event) {
+                    is GameSessionEvent.NavigateToLoading -> {
+                        _uiEvent.emit(event)
+                    }
+
                     is GameSessionEvent.NavigateToNews -> {
-                        Timber.d("📰 뉴스 화면 이동 이벤트 수신")
-                        _uiEvent.emit(GamePlayUiEvent.NavigateToNews(event.gameId))
+                        _uiEvent.emit(event)
                     }
 
                     is GameSessionEvent.GameStarted -> {
-                        // 혹시 재접속해서 들어온 경우 여기서 서비스 시작 가능
                         startService(GameActiveService.ACTION_START)
                     }
 
-                    is GameSessionEvent.GameEnded -> {
-                        Timber.d("SessionEvent: GameEnded")
-                    }
-
-                    is GameSessionEvent.ErrorOccurred -> {
-                        Timber.d("SessionEvent: ErrorOccurred - ${event.message}")
+                    else -> {
+                        Timber.d("기타 이벤트 처리: $event")
                     }
                 }
             }
@@ -126,78 +125,13 @@ class GamePlayViewModel @Inject constructor(
             val token = authRepository.getAccessToken().first()
             if (token.isNotEmpty() && !gameSocketManager.isConnected()) {
                 gameSocketManager.connect(token)
-
                 while (!gameSocketManager.isConnected()) {
                     delay(100)
                 }
             }
             gameSocketManager.joinGame(gameId)
-
             delay(300)
             gameSocketManager.syncGameInfo()
-        }
-    }
-
-    private fun setupSocketListeners() {
-        // 전체 게임 정보 동기화
-        gameSocketManager.setOnGameInfoSynced { data ->
-            viewModelScope.launch {
-                try {
-                    val membersArray = data.optJSONArray("members")
-                    if (membersArray != null) {
-                        val newMembers = mutableListOf<GameMemberSocketDto>()
-                        for (i in 0 until membersArray.length()) {
-                            val memberJson = membersArray.getJSONObject(i)
-                            newMembers.add(GameMemberSocketDto.fromJson(memberJson))
-                        }
-
-                        updateMembersList(newMembers)
-                        Timber.d("GamePlayViewModel: 전체 멤버 동기화 완료 (${newMembers.size}명)")
-                    }
-                } catch (e: Exception) {
-                    Timber.e(e, "GamePlayViewModel: 게임 정보 파싱 실패")
-                }
-            }
-        }
-
-        // 실시간 상태 변경
-        gameSocketManager.setOnMemberStatusChanged { gameId, thiefId, status, arrestedAt ->
-            viewModelScope.launch {
-                val currentList = _allMembers.value.toMutableList()
-                val targetIndex = currentList.indexOfFirst { it.memberId == thiefId }
-
-                if (targetIndex != -1) {
-                    val oldData = currentList[targetIndex]
-                    val newData = oldData.copy(rawStatus = status)
-                    currentList[targetIndex] = newData
-
-                    updateMembersList(currentList)
-                    Timber.d("GamePlayViewModel: 도둑($thiefId) 상태 변경 -> $status")
-                }
-            }
-        }
-
-        gameSocketManager.setOnGameEnded { winnerPosition, message ->
-            Timber.d("🏁 게임 종료 수신: $winnerPosition 승리")
-
-            // 2. 상세 결과 요청 (post after game end)
-            gameSocketManager.postAfterGameEnd(gameId)
-
-        }
-
-        // 3. 게임 상세 결과 수신
-        gameSocketManager.setOnEndGameAfter { data ->
-            viewModelScope.launch {
-                // 상세 결과를 저장하거나 처리 (MVP 정보 등)
-                // data.optJSONObject("mvp") ...
-
-                // 4. 뉴스 화면으로 이동 이벤트 발생
-                _uiEvent.emit(GamePlayUiEvent.NavigateToNews(gameId))
-
-                viewModelScope.launch {
-                    gameRepository.gameHardDelete(gameId) // TODO: 개발용 제거
-                }
-            }
         }
     }
 
@@ -233,12 +167,7 @@ class GamePlayViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-
         startService(GameActiveService.ACTION_STOP)
-        gameSessionRepository.leaveGame()
-
-        gameSocketManager.leaveGame()
-        gameSocketManager.removeAllListeners()
     }
 
 
@@ -246,16 +175,26 @@ class GamePlayViewModel @Inject constructor(
         Intent(context, GameActiveService::class.java).also { intent ->
             intent.action = action
 
-            // Android 8.0 (Oreo) 이상 대응
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                context.startForegroundService(intent) // ★ 이걸로 바꿔야 함!
-            } else {
+            if (action == GameActiveService.ACTION_STOP) {
                 context.startService(intent)
+            } else {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+
+                }
             }
         }
     }
-}
 
-sealed class GamePlayUiEvent {
-    data class NavigateToNews(val gameId: Long) : GamePlayUiEvent()
+    fun manualLeaveGame() {
+        viewModelScope.launch {
+            Timber.d("🚪 유저가 직접 게임 종료를 선택함")
+            // 1. GPS 서비스 중단
+            startService(GameActiveService.ACTION_STOP)
+            // 2. 소켓 연결 해제 및 세션 정리 (post disconnect 포함)
+            gameSessionRepository.leaveGame()
+        }
+    }
 }

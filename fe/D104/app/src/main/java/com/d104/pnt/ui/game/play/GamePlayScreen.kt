@@ -2,8 +2,12 @@ package com.d104.pnt.ui.game.play
 
 import android.content.Intent
 import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,6 +31,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,10 +49,12 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
+import com.d104.pnt.data.repository.GameSessionEvent
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.service.location.LocationService
 import com.d104.pnt.ui.component.ContDownUI
 import com.d104.pnt.ui.component.ExpandableCard
+import com.d104.pnt.ui.component.GameEndOverlay
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.game.play.PhoneScreen.THIEF_LIST
@@ -59,16 +65,19 @@ import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
 import com.d104.pnt.ui.theme.PixelFont
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.delay
 
 @Composable
 fun GamePlayScreen(
     gameId: Long,
     role: GameRole,
-    onGameEnd: (Long) -> Unit,
+    onBackToHome: () -> Unit,
+    onNavigateToLoading: (Long) -> Unit,
     goToCamera: () -> Unit,
     viewModel: GamePlayViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    var backPressedTime by remember { mutableLongStateOf(0L) }
 
     var clicked by remember { mutableStateOf(false) }
     var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
@@ -80,6 +89,42 @@ fun GamePlayScreen(
     val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
 
     val isOutOfBoundary by viewModel.isOutOfBoundary.collectAsStateWithLifecycle()
+
+    var showGameOverOverlay by remember { mutableStateOf(false) }
+
+    BackHandler {
+        if (System.currentTimeMillis() - backPressedTime <= 1500) {
+            viewModel.manualLeaveGame()
+            onBackToHome()
+        } else {
+            backPressedTime = System.currentTimeMillis()
+            Toast.makeText(
+                context,
+                "한 번 더 누르면 게임에서 나갑니다",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    // 게임 초기화
+    // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
+    LaunchedEffect(Unit) {
+        viewModel.setDefaultArea(context)
+        viewModel.initGame()
+
+        viewModel.uiEvent.collect { event ->
+            if (event is GameSessionEvent.NavigateToLoading) {
+                // 2. 신호 오면 즉시 이동하지 말고 "게임 종료" 띄우기
+                showGameOverOverlay = true
+
+                // 3. 3초 동안 유저에게 보여줌 (이게 "샥" 하는 연출 시간)
+                delay(3000L)
+
+                // 4. 연출이 끝나면 그때서야 로딩 화면으로 이동
+                onNavigateToLoading(event.gameId)
+            }
+        }
+    }
 
     // 위치서비스 시작 / 종료
     DisposableEffect(Unit) {
@@ -98,21 +143,6 @@ fun GamePlayScreen(
         }
     }
 
-    // 게임 초기화
-    // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
-    LaunchedEffect(Unit) {
-        viewModel.setDefaultArea(context)
-        viewModel.initGame()
-
-        viewModel.uiEvent.collect { event ->
-            when (event) {
-                is GamePlayUiEvent.NavigateToNews -> {
-                    // 게임 종료 후 뉴스 화면으로 이동
-                    onGameEnd(event.gameId)
-                }
-            }
-        }
-    }
 
     Surface(modifier = Modifier.fillMaxSize()) {
         // 배경
@@ -326,7 +356,7 @@ fun GamePlayScreen(
         }
     }
 
-    // 경기구역이탈
+// 경기구역이탈
     if (isOutOfBoundary) {
         Box(
             modifier = Modifier
@@ -370,6 +400,14 @@ fun GamePlayScreen(
                 Spacer(modifier = Modifier.height(130.dp))
             }
         }
+
+    }
+
+    AnimatedVisibility(
+        visible = showGameOverOverlay,
+        enter = slideInHorizontally() + fadeIn()
+    ) {
+        GameEndOverlay()
     }
 }
 

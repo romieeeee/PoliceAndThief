@@ -43,8 +43,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         private const val EVENT_GET_END_GAME_AFTER = "get end game after"
         private const val EVENT_GET_NEWS = "get news"
         private const val EVENT_GET_RECONNECT = "reconnect"
-
-        private const val EVENT_GET_RESET_GAME = "get reset game"
     }
 
     // Callbacks
@@ -62,7 +60,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     private var onEndGameAfter: ((JSONObject) -> Unit)? = null
     private var onGameEnded: ((String, String) -> Unit)? = null
     private var onNewsReceived: ((Long, Long) -> Unit)? = null
-
     private var onReconnected: ((Long) -> Unit)? = null
 
     override fun setupCustomListeners() {
@@ -253,6 +250,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val gameId = data.getLong("gameId")
                 val newsId = data.getLong("newsId")
 
+                Timber.d("$data")
                 Timber.d("📰 뉴스 생성 완료: gameId=$gameId, newsId=$newsId")
                 onNewsReceived?.invoke(gameId, newsId)
             } catch (e: Exception) {
@@ -508,6 +506,14 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     fun setOnNewsReceived(callback: (gameId: Long, newsId: Long) -> Unit) {
         onNewsReceived = callback
+    }
+
+    fun cleanup() {
+        Timber.d("🧹 Game 소켓 완전 정리")
+        clearCallbacks()
+        if (isConnected()) {
+            disconnect()
+        }
     }
 
     private fun clearCallbacks() {

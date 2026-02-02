@@ -30,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,6 +71,9 @@ enum class ReportStep { NONE, INPUT, CONFIRM, SUCCESS }
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GameResultScreen(
+    gameId: Long, // 추가
+    onBackToHome: () -> Unit, // 추가
+    onBackToWaitingRoom: (Long) -> Unit, // 추가
     isPolice: Boolean = true,
     isWin: Boolean = true,
     mvpList: List<MvpData> = listOf(
@@ -93,9 +97,16 @@ fun GameResultScreen(
     @DrawableRes tierIconRes: Int = R.drawable.img_tier_police_2,
     tierName: String = "경장",
     statsValue: String = "24명",
-    onExitClick: () -> Unit = {},
     viewModel: GameResultViewModel = hiltViewModel()
 ) {
+
+    DisposableEffect(Unit) {
+        onDispose {
+            // 게임 결과 화면 벗어나면 게임 소켓 정리
+            viewModel.cleanupGameSocket()
+        }
+    }
+
     val blinkAlpha by rememberInfiniteTransition(label = "winlose-blink")
         .animateFloat(
             initialValue = 1f,
@@ -321,18 +332,37 @@ fun GameResultScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            PixelButtonCode(
-                text = "나가기",
-                onClick = onExitClick,
-                mainColor = TextPrimary,
-                textColor = Color.Black,
-                blockHeight = 14,
-                blockWidth = 40,
-                fontSize = 20,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // ✅ 버튼 두 개 추가
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // 대기방으로 돌아가기 버튼
+                PixelButtonCode(
+                    text = "대기방",
+                    onClick = { onBackToWaitingRoom(gameId) }, // gameId == roomId
+                    mainColor = Color(0xFF6B728E),
+                    textColor = Color.White,
+                    blockHeight = 14,
+                    blockWidth = 20,
+                    fontSize = 18,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 홈으로 가기 버튼
+                PixelButtonCode(
+                    text = "홈으로",
+                    onClick = onBackToHome,
+                    mainColor = TextPrimary,
+                    textColor = Color.Black,
+                    blockHeight = 14,
+                    blockWidth = 20,
+                    fontSize = 18,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
 
         // ✅ 신고 다이얼로그 플로우 (ViewModel 상태 기반)
