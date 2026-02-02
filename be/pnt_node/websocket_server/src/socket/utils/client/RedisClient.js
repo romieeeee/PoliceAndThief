@@ -256,7 +256,7 @@ export class RedisClient {
      * news 관련
      */
     setNews = async (gameId, newsId) => {
-        await this.pubClient.set(this.getNewsKeyString(gameId), newsId, "EX", 60 * 5);
+        await this.pubClient.set(this.getNewsKeyString(gameId), newsId, "EX", 60);
     }
 
     getNews = async (gameId) => {
