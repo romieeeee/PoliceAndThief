@@ -77,7 +77,6 @@ public class GameResultServiceImpl implements GameResultService {
 
 		game.end(request.getWinTeam());
 
-		// 성능 최적화를 위해 해당 게임의 모든 멤버를 한 번에 조회하여 Map으로 변환
 		List<GameMember> allMembers = gameMemberRepository.findAllByGameId(request.getGameId());
 		Map<Long, GameMember> memberMap = allMembers.stream()
 			.collect(Collectors.toMap(GameMember::getId, Function.identity()));
@@ -108,6 +107,12 @@ public class GameResultServiceImpl implements GameResultService {
 
 			// 2-3. 누적 스탯 및 등급 업데이트
 			updateMemberGradeAndStats(stat, request.getWinTeam(), statReq.getPosition());
+		}
+
+		// 3. 게임에 참여했던 모든 멤버를 강제 퇴장(isDeleted = true) 처리
+		// 이후 대기방 재진입은 클라이언트에서 join API를 호출하여 수행
+		for (GameMember member : allMembers) {
+			member.leave();
 		}
 
 		GameSetting setting = gameSettingRepository.findByGameIdAndIsDeletedFalse(game.getId())
