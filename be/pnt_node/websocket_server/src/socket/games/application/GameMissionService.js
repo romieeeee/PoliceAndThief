@@ -13,13 +13,30 @@ export class GameMissionService {
             include: [
                 {
                     model: Mission,
-                    attributes: ["id", "description", "title"]
+                    attributes: ["id", "description", "title", "keyword"]
                 }
             ]
         });
 
         if (!res) {
             this.makeError("NotFoundException", "게임 미션 정보를 찾을 수 없습니다.", 404);
+        }
+        return res;
+    }
+
+    findMission = async (missionId) => {
+        const res = await GameMission.findOne({
+            where: {
+                id: missionId,
+                isDeleted: false,
+                include: [
+
+                ]
+            }
+        });
+
+        if (!res) {
+            this.makeError("NotFoundException", "미션 정보를 찾을 수 없습니다.", 404);
         }
         return res;
     }

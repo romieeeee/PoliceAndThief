@@ -7,6 +7,7 @@ import { GameMemberStatus } from "../../../global/db/sequelize/status/GameMember
 import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemberPosition.js";
 import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
 import { RedisClient } from "../../utils/client/RedisClient.js";
+import logger from "../../../global/config/logger.js";
 
 export class GameService {
     constructor() {
@@ -52,6 +53,8 @@ export class GameService {
                 }
             ]
         });
+
+        logger.info(`[GameService] findGame: gameId: ${gameId}, status: ${status}, res: ${JSON.stringify(res)}`);
 
         if (!res) {
             this.makeError("NotFoundException", "게임을 찾을 수 없습니다.", 404);
