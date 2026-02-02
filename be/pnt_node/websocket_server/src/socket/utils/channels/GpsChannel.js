@@ -29,11 +29,16 @@ export class GpsChannel {
 
                 if (locations.length === 0) continue;
 
+                const skillUsedAt = await this.redisClient.getSkillUsedAt(gameId);
+                const cctvUser = await this.redisClient.getCctvUser(gameId);
+
                 // 게임 시작시간
 
                 const data = {
                     gameId: gameId,
                     sec: 0,
+                    skillUsedAt: skillUsedAt ? skillUsedAt : null,
+                    cctvThiefId: cctvUser ? cctvUser : null,
                     locations: locations
                 }
 
