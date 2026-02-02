@@ -14,6 +14,7 @@ import { MQConfig } from "../../../global/mq/MQConfig.js";
 import { JwtResolver, resolveInController } from "../../../global/auth/JwtResolver.js";
 import { generateToken, generateMemberAccessToken } from "../../../global/auth/JwtProvider.js";
 import axios from "axios";
+import logger from "../../../global/config/logger.js";
 
 
 export class GameController {
@@ -58,6 +59,8 @@ export class GameController {
         const gameId = parseInt(payload.gameId);
         const memberId = parseInt(this.socket.data.memberId);
 
+        logger.info(`[GameController] joinRoom: gameId: ${gameId}, memberId: ${memberId}`);
+
         const game = await this.gameService.findGame(gameId, GameStatus.IN_GAME);
 
         if (await this.redisClient.getGameEnd(gameId)) {
@@ -101,15 +104,14 @@ export class GameController {
             connectedMembers: locations.length,
         }
 
-        // gameSetting에서 참여자 수 들고오기
-        // isGaneConnected true로 변경 => 변경이 됐는지 안됐는지 판별하여 
+        const connectedMembers = await this.redisClient.setStartedCount(gameId, memberId);
+        data.connectedMembers = connectedMembers;
+        this.io.to(gameId).emit("get join room", data);
+
         // 게임 시작 시간 db에 저장
         if (!await this.redisClient.getGameTimer(gameId)) {
-            await this.redisClient.setStarted(gameId, memberId);
             await this.startGame();
         }
-
-        this.io.to(gameId).emit("get join room", data);
     }
 
     /**
@@ -169,7 +171,7 @@ export class GameController {
         });
 
         setTimeout(async () => {
-            await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit * 60);
+            await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);
             await this.redisClient.setGameToken(gameId, generateToken(gameId, gameSetting.timeLimit), gameSetting.timeLimit);
 
             // cctv 작동
