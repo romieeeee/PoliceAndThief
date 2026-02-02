@@ -105,7 +105,7 @@ export class GameController {
             connectedMembers: locations.length,
         }
 
-        data.connectedMembers = await this.redisClient.setStartedCount(gameId, memberId);
+        await this.redisClient.setStartedCount(gameId, memberId);
         this.io.to(gameId).emit("get join room", data);
 
         // 게임 시작 시간 db에 저장
