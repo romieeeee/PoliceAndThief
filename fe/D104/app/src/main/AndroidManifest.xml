@@ -60,6 +60,10 @@
             android:name=".service.location.LocationService"
             android:exported="false"
             android:foregroundServiceType="location" />
+        <service
+            android:name=".service.game.GameActiveService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
 
         <activity
             android:name=".MainActivity"
