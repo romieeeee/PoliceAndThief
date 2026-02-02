@@ -22,4 +22,7 @@ public interface GameMissionRepository extends JpaRepository<GameMission, Long> 
 	@Query("UPDATE GameMission m SET m.status = 'IN_PROGRESS', m.completedBy = null, m.completedAt = null WHERE m.game.id = :gameId")
 	void resetAllByGameId(@Param("gameId") Long gameId);
 
+	// 개발용, 게임 ID로 미션 상태 완전 삭제
+	void deleteByGameId(Long gameId);
+
 }
