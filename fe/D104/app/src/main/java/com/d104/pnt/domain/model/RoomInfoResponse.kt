@@ -1,6 +1,5 @@
 package com.d104.pnt.domain.model
 
-import com.d104.pnt.data.remote.model.request.Location
 import com.google.gson.annotations.SerializedName
 
 data class RoomInfoResponse(

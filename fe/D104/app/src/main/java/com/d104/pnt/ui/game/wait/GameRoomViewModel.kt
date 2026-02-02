@@ -73,6 +73,8 @@ class GameRoomViewModel @Inject constructor(
     // 역할 변경 중 상태
     private val _changingRoleMemberIds = MutableStateFlow<Set<Long>>(emptySet())
 
+    private var isJoined = false // 플래그 추가
+
     init {
         roomSocketManager.currentRoomId = roomId
         setupRoomCallbacks()
@@ -90,15 +92,31 @@ class GameRoomViewModel @Inject constructor(
     }
 
     private fun syncData() {
-        viewModelScope.launch {
-            while (!roomSocketManager.isConnected()) {
-                delay(200)
-            }
+        if (isJoined) return // 이미 가입 절차 중이면 무시
+        isJoined = true
 
-            roomSocketManager.joinRoom(roomId) { success, _ ->
-                if (success) {
-                    roomSocketManager.requestRoomInfo(roomId)
-                    roomSocketManager.requestReadyInfo(roomId)
+        viewModelScope.launch {
+            val token = authRepository.getAccessToken().first()
+
+            if (token.isNotEmpty()) {
+                roomSocketManager.currentRoomId = roomId
+                roomSocketManager.connect(token)
+
+                var retryCount = 0
+                while (!roomSocketManager.isConnected() && retryCount < 50) {
+                    delay(200)
+                    retryCount++
+                }
+
+                if (roomSocketManager.isConnected()) {
+                    roomSocketManager.joinRoom(roomId) { success, _ ->
+                        if (success) {
+                            Timber.d("🌐 소켓 연결 및 방 입장 완료")
+                        }
+                    }
+                } else {
+                    Timber.e("❌ 소켓 연결 실패")
+                    _uiState.value = UiState.Error("소켓 연결에 실패했습니다.")
                 }
             }
         }
