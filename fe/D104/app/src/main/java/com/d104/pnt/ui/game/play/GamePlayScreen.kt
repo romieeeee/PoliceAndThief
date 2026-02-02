@@ -99,9 +99,7 @@ fun GamePlayScreen(
     }
 
     // 게임 초기화
-    // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
     LaunchedEffect(Unit) {
-        viewModel.setDefaultArea(context)
         viewModel.initGame()
 
         viewModel.uiEvent.collect { event ->
