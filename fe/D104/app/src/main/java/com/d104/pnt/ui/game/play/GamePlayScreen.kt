@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,8 +65,11 @@ import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieScreen
 import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
 import com.d104.pnt.ui.theme.PixelFont
+import com.d104.pnt.util.GameFeedbackManager
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Composable
 fun GamePlayScreen(
@@ -77,6 +81,8 @@ fun GamePlayScreen(
     viewModel: GamePlayViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     var backPressedTime by remember { mutableLongStateOf(0L) }
 
     var clicked by remember { mutableStateOf(false) }
@@ -92,6 +98,41 @@ fun GamePlayScreen(
 
     var showGameOverOverlay by remember { mutableStateOf(false) }
 
+    var showThiefEscaped by remember { mutableStateOf(false) }
+    var escapedThiefNickname by remember { mutableStateOf("") }
+
+    val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
+
+    // ✅ ToneGenerator 직접 생성 금지 -> GameFeedbackManager로 통일
+    // (테스트용이라도 여기서 직접 ToneGenerator 만들면 연타 시 AudioTrack(-12) 가능)
+    val feedbackManager = remember { GameFeedbackManager(context.applicationContext) }
+
+    // =========================================================
+    // ===== TEST ONLY (BEEP) START =============================
+    // 서버/소켓 이벤트 없이도 소리/진동이 나는지 확인하는 테스트 코드입니다.
+    //
+    // ✅ 사용법:
+    // - TEST_FORCE_BEEP = true  : 테스트 활성화 (도둑 화면에서만)
+    // - TEST_FORCE_BEEP = false : 테스트 비활성화 (실서버 이벤트만)
+    //
+    // ✅ 테스트 끝나면:
+    // - TEST_FORCE_BEEP를 false로 돌리거나
+    // - 이 블록(START~END) 통째로 삭제하면 됩니다.
+    // =========================================================
+    val TEST_FORCE_BEEP = false
+
+    LaunchedEffect(TEST_FORCE_BEEP, role) {
+        if (!TEST_FORCE_BEEP) return@LaunchedEffect
+        if (role != GameRole.THIEF) return@LaunchedEffect
+
+        // 화면 진입 후 2초 뒤 경고음 1번 (거리 12m 가정)
+        delay(2000)
+        feedbackManager.playBeepAlert(distance = 12.0)
+    }
+    // ===== TEST ONLY (BEEP) END ===============================
+    // =========================================================
+
+
     BackHandler {
         if (System.currentTimeMillis() - backPressedTime <= 1500) {
             viewModel.manualLeaveGame()
@@ -103,26 +144,6 @@ fun GamePlayScreen(
                 "한 번 더 누르면 게임에서 나갑니다",
                 Toast.LENGTH_SHORT
             ).show()
-        }
-    }
-
-    // 게임 초기화
-    // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
-    LaunchedEffect(Unit) {
-        viewModel.setDefaultArea(context)
-        viewModel.initGame()
-
-        viewModel.uiEvent.collect { event ->
-            if (event is GameSessionEvent.NavigateToLoading) {
-                // 2. 신호 오면 즉시 이동하지 말고 "게임 종료" 띄우기
-                showGameOverOverlay = true
-
-                // 3. 3초 동안 유저에게 보여줌 (이게 "샥" 하는 연출 시간)
-                delay(3000L)
-
-                // 4. 연출이 끝나면 그때서야 로딩 화면으로 이동
-                onNavigateToLoading(event.gameId)
-            }
         }
     }
 
@@ -143,6 +164,50 @@ fun GamePlayScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.initGame()
+
+        viewModel.uiEvent.collect { event ->
+            if (event is GameSessionEvent.NavigateToLoading) {
+                showGameOverOverlay = true
+
+                delay(5000L)
+
+                onNavigateToLoading(event.gameId)
+            }
+        }
+    }
+
+    // beep 이벤트 collect (도둑만)
+    LaunchedEffect(role) {
+        if (role != GameRole.THIEF) return@LaunchedEffect
+
+        viewModel.beepEvent.collect { beep ->
+            Timber.d("🚨 beepEvent: policeId=${beep.policeId}, thiefId=${beep.thiefId}, distance=${beep.distance}")
+
+            // distance 기반 난이도 패턴 적용
+            feedbackManager.playBeepAlert(distance = beep.distance)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            if (escapeQueue.isNotEmpty() && !showThiefEscaped) {
+                escapedThiefNickname = escapeQueue.first()
+                showThiefEscaped = true
+
+                delay(3000)
+
+                showThiefEscaped = false
+
+                viewModel.removeFirstEscape()
+
+                delay(500)
+            } else {
+                delay(100)
+            }
+        }
+    }
 
     Surface(modifier = Modifier.fillMaxSize()) {
         // 배경
@@ -154,6 +219,45 @@ fun GamePlayScreen(
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
+
+            // 상단 버튼 영역
+
+            // =========================================================
+            // ===== TEST ONLY (BEEP UI) START ==========================
+            // 화면에서 버튼 눌러서 수동으로 경고음/진동 테스트하는 UI 입니다.
+            // 필요 없으면 이 블록만 삭제하면 됩니다.
+            // =========================================================
+            if (TEST_FORCE_BEEP && role == GameRole.THIEF) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .systemBarsPadding()
+                        .padding(top = 10.dp, end = 12.dp)
+                        .clickable {
+                            // 클릭할 때마다 "아주 가까움" 패턴 테스트 (8m)
+                            scope.launch {
+                                Timber.d("🧪 TEST BEEP 버튼 클릭")
+                                feedbackManager.playBeepAlert(distance = 8.0)
+                            }
+                        }
+                ) {
+                    PixelContainer(
+                        modifier = Modifier,
+                        backgroundColor = Color.Transparent,
+                        borderColor = MissionYellow,
+                        borderWidth = 6f
+                    ) {
+                        Text(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            text = "TEST BEEP",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MissionYellow
+                        )
+                    }
+                }
+            }
+            // ===== TEST ONLY (BEEP UI) END ============================
+            // =========================================================
 
             // 상단 버튼 영역 (고정)
             Row(
@@ -209,7 +313,10 @@ fun GamePlayScreen(
                         }
                     ) {
                         Icon(
-                            painter = painterResource(if (role == GameRole.POLICE) R.drawable.ic_thief_list else R.drawable.ic_mission_list),
+                            painter = painterResource(
+                                if (role == GameRole.POLICE) R.drawable.ic_thief_list
+                                else R.drawable.ic_mission_list
+                            ),
                             contentDescription = null,
                             tint = Color.Unspecified
                         )
@@ -336,7 +443,7 @@ fun GamePlayScreen(
             contentAlignment = Alignment.Center
         ) {
             PhoneFrame(
-                screen = phoneScreen, // (변수명 screen으로 매칭)
+                screen = phoneScreen,
                 onScanSuccess = { result ->
                     phoneScreen = PhoneScreen.THIEF_LIST
                 },
@@ -356,7 +463,7 @@ fun GamePlayScreen(
         }
     }
 
-// 경기구역이탈
+    // 경기구역이탈
     if (isOutOfBoundary) {
         Box(
             modifier = Modifier
@@ -400,7 +507,39 @@ fun GamePlayScreen(
                 Spacer(modifier = Modifier.height(130.dp))
             }
         }
+    }
 
+    // 도둑 탈출 알림
+    if (showThiefEscaped && role == GameRole.POLICE) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(100f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.fillMaxHeight(0.75f))
+
+            Text(
+                text = "도둑이 탈출에\n성공했습니다!",
+                fontFamily = PixelFont,
+                color = Color.Yellow,
+                fontSize = 40.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                lineHeight = 45.sp
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = escapedThiefNickname,
+                fontFamily = PixelFont,
+                color = Color.White,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 
     AnimatedVisibility(

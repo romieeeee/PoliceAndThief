@@ -50,6 +50,20 @@ class GameSessionRepositoryImpl @Inject constructor(
 
     private var isConnecting = false
 
+    private val _myMemberId = MutableStateFlow(0L)
+    override val myMemberId = _myMemberId.asStateFlow()
+
+    private val _myRole = MutableStateFlow("")
+    override val myRole = _myRole.asStateFlow()
+
+    override fun setMemberId(memberId: Long) {
+        _myMemberId.value = memberId
+    }
+
+    override fun setFinalRole(role: String) {
+        _myRole.value = role
+    }
+
     private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var gpsJob: Job? = null
     private var warningJob: Job? = null
@@ -63,6 +77,7 @@ class GameSessionRepositoryImpl @Inject constructor(
             delay(500L)
             gameSocketManager.syncGameInfo()
         }
+        stepSensorManager.startListening()
     }
 
     override fun connectAndJoin(gameId: Long) {
@@ -101,8 +116,12 @@ class GameSessionRepositoryImpl @Inject constructor(
         gameSocketManager.setOnGameStarted { gameId, startTime ->
             _gameId.value = gameId
             repositoryScope.launch {
+                // 뷰모델에게 "넘어가라"고 신호 보냄
                 _eventFlow.emit(GameSessionEvent.GameStarted(gameId, startTime))
             }
+        }
+        gameSocketManager.setOnGpsReceived {cctvThiefId, skillUsedAt, sec, locations ->
+            Timber.d("socket GPS 수신: ${sec}초 경과, 위치 목록${locations}")
         }
 
         gameSocketManager.setOnJoinedRoom { gameId, memberId, message ->
@@ -157,7 +176,6 @@ class GameSessionRepositoryImpl @Inject constructor(
         // 상세 결과 수신 -> 이동 이벤트 발송
         gameSocketManager.setOnEndGameAfter { data ->
             repositoryScope.launch {
-                Timber.d("socket 📥 상세 결과 수신 완료")
                 _eventFlow.emit(GameSessionEvent.NavigateToLoading(_gameId.value))
             }
         }
@@ -182,7 +200,7 @@ class GameSessionRepositoryImpl @Inject constructor(
 
         gpsJob?.cancel()
 
-        // 걸음 수 리셋 (이전에 만든 기능 활용)
+        // 걸음 수 리셋
         stepSensorManager.resetGameSteps()
         gameStartTime = System.currentTimeMillis()
 
@@ -196,8 +214,9 @@ class GameSessionRepositoryImpl @Inject constructor(
                 val steps = stepSensorManager.stepCountFlow.value
 
                 if (location != null) {
-                    val longestSurvived =
+                    val longestSurvived = if (_myRole.value == "THIEF") {
                         ((System.currentTimeMillis() - gameStartTime) / 1000).toInt()
+                    } else 0
 
                     gameSocketManager.sendGPS(
                         lat = location.latitude,
@@ -217,6 +236,7 @@ class GameSessionRepositoryImpl @Inject constructor(
         gpsJob?.cancel()
         gpsJob = null
         gameStartTime = 0L
+        stepSensorManager.stopListening()
         Timber.d("socket 레포지토리: GPS 전송 중단")
     }
 
