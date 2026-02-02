@@ -172,12 +172,14 @@ export class GameController {
         });
 
         setTimeout(async () => {
-            await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);
-            await this.redisClient.setGameToken(gameId, generateToken(gameId, gameSetting.timeLimit), gameSetting.timeLimit);
-
             // cctv 작동
             const cctvInterval = gameSetting.cctvInterval || 60;
             await this.redisClient.setCctvTimer(gameId, cctvInterval);
+        }, 4000);
+
+        setTimeout(async () => {
+            await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);
+            await this.redisClient.setGameToken(gameId, generateToken(gameId, gameSetting.timeLimit), gameSetting.timeLimit);
 
             await this.gameService.updateGame({ gameId: gameId, startTime: new Date().toISOString(), status: GameStatus.IN_GAME });
 

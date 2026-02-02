@@ -293,6 +293,27 @@ export class RedisClient {
         return `room:game:skill:use:lock:${gameId}`;
     }
 
+    /**
+     * cctv user 
+     */
+
+    setCctvUser = async (gameId, memberId) => {
+        await this.pubClient.set(this.getCctvUserString(gameId), memberId);
+    }
+
+    getCctvUser = async (gameId) => {
+        const memberId = await this.pubClient.get(this.getCctvUserString(gameId));
+        return memberId;
+    }
+
+    deleteCctvUser = async (gameId) => {
+        await this.pubClient.del(this.getCctvUserString(gameId));
+    }
+
+    getCctvUserString = (gameId) => {
+        return `room:game:cctv:user:${gameId}`;
+    }
+
     // 이 함수는 게임이 종료됐을때만 실행.
     deleteGameCachesByMemberId = async (memberId, gameId) => {
         // 게임에서 쓰는 redis cache들 삭제 (내 위치 정보 삭제, 경계 벗어남 패널티 횟수 관리 정보 삭제)
@@ -311,6 +332,7 @@ export class RedisClient {
         await this.deleteGameTimerLock(gameId);
         await this.deleteGameSettingLock(gameId);
         await this.deleteSkillUsedAt(gameId);
+        await this.deleteCctvUser(gameId);
     }
     /**
      * 게임 타이머 => 게임 진행 시간 관리
