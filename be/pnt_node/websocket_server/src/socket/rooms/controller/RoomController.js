@@ -255,8 +255,10 @@ export class RoomController {
         const roomId = this.socket.data.roomId;
 
         this.socket.data.isIntentionalExit = true; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
+        const memberId = parseInt(this.socket.data.memberId);
 
-        this.io.to(roomId).emit("get user left", { roomId: roomId, memberId: this.socket.data.memberId });
+        this.io.to(roomId).emit("get user left", { roomId: roomId, memberId: memberId });
+        await this.redisClient.deleteAccessToken(memberId);
     }
 
 }

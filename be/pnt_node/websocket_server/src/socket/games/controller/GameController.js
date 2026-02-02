@@ -1,18 +1,18 @@
-import {GameService} from "../application/GameService.js";
-import {GameMemberService} from "../application/GameMemberService.js";
-import {sendError} from "../../../global/util/SocketError.js";
-import {GameSettingService} from "../application/GameSettingService.js";
-import {GameMemberPosition} from "../../../global/db/sequelize/status/GameMemberPosition.js";
-import {GameMemberStatus} from "../../../global/db/sequelize/status/GameMemberStatus.js";
-import {GameSkillService} from "../application/GameSkillService.js";
-import {GameMemberStatService} from "../application/GameMemberStatService.js";
-import {RedisClient} from "../../utils/client/RedisClient.js";
-import {GameStatus} from "../../../global/db/sequelize/status/GameStatus.js";
-import {GameMissionService} from "../application/GameMissionService.js";
-import {TurfService} from "../application/TurfService.js";
-import {MQConfig} from "../../../global/mq/MQConfig.js";
-import {resolveInController} from "../../../global/auth/JwtResolver.js";
-import {generateMemberAccessToken, generateToken} from "../../../global/auth/JwtProvider.js";
+import { GameService } from "../application/GameService.js";
+import { GameMemberService } from "../application/GameMemberService.js";
+import { sendError } from "../../../global/util/SocketError.js";
+import { GameSettingService } from "../application/GameSettingService.js";
+import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemberPosition.js";
+import { GameMemberStatus } from "../../../global/db/sequelize/status/GameMemberStatus.js";
+import { GameSkillService } from "../application/GameSkillService.js";
+import { GameMemberStatService } from "../application/GameMemberStatService.js";
+import { RedisClient } from "../../utils/client/RedisClient.js";
+import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
+import { GameMissionService } from "../application/GameMissionService.js";
+import { TurfService } from "../application/TurfService.js";
+import { MQConfig } from "../../../global/mq/MQConfig.js";
+import { resolveInController } from "../../../global/auth/JwtResolver.js";
+import { generateMemberAccessToken, generateToken } from "../../../global/auth/JwtProvider.js";
 import axios from "axios";
 import logger from "../../../global/config/logger.js";
 
@@ -179,6 +179,7 @@ export class GameController {
 
         setTimeout(async () => {
             await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);
+            await this.redisClient.addActiveGame(gameId); // GPS Worker를 위한 활성 게임 등록
             await this.redisClient.setGameToken(gameId, generateToken(gameId, gameSetting.timeLimit), gameSetting.timeLimit);
 
             await this.gameService.updateGame({ gameId: gameId, startTime: new Date().toISOString(), status: GameStatus.IN_GAME });
@@ -549,6 +550,7 @@ export class GameController {
 
         // redis에서 게임 타이머 삭제
         await redisClient.deleteGameTimer(integerGameId);
+        await redisClient.removeActiveGame(integerGameId); // GPS Worker에서 제외
 
         // 게임 종료 처리 => spring boot에 요청을 보내야함.
         const gameMembers = await redisClient.getAllLocations(integerGameId);
@@ -707,6 +709,7 @@ export class GameController {
             await this.gameEnd(this.io, this.redisClient, gameId, isGameEnd);
         }
 
+        await this.redisClient.deleteAccessToken(memberId);
         this.socket.disconnect();
     }
 
