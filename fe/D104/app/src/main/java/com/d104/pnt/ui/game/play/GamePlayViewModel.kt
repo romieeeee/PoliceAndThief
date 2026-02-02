@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d104.pnt.data.remote.model.response.BeepUseResponse
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.GameRepository
@@ -44,12 +45,17 @@ class GamePlayViewModel @Inject constructor(
     private val gameSessionRepository: GameSessionRepository,
     private val stepSensorManager: StepSensorManager
 ) : ViewModel() {
+
     private val gameId: Long = savedStateHandle.get<Long>(NavArgs.GAME_ID) ?: 0L
 
     // UI 이벤트
     private val _uiEvent = MutableSharedFlow<GamePlayUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
     val isOutOfBoundary = gameSessionRepository.isOutOfBoundary
+
+    // ✅ Beep 이벤트 (도둑 쪽에서만 화면이 소리 재생하도록 Screen에서 필터)
+    private val _beepEvent = MutableSharedFlow<BeepUseResponse>(extraBufferCapacity = 16)
+    val beepEvent = _beepEvent.asSharedFlow()
 
     val userLocation = locationRepository.currentLocation
     val polygonPoints = locationRepository.polygonPoints
@@ -135,6 +141,7 @@ class GamePlayViewModel @Inject constructor(
                     delay(100)
                 }
             }
+
             gameSocketManager.joinGame(gameId)
 
             delay(300)
@@ -143,6 +150,18 @@ class GamePlayViewModel @Inject constructor(
     }
 
     private fun setupSocketListeners() {
+        // 비프음 수신 (GameSocketManager에서 이미 get beep use 파싱/콜백 호출 중)
+        gameSocketManager.setOnBeepReceived { policeId, thiefId, distance ->
+            _beepEvent.tryEmit(
+                BeepUseResponse(
+                    policeId = policeId,
+                    thiefId = thiefId,
+                    distance = distance
+                )
+            )
+            Timber.d("📢 beep 수신: policeId=$policeId, thiefId=$thiefId, distance=$distance")
+        }
+
         // 전체 게임 정보 동기화
         gameSocketManager.setOnGameInfoSynced { data ->
             viewModelScope.launch {
@@ -181,6 +200,7 @@ class GamePlayViewModel @Inject constructor(
             }
         }
 
+        // 도둑 탈출 수신
         gameSocketManager.setOnThiefEscaped { gameId, thiefId, escapedAt ->
             viewModelScope.launch {
                 Timber.d("🏃 도둑 탈출 알림 수신: thiefId=$thiefId, escapedAt=$escapedAt")
@@ -193,6 +213,7 @@ class GamePlayViewModel @Inject constructor(
             }
         }
 
+        // 게임 종료 수신 → 상세결과 요청
         gameSocketManager.setOnGameEnded { winnerPosition, message ->
             Timber.d("🏁 게임 종료 수신: $winnerPosition 승리")
 

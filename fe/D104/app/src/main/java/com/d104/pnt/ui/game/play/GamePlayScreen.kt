@@ -30,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,9 +58,12 @@ import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieScreen
 import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
+import com.d104.pnt.util.GameFeedbackManager
 import com.d104.pnt.ui.theme.PixelFont
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Composable
 fun GamePlayScreen(
@@ -70,6 +74,7 @@ fun GamePlayScreen(
     viewModel: GamePlayViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var clicked by remember { mutableStateOf(false) }
     var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
@@ -86,6 +91,35 @@ fun GamePlayScreen(
     var escapedThiefNickname by remember { mutableStateOf("") }
 
     val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
+
+    // ✅ ToneGenerator 직접 생성 금지 -> GameFeedbackManager로 통일
+    // (테스트용이라도 여기서 직접 ToneGenerator 만들면 연타 시 AudioTrack(-12) 가능)
+    val feedbackManager = remember { GameFeedbackManager(context.applicationContext) }
+
+    // =========================================================
+    // ===== TEST ONLY (BEEP) START =============================
+    // 서버/소켓 이벤트 없이도 소리/진동이 나는지 확인하는 테스트 코드입니다.
+    //
+    // ✅ 사용법:
+    // - TEST_FORCE_BEEP = true  : 테스트 활성화 (도둑 화면에서만)
+    // - TEST_FORCE_BEEP = false : 테스트 비활성화 (실서버 이벤트만)
+    //
+    // ✅ 테스트 끝나면:
+    // - TEST_FORCE_BEEP를 false로 돌리거나
+    // - 이 블록(START~END) 통째로 삭제하면 됩니다.
+    // =========================================================
+    val TEST_FORCE_BEEP = false
+
+    LaunchedEffect(TEST_FORCE_BEEP, role) {
+        if (!TEST_FORCE_BEEP) return@LaunchedEffect
+        if (role != GameRole.THIEF) return@LaunchedEffect
+
+        // 화면 진입 후 2초 뒤 경고음 1번 (거리 12m 가정)
+        delay(2000)
+        feedbackManager.playBeepAlert(distance = 12.0)
+    }
+    // ===== TEST ONLY (BEEP) END ===============================
+    // =========================================================
 
     // 위치서비스 시작 / 종료
     DisposableEffect(Unit) {
@@ -141,6 +175,18 @@ fun GamePlayScreen(
         }
     }
 
+    // ✅ beep 이벤트 collect (도둑만)
+    LaunchedEffect(role) {
+        if (role != GameRole.THIEF) return@LaunchedEffect
+
+        viewModel.beepEvent.collect { beep ->
+            Timber.d("🚨 beepEvent: policeId=${beep.policeId}, thiefId=${beep.thiefId}, distance=${beep.distance}")
+
+            // distance 기반 난이도 패턴 적용
+            feedbackManager.playBeepAlert(distance = beep.distance)
+        }
+    }
+
     Surface(modifier = Modifier.fillMaxSize()) {
         // 배경
         Image(
@@ -153,6 +199,45 @@ fun GamePlayScreen(
         Box(modifier = Modifier.fillMaxSize()) {
 
             // 상단 버튼 영역
+
+            // =========================================================
+            // ===== TEST ONLY (BEEP UI) START ==========================
+            // 화면에서 버튼 눌러서 수동으로 경고음/진동 테스트하는 UI 입니다.
+            // 필요 없으면 이 블록만 삭제하면 됩니다.
+            // =========================================================
+            if (TEST_FORCE_BEEP && role == GameRole.THIEF) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .systemBarsPadding()
+                        .padding(top = 10.dp, end = 12.dp)
+                        .clickable {
+                            // 클릭할 때마다 "아주 가까움" 패턴 테스트 (8m)
+                            scope.launch {
+                                Timber.d("🧪 TEST BEEP 버튼 클릭")
+                                feedbackManager.playBeepAlert(distance = 8.0)
+                            }
+                        }
+                ) {
+                    PixelContainer(
+                        modifier = Modifier,
+                        backgroundColor = Color.Transparent,
+                        borderColor = MissionYellow,
+                        borderWidth = 6f
+                    ) {
+                        Text(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            text = "TEST BEEP",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MissionYellow
+                        )
+                    }
+                }
+            }
+            // ===== TEST ONLY (BEEP UI) END ============================
+            // =========================================================
+
+            // 상단 버튼 영역 (고정)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -169,7 +254,6 @@ fun GamePlayScreen(
                     onClick = {
                         phoneScreen = PhoneScreen.MAP
                         clicked = !clicked
-
                     }
                 ) {
                     Icon(
@@ -206,14 +290,15 @@ fun GamePlayScreen(
                         }
                     ) {
                         Icon(
-                            painter = painterResource(if (role == GameRole.POLICE) R.drawable.ic_thief_list else R.drawable.ic_mission_list),
+                            painter = painterResource(
+                                if (role == GameRole.POLICE) R.drawable.ic_thief_list
+                                else R.drawable.ic_mission_list
+                            ),
                             contentDescription = null,
                             tint = Color.Unspecified
                         )
                     }
                 }
-
-
             }
 
             // 중앙 컨텐츠
@@ -235,7 +320,6 @@ fun GamePlayScreen(
                     role = role,
                     memberId = 16L // TODO: 여기에 본인 멤버 아이디 넣기
                 )
-
             }
         }
 
@@ -310,18 +394,14 @@ fun GamePlayScreen(
                     }
                 }
             }
-
         } else {
             WalkieBottomSheet {
                 WalkieTalkieScreen(
                     gameId = "1f",
                     teamType = "police"
                 )
-
             }
-
         }
-
     }
 
     if (clicked) {
@@ -346,7 +426,6 @@ fun GamePlayScreen(
                     prisonLocation!!.latitude,
                     prisonLocation!!.longitude
                 ),
-
                 thiefMembers = thiefMembers
             )
         }
