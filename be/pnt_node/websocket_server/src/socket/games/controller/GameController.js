@@ -11,8 +11,8 @@ import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
 import { GameMissionService } from "../application/GameMissionService.js";
 import { TurfService } from "../application/TurfService.js";
 import { MQConfig } from "../../../global/mq/MQConfig.js";
-import { JwtResolver, resolveInController } from "../../../global/auth/JwtResolver.js";
-import { generateToken, generateMemberAccessToken } from "../../../global/auth/JwtProvider.js";
+import { resolveInController } from "../../../global/auth/JwtResolver.js";
+import { generateMemberAccessToken, generateToken } from "../../../global/auth/JwtProvider.js";
 import axios from "axios";
 import logger from "../../../global/config/logger.js";
 
@@ -83,6 +83,7 @@ export class GameController {
                 position: memberGame.givenPosition,
                 status: null,
                 penalty: 0,
+                missionCompleted: false,
                 isConnected: true,
                 timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
             }
@@ -104,8 +105,7 @@ export class GameController {
             connectedMembers: locations.length,
         }
 
-        const connectedMembers = await this.redisClient.setStartedCount(gameId, memberId);
-        data.connectedMembers = connectedMembers;
+        await this.redisClient.setStartedCount(gameId, memberId);
         this.io.to(gameId).emit("get join room", data);
 
         // 게임 시작 시간 db에 저장
@@ -123,7 +123,6 @@ export class GameController {
      * 
      * 현재 시간으로 부터 5초 뒤에 시작.
      */
-
 
 
     /**
@@ -172,12 +171,15 @@ export class GameController {
         });
 
         setTimeout(async () => {
-            await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);
-            await this.redisClient.setGameToken(gameId, generateToken(gameId, gameSetting.timeLimit), gameSetting.timeLimit);
-
             // cctv 작동
             const cctvInterval = gameSetting.cctvInterval || 60;
             await this.redisClient.setCctvTimer(gameId, cctvInterval);
+        }, 4000);
+
+        setTimeout(async () => {
+            await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);
+            await this.redisClient.addActiveGame(gameId); // GPS Worker를 위한 활성 게임 등록
+            await this.redisClient.setGameToken(gameId, generateToken(gameId, gameSetting.timeLimit), gameSetting.timeLimit);
 
             await this.gameService.updateGame({ gameId: gameId, startTime: new Date().toISOString(), status: GameStatus.IN_GAME });
 
@@ -227,6 +229,7 @@ export class GameController {
         const position = gameMember.position;
         const status = gameMember.status;
         const penalty = await this.redisClient.getPenalty(memberId, gameId) || 0;
+        const missionCompleted = gameMember.missionCompleted;
 
         const locationData = {
             lat,
@@ -238,11 +241,10 @@ export class GameController {
             position,
             status,
             penalty,
+            missionCompleted,
             isConnected: true,
             timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
         };
-
-        const isConnected = locationData.isConnected;
 
         if (position === GameMemberPosition.THIEF && status === GameMemberStatus.FREE) {
             locationData.longestSurvived++;
@@ -385,6 +387,8 @@ export class GameController {
                     // Redis 데이터가 있으면 우선 사용, 없으면 DB 데이터 사용
                     position: redisMember?.position || null,
                     status: redisMember?.status || null,
+                    penalty: redisMember?.penalty || 0,
+                    missionCompleted: redisMember?.missionCompleted || false,
                     isConnected: redisMember?.isConnected || false,
                 };
             }),
@@ -490,6 +494,8 @@ export class GameController {
         }
 
         await this.gameSkillService.useSkill(skill.id);
+        const gameSetting = await this.gameSettingService.findGameSetting(gameId);
+        await this.redisClient.setSkillUsedAt(gameId, gameSetting.timeLimit);
 
         const res = {
             gameId: gameId,
@@ -508,12 +514,18 @@ export class GameController {
     postMissionImage = async (payload) => {
         const gameId = parseInt(payload.gameId) || parseInt(this.socket.data.gameId);
         const memberId = parseInt(payload.memberId) || parseInt(this.socket.data.memberId);
-        const missionId = parseInt(payload.missionId);
+        const missionId = parseInt(payload.missionId) || parseInt(payload.gameMissionId);
         const image = String(payload.image);
 
-        this.gameMissionService.findMission(missionId);
+        const gameMission = await this.gameMissionService.findMission(missionId);
 
-        this.mq.sendMessage(payload, MQConfig.MQ_MISSION);
+        this.mq.sendMessage({
+            gameId: gameId,
+            memberId: memberId,
+            gameMissionId: gameMission.id,
+            keyword: gameMission.Mission.keyword,
+            image: image,
+        }, MQConfig.MQ_MISSION);
     }
 
     /**
@@ -543,6 +555,7 @@ export class GameController {
 
         // redis에서 게임 타이머 삭제
         await redisClient.deleteGameTimer(integerGameId);
+        await redisClient.removeActiveGame(integerGameId); // GPS Worker에서 제외
 
         // 게임 종료 처리 => spring boot에 요청을 보내야함.
         const gameMembers = await redisClient.getAllLocations(integerGameId);
@@ -664,6 +677,29 @@ export class GameController {
         this.socket.emit("get update access token", { "accessToken": data.accessToken });
     }
 
+    postCheckNews = async (payload) => {
+        const gameId = parseInt(payload.gameId) || parseInt(this.socket.data.gameId);
+
+        const res = await this.redisClient.getNews(gameId);
+
+        if (!res) {
+            this.io.to(gameId).emit("get check news", {
+                gameId: gameId,
+                newsId: null,
+                message: "뉴스 정보가 없습니다.",
+                code: 404
+            });
+            return;
+        }
+
+        this.io.to(gameId).emit("get check news", {
+            gameId: gameId,
+            newsId: res,
+            message: "뉴스 정보가 있습니다.",
+            code: 200
+        });
+    }
+
     // custom disconnect
     disconnect = async () => {
         this.socket.data.isIntentionalExit = true;
@@ -678,6 +714,7 @@ export class GameController {
             await this.gameEnd(this.io, this.redisClient, gameId, isGameEnd);
         }
 
+        await this.redisClient.deleteAccessToken(memberId);
         this.socket.disconnect();
     }
 

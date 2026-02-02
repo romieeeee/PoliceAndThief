@@ -80,6 +80,7 @@ export class RedisClient {
 
     deleteAccessToken = async (memberId) => {
         const infoKey = `websocket:access:token:${memberId}`;
+        logger.info(`[RedisClient] Deleting access token for member ${memberId}`);
         await this.pubClient.del(infoKey);
     }
 
@@ -261,7 +262,7 @@ export class RedisClient {
 
     getNews = async (gameId) => {
         const newsId = await this.pubClient.get(this.getNewsKeyString(gameId));
-        return parseInt(newsId);
+        return newsId ? parseInt(newsId) : null;
     }
 
     deleteNews = async (gameId) => {
@@ -272,7 +273,47 @@ export class RedisClient {
         return `room:game:news:${gameId}`;
     }
 
+    /**
+     * skill use lock
+     */
+    setSkillUsedAt = async (gameId, timeLimit) => {
+        logger.info(`skill use lock set, game=${gameId}, timeLimit=${new Date().toISOString()}`);
+        await this.pubClient.set(this.getSkillUseLockString(gameId), new Date().toISOString(), "EX", timeLimit * 60);
+    }
 
+    getSkillUsedAt = async (gameId) => {
+        const skillUseLock = await this.pubClient.get(this.getSkillUseLockString(gameId));
+        return skillUseLock;
+    }
+
+    deleteSkillUsedAt = async (gameId) => {
+        await this.pubClient.del(this.getSkillUseLockString(gameId));
+    }
+
+    getSkillUseLockString = (gameId) => {
+        return `room:game:skill:use:lock:${gameId}`;
+    }
+
+    /**
+     * cctv user 
+     */
+
+    setCctvUser = async (gameId, memberId) => {
+        await this.pubClient.set(this.getCctvUserString(gameId), memberId);
+    }
+
+    getCctvUser = async (gameId) => {
+        const memberId = await this.pubClient.get(this.getCctvUserString(gameId));
+        return memberId;
+    }
+
+    deleteCctvUser = async (gameId) => {
+        await this.pubClient.del(this.getCctvUserString(gameId));
+    }
+
+    getCctvUserString = (gameId) => {
+        return `room:game:cctv:user:${gameId}`;
+    }
 
     // 이 함수는 게임이 종료됐을때만 실행.
     deleteGameCachesByMemberId = async (memberId, gameId) => {
@@ -291,6 +332,8 @@ export class RedisClient {
         await this.deleteGameTimer(gameId);
         await this.deleteGameTimerLock(gameId);
         await this.deleteGameSettingLock(gameId);
+        await this.deleteSkillUsedAt(gameId);
+        await this.deleteCctvUser(gameId);
     }
     /**
      * 게임 타이머 => 게임 진행 시간 관리
@@ -383,6 +426,7 @@ export class RedisClient {
         return `room:game:end:${gameId}`;
     }
 
+
     getGameTimerLock = async (gameId) => {
         return await this.pubClient.get(this.getGameTimerLockKeyString(gameId));
     }
@@ -394,6 +438,26 @@ export class RedisClient {
     getGameTimerLockKeyString = (gameId) => {
         return `room:game:timer:lock:${gameId}`;
     }
+
+    /**
+     * Active Game Management for GPS Worker
+     */
+    addActiveGame = async (gameId) => {
+        await this.pubClient.sadd(this.getActiveGameKeyString(), gameId);
+    }
+
+    removeActiveGame = async (gameId) => {
+        await this.pubClient.srem(this.getActiveGameKeyString(), gameId);
+    }
+
+    getActiveGames = async () => {
+        return await this.pubClient.smembers(this.getActiveGameKeyString());
+    }
+
+    getActiveGameKeyString = () => {
+        return "room:game:active:list";
+    }
+
 
 
     getPenaltyKeyString = (gameId, memberId) => {

@@ -6,6 +6,7 @@ import axios from "axios";
 import { sendError } from "../../../global/util/SocketError.js";
 import { JwtResolver, resolveInSocket, resolveInController } from "../../../global/auth/JwtResolver.js";
 import { generateToken, generateMemberAccessToken } from "../../../global/auth/JwtProvider.js";
+import { GameSkillService } from "../../games/application/GameSkillService.js";
 
 
 export class RoomController {
@@ -16,6 +17,7 @@ export class RoomController {
         this.gameSettingService = new GameSettingService();
         this.gameMemberService = new GameMemberService();
         this.gameService = new GameService();
+        this.gameSkillService = new GameSkillService();
     }
 
     /*
@@ -244,16 +246,19 @@ export class RoomController {
         const room = await this.gameService.getGameById(roomId);
         const roomSetting = await this.gameSettingService.findGameSetting(roomId);
         const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
+        const gameSkill = await this.gameSkillService.findGameSkillByGameId(roomId);
 
-        this.io.to(roomId).emit("get game start", { room, roomSetting, members });
+        this.io.to(roomId).emit("get game start", { room, roomSetting, chiefMemberId: gameSkill ? gameSkill.memberId : null, members });
     }
 
     disconnect = async (data) => {
         const roomId = this.socket.data.roomId;
 
         this.socket.data.isIntentionalExit = true; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
+        const memberId = parseInt(this.socket.data.memberId);
 
-        this.io.to(roomId).emit("get user left", { roomId: roomId, memberId: this.socket.data.memberId });
+        this.io.to(roomId).emit("get user left", { roomId: roomId, memberId: memberId });
+        await this.redisClient.deleteAccessToken(memberId);
     }
 
 }

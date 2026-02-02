@@ -77,7 +77,6 @@ public class GameResultServiceImpl implements GameResultService {
 
 		game.end(request.getWinTeam());
 
-		// 성능 최적화를 위해 해당 게임의 모든 멤버를 한 번에 조회하여 Map으로 변환
 		List<GameMember> allMembers = gameMemberRepository.findAllByGameId(request.getGameId());
 		Map<Long, GameMember> memberMap = allMembers.stream()
 			.collect(Collectors.toMap(GameMember::getId, Function.identity()));
