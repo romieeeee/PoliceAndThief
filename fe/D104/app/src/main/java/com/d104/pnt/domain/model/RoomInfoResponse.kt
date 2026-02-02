@@ -1,5 +1,6 @@
 package com.d104.pnt.domain.model
 
+import com.d104.pnt.data.remote.model.request.Location
 import com.google.gson.annotations.SerializedName
 
 data class RoomInfoResponse(
@@ -24,13 +25,13 @@ data class RoomData(
 
 data class RoomSetting(
     val gameId: Long,
-    val boundaryGeo: Any?, // 구체적인 구조에 따라 별도 클래스 생성 권장
+    val boundaryGeo: BoundaryGeo,
     val prisonLat: Double,
     val prisonLng: Double,
     val timeLimit: Int,
     val policeCount: Int,
     val thiefCount: Int,
-    val playerCount: Int
+    val playerCount: Int,
 )
 
 data class RoomMember(
@@ -57,4 +58,9 @@ data class MemberDetail(
 data class MemberProfile(
     val nickname: String,
     val avatarUrl: String?
+)
+
+data class BoundaryGeo(
+    val type: String,
+    val coordinates: List<List<List<Double>>>
 )
