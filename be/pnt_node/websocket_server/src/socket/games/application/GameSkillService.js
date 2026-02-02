@@ -17,6 +17,21 @@ export class GameSkillService {
         return res;
     }
 
+    findGameSkillByGameId = async (gameId) => {
+        const res = await GameSkill.findOne({
+            where: {
+                gameId: gameId,
+                isDeleted: false
+            }
+        });
+
+        if (!res) {
+            this.makeError("NotFoundException", "게임 스킬을 찾을 수 없습니다.", 404);
+        }
+
+        return res;
+    }
+
     useSkill = async (gameSkillId) => {
         const res = await GameSkill.update({ isUsed: true }, {
             where: {
