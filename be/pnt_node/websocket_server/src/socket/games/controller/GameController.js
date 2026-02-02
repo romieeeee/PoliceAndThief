@@ -164,6 +164,7 @@ export class GameController {
         }
 
         await this.redisClient.setGameSetting(gameId, gameSetting);
+        logger.info("will start game", gameId);
         this.io.to(gameId).emit("get will start game", {
             message: "start game",
             gameId: gameId,
@@ -180,6 +181,7 @@ export class GameController {
 
             await this.gameService.updateGame({ gameId: integerGameId, startTime: new Date().toISOString(), status: GameStatus.IN_GAME });
 
+            logger.info("game started", gameId);
             this.io.to(gameId).emit("get start game", {
                 message: "start game",
                 gameId: integerGameId,
