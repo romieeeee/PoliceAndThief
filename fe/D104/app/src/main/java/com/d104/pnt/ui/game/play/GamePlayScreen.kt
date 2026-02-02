@@ -3,12 +3,14 @@ package com.d104.pnt.ui.game.play
 import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,8 +37,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
@@ -52,6 +57,7 @@ import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieScreen
 import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
+import com.d104.pnt.ui.theme.PixelFont
 import com.google.android.gms.maps.model.LatLng
 
 @Composable
@@ -310,13 +316,50 @@ fun GamePlayScreen(
         }
     }
 
+    // 경기구역이탈
     if (isOutOfBoundary) {
-        Image(
-            painter = painterResource(id = R.drawable.warning_overlay),
-            contentDescription = "Out of Boundary Warning",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(99f)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.warning_overlay),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.fillMaxHeight(0.22f))
+
+                Text(
+                    text = "경기구역이탈!",
+                    fontFamily = PixelFont,
+                    color = Color.Red,
+                    fontSize = 40.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = "경기 구역으로\n복귀하세요",
+                    fontFamily = PixelFont,
+                    color = Color.Red,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 32.sp
+                )
+
+                Spacer(modifier = Modifier.height(130.dp))
+            }
+        }
     }
 }
 
