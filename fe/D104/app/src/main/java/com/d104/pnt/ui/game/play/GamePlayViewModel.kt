@@ -1,18 +1,23 @@
 package com.d104.pnt.ui.game.play
 
 import android.content.Context
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.LocationRepository
+import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.util.getSingleLocation
 import com.d104.pnt.util.socket.GameSocketManager
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -23,8 +28,15 @@ import javax.inject.Inject
 class GamePlayViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
     private val authRepository: AuthRepository,
-    private val gameSocketManager: GameSocketManager
+    private val gameSocketManager: GameSocketManager,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+    private val gameId: Long = savedStateHandle.get<Long>(NavArgs.GAME_ID) ?: 0L
+
+    // UI 이벤트
+    private val _uiEvent = MutableSharedFlow<GamePlayUiEvent>()
+    val uiEvent = _uiEvent.asSharedFlow()
+
     val userLocation = locationRepository.currentLocation
     val polygonPoints = locationRepository.polygonPoints
     val prisonLocation = locationRepository.prisonLocation
@@ -34,11 +46,26 @@ class GamePlayViewModel @Inject constructor(
     private val _thiefMembers = MutableStateFlow<List<GameMemberSocketDto>>(emptyList())
     val thiefMembers: StateFlow<List<GameMemberSocketDto>> = _thiefMembers.asStateFlow()
 
+    private val _isOutOfBoundary = MutableStateFlow(false)
+    val isOutOfBoundary: StateFlow<Boolean> = _isOutOfBoundary.asStateFlow()
+
+    private var myMemberId: Long = 0L
+    private var warningJob: Job? = null
+
     init {
+        fetchMyId()
         setupSocketListeners()
     }
 
-    fun initGame(gameId: Long) {
+    private fun fetchMyId() {
+        viewModelScope.launch {
+            authRepository.getMemberId().collect { id ->
+                if (id != 0L) myMemberId = id
+            }
+        }
+    }
+
+    fun initGame() {
         viewModelScope.launch {
             val token = authRepository.getAccessToken().first()
             if (token.isNotEmpty() && !gameSocketManager.isConnected()) {
@@ -48,11 +75,9 @@ class GamePlayViewModel @Inject constructor(
                     delay(100)
                 }
             }
-
             gameSocketManager.joinGame(gameId)
-            Timber.d("GamePlayViewModel: 게임($gameId) 입장 요청 보냄")
 
-            delay(500)
+            delay(300)
             gameSocketManager.syncGameInfo()
         }
     }
@@ -95,20 +120,43 @@ class GamePlayViewModel @Inject constructor(
                 }
             }
         }
+
+        gameSocketManager.setOnOutOfBoundary { gameId, memberId ->
+            if (memberId == myMemberId) {
+                Timber.w("⚠️ 경고: 구역 이탈 발생! (Game: $gameId)")
+                showWarningEffect()
+            }
+        }
+
+        gameSocketManager.setOnGameEnded { winnerPosition, message ->
+            Timber.d("🏁 게임 종료 수신: $winnerPosition 승리")
+
+            gameSocketManager.postAfterGameEnd(gameId)
+        }
+
+        gameSocketManager.setOnEndGameAfter { data ->
+            viewModelScope.launch {
+                // 상세 결과를 저장하거나 처리 (MVP 정보 등)
+                // data.optJSONObject("mvp") ...
+
+                // 뉴스 화면으로 이동 이벤트 발생
+                _uiEvent.emit(GamePlayUiEvent.NavigateToNews(gameId))
+            }
+        }
+    }
+
+    private fun showWarningEffect() {
+        warningJob?.cancel()
+        warningJob = viewModelScope.launch {
+            _isOutOfBoundary.value = true
+            delay(3000) // 3초간 유지
+            _isOutOfBoundary.value = false
+        }
     }
 
     private fun updateMembersList(newList: List<GameMemberSocketDto>) {
         _allMembers.value = newList
-
-        newList.forEach { member ->
-            Timber.d("🕵️ 멤버 확인: ${member.nickname} / 포지션: [${member.position}] / 상태: ${member.rawStatus}")
-        }
-
-        _thiefMembers.value = newList.filter {
-            it.position.equals("THIEF", ignoreCase = true)
-        }
-
-        Timber.d("📋 필터링된 도둑 수: ${_thiefMembers.value.size}명")
+        _thiefMembers.value = newList.filter { it.position.equals("THIEF", ignoreCase = true) }
     }
 
     fun setDefaultArea(context: Context) {
@@ -134,4 +182,8 @@ class GamePlayViewModel @Inject constructor(
         gameSocketManager.removeAllListeners()
     }
 
+}
+
+sealed class GamePlayUiEvent {
+    data class NavigateToNews(val gameId: Long) : GamePlayUiEvent()
 }

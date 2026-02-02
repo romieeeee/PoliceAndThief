@@ -3,12 +3,14 @@ package com.d104.pnt.ui.game.play
 import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -34,8 +37,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
@@ -51,19 +57,21 @@ import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieScreen
 import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
+import com.d104.pnt.ui.theme.PixelFont
 import com.google.android.gms.maps.model.LatLng
 
 @Composable
 fun GamePlayScreen(
     gameId: Long,
     role: GameRole,
-    onGameEnd: () -> Unit,
+    onGameEnd: (Long) -> Unit,
     goToCamera: () -> Unit,
     viewModel: GamePlayViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+
     var clicked by remember { mutableStateOf(false) }
     var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
-    val context = LocalContext.current
 
     val currentLocation = viewModel.userLocation.collectAsState().value
     val areaPoints = viewModel.polygonPoints.collectAsStateWithLifecycle().value
@@ -71,6 +79,9 @@ fun GamePlayScreen(
 
     val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
 
+    val isOutOfBoundary by viewModel.isOutOfBoundary.collectAsStateWithLifecycle()
+
+    // 위치서비스 시작 / 종료
     DisposableEffect(Unit) {
         val serviceIntent = Intent(context, LocationService::class.java).apply {
             putExtra(LocationService.EXTRA_GAME_MODE, true)
@@ -87,10 +98,20 @@ fun GamePlayScreen(
         }
     }
 
+    // 게임 초기화
     // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
     LaunchedEffect(Unit) {
         viewModel.setDefaultArea(context)
-        viewModel.initGame(gameId)
+        viewModel.initGame()
+
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is GamePlayUiEvent.NavigateToNews -> {
+                    // 게임 종료 후 뉴스 화면으로 이동
+                    onGameEnd(event.gameId)
+                }
+            }
+        }
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -302,6 +323,52 @@ fun GamePlayScreen(
 
                 thiefMembers = thiefMembers
             )
+        }
+    }
+
+    // 경기구역이탈
+    if (isOutOfBoundary) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(99f)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.warning_overlay),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds
+            )
+
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.fillMaxHeight(0.22f))
+
+                Text(
+                    text = "경기구역이탈!",
+                    fontFamily = PixelFont,
+                    color = Color.Red,
+                    fontSize = 40.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = "경기 구역으로\n복귀하세요",
+                    fontFamily = PixelFont,
+                    color = Color.Red,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 32.sp
+                )
+
+                Spacer(modifier = Modifier.height(130.dp))
+            }
         }
     }
 }
