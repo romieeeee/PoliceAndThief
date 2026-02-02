@@ -1,5 +1,7 @@
 package com.pnt.pnt_spring.domain.games.game.application.impl;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,7 +34,10 @@ import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSkillRepository;
+import com.pnt.pnt_spring.domain.games.mission.entity.GameMission;
+import com.pnt.pnt_spring.domain.games.mission.entity.Mission;
 import com.pnt.pnt_spring.domain.games.mission.repository.GameMissionRepository;
+import com.pnt.pnt_spring.domain.games.mission.repository.MissionRepository;
 import com.pnt.pnt_spring.domain.games.news.repository.GameNewsRepository;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
@@ -55,6 +60,7 @@ public class GameRoomServiceImpl implements GameRoomService {
 	private final GameSkillRepository gameSkillRepository;
 	private final GameMissionRepository gameMissionRepository;
 	private final GameNewsRepository gameNewsRepository;
+	private final MissionRepository missionRepository;
 
 	private static final GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
 
@@ -150,6 +156,9 @@ public class GameRoomServiceImpl implements GameRoomService {
 		// 경찰 중 랜덤 1명(=경찰청장) 선정 + 스킬 생성 (givenPosition은 POLICE 유지)
 		Long chiefMemberId = assignChiefSkill(game, members);
 
+		// 미션 할당 로직
+		assignMissions(game, setting.getMissionCount());
+
 		// 게임 시작
 		game.start();
 
@@ -168,6 +177,42 @@ public class GameRoomServiceImpl implements GameRoomService {
 
 		// chiefMemberId 포함해서 반환
 		return GameStartResponse.from(game, members, chiefMemberId);
+	}
+
+	// 게임 미션 할당 메서드
+	private void assignMissions(Game game, Integer missionCount) {
+		if (missionCount == null || missionCount <= 0) {
+			return;
+		}
+
+		// 1. 전체 미션 로드
+		List<Mission> allMissions = missionRepository.findAll();
+
+		if (allMissions.isEmpty()) {
+			// 미션 데이터가 하나도 없으면 예외 처리 혹은 빈 리스트 반환
+			return;
+		}
+
+		List<GameMission> gameMissions = new ArrayList<>();
+		int remainingCount = missionCount;
+
+		// 2. 요청한 개수(remainingCount)가 채워질 때까지 반복
+		while (remainingCount > 0) {
+			// 미션 리스트를 매번 섞어줍니다 (최대한 다양한 미션이 배정되도록)
+			Collections.shuffle(allMissions);
+
+			// 이번 턴에 가져올 개수: 남은 필요량 vs 전체 미션 개수 중 작은 값
+			int take = Math.min(remainingCount, allMissions.size());
+
+			for (int i = 0; i < take; i++) {
+				gameMissions.add(GameMission.create(game, allMissions.get(i)));
+			}
+
+			remainingCount -= take;
+		}
+
+		// 3. 저장
+		gameMissionRepository.saveAll(gameMissions);
 	}
 
 	@Override
