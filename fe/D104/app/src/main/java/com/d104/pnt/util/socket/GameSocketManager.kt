@@ -156,7 +156,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val data = args[0] as JSONObject
                 val result = data.getString("result")
                 val reason = data.optString("reason", null)
-                val policeId = data.getLong("policeId")
+                val policeId = data.optLong("policeId", -1L)
                 val thiefId = data.getLong("thiefId")
                 val arrestedAt = data.optString("arrestedAt", null)
                 Timber.d("체포 결과: result=$result, reason=$reason")
