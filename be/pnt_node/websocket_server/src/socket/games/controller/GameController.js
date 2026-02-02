@@ -1,18 +1,18 @@
-import { GameService } from "../application/GameService.js";
-import { GameMemberService } from "../application/GameMemberService.js";
-import { sendError } from "../../../global/util/SocketError.js";
-import { GameSettingService } from "../application/GameSettingService.js";
-import { GameMemberPosition } from "../../../global/db/sequelize/status/GameMemberPosition.js";
-import { GameMemberStatus } from "../../../global/db/sequelize/status/GameMemberStatus.js";
-import { GameSkillService } from "../application/GameSkillService.js";
-import { GameMemberStatService } from "../application/GameMemberStatService.js";
-import { RedisClient } from "../../utils/client/RedisClient.js";
-import { GameStatus } from "../../../global/db/sequelize/status/GameStatus.js";
-import { GameMissionService } from "../application/GameMissionService.js";
-import { TurfService } from "../application/TurfService.js";
-import { MQConfig } from "../../../global/mq/MQConfig.js";
-import { JwtResolver, resolveInController } from "../../../global/auth/JwtResolver.js";
-import { generateToken, generateMemberAccessToken } from "../../../global/auth/JwtProvider.js";
+import {GameService} from "../application/GameService.js";
+import {GameMemberService} from "../application/GameMemberService.js";
+import {sendError} from "../../../global/util/SocketError.js";
+import {GameSettingService} from "../application/GameSettingService.js";
+import {GameMemberPosition} from "../../../global/db/sequelize/status/GameMemberPosition.js";
+import {GameMemberStatus} from "../../../global/db/sequelize/status/GameMemberStatus.js";
+import {GameSkillService} from "../application/GameSkillService.js";
+import {GameMemberStatService} from "../application/GameMemberStatService.js";
+import {RedisClient} from "../../utils/client/RedisClient.js";
+import {GameStatus} from "../../../global/db/sequelize/status/GameStatus.js";
+import {GameMissionService} from "../application/GameMissionService.js";
+import {TurfService} from "../application/TurfService.js";
+import {MQConfig} from "../../../global/mq/MQConfig.js";
+import {resolveInController} from "../../../global/auth/JwtResolver.js";
+import {generateMemberAccessToken, generateToken} from "../../../global/auth/JwtProvider.js";
 import axios from "axios";
 import logger from "../../../global/config/logger.js";
 
@@ -83,6 +83,7 @@ export class GameController {
                 position: memberGame.givenPosition,
                 status: null,
                 penalty: 0,
+                missionCompleted: false,
                 isConnected: true,
                 timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
             }
@@ -104,8 +105,7 @@ export class GameController {
             connectedMembers: locations.length,
         }
 
-        const connectedMembers = await this.redisClient.setStartedCount(gameId, memberId);
-        data.connectedMembers = connectedMembers;
+        data.connectedMembers = await this.redisClient.setStartedCount(gameId, memberId);
         this.io.to(gameId).emit("get join room", data);
 
         // 게임 시작 시간 db에 저장
@@ -227,6 +227,7 @@ export class GameController {
         const position = gameMember.position;
         const status = gameMember.status;
         const penalty = await this.redisClient.getPenalty(memberId, gameId) || 0;
+        const missionCompleted = gameMember.missionCompleted;
 
         const locationData = {
             lat,
@@ -238,11 +239,10 @@ export class GameController {
             position,
             status,
             penalty,
+            missionCompleted,
             isConnected: true,
             timestamp: new Date().toISOString() // 중요: 갱신 시간 기록
         };
-
-        const isConnected = locationData.isConnected;
 
         if (position === GameMemberPosition.THIEF && status === GameMemberStatus.FREE) {
             locationData.longestSurvived++;
@@ -385,6 +385,8 @@ export class GameController {
                     // Redis 데이터가 있으면 우선 사용, 없으면 DB 데이터 사용
                     position: redisMember?.position || null,
                     status: redisMember?.status || null,
+                    penalty: redisMember?.penalty || 0,
+                    missionCompleted: redisMember?.missionCompleted || false,
                     isConnected: redisMember?.isConnected || false,
                 };
             }),
@@ -490,6 +492,8 @@ export class GameController {
         }
 
         await this.gameSkillService.useSkill(skill.id);
+        const gameSetting = await this.gameSettingService.findGameSetting(gameId);
+        await this.redisClient.setSkillUsedAt(gameId, gameSetting.timeLimit);
 
         const res = {
             gameId: gameId,
@@ -662,6 +666,29 @@ export class GameController {
         this.socket.data.accessToken = data.accessToken;
 
         this.socket.emit("get update access token", { "accessToken": data.accessToken });
+    }
+
+    postCheckNews = async (payload) => {
+        const gameId = parseInt(payload.gameId) || parseInt(this.socket.data.gameId);
+
+        const res = await this.redisClient.getNews(gameId);
+
+        if (!res) {
+            this.io.to(gameId).emit("get check news", {
+                gameId: gameId,
+                newsId: null,
+                message: "뉴스 정보가 없습니다.",
+                code: 404
+            });
+            return;
+        }
+
+        this.io.to(gameId).emit("get check news", {
+            gameId: gameId,
+            newsId: res,
+            message: "뉴스 정보가 있습니다.",
+            code: 200
+        });
     }
 
     // custom disconnect

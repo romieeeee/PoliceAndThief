@@ -29,11 +29,14 @@ export class GpsChannel {
 
                 if (locations.length === 0) continue;
 
+                const skillUse = await this.redisClient.getSkillUseLock(gameId);
+
                 // 게임 시작시간
 
                 const data = {
                     gameId: gameId,
                     sec: 0,
+                    skillUsedAt: skillUse ? skillUse : null,
                     locations: locations
                 }
 

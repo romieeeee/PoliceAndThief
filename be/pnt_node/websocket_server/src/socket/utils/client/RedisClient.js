@@ -256,12 +256,12 @@ export class RedisClient {
      * news 관련
      */
     setNews = async (gameId, newsId) => {
-        await this.pubClient.set(this.getNewsKeyString(gameId), newsId, "EX", 60 * 5);
+        await this.pubClient.set(this.getNewsKeyString(gameId), newsId, "EX", 60);
     }
 
     getNews = async (gameId) => {
         const newsId = await this.pubClient.get(this.getNewsKeyString(gameId));
-        return parseInt(newsId);
+        return newsId ? parseInt(newsId) : null;
     }
 
     deleteNews = async (gameId) => {
@@ -272,7 +272,26 @@ export class RedisClient {
         return `room:game:news:${gameId}`;
     }
 
+    /**
+     * skill use lock
+     */
+    setSkillUsedAt = async (gameId, timeLimit) => {
+        logger.info(`skill use lock set, game=${gameId}, timeLimit=${new Date().toISOString()}`);
+        await this.pubClient.set(this.getSkillUseLockString(gameId), new Date().toISOString(), "EX", timeLimit * 60);
+    }
 
+    getSkillUsedAt = async (gameId) => {
+        const skillUseLock = await this.pubClient.get(this.getSkillUseLockString(gameId));
+        return skillUseLock;
+    }
+
+    deleteSkillUsedAt = async (gameId) => {
+        await this.pubClient.del(this.getSkillUseLockString(gameId));
+    }
+
+    getSkillUseLockString = (gameId) => {
+        return `room:game:skill:use:lock:${gameId}`;
+    }
 
     // 이 함수는 게임이 종료됐을때만 실행.
     deleteGameCachesByMemberId = async (memberId, gameId) => {
@@ -291,6 +310,7 @@ export class RedisClient {
         await this.deleteGameTimer(gameId);
         await this.deleteGameTimerLock(gameId);
         await this.deleteGameSettingLock(gameId);
+        await this.deleteSkillUsedAt(gameId);
     }
     /**
      * 게임 타이머 => 게임 진행 시간 관리
