@@ -29,6 +29,12 @@ export class MissionController {
             const payload = req.body;
             const { gameId, missionId, memberId, success } = payload;
             const gameMission = await this.gameMissionService.findOne(gameId, missionId);
+            
+            const gameMember = await this.redisClient.getLocation(memberId, gameId);
+
+            if (!gameMember) {
+                throw { code: 404, message: "Member not found" };
+            }
             if (!gameMission) {
                 throw { code: 404, message: "GameMission not found" };
             }
@@ -60,6 +66,9 @@ export class MissionController {
                 });
 
                 await this.redisClient.setMission(gameId, memberId, missionId);
+
+                gameMember.missionCompleted = true;
+                await this.redisClient.setLocation(gameId, memberId, gameMember);
             }
 
             res.status(200).json({ message: "GameMission updated" });
