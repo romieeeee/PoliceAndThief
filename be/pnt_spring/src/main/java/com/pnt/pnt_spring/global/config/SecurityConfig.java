@@ -67,7 +67,8 @@ public class SecurityConfig {
 					"/swagger-ui/**",
 					"/api/test",
 					"/auth/**",
-					"/games/news/result").permitAll()
+					"/games/news/result",
+					"/dev/games/**").permitAll()
 				.anyRequest().authenticated()
 			)
 			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate),

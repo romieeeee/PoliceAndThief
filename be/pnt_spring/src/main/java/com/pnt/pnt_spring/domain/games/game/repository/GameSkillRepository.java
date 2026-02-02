@@ -14,4 +14,7 @@ public interface GameSkillRepository extends JpaRepository<GameSkill, Long> {
 	void resetAllByGameId(@Param("gameId") Long gameId);
 
 	boolean existsByGame_IdAndMember_Id(Long gameId, Long memberId);
+
+	// 개발용, 게임 ID로 미션 상태 완전 삭제
+	void deleteByGameId(Long gameId);
 }
