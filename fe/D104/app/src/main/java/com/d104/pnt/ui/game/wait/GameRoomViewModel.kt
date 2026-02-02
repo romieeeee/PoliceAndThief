@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.request.Location
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.GameRoomRepository
+import com.d104.pnt.data.repository.GameSessionRepository
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
@@ -38,6 +39,7 @@ class GameRoomViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val locationRepository: LocationRepository,
     private val roomSocketManager: RoomSocketManager,
+    private val gameSessionRepository: GameSessionRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -205,6 +207,13 @@ class GameRoomViewModel @Inject constructor(
 
                     Timber.d("🎮 최종 역할 확정: $myFinalRole (ID: $myId)")
 
+                    // 결정된 정보 저장
+                    gameSessionRepository.setFinalRole(myFinalRole)
+                    gameSessionRepository.setMemberId(myId)
+                    locationRepository.setPrisonLocation(LatLng(_roomInfo.value.prison!!.lat, _roomInfo.value.prison!!.lng))
+                    locationRepository.setPolygonPoints(_roomInfo.value.polygon!!.map { LatLng(it.lat, it.lng) })
+
+
                     delay(300)
                     roomSocketManager.disconnect()
 
@@ -239,9 +248,7 @@ class GameRoomViewModel @Inject constructor(
                     }
 
                     val prisonLocation = Location(data.prisonLat, data.prisonLng)
-                    val cachedPolygon = cachedRoom?.polygon?.map {
-                        Location(it.latitude, it.longitude)
-                    } ?: emptyList()
+//                    val polygon = data.boundaryGeo.coordinates.map { Location(it[0][1], it[0][1]) }
 
                     _roomInfo.value = _roomInfo.value.copy(
                         roomCode = finalRoomCode,
@@ -254,9 +261,9 @@ class GameRoomViewModel @Inject constructor(
                         thiefCount = data.thiefCount,
 
                         prison = prisonLocation,
-                        polygon = cachedPolygon
+                        polygon = _roomInfo.value.polygon
                     )
-                    Timber.d("RoomSettings: 설정 로드 완료 (Code: $finalRoomCode, Polygon: ${cachedPolygon.size})")
+                    Timber.d("RoomSettings: 설정 로드 완료 (Code: $finalRoomCode, Polygon: ${_roomInfo.value.polygon})")
                 }
 
                 is BaseResult.Error -> {
@@ -346,8 +353,25 @@ class GameRoomViewModel @Inject constructor(
                 }
                 return // 이후 로직 중단
             }
+            Timber.d("전체 방정보 ${data}")
+
+            _roomInfo.value = _roomInfo.value.copy(
+                roomCode = data.room.roomCode,
+
+                maxCount = data.roomSetting.playerCount,
+                timeLimit = data.roomSetting.timeLimit,
+                missionCount = _roomInfo.value.missionCount,
+                cctvCycle = _roomInfo.value.cctvCycle,
+                policeCount = data.roomSetting.policeCount,
+                thiefCount = data.roomSetting.thiefCount,
+
+                prison = Location(data.roomSetting.prisonLat, data.roomSetting.prisonLng),
+                polygon = data.roomSetting.boundaryGeo.coordinates[0].map { Location(it[1], it[0]) }
+            )
+            Timber.d("감옥 위치 ${_roomInfo.value.prison}, 폴리곤 ${_roomInfo.value.polygon}")
+
         } catch (e: Exception) {
-            Timber.e(e, "❌ 방 정보 파싱 실패")
+            Timber.e(e, "❌ 방 정보 파싱 실패 ${data}")
             _uiState.value = UiState.Error("방 정보 파싱 실패")
         }
     }
