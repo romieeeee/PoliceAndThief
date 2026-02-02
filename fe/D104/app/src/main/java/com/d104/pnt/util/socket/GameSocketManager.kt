@@ -49,7 +49,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     // Callbacks
     private var onJoinedRoom: ((Long, Long, String) -> Unit)? = null
-    private var onGpsReceived: ((Int, JSONArray) -> Unit)? = null
+    private var onGpsReceived: ((sec: Int, locations: JSONArray, cctvThiefId: Long?, skillUsedAt: String?) -> Unit)? = null
     private var onWillStartGame: ((Long, String) -> Unit)? = null
     private var onGameStarted: ((Long, String) -> Unit)? = null
     private var onThiefEscaped: ((Long, Long, Int, String) -> Unit)? = null
@@ -65,8 +65,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     private var onReconnected: ((Long) -> Unit)? = null
 
-    private var onBeepUse: ((org.json.JSONObject) -> Unit)? = null
-
+    private var onBeepUse: ((JSONObject) -> Unit)? = null
+    private var onHelicopterSkillReceived:
+            ((gameId: Long, policeId: Long, result: String, reason: String?, startedAt: String?, usedAt: String?) -> Unit)? = null
 
     override fun setupCustomListeners() {
         // 게임 입장 확인
@@ -84,20 +85,35 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         }
 
         // GPS 위치 정보 수신 (1초마다)
+        // payload:
+        // { gameId, sec, cctvThiefId, skillUsedAt, locations:[...] }
         on(EVENT_GET_GPS) { args ->
             try {
                 val data = args[0] as JSONObject
-                val gameId = data.getInt("gameId")
-                val sec = data.getInt("sec")
+                val gameId = data.optLong("gameId", -1L)
+                val sec = data.optInt("sec", 0)
                 val locations = data.getJSONArray("locations")
-                Timber.d("GPS 위치 정보: gameId=$gameId, sec=$sec, 참여자=${locations.length()}명")
-                onGpsReceived?.invoke(sec, locations)
+
+                // cctvThiefId: 없거나 0/음수면 null 처리
+                val cctvThiefIdRaw = data.optLong("cctvThiefId", -1L)
+                val cctvThiefId = cctvThiefIdRaw.takeIf { it > 0L }
+
+                // skillUsedAt: null/"null"/"" -> null 처리
+                val skillUsedAtRaw = data.optString("skillUsedAt", null)
+                val skillUsedAt = skillUsedAtRaw
+                    ?.takeIf { it.isNotBlank() && it.lowercase() != "null" }
+
+                Timber.d(
+                    "GPS 수신: gameId=$gameId sec=$sec, cctvThiefId=$cctvThiefId, skillUsedAt=$skillUsedAt, 참여자=${locations.length()}"
+                )
+
+                onGpsReceived?.invoke(sec, locations, cctvThiefId, skillUsedAt)
             } catch (e: Exception) {
                 Timber.e(e, "GPS 정보 파싱 실패")
             }
         }
 
-        // 게임 시작 예정 알림 (5초 카운트다운)
+        // 게임 시작 예정
         on(EVENT_GET_WILL_START_GAME) { args ->
             try {
                 val data = args[0] as JSONObject
@@ -167,7 +183,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             }
         }
 
-        // 멤버 상태 변경 (교도소 이송 등)
+        // 멤버 상태 변경
         on(EVENT_MODIFY_MEMBER_STATUS) { args ->
             try {
                 val data = args[0] as JSONObject
@@ -182,7 +198,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             }
         }
 
-        // Beep 알림 (경찰 접근)
+        // Beep
         on(EVENT_GET_BEEP_USE) { args ->
             try {
                 val data = args[0] as JSONObject
@@ -207,7 +223,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             }
         }
 
-        // 스킬 사용 결과 (헬기)
+        // 스킬 결과
         on(EVENT_GET_SKILL_USE) { args ->
             try {
                 val data = args[0] as JSONObject
@@ -226,11 +242,8 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         on(EVENT_GET_END_GAME) { args ->
             try {
                 val data = args[0] as JSONObject
-
                 val winTeam = data.getString("winTeam")
-
                 val message = data.optString("message", "게임이 종료되었습니다.")
-
                 Timber.d("🎮 게임 종료 수신: 승리팀=$winTeam, 메시지=$message")
                 onGameEnded?.invoke(winTeam, message)
             } catch (e: Exception) {
@@ -239,7 +252,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             }
         }
 
-        // 게임 종료 후 상세 결과 수신
+        // 게임 종료 후 상세 결과
         on(EVENT_GET_END_GAME_AFTER) { args ->
             try {
                 val data = args[0] as JSONObject
@@ -250,29 +263,27 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             }
         }
 
+        // 뉴스
         on(EVENT_GET_NEWS) { args ->
             try {
                 val data = args[0] as JSONObject
                 val gameId = data.getLong("gameId")
                 val newsId = data.getLong("newsId")
-
                 Timber.d("📰 뉴스 생성 완료: gameId=$gameId, newsId=$newsId")
                 onNewsReceived?.invoke(gameId, newsId)
             } catch (e: Exception) {
-                Timber.e(e, "게임 종료 파싱 실패")
+                Timber.e(e, "뉴스 수신 파싱 실패")
             }
         }
 
+        // 재연결
         on(EVENT_GET_RECONNECT) { args ->
             try {
                 val data = args[0] as JSONObject
                 val gameId = data.optLong("gameId")
                 Timber.d("🔄 서버로부터 재연결 승인 수신: gameId=$gameId")
 
-                // 기존에 정의하신 onReconnect 호출 (내부에서 syncGameInfo() 실행)
                 onReconnect(data)
-
-                // ViewModel 등에 알림
                 onReconnected?.invoke(gameId)
             } catch (e: Exception) {
                 Timber.e(e, "재연결 데이터 파싱 실패")
@@ -280,13 +291,11 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         }
     }
 
-
     override fun onReconnect(data: JSONObject) {
         super.onReconnect(data)
         val gameId = data.optLong("gameId")
         if (gameId > 0) {
             currentGameId = gameId
-            // 재연결 시 게임 정보 동기화
             syncGameInfo()
         }
     }
@@ -298,28 +307,17 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     // ==================== Request Methods ====================
 
-    /**
-     * 게임 입장
-     */
     fun joinGame(gameId: Long) {
         currentGameId = gameId
-
-        val data = JSONObject().apply {
-            put("gameId", gameId)
-        }
-
+        val data = JSONObject().apply { put("gameId", gameId) }
         emit(EVENT_POST_JOIN_ROOM, data)
     }
 
-    /**
-     * GPS 위치 전송
-     */
     fun sendGPS(lat: Double, lng: Double, walk: Int, longestSurvived: Int) {
         val gameId = currentGameId ?: run {
             Timber.e("gameId가 없어서 GPS 전송 불가")
             return
         }
-
         val data = JSONObject().apply {
             put("gameId", gameId)
             put("lat", lat)
@@ -327,124 +325,80 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             put("walk", walk)
             put("longestSurvived", longestSurvived)
         }
-
         emit(EVENT_POST_GPS, data)
     }
 
-    /**
-     * 체포 시도
-     */
     fun arrestThief(policeId: Long, thiefId: Long) {
         val gameId = currentGameId ?: run {
             Timber.e("gameId가 없어서 체포 불가")
             return
         }
-
         val data = JSONObject().apply {
             put("gameId", gameId)
             put("policeId", policeId)
             put("thiefId", thiefId)
         }
-
         emit(EVENT_POST_ARREST, data)
     }
 
-    /**
-     * 스킬 사용 (헬기)
-     */
     fun useSkill(policeId: Long) {
         val gameId = currentGameId ?: run {
             Timber.e("gameId가 없어서 스킬 사용 불가")
             return
         }
-
         val data = JSONObject().apply {
             put("gameId", gameId)
             put("policeId", policeId)
         }
-
         emit(EVENT_POST_SKILL_USE, data)
     }
 
-    /**
-     * 미션 이미지 제출
-     */
     fun submitMissionImage(memberId: Long, gameMissionId: Long, imageUrl: String) {
         val gameId = currentGameId ?: run {
             Timber.e("gameId가 없어서 미션 이미지 제출 불가")
             return
         }
-
         val data = JSONObject().apply {
             put("gameId", gameId)
             put("memberId", memberId)
             put("gameMissionId", gameMissionId)
             put("imageUrl", imageUrl)
         }
-
         emit(EVENT_POST_MISSION_IMAGE, data)
     }
 
-    /**
-     * 게임 정보 동기화 요청
-     */
     fun syncGameInfo() {
         val gameId = currentGameId ?: run {
             Timber.e("gameId가 없어서 게임 정보 동기화 불가")
             return
         }
-
-        val data = JSONObject().apply {
-            put("gameId", gameId)
-        }
-
+        val data = JSONObject().apply { put("gameId", gameId) }
         emit(EVENT_POST_SYNC_GAME_INFO, data)
     }
 
-    /**
-     * 게임 리셋 (개발용 - 사용 금지)
-     */
     @Deprecated("개발용이므로 프로덕션에서 사용 금지")
     fun resetGame() {
         val gameId = currentGameId ?: run {
             Timber.e("gameId가 없어서 게임 리셋 불가")
             return
         }
-
-        val data = JSONObject().apply {
-            put("gameId", gameId)
-        }
-
+        val data = JSONObject().apply { put("gameId", gameId) }
         Timber.w("게임 리셋 요청 (개발용)")
         emit(EVENT_POST_RESET_GAME, data)
     }
 
-    /**
-     * 게임 나가기
-     */
     fun leaveGame() {
         val gameId = currentGameId ?: run {
             Timber.e("gameId가 없어서 게임 나가기 불가")
             return
         }
-
-        val data = JSONObject().apply {
-            put("gameId", gameId)
-        }
-
+        val data = JSONObject().apply { put("gameId", gameId) }
         emit(EVENT_POST_DISCONNECT, data)
-
-        // 연결 해제
         disconnect()
     }
 
-    /**
-     * 게임 종료 후 상세 결과 요청
-     */
     fun postAfterGameEnd(gameId: Long) {
-        val data = JSONObject().apply {
-            put("gameId", gameId)
-        }
+        val data = JSONObject().apply { put("gameId", gameId) }
         emit(EVENT_POST_AFTER_GAME_END, data)
         Timber.d("📤 post after game end 송신 완료")
     }
@@ -453,14 +407,12 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onReconnected = callback
     }
 
-
     // ==================== Callback Setters ====================
 
     fun setOnJoinedRoom(callback: (gameId: Long, memberId: Long, message: String) -> Unit) {
         onJoinedRoom = callback
     }
-
-    fun setOnGpsReceived(callback: (sec: Int, locations: JSONArray) -> Unit) {
+    fun setOnGpsReceived(callback: (sec: Int, locations: JSONArray, cctvThiefId: Long?, skillUsedAt: String?) -> Unit) {
         onGpsReceived = callback
     }
 
@@ -500,7 +452,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onSkillResult = callback
     }
 
-
     fun setOnEndGameAfter(callback: (JSONObject) -> Unit) {
         onEndGameAfter = callback
     }
@@ -526,6 +477,11 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onGameInfoSynced = null
         onSkillResult = null
         onGameEnded = null
+        onEndGameAfter = null
+        onNewsReceived = null
+        onReconnected = null
+        onBeepUse = null
+        onHelicopterSkillReceived = null
     }
 
     public override fun removeAllListeners() {
@@ -542,5 +498,8 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         off(EVENT_GET_SYNC_GAME_INFO)
         off(EVENT_GET_SKILL_USE)
         off(EVENT_GET_END_GAME)
+        off(EVENT_GET_END_GAME_AFTER)
+        off(EVENT_GET_NEWS)
+        off(EVENT_GET_RECONNECT)
     }
 }
