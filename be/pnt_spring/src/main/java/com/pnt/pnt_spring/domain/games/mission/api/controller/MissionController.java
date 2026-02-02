@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.pnt.pnt_spring.domain.games.mission.api.resp.GameMissionResponse;
 import com.pnt.pnt_spring.domain.games.mission.api.resp.MissionResponse;
 import com.pnt.pnt_spring.domain.games.mission.application.MissionService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
@@ -45,23 +46,20 @@ public class MissionController {
 		return new CommonResponse<>(response, "미션 상세 조회 성공", HttpStatus.OK);
 	}
 
-	@Operation(summary = "인게임 미션 목록 조회", description = "도둑들이 수행할 전체 미션 목록을 조회합니다.")
+	@Operation(summary = "인게임 미션 목록 조회", description = "게임에 할당된 미션 목록을 조회합니다. (진행 상태 포함)")
 	@GetMapping("/{gameId}/missions")
-	public CommonResponse<List<MissionResponse>> getMissions(@PathVariable Long gameId) {
-
-		List<MissionResponse> response = missionService.getGameAllMissions(gameId);
-
+	public CommonResponse<List<GameMissionResponse>> getMissions(@PathVariable Long gameId) {
+		List<GameMissionResponse> response = missionService.getGameAllMissions(gameId); // 타입 변경
 		return new CommonResponse<>(response, "미션 목록 조회 성공", HttpStatus.OK);
 	}
 
-	@Operation(summary = "인게임 미션 상세 조회", description = "도둑들이 수행할 미션 상세 정보를 조회합니다.")
+	@Operation(summary = "인게임 미션 상세 조회", description = "게임에 할당된 미션 상세 정보를 조회합니다. (진행 상태 포함)")
 	@GetMapping("/{gameId}/missions/{missionId}")
-	public CommonResponse<MissionResponse> getMissionDetail(
+	public CommonResponse<GameMissionResponse> getMissionDetail(
 		@PathVariable Long gameId,
 		@PathVariable Long missionId) {
 
-		MissionResponse response = missionService.getGameMission(gameId, missionId);
-
+		GameMissionResponse response = missionService.getGameMission(gameId, missionId); // 타입 변경
 		return new CommonResponse<>(response, "미션 상세 조회 성공", HttpStatus.OK);
 	}
 
