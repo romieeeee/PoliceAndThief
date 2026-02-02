@@ -125,7 +125,6 @@ export class GameController {
      */
 
 
-
     /**
      * GPS 위치 정보
      * 도둑의 탈옥 로직
@@ -515,12 +514,18 @@ export class GameController {
     postMissionImage = async (payload) => {
         const gameId = parseInt(payload.gameId) || parseInt(this.socket.data.gameId);
         const memberId = parseInt(payload.memberId) || parseInt(this.socket.data.memberId);
-        const missionId = parseInt(payload.missionId);
+        const missionId = parseInt(payload.missionId) || parseInt(payload.gameMissionId);
         const image = String(payload.image);
 
-        this.gameMissionService.findMission(missionId);
+        const gameMission = await this.gameMissionService.findMission(missionId);
 
-        this.mq.sendMessage(payload, MQConfig.MQ_MISSION);
+        this.mq.sendMessage({
+            gameId: gameId,
+            memberId: memberId,
+            gameMissionId: gameMission.id,
+            keyword: gameMission.Mission.keyword,
+            image: image,
+        }, MQConfig.MQ_MISSION);
     }
 
     /**
