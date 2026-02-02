@@ -120,4 +120,6 @@ public interface GameMemberRepository extends JpaRepository<GameMember, Long> {
 
 	Optional<GameMember> findFirstByMemberIdAndIsDeletedFalse(Long memberId);
 
+	// 추가: 게임 ID로 참여 멤버 완전 삭제
+	void deleteByGameId(Long gameId);
 }
