@@ -48,6 +48,8 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _isOutOfBoundary = MutableStateFlow(false)
     override val isOutOfBoundary = _isOutOfBoundary.asStateFlow()
 
+    private val _chiefMemberId = MutableStateFlow<Long?>(null)
+    override val chiefMemberId = _chiefMemberId.asStateFlow()
     private var isConnecting = false
 
     private val _myMemberId = MutableStateFlow(0L)
@@ -247,6 +249,10 @@ class GameSessionRepositoryImpl @Inject constructor(
 
         _members.value = emptyList()
         _gameId.value = 0L
+    }
+
+    override fun setChiefMemberId(id: Long?) {
+        _chiefMemberId.value = id
     }
 
     private fun showWarningEffect() {

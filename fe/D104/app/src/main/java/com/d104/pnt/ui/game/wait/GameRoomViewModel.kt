@@ -211,6 +211,11 @@ class GameRoomViewModel @Inject constructor(
         roomSocketManager.setOnGameStarted { data ->
             viewModelScope.launch {
                 try {
+                    // ✅ 1) 경찰청장(chiefMemberId) 저장 (0이면 null 처리)
+                    val chiefId = data.optLong("chiefMemberId", 0L).let { if (it == 0L) null else it }
+                    gameSessionRepository.setChiefMemberId(chiefId)
+                    Timber.d("👮‍♂️ chiefMemberId 저장: $chiefId")
+
                     val membersArray = data.optJSONArray("members") ?: return@launch
                     val myId = _myMemberId.value
                     var myFinalRole = "ANY" // 기본값

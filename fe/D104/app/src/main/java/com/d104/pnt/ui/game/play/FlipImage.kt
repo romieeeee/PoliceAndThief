@@ -21,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -38,81 +40,100 @@ import kotlinx.coroutines.launch
 fun FlipImage(
     role: GameRole,
     memberId: Long,
-    size: Dp = 280.dp
+    size: Dp = 280.dp,
+    canFlip: Boolean = true,
+    helicopterEnabled: Boolean = true,
+    onHelicopterClick: () -> Unit = {}
 ) {
     val rotation = remember { Animatable(0f) }
-    var isFront by remember { mutableStateOf(true) }
-
     val scope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
             .size(size)
             .clip(if (role == GameRole.POLICE) CircleShape else RectangleShape)
-            // 탭으로 플립
-            .clickable {
-                scope.launch {
-                    val target = if (isFront) -180f else 0f
-                    rotation.animateTo(
-                        target,
-                        animationSpec = tween(
-                            durationMillis = 450,
-                            easing = FastOutSlowInEasing
-                        )
-                    )
-                    isFront = !isFront
-                }
-            }
-            // 드래그로 회전
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDrag = { _, dragAmount ->
+            //  청장이 아니면 flip 제스처 자체 막기
+            .then(
+                if (role == GameRole.POLICE && !canFlip) Modifier
+                else Modifier
+                    // 탭으로 플립
+                    .clickable {
                         scope.launch {
-                            val newRotation =
-                                (rotation.value + dragAmount.x * 0.4f)
-                                    .coerceIn(-180f, 0f)
-
-                            rotation.snapTo(newRotation)
-                        }
-                    },
-                    onDragEnd = {
-                        scope.launch {
-                            val target =
-                                if (rotation.value < -90f) -180f else 0f
-
+                            val target = if (rotation.value > -90f) -180f else 0f
                             rotation.animateTo(
                                 target,
                                 animationSpec = tween(
-                                    durationMillis = 300,
+                                    durationMillis = 450,
                                     easing = FastOutSlowInEasing
                                 )
                             )
-                            isFront = target == 0f
                         }
                     }
-                )
-            }
+                    // 드래그로 회전
+                    .pointerInput(Unit) {
+                        detectDragGestures(
+                            onDrag = { _, dragAmount ->
+                                scope.launch {
+                                    val newRotation =
+                                        (rotation.value + dragAmount.x * 0.4f)
+                                            .coerceIn(-180f, 0f)
+                                    rotation.snapTo(newRotation)
+                                }
+                            },
+                            onDragEnd = {
+                                scope.launch {
+                                    val target =
+                                        if (rotation.value < -90f) -180f else 0f
+
+                                    rotation.animateTo(
+                                        target,
+                                        animationSpec = tween(
+                                            durationMillis = 300,
+                                            easing = FastOutSlowInEasing
+                                        )
+                                    )
+                                }
+                            }
+                        )
+                    }
+            )
             .graphicsLayer {
                 rotationY = rotation.value
                 cameraDistance = 16 * density
 
-                // 동전 얇아지는 느낌
                 val absRotation = kotlin.math.abs(rotation.value)
                 scaleX = if (absRotation in 70f..110f) 0.92f else 1f
             },
         contentAlignment = Alignment.Center
     ) {
-        // 90도 기준으로 이미지 결정
         val showFront = rotation.value > -90f
+
         if (role == GameRole.POLICE) {
-            Image(
-                painter = painterResource(if (showFront) role.badge else R.drawable.img_helicopter),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-        else {
+            if (showFront) {
+                // 앞면: 배지
+                Image(
+                    painter = painterResource(role.badge),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                // 뒷면: 헬기 (버튼 역할)
+                //   - helicopterEnabled=false면 눌러도 발동 안 됨
+                Image(
+                    painter = painterResource(R.drawable.img_helicopter),
+                    contentDescription = "헬기 스킬",
+                    contentScale = ContentScale.Crop,
+                    colorFilter = grayscaleColorFilter(helicopterEnabled),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(enabled = helicopterEnabled) {
+                            onHelicopterClick()
+                        }
+                )
+            }
+        } else {
+            // 도둑
             if (showFront) {
                 Image(
                     painter = painterResource(role.badge),
@@ -120,8 +141,7 @@ fun FlipImage(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
-            }
-            else {
+            } else {
                 Image(
                     painter = painterResource(R.drawable.ic_thief_bg),
                     contentDescription = null,
@@ -130,19 +150,26 @@ fun FlipImage(
                         .fillMaxSize()
                         .scale(-1f, 1f)
                 )
-                Box (
-                    modifier = Modifier
-                        .padding(top = 70.dp, bottom = 32.dp, start = 47.dp, end = 47.dp)
+                Box(
+                    modifier = Modifier.padding(top = 70.dp, bottom = 32.dp, start = 47.dp, end = 47.dp)
                 ) {
                     QRcodeContainer(
-                        modifier = Modifier
-                            .fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         data = memberId.toString()
                     )
                 }
             }
         }
     }
+}
+
+fun grayscaleColorFilter(enabled: Boolean): ColorFilter? {
+    if (enabled) return null
+
+    val matrix = ColorMatrix().apply {
+        setToSaturation(0f) // 0 = 완전 회색
+    }
+    return ColorFilter.colorMatrix(matrix)
 }
 
 @Preview
@@ -153,3 +180,4 @@ fun PreviewFlip() {
         memberId = 16L
     )
 }
+
