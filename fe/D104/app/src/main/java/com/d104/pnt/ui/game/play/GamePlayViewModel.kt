@@ -20,6 +20,7 @@ import com.d104.pnt.util.socket.GameSocketManager
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,6 +51,7 @@ class GamePlayViewModel @Inject constructor(
     // UI 이벤트
     private val _uiEvent = MutableSharedFlow<GamePlayUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
+    val isOutOfBoundary = gameSessionRepository.isOutOfBoundary
 
     val userLocation = locationRepository.currentLocation
     val polygonPoints = locationRepository.polygonPoints
@@ -71,6 +73,11 @@ class GamePlayViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
+
+    private val _isOutOfBoundary = MutableStateFlow(false)
+
+    private var myMemberId: Long = 0L
+    private var warningJob: Job? = null
 
     init {
         gameSessionRepository.gameInit()
@@ -94,6 +101,14 @@ class GamePlayViewModel @Inject constructor(
                     is GameSessionEvent.GameEnded -> { Timber.d("SessionEvent: GameEnded")}
                     is GameSessionEvent.ErrorOccurred -> {Timber.d("SessionEvent: ErrorOccurred - ${event.message}")}
                 }
+            }
+        }
+    }
+
+    private fun fetchMyId() {
+        viewModelScope.launch {
+            authRepository.getMemberId().collect { id ->
+                if (id != 0L) myMemberId = id
             }
         }
     }

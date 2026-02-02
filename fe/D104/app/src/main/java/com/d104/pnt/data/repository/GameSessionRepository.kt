@@ -11,6 +11,7 @@ interface GameSessionRepository {
     val gameId: StateFlow<Long>
     val missions: StateFlow<List<MissionSocketDto>>
     val eventFlow: SharedFlow<GameSessionEvent>
+    val isOutOfBoundary: StateFlow<Boolean>
 
     fun connectAndJoin(gameId: Long)
     fun gameInit()

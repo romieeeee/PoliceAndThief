@@ -42,9 +42,13 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _eventFlow = MutableSharedFlow<GameSessionEvent>()
     override val eventFlow = _eventFlow.asSharedFlow()
 
+    private val _isOutOfBoundary = MutableStateFlow(false)
+    override val isOutOfBoundary = _isOutOfBoundary.asStateFlow()
+
+
     private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var gpsJob: Job? = null
-
+    private var warningJob: Job? = null
     private var gameStartTime: Long = 0L
 
     override fun gameInit(){
@@ -165,6 +169,12 @@ class GameSessionRepositoryImpl @Inject constructor(
                 _eventFlow.emit(GameSessionEvent.NavigateToNews(_gameId.value))
             }
         }
+
+        // 경게 벗어남 이벤트 수신 ->  경고 오버레이 띄움
+        gameSocketManager.setOnOutOfBoundary { gameId, memberId ->
+            Timber.w("⚠️ 경고: 구역 이탈 발생! (Game: $gameId)")
+            showWarningEffect()
+        }
     }
 
     override fun startGameSession(){
@@ -212,6 +222,15 @@ class GameSessionRepositoryImpl @Inject constructor(
         stopGameSession() // 안전하게 트래킹 종료
         gameSocketManager.leaveGame()
         _members.value = emptyList()
+    }
+
+    private fun showWarningEffect() {
+        warningJob?.cancel()
+        warningJob = repositoryScope.launch {
+            _isOutOfBoundary.value = true
+            delay(3000) // 3초간 유지
+            _isOutOfBoundary.value = false
+        }
     }
 }
 
