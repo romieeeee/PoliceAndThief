@@ -2,13 +2,18 @@ package com.pnt.pnt_spring.domain.games.game.application.impl;
 
 import java.util.List;
 
-import com.pnt.pnt_spring.domain.games.game.api.resp.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomJoinRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomPositionRequest;
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomReadyRequest;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomHostDelegateResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomJoinResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomMemberItem;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomMemberListResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomPositionResponse;
+import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomReadyResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomMemberService;
 import com.pnt.pnt_spring.domain.games.game.entity.Game;
 import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
@@ -174,8 +179,13 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
 			throw new BusinessException(ErrorCode.ROOM_ALREADY_STARTED);
 		}
 
+		// 락을 걸고 가져오되, 삭제된 멤버인지 확인해야 함
 		GameMember gm = gameMemberRepository.findByGameIdAndMemberIdForUpdate(roomId, memberId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.ROOM_NOT_JOINED));
+
+		if (gm.isDeleted()) {
+			throw new BusinessException(ErrorCode.ROOM_NOT_JOINED);
+		}
 
 		gm.setReady(req.getReady());
 
@@ -197,8 +207,13 @@ public class GameRoomMemberServiceImpl implements GameRoomMemberService {
 			throw new IllegalStateException("대기방에서만 포지션 픽을 변경할 수 있습니다.");
 		}
 
+		// 락을 걸고 가져오되, 삭제된 멤버인지 확인해야 함
 		GameMember gm = gameMemberRepository.findByGameIdAndMemberIdForUpdate(roomId, actorMemberId)
 			.orElseThrow(() -> new IllegalArgumentException("방에 참가한 멤버가 아닙니다."));
+
+		if (gm.isDeleted()) {
+			throw new BusinessException(ErrorCode.ROOM_NOT_JOINED);
+		}
 
 		gm.pickPreferPosition(prefer);
 
