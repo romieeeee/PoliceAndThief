@@ -308,8 +308,8 @@ export class RedisClient {
     setGameTimer = async (gameId, time) => {
         const duration = parseInt(time);
         if (isNaN(duration)) {
-            logger.warn(`[RedisClient] Invalid duration for GameTimer: ${time}. Defaulting to 600s.`);
-            return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", 600);
+            logger.warn(`[RedisClient] Invalid duration for GameTimer: ${time}. Defaulting to 300s.`);
+            return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", 300);
         }
         logger.info(`[RedisClient] Set GameTimer: ${gameId}, ${duration * 60}초`);
         return await this.pubClient.set(this.getGameTimerKeyString(gameId), Date.now().toString(), "EX", duration * 60);
