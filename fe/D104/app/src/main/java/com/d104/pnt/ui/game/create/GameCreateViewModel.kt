@@ -53,7 +53,7 @@ class GameCreateViewModel @Inject constructor(
     fun updateTotalPlayers(plus: Boolean) {
         if (plus && _totalPlayers.value < 30) {
             _totalPlayers.value += 1
-        } else if (!plus && _totalPlayers.value > 5) {
+        } else if (!plus && _totalPlayers.value > 2) {
             _totalPlayers.value -= 1
         } else {
             return
@@ -165,7 +165,7 @@ class GameCreateViewModel @Inject constructor(
         thiefCount: Int,
         polygon: List<Location>
     ): Boolean {
-        if (playerCount < 5 || playerCount > 30) return false
+//        if (playerCount < 5 || playerCount > 30) return false
         if (timeLimit < 5 || timeLimit > 60) return false
         if (policeCount < 1 || policeCount >= playerCount) return false
         if (thiefCount < 1 || thiefCount >= playerCount) return false

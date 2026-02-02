@@ -61,6 +61,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     private var onEndGameAfter: ((JSONObject) -> Unit)? = null
     private var onGameEnded: ((String, String) -> Unit)? = null
 
+    private var onBeepUse: ((org.json.JSONObject) -> Unit)? = null
+
+
     override fun setupCustomListeners() {
         // 게임 입장 확인
         on(EVENT_GET_JOIN_ROOM) { args ->
