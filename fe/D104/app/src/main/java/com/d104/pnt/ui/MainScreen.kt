@@ -380,10 +380,8 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                         }
                     },
                     onBackToWaitingRoom = { roomId ->
-                        // 대기방으로 - gameId == roomId
-                        // 대기방 진입 시 자동으로 room socket connect됨
-                        navController.navigate(Routes.buildRoleSelect(roomId)) {
-                            popUpTo(Routes.HOME)
+                        navController.navigate(Routes.buildGameRoom(roomId, GameRole.ANY.roleNameEn)) {
+                            popUpTo(Routes.HOME) { inclusive = false }
                         }
                     }
                 )

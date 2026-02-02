@@ -334,7 +334,6 @@ fun GameResultScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ✅ 버튼 두 개 추가
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -342,7 +341,11 @@ fun GameResultScreen(
                 // 대기방으로 돌아가기 버튼
                 PixelButtonCode(
                     text = "대기방",
-                    onClick = { onBackToWaitingRoom(gameId) }, // gameId == roomId
+                    onClick = {
+                        viewModel.backToLobby(gameId) {
+                            onBackToWaitingRoom(gameId)
+                        }
+                    },
                     mainColor = Color(0xFF6B728E),
                     textColor = Color.White,
                     blockHeight = 14,
@@ -354,7 +357,9 @@ fun GameResultScreen(
                 // 홈으로 가기 버튼
                 PixelButtonCode(
                     text = "홈으로",
-                    onClick = onBackToHome,
+                    onClick = {
+                        onBackToHome()
+                    },
                     mainColor = TextPrimary,
                     textColor = Color.Black,
                     blockHeight = 14,

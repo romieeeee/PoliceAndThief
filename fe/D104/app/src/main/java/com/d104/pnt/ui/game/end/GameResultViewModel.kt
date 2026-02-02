@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.response.GameNewsResponse
 import com.d104.pnt.data.repository.GameRepository
+import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.data.repository.ReportRepository
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
@@ -21,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class GameResultViewModel @Inject constructor(
     private val reportRepository: ReportRepository,
+    private val roomRepository: GameRoomRepository,
     private val gameRepository: GameRepository,
     private val gameSocketManager: GameSocketManager,
     private val savedStateHandle: SavedStateHandle
@@ -118,6 +120,23 @@ class GameResultViewModel @Inject constructor(
             "구역 이탈" -> "OUT_OF_AREA"
             else -> "ETC"
         }
+
+    fun backToLobby(roomId: Long, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            // 1. HTTP: 역할을 'ANY'로 리셋 (대기방 진입 준비)
+            val result = roomRepository.changePosition(roomId, "ANY")
+
+            if (result is BaseResult.Success) {
+                // 2. 게임 소켓 정리 (결과 화면용 소켓은 이제 안녕)
+                cleanupGameSocket()
+
+                // 3. 네비게이션 실행 콜백
+                onSuccess()
+            } else {
+                Timber.e("역할 리셋 실패: 대기방 진입 중단")
+            }
+        }
+    }
 
     fun cleanupGameSocket() {
         viewModelScope.launch {
