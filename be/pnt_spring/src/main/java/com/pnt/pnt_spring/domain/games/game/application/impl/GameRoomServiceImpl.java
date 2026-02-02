@@ -343,18 +343,13 @@ public class GameRoomServiceImpl implements GameRoomService {
 		// 2. 게임 상태 초기화
 		game.reset();
 
-		// [중요!] 영속성 컨텍스트가 비워졌으므로 save를 호출하여 강제로 DB에 반영해야 함
 		gameRepository.save(game);
 
-		// 3. 멤버 상태 초기화
-		// 여기서도 멤버들을 다시 조회해야 안전합니다 (Context Clear 영향)
+		// 3. 모든 멤버 나가기 처리
 		List<GameMember> members = gameMemberRepository.findAllByGameId(gameId);
 
 		for (GameMember member : members) {
-			if (member.isDeleted()) {
-				continue;
-			}
-			member.resetForNextGame();
+			member.leave();
 		}
 		// 멤버들의 변경사항도 반영하기 위해 리스트 저장 (혹은 Dirty Checking이 안될 수 있으므로 saveAll 권장)
 		gameMemberRepository.saveAll(members);
