@@ -665,13 +665,15 @@ export class GameController {
     // custom disconnect
     disconnect = async () => {
         this.socket.data.isIntentionalExit = true;
+        const gameId = parseInt(this.socket.data.gameId);
+        const memberId = parseInt(this.socket.data.memberId);
 
-        await this.gameMemberService.updateInGameConnected(this.socket.data.gameId, this.socket.data.memberId, false);
+        await this.gameMemberService.updateInGameConnected(gameId, memberId, false);
 
-        const isGameEnd = await this.gameService.checkGameHaveToFinish(this.socket.data.gameId);
+        const isGameEnd = await this.gameService.checkGameHaveToFinish(gameId);
 
         if (isGameEnd) {
-            await this.gameEnd(this.io, this.redisClient, this.socket.data.gameId, isGameEnd);
+            await this.gameEnd(this.io, this.redisClient, gameId, isGameEnd);
         }
 
         this.socket.disconnect();
