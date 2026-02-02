@@ -332,7 +332,7 @@ fun RoleCountInfo(policeCount: Int, thiefCount: Int, anyCount: Int) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(text = "❓", fontSize = 20.sp); Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "$thiefCount",
+                text = "$anyCount",
                 fontFamily = PixelFont,
                 color = Color.White,
                 fontSize = 20.sp
