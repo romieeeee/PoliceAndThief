@@ -1,6 +1,7 @@
 import amqplib from "amqplib";
 import dotenv from "dotenv";
 import { MQConfig } from "./MQConfig.js";
+import logger from "../config/logger.js";
 
 dotenv.config();
 
@@ -9,7 +10,7 @@ const MQ_URL = MQConfig.URL;
 class MessagingQueue {
     connection = null;
     channel = null;
-    queue = [MQConfig.MQ_ALARM, MQConfig.MQ_IMAGE, MQConfig.MQ_NEWS];
+    queue = [MQConfig.MQ_ALARM, MQConfig.MQ_MISSION, MQConfig.MQ_NEWS];
     exchangeName = MQConfig.EXCHANGE_NAME;
 
     create = async () => {
@@ -19,9 +20,17 @@ class MessagingQueue {
         }
 
         this.connection = await amqplib.connect(MQ_URL);
+        this.connection.on("error", (err) => {
+            logger.error("MQ Connection Error:", err);
+        });
+
         this.channel = await this.connection.createChannel();
+        this.channel.on("error", (err) => {
+            logger.error("MQ Channel Error:", err);
+        });
+
         await this.createQueue();
-        console.log("MQ is connected!");
+        logger.info("MQ is connected!");
         return this;
     }
 
@@ -37,7 +46,7 @@ class MessagingQueue {
     sendMessage = (message, queueKey) => {
         this.channel.publish(this.exchangeName, queueKey, Buffer.from(JSON.stringify(message)), (error) => {
             if (error) {
-                console.error("Failed to send mq message:", error);
+                logger.error("Failed to send mq message:", error);
             }
         });
     }

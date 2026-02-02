@@ -3,7 +3,7 @@ import { Router } from "express";
 import { Emitter } from "@socket.io/redis-emitter";
 import { RedisClient } from "../../../socket/utils/client/RedisClient";
 
-const NEWS_NAMESPACE = "/news";
+const GAME_NAMESPACE = "/game";
 
 export class NewController {
     constructor() {
@@ -27,8 +27,8 @@ export class NewController {
             const { gameId, newsId, success } = payload;
 
             if (success) {
-                this.emitter.of(NEWS_NAMESPACE).to(gameId).emit("get news", payload);
-                this.redisClient.setNews(gameId, newsId);
+                this.emitter.of(GAME_NAMESPACE).to(gameId).emit("get news", { gameId, newsId });
+                await this.redisClient.setNews(gameId, newsId);
             }
 
             res.status(200).json({ message: "News sent successfully" });

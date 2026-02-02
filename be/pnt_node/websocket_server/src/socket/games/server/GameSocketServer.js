@@ -3,6 +3,8 @@ import { resolveInSocket } from "../../../global/auth/JwtResolver.js";
 import { RedisClient } from "../../utils/client/RedisClient.js";
 import MessagingQueue from "../../../global/mq/MessagingQueue.js";
 import { sendError } from "../../../global/util/SocketError.js";
+import { withLogging } from "../../../global/util/socketWrapper.js";
+import logger from "../../../global/config/logger.js";
 
 const redisClient = new RedisClient();
 
@@ -31,11 +33,11 @@ const gameSocketServer = (io) => {
                 try {
                     await redisClient.deleteByCompletedReconnect(socket, "game", storedGameId);
                     await gameController.gameMemberService.updateInGameConnected(integerGameId, socket.data.memberId, true);
-                    console.log("reconnect", storedGameId);
+                    logger.info("reconnect", storedGameId);
 
                     socket.emit("reconnect", { gameId: storedGameId });
                 } catch (error) {
-                    console.error(`[GameSocketServer] Reconnect failed partially for user ${socket.data.memberId}:`, error.message);
+                    logger.error(`[GameSocketServer] Reconnect failed partially for user ${socket.data.memberId}:`, error.message);
                     // 진행을 막지 않음. 소켓은 이미 룸에 조인되어 있음(deleteByCompletedReconnect 내부에서).
                 }
             }
@@ -43,38 +45,38 @@ const gameSocketServer = (io) => {
             console.log("websocket is connected!");
 
             // 게임 관련 이벤트
-            socket.on("post join room", gameController.joinRoom);
-            socket.on("post gps", gameController.postGps);
-            socket.on("post arrest", gameController.postArrest);
-            socket.on("post skill use", gameController.postSkillUse);
-            socket.on("post mission image", gameController.postMissionImage);
-            socket.on("post after game end", gameController.postGameEndAfter);
-            socket.on("post sync game info", gameController.syncGameInfo);
+            socket.on("post join room", withLogging("joinRoom", gameController.joinRoom, socket, "GameError"));
+            socket.on("post gps", withLogging("postGps", gameController.postGps, socket, "GameError"));
+            socket.on("post arrest", withLogging("postArrest", gameController.postArrest, socket, "GameError"));
+            socket.on("post skill use", withLogging("postSkillUse", gameController.postSkillUse, socket, "GameError"));
+            socket.on("post mission image", withLogging("postMissionImage", gameController.postMissionImage, socket, "GameError"));
+            socket.on("post after game end", withLogging("postGameEndAfter", gameController.postGameEndAfter, socket, "GameError"));
+            socket.on("post sync game info", withLogging("syncGameInfo", gameController.syncGameInfo, socket, "GameError"));
 
-            socket.on("post reset game", gameController.gameReset);
+            socket.on("post reset game", withLogging("gameReset", gameController.gameReset, socket, "GameError"));
 
-            socket.on("post disconnect", gameController.disconnect);
+            socket.on("post disconnect", withLogging("disconnect", gameController.disconnect, socket, "GameError"));
 
-            socket.on("post retry end game", gameController.retryEndGame);
+            socket.on("post retry end game", withLogging("retryEndGame", gameController.retryEndGame, socket, "GameError"));
 
-            socket.on("post update access token", gameController.postUpdateAccessToken);
+            socket.on("post update access token", withLogging("postUpdateAccessToken", gameController.postUpdateAccessToken, socket, "GameError"));
 
             socket.on("disconnect", async () => {
                 if (socket.data.isIntentionalExit) {
-                    console.log("socket의 연결이 정상적으로 끊어졌습니다.");
+                    logger.info("socket의 연결이 정상적으로 끊어졌습니다.");
                     return;
                 } else {
                     // 비정상적인 소켓 종료 => 채팅방 퇴장 db 처리 X
-                    console.log(`socket의 연결이 비정상적으로 끊어졌습니다. (Room: ${socket.data.gameId})`);
+                    logger.info(`socket의 연결이 비정상적으로 끊어졌습니다. (Room: ${socket.data.gameId})`);
 
                     if (socket.data.gameId) {
                         await redisClient.pubReconnectTimer("game", socket, socket.data.gameId);
-                        console.log("[GAME] pubReconnectTimer", socket.data.gameId);
+                        logger.info("[GAME] pubReconnectTimer", socket.data.gameId);
                     }
                 }
             });
         } catch (error) {
-            console.error("gameSocketServer error", error);
+            logger.error("gameSocketServer error", error);
             sendError(socket, error, "GameError");
         }
     });
