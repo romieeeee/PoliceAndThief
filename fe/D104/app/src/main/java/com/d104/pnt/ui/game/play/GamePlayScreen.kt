@@ -2,6 +2,11 @@ package com.d104.pnt.ui.game.play
 
 import android.content.Intent
 import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,10 +49,12 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
+import com.d104.pnt.data.repository.GameSessionEvent
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.service.location.LocationService
 import com.d104.pnt.ui.component.ContDownUI
 import com.d104.pnt.ui.component.ExpandableCard
+import com.d104.pnt.ui.component.GameEndOverlay
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.game.play.PhoneScreen.THIEF_LIST
@@ -66,12 +74,15 @@ import timber.log.Timber
 fun GamePlayScreen(
     gameId: Long,
     role: GameRole,
-    onGameEnd: (Long) -> Unit,
+    onBackToHome: () -> Unit,
+    onNavigateToLoading: (Long) -> Unit,
     goToCamera: () -> Unit,
     viewModel: GamePlayViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    var backPressedTime by remember { mutableLongStateOf(0L) }
 
     var clicked by remember { mutableStateOf(false) }
     var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
@@ -103,6 +114,58 @@ fun GamePlayScreen(
     }
 
     // 위치서비스 시작/종료
+    var showGameOverOverlay by remember { mutableStateOf(false) }
+
+    var showThiefEscaped by remember { mutableStateOf(false) }
+    var escapedThiefNickname by remember { mutableStateOf("") }
+
+    val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
+
+    // ✅ ToneGenerator 직접 생성 금지 -> GameFeedbackManager로 통일
+    // (테스트용이라도 여기서 직접 ToneGenerator 만들면 연타 시 AudioTrack(-12) 가능)
+    val feedbackManager = remember { GameFeedbackManager(context.applicationContext) }
+
+    // =========================================================
+    // ===== TEST ONLY (BEEP) START =============================
+    // 서버/소켓 이벤트 없이도 소리/진동이 나는지 확인하는 테스트 코드입니다.
+    //
+    // ✅ 사용법:
+    // - TEST_FORCE_BEEP = true  : 테스트 활성화 (도둑 화면에서만)
+    // - TEST_FORCE_BEEP = false : 테스트 비활성화 (실서버 이벤트만)
+    //
+    // ✅ 테스트 끝나면:
+    // - TEST_FORCE_BEEP를 false로 돌리거나
+    // - 이 블록(START~END) 통째로 삭제하면 됩니다.
+    // =========================================================
+    val TEST_FORCE_BEEP = false
+
+    LaunchedEffect(TEST_FORCE_BEEP, role) {
+        if (!TEST_FORCE_BEEP) return@LaunchedEffect
+        if (role != GameRole.THIEF) return@LaunchedEffect
+
+        // 화면 진입 후 2초 뒤 경고음 1번 (거리 12m 가정)
+        delay(2000)
+        feedbackManager.playBeepAlert(distance = 12.0)
+    }
+    // ===== TEST ONLY (BEEP) END ===============================
+    // =========================================================
+
+
+    BackHandler {
+        if (System.currentTimeMillis() - backPressedTime <= 1500) {
+            viewModel.manualLeaveGame()
+            onBackToHome()
+        } else {
+            backPressedTime = System.currentTimeMillis()
+            Toast.makeText(
+                context,
+                "한 번 더 누르면 게임에서 나갑니다",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    // 위치서비스 시작 / 종료
     DisposableEffect(Unit) {
         val serviceIntent = Intent(context, LocationService::class.java).apply {
             putExtra(LocationService.EXTRA_GAME_MODE, true)
@@ -119,12 +182,15 @@ fun GamePlayScreen(
 
     // 게임 초기화 + UI 이벤트
     LaunchedEffect(Unit) {
-        viewModel.setDefaultArea(context)
         viewModel.initGame()
 
         viewModel.uiEvent.collect { event ->
-            when (event) {
-                is GamePlayUiEvent.NavigateToNews -> onGameEnd(event.gameId)
+            if (event is GameSessionEvent.NavigateToLoading) {
+                showGameOverOverlay = true
+
+                delay(5000L)
+
+                onNavigateToLoading(event.gameId)
             }
         }
     }
@@ -132,9 +198,31 @@ fun GamePlayScreen(
     // beep 이벤트 collect (도둑만)
     LaunchedEffect(role) {
         if (role != GameRole.THIEF) return@LaunchedEffect
+
         viewModel.beepEvent.collect { beep ->
             Timber.d("🚨 beepEvent: policeId=${beep.policeId}, thiefId=${beep.thiefId}, distance=${beep.distance}")
+
+            // distance 기반 난이도 패턴 적용
             feedbackManager.playBeepAlert(distance = beep.distance)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            if (escapeQueue.isNotEmpty() && !showThiefEscaped) {
+                escapedThiefNickname = escapeQueue.first()
+                showThiefEscaped = true
+
+                delay(3000)
+
+                showThiefEscaped = false
+
+                viewModel.removeFirstEscape()
+
+                delay(500)
+            } else {
+                delay(100)
+            }
         }
     }
 
@@ -149,14 +237,26 @@ fun GamePlayScreen(
 
         Box(modifier = Modifier.fillMaxSize()) {
 
-            // (테스트용) 도둑 beep 버튼
+            // 상단 버튼 영역
+
+            // =========================================================
+            // ===== TEST ONLY (BEEP UI) START ==========================
+            // 화면에서 버튼 눌러서 수동으로 경고음/진동 테스트하는 UI 입니다.
+            // 필요 없으면 이 블록만 삭제하면 됩니다.
+            // =========================================================
             if (TEST_FORCE_BEEP && role == GameRole.THIEF) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .systemBarsPadding()
                         .padding(top = 10.dp, end = 12.dp)
-                        .clickable { scope.launch { feedbackManager.playBeepAlert(distance = 8.0) } }
+                        .clickable {
+                            // 클릭할 때마다 "아주 가까움" 패턴 테스트 (8m)
+                            scope.launch {
+                                Timber.d("🧪 TEST BEEP 버튼 클릭")
+                                feedbackManager.playBeepAlert(distance = 8.0)
+                            }
+                        }
                 ) {
                     PixelContainer(
                         modifier = Modifier,
@@ -173,8 +273,10 @@ fun GamePlayScreen(
                     }
                 }
             }
+            // ===== TEST ONLY (BEEP UI) END ============================
+            // =========================================================
 
-            // ✅ 상단 버튼 영역 (헬기 버튼 제거 완료)
+            // 상단 버튼 영역 (고정)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -201,7 +303,7 @@ fun GamePlayScreen(
                     )
                 }
 
-                // 오른쪽: 경찰 기능 버튼들 (기존 유지)
+                // 오른쪽: 경찰 기능 버튼들
                 if (role == GameRole.POLICE) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         PixelIconButton(
@@ -220,25 +322,27 @@ fun GamePlayScreen(
                             )
                         }
 
-                        PixelIconButton(
-                            modifier = Modifier.size(50.dp),
-                            borderColor = ButtonDisabled,
-                            pixelSize = 3.dp,
-                            onClick = {
-                                phoneScreen = THIEF_LIST
-                                clicked = !clicked
-                            }
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_thief_list),
-                                contentDescription = null,
-                                tint = Color.Unspecified
-                            )
+                    PixelIconButton(
+                        modifier = Modifier.size(50.dp),
+                        borderColor = ButtonDisabled,
+                        pixelSize = 3.dp,
+                        onClick = {
+                            phoneScreen = THIEF_LIST
+                            clicked = !clicked
                         }
+                    ) {
+                        Icon(
+                            painter = painterResource(
+                                if (role == GameRole.POLICE) R.drawable.ic_thief_list
+                                else R.drawable.ic_mission_list
+                            ),
+                            contentDescription = null,
+                            tint = Color.Unspecified
+                        )
                     }
-                } else {
-                    Spacer(modifier = Modifier.size(50.dp))
                 }
+
+
             }
 
             // 중앙 컨텐츠
@@ -252,7 +356,7 @@ fun GamePlayScreen(
                 ContDownUI(remainingSeconds = 180)
                 Spacer(modifier = Modifier.height(30.dp))
 
-                // ✅ 헬기는 FlipImage "뒷면"이 버튼 역할
+                // 헬기는 FlipImage "뒷면"이 버튼 역할
                 // - 청장이 아니면 아예 뒤집기 금지(canFlip=false)
                 // - 버튼 비활성화 상태면 회색처리는 FlipImage 내부에서
                 FlipImage(
@@ -271,7 +375,10 @@ fun GamePlayScreen(
         // 하단 시트
         if (role == GameRole.THIEF) {
             MissionBottomSheet {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // == 안내 메시지 ==
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     Text(
                         modifier = Modifier.fillMaxWidth(),
                         text = "미션 성공 시",
@@ -296,8 +403,12 @@ fun GamePlayScreen(
                     userScrollEnabled = true
                 ) {
                     items(6) { index ->
-                        ExpandableCard(title = "맨홀 뚜껑 촬영하기 ${index + 1}") {
-                            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                        ExpandableCard(
+                            title = "맨홀 뚜껑 촬영하기 ${index + 1}"
+                        ) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(20.dp)
+                            ) {
                                 Text(
                                     modifier = Modifier.fillMaxWidth(),
                                     text = "주변의 맨홀 뚜껑을 촬영하여 지하 탈출구를 확보하세요.",
@@ -327,12 +438,18 @@ fun GamePlayScreen(
                         }
                     }
 
-                    item { Spacer(modifier = Modifier.height(100.dp)) }
+                    // 마지막 아이템 뒤 여백 추가
+                    item {
+                        Spacer(modifier = Modifier.height(100.dp))
+                    }
                 }
             }
         } else {
             WalkieBottomSheet {
-                WalkieTalkieScreen(gameId = "1f", teamType = "police")
+                WalkieTalkieScreen(
+                    gameId = "1f",
+                    teamType = "police"
+                )
             }
         }
     }
@@ -347,7 +464,9 @@ fun GamePlayScreen(
         ) {
             PhoneFrame(
                 screen = phoneScreen,
-                onScanSuccess = { _ -> phoneScreen = PhoneScreen.THIEF_LIST },
+                onScanSuccess = { result ->
+                    phoneScreen = PhoneScreen.THIEF_LIST
+                },
                 role = role,
                 currentLocation = LatLng(currentLocation.latitude, currentLocation.longitude),
                 areaPoints = areaPoints,
@@ -402,6 +521,46 @@ fun GamePlayScreen(
                 Spacer(modifier = Modifier.height(130.dp))
             }
         }
+    }
+
+    // 도둑 탈출 알림
+    if (showThiefEscaped && role == GameRole.POLICE) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(100f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.fillMaxHeight(0.75f))
+
+            Text(
+                text = "도둑이 탈출에\n성공했습니다!",
+                fontFamily = PixelFont,
+                color = Color.Yellow,
+                fontSize = 40.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                lineHeight = 45.sp
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = escapedThiefNickname,
+                fontFamily = PixelFont,
+                color = Color.White,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+
+    AnimatedVisibility(
+        visible = showGameOverOverlay,
+        enter = slideInHorizontally() + fadeIn()
+    ) {
+        GameEndOverlay()
     }
 }
 

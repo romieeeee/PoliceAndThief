@@ -53,7 +53,7 @@ class GameCreateViewModel @Inject constructor(
     fun updateTotalPlayers(plus: Boolean) {
         if (plus && _totalPlayers.value < 30) {
             _totalPlayers.value += 1
-        } else if (!plus && _totalPlayers.value > 2) {
+        } else if (!plus && _totalPlayers.value > 2) { // TODO: 나중에 5로 수정
             _totalPlayers.value -= 1
         } else {
             return

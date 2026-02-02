@@ -1,0 +1,153 @@
+package com.d104.pnt.ui.game.end.news
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.d104.pnt.R
+import com.d104.pnt.domain.model.common.UiState
+import com.d104.pnt.ui.game.end.GameResultViewModel
+import com.d104.pnt.ui.theme.PixelFont
+
+
+@Composable
+fun NewsScreen(
+    gameId: Long,
+    newsId: Long,
+    viewModel: GameResultViewModel = hiltViewModel(),
+    onNextClick: () -> Unit
+) {
+    val newsState = viewModel.newsState
+    var showSkipDialog by remember { mutableStateOf(false) }
+
+    // 뒤로가기 시 스킵 다이얼로그 표시
+    BackHandler { showSkipDialog = true }
+
+    when (newsState) {
+        is UiState.Success -> {
+            val news = newsState.data
+
+            // 메인 뉴스 화면 레이아웃
+            Box(modifier = Modifier.fillMaxSize()) {
+                // 1. 배경 (뉴스 스튜디오)
+                Image(
+                    painter = painterResource(id = R.drawable.img_breaking_news),
+                    contentDescription = "뉴스 스튜디오",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // 2. 어두운 오버레이
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.2f))
+                )
+
+                // 3. 중앙 뉴스 콘텐츠 (아나운서 + 스크립트)
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 380.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // 아나운서 캐릭터
+                    NewsAnchor(modifier = Modifier.size(240.dp), isSpeaking = true)
+
+                    // 타이핑 효과가 적용된 뉴스 본문
+                    NewsScriptBox(content = news.content)
+                }
+
+                // 4. 하단 뉴스 티커 (승리 팀 및 요약 정보)
+                val tickerText = news.title
+
+                Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                    NewsTickerBar(text = tickerText)
+                }
+
+                // 5. 우측 상단 스킵 버튼
+                SkipButton(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 48.dp, end = 24.dp),
+                    onClick = { showSkipDialog = true }
+                )
+
+                // 6. 스킵 확인 다이얼로그 (1분 대기 안내 포함 가능)
+                if (showSkipDialog) {
+                    SkipConfirmationDialog(
+                        onConfirm = {
+                            showSkipDialog = false
+                            onNextClick() // 대기방(Home)으로 이동
+                        },
+                        onDismiss = { showSkipDialog = false }
+                    )
+                }
+            }
+        }
+
+        is UiState.Error -> {
+            // 에러 발생 시 처리 (재시도 버튼 등 추가 가능)
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "⚠️ 뉴스를 불러오지 못했습니다.", color = Color.White, fontFamily = PixelFont)
+                    Text(
+                        text = newsState.message,
+                        color = Color.Red.copy(alpha = 0.7f),
+                        fontSize = 12.sp
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "돌아가기",
+                        color = Color.Yellow,
+                        modifier = Modifier.clickable { onNextClick() }
+                    )
+                }
+            }
+        }
+
+        else -> {
+            /* Idle 상태 처리 */
+        }
+    }
+}
+
+@Composable
+private fun SkipButton(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Text(
+        text = "SKIP >>",
+        color = Color.White,
+        fontFamily = PixelFont,
+        fontSize = 18.sp,
+        modifier = modifier
+            .clickable { onClick() }
+            .padding(12.dp)
+    )
+}

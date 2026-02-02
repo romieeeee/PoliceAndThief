@@ -7,6 +7,7 @@ import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.util.AuthEventBus
+import com.d104.pnt.util.socket.GameSocketManager
 import com.d104.pnt.util.socket.RoomSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -25,7 +26,8 @@ class HomeViewModel @Inject constructor(
     private val gameRoomRepository: GameRoomRepository,
     private val authEventBus: AuthEventBus,
     private val roomSocketManager: RoomSocketManager,
-    private val chatSocketManager: RoomSocketManager
+    private val chatSocketManager: RoomSocketManager,
+    private val gameSocketManager: GameSocketManager,
 ) : ViewModel() {
 
     private val _joinCode = MutableStateFlow("")
@@ -95,5 +97,6 @@ class HomeViewModel @Inject constructor(
 
     fun cleanupSocket() {
         roomSocketManager.cleanup()
+        gameSocketManager.cleanup()
     }
 }

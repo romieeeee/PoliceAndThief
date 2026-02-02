@@ -73,6 +73,8 @@ class GameRoomViewModel @Inject constructor(
     // 역할 변경 중 상태
     private val _changingRoleMemberIds = MutableStateFlow<Set<Long>>(emptySet())
 
+    private var isJoined = false // 플래그 추가
+
     init {
         roomSocketManager.currentRoomId = roomId
         setupRoomCallbacks()
@@ -90,15 +92,31 @@ class GameRoomViewModel @Inject constructor(
     }
 
     private fun syncData() {
-        viewModelScope.launch {
-            while (!roomSocketManager.isConnected()) {
-                delay(200)
-            }
+        if (isJoined) return // 이미 가입 절차 중이면 무시
+        isJoined = true
 
-            roomSocketManager.joinRoom(roomId) { success, _ ->
-                if (success) {
-                    roomSocketManager.requestRoomInfo(roomId)
-                    roomSocketManager.requestReadyInfo(roomId)
+        viewModelScope.launch {
+            val token = authRepository.getAccessToken().first()
+
+            if (token.isNotEmpty()) {
+                roomSocketManager.currentRoomId = roomId
+                roomSocketManager.connect(token)
+
+                var retryCount = 0
+                while (!roomSocketManager.isConnected() && retryCount < 50) {
+                    delay(200)
+                    retryCount++
+                }
+
+                if (roomSocketManager.isConnected()) {
+                    roomSocketManager.joinRoom(roomId) { success, _ ->
+                        if (success) {
+                            Timber.d("🌐 소켓 연결 및 방 입장 완료")
+                        }
+                    }
+                } else {
+                    Timber.e("❌ 소켓 연결 실패")
+                    _uiState.value = UiState.Error("소켓 연결에 실패했습니다.")
                 }
             }
         }
@@ -212,6 +230,13 @@ class GameRoomViewModel @Inject constructor(
 
                     Timber.d("🎮 최종 역할 확정: $myFinalRole (ID: $myId)")
 
+                    // 결정된 정보 저장
+                    gameSessionRepository.setFinalRole(myFinalRole)
+                    gameSessionRepository.setMemberId(myId)
+                    locationRepository.setPrisonLocation(LatLng(_roomInfo.value.prison!!.lat, _roomInfo.value.prison!!.lng))
+                    locationRepository.setPolygonPoints(_roomInfo.value.polygon!!.map { LatLng(it.lat, it.lng) })
+
+
                     delay(300)
                     roomSocketManager.disconnect()
 
@@ -246,9 +271,7 @@ class GameRoomViewModel @Inject constructor(
                     }
 
                     val prisonLocation = Location(data.prisonLat, data.prisonLng)
-                    val cachedPolygon = cachedRoom?.polygon?.map {
-                        Location(it.latitude, it.longitude)
-                    } ?: emptyList()
+//                    val polygon = data.boundaryGeo.coordinates.map { Location(it[0][1], it[0][1]) }
 
                     _roomInfo.value = _roomInfo.value.copy(
                         roomCode = finalRoomCode,
@@ -261,9 +284,9 @@ class GameRoomViewModel @Inject constructor(
                         thiefCount = data.thiefCount,
 
                         prison = prisonLocation,
-                        polygon = cachedPolygon
+                        polygon = _roomInfo.value.polygon
                     )
-                    Timber.d("RoomSettings: 설정 로드 완료 (Code: $finalRoomCode, Polygon: ${cachedPolygon.size})")
+                    Timber.d("RoomSettings: 설정 로드 완료 (Code: $finalRoomCode, Polygon: ${_roomInfo.value.polygon})")
                 }
 
                 is BaseResult.Error -> {
@@ -353,8 +376,25 @@ class GameRoomViewModel @Inject constructor(
                 }
                 return // 이후 로직 중단
             }
+            Timber.d("전체 방정보 ${data}")
+
+            _roomInfo.value = _roomInfo.value.copy(
+                roomCode = data.room.roomCode,
+
+                maxCount = data.roomSetting.playerCount,
+                timeLimit = data.roomSetting.timeLimit,
+                missionCount = _roomInfo.value.missionCount,
+                cctvCycle = _roomInfo.value.cctvCycle,
+                policeCount = data.roomSetting.policeCount,
+                thiefCount = data.roomSetting.thiefCount,
+
+                prison = Location(data.roomSetting.prisonLat, data.roomSetting.prisonLng),
+                polygon = data.roomSetting.boundaryGeo.coordinates[0].map { Location(it[1], it[0]) }
+            )
+            Timber.d("감옥 위치 ${_roomInfo.value.prison}, 폴리곤 ${_roomInfo.value.polygon}")
+
         } catch (e: Exception) {
-            Timber.e(e, "❌ 방 정보 파싱 실패")
+            Timber.e(e, "❌ 방 정보 파싱 실패 ${data}")
             _uiState.value = UiState.Error("방 정보 파싱 실패")
         }
     }

@@ -12,9 +12,14 @@ interface GameSessionRepository {
     val missions: StateFlow<List<MissionSocketDto>>
     val eventFlow: SharedFlow<GameSessionEvent>
     val isOutOfBoundary: StateFlow<Boolean>
+    val myMemberId: StateFlow<Long>
+    val myRole: StateFlow<String>
 
     val chiefMemberId: StateFlow<Long?>
 
+
+    fun setMemberId(memberId: Long)
+    fun setFinalRole(role: String)
     fun connectAndJoin(gameId: Long)
     fun gameInit()
     fun startGameSession()
