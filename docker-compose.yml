@@ -141,6 +141,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
+      - ./logs:/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -160,7 +161,7 @@ services:
       dockerfile: Dockerfile
     container_name: consumer-server
     ports:
-      - "8091:8091"
+      - "8095:8095"
     env_file:
       - .env
     environment:
@@ -176,6 +177,27 @@ services:
       rabbitmq:
         condition: service_healthy
       mongodb:
+        condition: service_healthy
+      websocket-server:
+        condition: service_started
+    networks:
+      - backend-network
+
+  # 9. GPS Worker
+  gps-worker:
+    build:
+      context: ./be/pnt_node/gps_worker
+      dockerfile: Dockerfile
+    container_name: gps-worker
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Seoul
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    depends_on:
+      redis:
         condition: service_healthy
       websocket-server:
         condition: service_started
