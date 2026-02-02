@@ -1,4 +1,4 @@
-package com.d104.pnt.ui.game.end.ainews
+package com.d104.pnt.ui.game.end.news
 
 import android.os.Build
 import androidx.compose.foundation.Image
@@ -24,9 +24,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
@@ -36,7 +36,23 @@ import com.d104.pnt.ui.theme.PixelFont
 import kotlinx.coroutines.delay
 
 @Composable
-fun AiNewsLoadingScreen() {
+fun NewsLoadingScreen(
+    gameId: Long,
+    onNewsReady: (Long, Long) -> Unit,
+    viewModel: AiNewsLoadingViewModel = hiltViewModel()
+) {
+
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is NewsLoadingUiEvent.NavigateToActualNews -> {
+                    // 소켓 OK + HTTP OK인 상태! 이제 진짜 뉴스로 이동
+                    onNewsReady(event.gameId, event.newsId)
+                }
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.img_waitingroom),

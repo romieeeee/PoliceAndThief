@@ -52,11 +52,14 @@ object Routes {
 
     const val MISSION_CAMERA = "mission_camera"
 
+    const val GAME_NEWS_LOADING = "game_news_loading"
+    fun buildNewsLoading(gameId: Long) = "$GAME_NEWS_LOADING/$gameId"
+
+    const val GAME_NEWS = "game_news"
+    fun buildGameNews(gameId: Long, newsId: Long) = "$GAME_NEWS/$gameId/$newsId"
+
     const val GAME_RESULT = "game_result"                // 게임 결과
     fun buildGameResult(gameId: Long) = "$GAME_RESULT/$gameId"
-
-    const val GAME_NEWS = "game_news"                    // 결과 뉴스
-    fun buildGameNews(newsId: Long) = "$GAME_NEWS/$newsId"
 
     // ===== 프로필 =====
     const val PROFILE_DETAIL = "profile_detail"          // 다른 유저 프로필

@@ -3,19 +3,37 @@ package com.d104.pnt.ui.game.end
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d104.pnt.data.remote.model.response.GameNewsResponse
+import com.d104.pnt.data.repository.GameRepository
+import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.data.repository.ReportRepository
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
+import com.d104.pnt.navigation.NavArgs
+import com.d104.pnt.util.socket.GameSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.launch
+import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
 class GameResultViewModel @Inject constructor(
-    private val reportRepository: ReportRepository
+    private val reportRepository: ReportRepository,
+    private val roomRepository: GameRoomRepository,
+    private val gameRepository: GameRepository,
+    private val gameSocketManager: GameSocketManager,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val gameId: Long = savedStateHandle.get<Long>(NavArgs.GAME_ID) ?: 0L
+    private val newsId: Long = savedStateHandle.get<Long>(NavArgs.NEWS_ID) ?: 0L
+
+    // 뉴스 전송 상태
+    var newsState by mutableStateOf<UiState<GameNewsResponse>>(UiState.Idle)
+        private set
 
     var reportStep by mutableStateOf(ReportStep.NONE)
         private set
@@ -26,6 +44,29 @@ class GameResultViewModel @Inject constructor(
     // 신고 전송 상태 (로딩/에러 표시용)
     var reportSendState by mutableStateOf<UiState<Unit>>(UiState.Idle)
         private set
+
+
+    init {
+        fetchNewsData(gameId)
+    }
+
+
+    private fun fetchNewsData(gId: Long) {
+        if (gId == 0L) return
+
+        viewModelScope.launch {
+            newsState = UiState.Loading
+            when (val result = gameRepository.getGameNews(gId)) {
+                is BaseResult.Success -> {
+                    newsState = UiState.Success(result.data)
+                }
+
+                is BaseResult.Error -> {
+                    newsState = UiState.Error(result.error.message ?: "데이터 호출 실패")
+                }
+            }
+        }
+    }
 
     fun openReportDialog() {
         reportStep = ReportStep.INPUT
@@ -55,12 +96,14 @@ class GameResultViewModel @Inject constructor(
 
             val reasonEnum = mapReasonKrToServerEnum(draft.reasonKr)
 
-            when (val result = reportRepository.createReport(draft.nickname, reasonEnum, draft.detail)) {
+            when (val result =
+                reportRepository.createReport(draft.nickname, reasonEnum, draft.detail)) {
                 is BaseResult.Success -> {
                     reportSendState = UiState.Success(Unit)
                     draft = ReportDraft()
                     reportStep = ReportStep.SUCCESS
                 }
+
                 is BaseResult.Error -> {
                     reportSendState = UiState.Error(result.error.message ?: "신고 실패")
                     // CONFIRM 유지하면서 에러 보여주기 추천
@@ -77,7 +120,32 @@ class GameResultViewModel @Inject constructor(
             "구역 이탈" -> "OUT_OF_AREA"
             else -> "ETC"
         }
+
+    fun backToLobby(roomId: Long, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            // 1. HTTP: 역할을 'ANY'로 리셋 (대기방 진입 준비)
+            val result = roomRepository.changePosition(roomId, "ANY")
+
+            if (result is BaseResult.Success) {
+                // 2. 게임 소켓 정리 (결과 화면용 소켓은 이제 안녕)
+                cleanupGameSocket()
+
+                // 3. 네비게이션 실행 콜백
+                onSuccess()
+            } else {
+                Timber.e("역할 리셋 실패: 대기방 진입 중단")
+            }
+        }
+    }
+
+    fun cleanupGameSocket() {
+        viewModelScope.launch {
+            Timber.d("📡 뉴스 화면 종료 - 게임 소켓 정리")
+            gameSocketManager.disconnect()
+        }
+    }
 }
+
 
 data class ReportDraft(
     val nickname: String = "",
