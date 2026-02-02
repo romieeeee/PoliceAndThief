@@ -28,6 +28,7 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val stepSensorManager: StepSensorManager,
     private val authRepository: AuthRepository,
     private val locationRepository: LocationRepository
+
 ): GameSessionRepository {
     // 실시간 데이터를 저장할 메모리 공간
     private val _gameId = MutableStateFlow(0L)
@@ -45,6 +46,8 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _isOutOfBoundary = MutableStateFlow(false)
     override val isOutOfBoundary = _isOutOfBoundary.asStateFlow()
 
+    private val _chiefMemberId = MutableStateFlow<Long?>(null)
+    override val chiefMemberId = _chiefMemberId.asStateFlow()
 
     private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var gpsJob: Job? = null
@@ -222,6 +225,10 @@ class GameSessionRepositoryImpl @Inject constructor(
         stopGameSession() // 안전하게 트래킹 종료
         gameSocketManager.leaveGame()
         _members.value = emptyList()
+    }
+
+    override fun setChiefMemberId(id: Long?) {
+        _chiefMemberId.value = id
     }
 
     private fun showWarningEffect() {

@@ -2,6 +2,7 @@ package com.d104.pnt.ui.game.play
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -55,6 +57,7 @@ class GamePlayViewModel @Inject constructor(
     // UI 이벤트
     private val _uiEvent = MutableSharedFlow<GamePlayUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
+
     val isOutOfBoundary = gameSessionRepository.isOutOfBoundary
 
     // Beep 이벤트
@@ -82,7 +85,10 @@ class GamePlayViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    private var myMemberId: Long = 0L
+    // 내 id
+    private val _myMemberId = MutableStateFlow(0L)
+    val myMemberId: StateFlow<Long> = _myMemberId.asStateFlow()
+
     private var warningJob: Job? = null
 
     // =========================
@@ -91,6 +97,10 @@ class GamePlayViewModel @Inject constructor(
     private val _helicopterState = MutableStateFlow(HelicopterUiState())
     val helicopterState = _helicopterState.asStateFlow()
 
+    // "게임당 1회"
+    private val _helicopterUsed = MutableStateFlow(false)
+    val helicopterUsed: StateFlow<Boolean> = _helicopterUsed.asStateFlow()
+
     // CCTV로 잡힌 도둑(평소 1명 공개용)
     private val _cctvThiefId = MutableStateFlow<Long?>(null)
     val cctvThiefId = _cctvThiefId.asStateFlow()
@@ -98,6 +108,29 @@ class GamePlayViewModel @Inject constructor(
     // 경찰 미니맵에서 표시할 플레이어들(경찰 + (CCTV 1명 도둑 or 도둑 전체))
     private val _minimapPlayers = MutableStateFlow<List<PlayerData>>(emptyList())
     val minimapPlayers: StateFlow<List<PlayerData>> = _minimapPlayers.asStateFlow()
+
+
+    // ✅ 청장 memberId (null이면 0으로 치환해서 UI에서 쓰기 편하게)
+    val chiefMemberId: StateFlow<Long> =
+        gameSessionRepository.chiefMemberId
+            .map { it ?: 0L }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
+    /**
+     * ✅ 청장 여부
+     * - gameSessionRepository에 chiefMemberId가 있어야 함 (StateFlow<Long?> 같은 형태)
+     */
+    val isChief: StateFlow<Boolean> =
+        combine(myMemberId, gameSessionRepository.chiefMemberId) { myId, chiefId ->
+            chiefId != null && myId != 0L && myId == chiefId
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    /**
+     * ✅ 버튼 enable 여부
+     */
+    val helicopterButtonEnabled: StateFlow<Boolean> =
+        combine(isChief, helicopterUsed) { chief, used ->
+            chief && !used
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     init {
         fetchMyId()
@@ -116,6 +149,7 @@ class GamePlayViewModel @Inject constructor(
                         Timber.d("📰 뉴스 화면 이동 이벤트 수신")
                         _uiEvent.emit(GamePlayUiEvent.NavigateToNews(event.gameId))
                     }
+
                     is GameSessionEvent.GameStarted -> startService(GameActiveService.ACTION_START)
                     is GameSessionEvent.GameEnded -> Timber.d("SessionEvent: GameEnded")
                     is GameSessionEvent.ErrorOccurred -> Timber.d("SessionEvent: ErrorOccurred - ${event.message}")
@@ -127,7 +161,7 @@ class GamePlayViewModel @Inject constructor(
     private fun fetchMyId() {
         viewModelScope.launch {
             authRepository.getMemberId().collect { id ->
-                if (id != 0L) myMemberId = id
+                if (id != 0L) _myMemberId.value = id
             }
         }
     }
@@ -153,21 +187,19 @@ class GamePlayViewModel @Inject constructor(
             Timber.d("📢 beep 수신: policeId=$policeId, thiefId=$thiefId, distance=$distance")
         }
 
-        /**
-         * ⚠️ 여기 중요
-         * 지금 GameSocketManager의 setOnGpsReceived 시그니처가 (sec, JSONArray)인지,
-         * (sec, JSONArray, cctvThiefId, skillUsedAt)인지 프로젝트 코드랑 맞춰야 해요.
-         *
-         * 너가 지금 ViewModel에서 4개 파라미터 받는 형태로 쓰고 있으니,
-         * GameSocketManager도 그 형태로 수정되어 있어야 정상 컴파일 됩니다.
-         */
-        gameSocketManager.setOnGpsReceived { sec, locations, cctvThiefId, skillUsedAt ->
+        // GPS 수신 (locations + cctvThiefId + skillUsedAt)
+        gameSocketManager.setOnGpsReceived { _, locations, cctvThiefId, skillUsedAt ->
             val list = parsePlayersFromGps(locations)
             locationRepository.updatePlayerLocation(list)
 
             _cctvThiefId.value = cctvThiefId
-            updateHelicopterStateFromSkillUsedAt(skillUsedAt)
 
+            // ✅ skillUsedAt이 내려오면 "누가 썼든" 게임당 1회 사용된 상태
+            if (!skillUsedAt.isNullOrBlank()) {
+                _helicopterUsed.value = true
+            }
+
+            updateHelicopterStateFromSkillUsedAt(skillUsedAt)
             recomputeMinimapPlayers(raw = list)
         }
 
@@ -199,6 +231,23 @@ class GamePlayViewModel @Inject constructor(
                     currentList[idx] = old.copy(rawStatus = status)
                     updateMembersList(currentList)
                     Timber.d("GamePlayViewModel: 도둑($thiefId) 상태 변경 -> $status")
+                }
+            }
+        }
+
+        // ✅ 스킬 결과(성공/실패) 수신: 실패면 used 롤백
+        gameSocketManager.setOnSkillResult { result, reason, policeId, startedAt ->
+            Timber.d("🚁 스킬 결과 수신: result=$result, reason=$reason, policeId=$policeId, startedAt=$startedAt")
+
+            val success = result.equals("SUCCESS", ignoreCase = true)
+
+            if (success) {
+                _helicopterUsed.value = true // 확정
+            } else {
+                // 내가 눌렀던 건데 실패면 롤백해줘야 버튼이 다시 살아남
+                val myId = _myMemberId.value
+                if (policeId == myId) {
+                    _helicopterUsed.value = false
                 }
             }
         }
@@ -235,6 +284,33 @@ class GamePlayViewModel @Inject constructor(
     }
 
     // =========================
+    // ✅ 헬기 스킬 사용(청장만, 게임당 1회)
+    // =========================
+    fun useHelicopterSkill() {
+        val myId = _myMemberId.value
+        val chiefId = gameSessionRepository.chiefMemberId.value
+
+        // 청장만
+        if (chiefId == null || myId == 0L || myId != chiefId) {
+            Timber.w("🚁 스킬 사용 불가: 청장 아님 (my=$myId, chief=$chiefId)")
+            return
+        }
+
+        // 1회 제한
+        if (_helicopterUsed.value) {
+            Timber.w("🚁 스킬 사용 불가: 이미 사용됨")
+            return
+        }
+
+        // ✅ 중복 탭 방지: 누르는 순간 잠궈둠 (실패하면 onSkillResult에서 롤백)
+        _helicopterUsed.value = true
+
+        // ✅ 소켓 발행
+        gameSocketManager.useSkill(policeId = myId)
+        Timber.d("🚁 post skill use 요청: gameId=$gameId, policeId=$myId")
+    }
+
+    // =========================
     // 🚁 Helicopter State Logic
     // =========================
     private fun updateHelicopterStateFromSkillUsedAt(skillUsedAtRaw: String?) {
@@ -261,8 +337,12 @@ class GamePlayViewModel @Inject constructor(
         }
 
         val remainingMs = when (phase) {
-            HelicopterPhase.NOTIFY -> (notifyEnd.toEpochMilli() - now.toEpochMilli()).coerceAtLeast(0)
-            HelicopterPhase.REVEAL -> (revealEnd.toEpochMilli() - now.toEpochMilli()).coerceAtLeast(0)
+            HelicopterPhase.NOTIFY ->
+                (notifyEnd.toEpochMilli() - now.toEpochMilli()).coerceAtLeast(0)
+
+            HelicopterPhase.REVEAL ->
+                (revealEnd.toEpochMilli() - now.toEpochMilli()).coerceAtLeast(0)
+
             HelicopterPhase.IDLE -> 0L
         }
 
@@ -317,8 +397,10 @@ class GamePlayViewModel @Inject constructor(
     }
 
     private fun recomputeMinimapPlayers(raw: List<PlayerData>) {
+        val myId = _myMemberId.value
+
         val police = raw.filter {
-            it.position.equals("POLICE", ignoreCase = true) && it.memberId != myMemberId
+            it.position.equals("POLICE", ignoreCase = true) && it.memberId != myId
         }
 
         val thieves = raw.filter { it.position.equals("THIEF", ignoreCase = true) }
@@ -346,7 +428,7 @@ class GamePlayViewModel @Inject constructor(
     private fun startService(action: String) {
         Intent(context, GameActiveService::class.java).also { intent ->
             intent.action = action
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
                 context.startService(intent)

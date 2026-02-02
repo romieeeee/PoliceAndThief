@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.request.Location
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.GameRoomRepository
+import com.d104.pnt.data.repository.GameSessionRepository
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
@@ -38,6 +39,7 @@ class GameRoomViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val locationRepository: LocationRepository,
     private val roomSocketManager: RoomSocketManager,
+    private val gameSessionRepository: GameSessionRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -191,6 +193,11 @@ class GameRoomViewModel @Inject constructor(
         roomSocketManager.setOnGameStarted { data ->
             viewModelScope.launch {
                 try {
+                    // ✅ 1) 경찰청장(chiefMemberId) 저장 (0이면 null 처리)
+                    val chiefId = data.optLong("chiefMemberId", 0L).let { if (it == 0L) null else it }
+                    gameSessionRepository.setChiefMemberId(chiefId)
+                    Timber.d("👮‍♂️ chiefMemberId 저장: $chiefId")
+
                     val membersArray = data.optJSONArray("members") ?: return@launch
                     val myId = _myMemberId.value
                     var myFinalRole = "ANY" // 기본값

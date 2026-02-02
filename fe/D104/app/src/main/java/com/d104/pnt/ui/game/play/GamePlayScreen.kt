@@ -3,7 +3,6 @@ package com.d104.pnt.ui.game.play
 import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -85,6 +84,13 @@ fun GamePlayScreen(
     val isOutOfBoundary by viewModel.isOutOfBoundary.collectAsStateWithLifecycle()
     val minimapPlayers by viewModel.minimapPlayers.collectAsStateWithLifecycle()
 
+    // 🚁 헬기 상태 + 권한 (ViewModel 제공값 사용)
+    val helicopterState by viewModel.helicopterState.collectAsStateWithLifecycle()
+    val isChief by viewModel.isChief.collectAsStateWithLifecycle()
+    val helicopterEnabled by viewModel.helicopterButtonEnabled.collectAsStateWithLifecycle()
+
+    val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
+
     val feedbackManager = remember { GameFeedbackManager(context.applicationContext) }
 
     val TEST_FORCE_BEEP = false
@@ -96,6 +102,7 @@ fun GamePlayScreen(
         feedbackManager.playBeepAlert(distance = 12.0)
     }
 
+    // 위치서비스 시작/종료
     DisposableEffect(Unit) {
         val serviceIntent = Intent(context, LocationService::class.java).apply {
             putExtra(LocationService.EXTRA_GAME_MODE, true)
@@ -110,6 +117,7 @@ fun GamePlayScreen(
         onDispose { context.stopService(serviceIntent) }
     }
 
+    // 게임 초기화 + UI 이벤트
     LaunchedEffect(Unit) {
         viewModel.setDefaultArea(context)
         viewModel.initGame()
@@ -121,6 +129,7 @@ fun GamePlayScreen(
         }
     }
 
+    // beep 이벤트 collect (도둑만)
     LaunchedEffect(role) {
         if (role != GameRole.THIEF) return@LaunchedEffect
         viewModel.beepEvent.collect { beep ->
@@ -130,6 +139,7 @@ fun GamePlayScreen(
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
+        // 배경
         Image(
             modifier = Modifier.fillMaxSize(),
             painter = painterResource(R.drawable.bg_night),
@@ -139,15 +149,14 @@ fun GamePlayScreen(
 
         Box(modifier = Modifier.fillMaxSize()) {
 
+            // (테스트용) 도둑 beep 버튼
             if (TEST_FORCE_BEEP && role == GameRole.THIEF) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .systemBarsPadding()
                         .padding(top = 10.dp, end = 12.dp)
-                        .clickable {
-                            scope.launch { feedbackManager.playBeepAlert(distance = 8.0) }
-                        }
+                        .clickable { scope.launch { feedbackManager.playBeepAlert(distance = 8.0) } }
                 ) {
                     PixelContainer(
                         modifier = Modifier,
@@ -165,6 +174,7 @@ fun GamePlayScreen(
                 }
             }
 
+            // ✅ 상단 버튼 영역 (헬기 버튼 제거 완료)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -174,6 +184,7 @@ fun GamePlayScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // 왼쪽: 지도
                 PixelIconButton(
                     modifier = Modifier.size(50.dp),
                     borderColor = ButtonDisabled,
@@ -190,41 +201,47 @@ fun GamePlayScreen(
                     )
                 }
 
+                // 오른쪽: 경찰 기능 버튼들 (기존 유지)
                 if (role == GameRole.POLICE) {
-                    PixelIconButton(
-                        modifier = Modifier.size(50.dp),
-                        borderColor = ButtonDisabled,
-                        pixelSize = 3.dp,
-                        onClick = {
-                            phoneScreen = PhoneScreen.CAMERA
-                            clicked = !clicked
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        PixelIconButton(
+                            modifier = Modifier.size(50.dp),
+                            borderColor = ButtonDisabled,
+                            pixelSize = 3.dp,
+                            onClick = {
+                                phoneScreen = PhoneScreen.CAMERA
+                                clicked = !clicked
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_camera),
+                                contentDescription = null,
+                                tint = Color.Unspecified
+                            )
                         }
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_camera),
-                            contentDescription = null,
-                            tint = Color.Unspecified
-                        )
-                    }
 
-                    PixelIconButton(
-                        modifier = Modifier.size(50.dp),
-                        borderColor = ButtonDisabled,
-                        pixelSize = 3.dp,
-                        onClick = {
-                            phoneScreen = THIEF_LIST
-                            clicked = !clicked
+                        PixelIconButton(
+                            modifier = Modifier.size(50.dp),
+                            borderColor = ButtonDisabled,
+                            pixelSize = 3.dp,
+                            onClick = {
+                                phoneScreen = THIEF_LIST
+                                clicked = !clicked
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_thief_list),
+                                contentDescription = null,
+                                tint = Color.Unspecified
+                            )
                         }
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_thief_list),
-                            contentDescription = null,
-                            tint = Color.Unspecified
-                        )
                     }
+                } else {
+                    Spacer(modifier = Modifier.size(50.dp))
                 }
             }
 
+            // 중앙 컨텐츠
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -234,10 +251,24 @@ fun GamePlayScreen(
             ) {
                 ContDownUI(remainingSeconds = 180)
                 Spacer(modifier = Modifier.height(30.dp))
-                FlipImage(role = role, memberId = 16L) // TODO
+
+                // ✅ 헬기는 FlipImage "뒷면"이 버튼 역할
+                // - 청장이 아니면 아예 뒤집기 금지(canFlip=false)
+                // - 버튼 비활성화 상태면 회색처리는 FlipImage 내부에서
+                FlipImage(
+                    role = role,
+                    memberId = myMemberId, // ✅ TODO였던 값 수정: 내 memberId로
+                    canFlip = isChief, // ✅ 청장만 뒤집기 가능
+                    helicopterEnabled = helicopterEnabled, // ✅ 1회 사용 후 false
+                    onHelicopterClick = { viewModel.useHelicopterSkill() }
+                )
+
+                // (선택) 상태 안내 텍스트는 원하면 유지, 싫으면 삭제
+                // if (isChief && helicopterState.phase != HelicopterPhase.IDLE) { ... }
             }
         }
 
+        // 하단 시트
         if (role == GameRole.THIEF) {
             MissionBottomSheet {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -306,7 +337,7 @@ fun GamePlayScreen(
         }
     }
 
-    // ✅ PhoneFrame 표시: 위치가 null이면 그냥 안 띄움 (NPE 방지)
+    // PhoneFrame (NPE 방지)
     if (clicked && currentLocation != null && prisonLocation != null) {
         Box(
             modifier = Modifier
@@ -327,6 +358,7 @@ fun GamePlayScreen(
         }
     }
 
+    // 경기구역이탈 오버레이
     if (isOutOfBoundary) {
         Box(
             modifier = Modifier

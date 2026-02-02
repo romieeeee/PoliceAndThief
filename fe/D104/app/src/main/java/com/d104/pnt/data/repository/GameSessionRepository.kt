@@ -13,9 +13,13 @@ interface GameSessionRepository {
     val eventFlow: SharedFlow<GameSessionEvent>
     val isOutOfBoundary: StateFlow<Boolean>
 
+    val chiefMemberId: StateFlow<Long?>
+
     fun connectAndJoin(gameId: Long)
     fun gameInit()
     fun startGameSession()
     fun stopGameSession()
     fun leaveGame()
+
+    fun setChiefMemberId(id: Long?)
 }
