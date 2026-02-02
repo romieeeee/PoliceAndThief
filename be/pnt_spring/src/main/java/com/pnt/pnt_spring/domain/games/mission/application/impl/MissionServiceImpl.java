@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.pnt.pnt_spring.domain.games.mission.api.resp.GameMissionResponse;
 import com.pnt.pnt_spring.domain.games.mission.api.resp.MissionResponse;
 import com.pnt.pnt_spring.domain.games.mission.application.MissionService;
 import com.pnt.pnt_spring.domain.games.mission.entity.GameMission;
@@ -56,33 +57,35 @@ public class MissionServiceImpl implements MissionService {
 	// 인 게임 내 할당된 미션 조회
 	@Override
 	@Transactional(readOnly = true)
-	public List<MissionResponse> getGameAllMissions(Long gameId) {
-		// 미션 목록 조회
+	public List<GameMissionResponse> getGameAllMissions(Long gameId) {
 		List<GameMission> gameMissions = gameMissionRepository.findByGameId(gameId);
 
 		return gameMissions.stream()
-			.map(gm -> MissionResponse.builder()
-				.missionId(gm.getMission().getId()) // 미션 원본 ID
+			.map(gm -> GameMissionResponse.builder() // GameMissionResponse 사용
+				.missionId(gm.getMission().getId())
 				.title(gm.getMission().getTitle())
 				.description(gm.getMission().getDescription())
 				.keyword(gm.getMission().getKeyword())
+				.status(gm.getStatus()) // status 추가
 				.build())
 			.collect(Collectors.toList());
 	}
 
-	// 게임 내 미션 세부항목
 	@Override
 	@Transactional(readOnly = true)
-	public MissionResponse getGameMission(Long gameId, Long missionId) {
-		// 미션 ID로 단건 조회
-		Mission mission = missionRepository.findById(missionId)
+	public GameMissionResponse getGameMission(Long gameId, Long missionId) {
+		// 해당 게임에 할당된 미션인지 검증
+		GameMission gameMission = gameMissionRepository.findByGameIdAndMissionId(gameId, missionId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.MISSION_NOT_FOUND));
 
-		return MissionResponse.builder()
+		Mission mission = gameMission.getMission();
+
+		return GameMissionResponse.builder() // GameMissionResponse 사용
 			.missionId(mission.getId())
 			.title(mission.getTitle())
 			.description(mission.getDescription())
 			.keyword(mission.getKeyword())
+			.status(gameMission.getStatus()) // status 추가
 			.build();
 	}
 }
