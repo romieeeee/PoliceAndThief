@@ -57,15 +57,18 @@ import com.google.android.gms.maps.model.LatLng
 fun GamePlayScreen(
     gameId: Long,
     role: GameRole,
-    onGameEnd: () -> Unit,
+    onGameEnd: (Long) -> Unit,
     goToCamera: () -> Unit,
     viewModel: GamePlayViewModel = hiltViewModel()
 ) {
-    var clicked by remember { mutableStateOf(false) }
-    var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
     val context = LocalContext.current
 
+    var clicked by remember { mutableStateOf(false) }
+    var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
+
     val currentLocation = viewModel.userLocation.collectAsState().value
+    val areaPoints = viewModel.polygonPoints.collectAsStateWithLifecycle().value
+    val prisonLocation = viewModel.prisonLocation.collectAsState().value
 
     val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
 
@@ -82,6 +85,21 @@ fun GamePlayScreen(
 
         onDispose {
             context.stopService(serviceIntent)
+        }
+    }
+
+    // TODO: 레포 기본값 채워주는 코드로 나중에는 지워야함
+    LaunchedEffect(Unit) {
+        viewModel.setDefaultArea(context)
+        viewModel.initGame()
+
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is GamePlayUiEvent.NavigateToNews -> {
+                    // 게임 종료 후 뉴스 화면으로 이동
+                    onGameEnd(event.gameId)
+                }
+            }
         }
     }
 
@@ -286,10 +304,10 @@ fun GamePlayScreen(
                     currentLocation!!.latitude,
                     currentLocation!!.longitude
                 ),
-                areaPoints = listOf(LatLng(36.10714240767934, 128.41581273855473 ), LatLng(36.1071965481732, 128.41656884646858), LatLng(36.106574725807235, 128.41619121949233) ),
+                areaPoints = areaPoints,
                 prisonLocation = LatLng(
-                    36.106908664851346, // TODO: 임시값
-                    128.41614724274035
+                    prisonLocation!!.latitude,
+                    prisonLocation!!.longitude
                 ),
 
                 thiefMembers = thiefMembers

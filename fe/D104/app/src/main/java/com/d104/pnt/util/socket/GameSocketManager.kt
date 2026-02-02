@@ -24,6 +24,8 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         private const val EVENT_POST_MISSION_IMAGE = "post mission image"
         private const val EVENT_POST_SYNC_GAME_INFO = "post sync game info"
         private const val EVENT_POST_RESET_GAME = "post reset game"
+        private const val EVENT_POST_AFTER_GAME_END = "post after game end" // 추가
+
         private const val EVENT_POST_DISCONNECT = "post disconnect"
 
         // Response Events (res)
@@ -39,6 +41,8 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         private const val EVENT_GET_SYNC_GAME_INFO = "get sync game info"
         private const val EVENT_GET_SKILL_USE = "get skill use"
         private const val EVENT_GET_END_GAME = "get end game"
+        private const val EVENT_GET_END_GAME_AFTER = "get end game after"
+
         private const val EVENT_GET_RESET_GAME = "get reset game"
     }
 
@@ -54,6 +58,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     private var onBeepReceived: ((Long, Long, Double) -> Unit)? = null
     private var onGameInfoSynced: ((JSONObject) -> Unit)? = null
     private var onSkillResult: ((String, String?, Long, String?) -> Unit)? = null
+    private var onEndGameAfter: ((JSONObject) -> Unit)? = null
     private var onGameEnded: ((String, String) -> Unit)? = null
 
     override fun setupCustomListeners() {
@@ -214,12 +219,27 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         on(EVENT_GET_END_GAME) { args ->
             try {
                 val data = args[0] as JSONObject
-                val winnerPosition = data.getString("winnerPosition")
-                val message = data.getString("message")
-                Timber.d("게임 종료: winner=$winnerPosition, message=$message")
-                onGameEnded?.invoke(winnerPosition, message)
+
+                val winTeam = data.getString("winTeam")
+
+                val message = data.optString("message", "게임이 종료되었습니다.")
+
+                Timber.d("🎮 게임 종료 수신: 승리팀=$winTeam, 메시지=$message")
+                onGameEnded?.invoke(winTeam, message)
             } catch (e: Exception) {
-                Timber.e(e, "게임 종료 파싱 실패")
+                Timber.e(e, "❌ 게임 종료 파싱 실패: ${e.message}")
+                Timber.e("받은 데이터: ${args[0]}")
+            }
+        }
+
+        // 게임 종료 후 상세 결과 수신
+        on(EVENT_GET_END_GAME_AFTER) { args ->
+            try {
+                val data = args[0] as JSONObject
+                Timber.d("📥 게임 상세 결과 수신 완료")
+                onEndGameAfter?.invoke(data)
+            } catch (e: Exception) {
+                Timber.e(e, "게임 결과 파싱 실패")
             }
         }
     }
@@ -381,6 +401,18 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         disconnect()
     }
 
+    /**
+     * 게임 종료 후 상세 결과 요청
+     */
+    fun postAfterGameEnd(gameId: Long) {
+        val data = JSONObject().apply {
+            put("gameId", gameId)
+        }
+        emit(EVENT_POST_AFTER_GAME_END, data)
+        Timber.d("📤 post after game end 송신 완료")
+    }
+
+
     // ==================== Callback Setters ====================
 
     fun setOnJoinedRoom(callback: (gameId: Long, memberId: Long, message: String) -> Unit) {
@@ -425,6 +457,11 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     fun setOnSkillResult(callback: (result: String, reason: String?, policeId: Long, startedAt: String?) -> Unit) {
         onSkillResult = callback
+    }
+
+
+    fun setOnEndGameAfter(callback: (JSONObject) -> Unit) {
+        onEndGameAfter = callback
     }
 
     fun setOnGameEnded(callback: (winnerPosition: String, message: String) -> Unit) {

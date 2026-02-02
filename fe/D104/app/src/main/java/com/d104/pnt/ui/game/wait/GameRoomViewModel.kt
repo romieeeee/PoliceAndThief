@@ -205,6 +205,7 @@ class GameRoomViewModel @Inject constructor(
 
                     Timber.d("🎮 최종 역할 확정: $myFinalRole (ID: $myId)")
 
+                    delay(300)
                     roomSocketManager.disconnect()
 
                     _uiEvent.emit(GameRoomUiEvent.NavigateToGame(roomId, myFinalRole))
@@ -381,7 +382,7 @@ class GameRoomViewModel @Inject constructor(
                     maxCount = actualData.optInt("playerCount", _roomInfo.value.maxCount),
                     policeCount = actualData.optInt("policeCount", _roomInfo.value.policeCount),
                     thiefCount = actualData.optInt("thiefCount", _roomInfo.value.thiefCount),
-                    timeLimit = actualData.optInt("timeLimit", _roomInfo.value.timeLimit * 60) / 60,
+                    timeLimit = actualData.optInt("timeLimit", _roomInfo.value.timeLimit),
                     missionCount = actualData.optInt("missionCount", _roomInfo.value.missionCount),
                     cctvCycle = actualData.optInt("cctvInterval", _roomInfo.value.cctvCycle),
                     prison = Location(
@@ -446,9 +447,9 @@ class GameRoomViewModel @Inject constructor(
 
             when (val result = gameRoomRepository.startGame(roomId)) {
                 is BaseResult.Success -> {
-                    _uiState.value = UiState.Success(Unit)
-
                     roomSocketManager.gameStart(roomId)
+
+                    delay(500)
 
                     _uiState.value = UiState.Success(Unit)
                 }

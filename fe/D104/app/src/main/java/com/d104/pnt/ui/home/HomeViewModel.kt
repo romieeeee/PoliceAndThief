@@ -9,6 +9,7 @@ import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.util.AuthEventBus
 import com.d104.pnt.util.socket.RoomSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,8 +47,14 @@ class HomeViewModel @Inject constructor(
 
     fun joinGame() {
         viewModelScope.launch {
-            roomSocketManager.disconnect()
-            chatSocketManager.disconnect()
+            try {
+                roomSocketManager.disconnect()
+                chatSocketManager.disconnect()
+                delay(200) // 완전히 끊길 때까지 대기
+            } catch (e: Exception) {
+                Timber.e(e, "소켓 정리 중 오류 (무시)")
+            }
+
 
             val code = _joinCode.value
             if (code.isBlank()) {

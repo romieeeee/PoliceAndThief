@@ -48,11 +48,11 @@ class GameSessionRepositoryImpl @Inject constructor(
     private var gameStartTime: Long = 0L
 
     override fun gameInit(){
-        // 1. 기존 리스너 정리 (혹시 남아있을 수 있으므로)
-        gameSocketManager.removeAllListeners()
-        // 2. 리스너 등록
-        setupSocketListeners()
-        // 3. 정보 동기화 요청 (약간의 딜레이 후)
+//        // 1. 기존 리스너 정리 (혹시 남아있을 수 있으므로)
+//        gameSocketManager.removeAllListeners()
+//        // 2. 리스너 등록
+//        setupSocketListeners()
+//        // 3. 정보 동기화 요청 (약간의 딜레이 후)
         repositoryScope.launch {
             delay(500L)
             gameSocketManager.syncGameInfo()
@@ -61,11 +61,13 @@ class GameSessionRepositoryImpl @Inject constructor(
 
     override fun connectAndJoin(gameId: Long) {
         repositoryScope.launch {
+            gameSocketManager.removeAllListeners()
+            setupSocketListeners()
             // 1. 소켓 연결 시도
             try {
                 val token = authRepository.getAccessToken().first() // 토큰 가져오기
                 if (token.isNotEmpty()) {
-                    Timber.d("🔌 레포지토리: 소켓 연결 시도...")
+                    Timber.d("🔌socket  레포지토리: 소켓 연결 시도...")
                     gameSocketManager.connect(token)
 
                     // 연결될 때까지 잠시 대기 (타임아웃 5초 설정)
@@ -76,31 +78,31 @@ class GameSessionRepositoryImpl @Inject constructor(
                     }
                 }
                 else {
-                    Timber.d("레포지토리: 토큰이 비어있습니다")
+                    Timber.d("socket 레포지토리: 토큰이 비어있습니다")
                 }
             }
             catch (exception: Exception) {
-                Timber.e("소켓 연결 실패. 입장을 중단합니다. message: ${exception.message}")
+                Timber.e("socket 소켓 연결 실패. 입장을 중단합니다. message: ${exception.message}")
                 return@launch
             }
 
             // 2. 연결 실패 시 중단
             if (!gameSocketManager.isConnected()) {
-                Timber.e("❌ 소켓 연결 실패. 입장을 중단합니다.")
+                Timber.e("socket ❌ 소켓 연결 실패. 입장을 중단합니다.")
                 return@launch
             }
 
             // 3. 리스너 세팅 (기존 것 지우고 새로 등록)
-            gameSocketManager.removeAllListeners()
-            setupSocketListeners() // 여기에 setOnGameStarted 등 포함됨
+//            gameSocketManager.removeAllListeners()
+//            setupSocketListeners() // 여기에 setOnGameStarted 등 포함됨
 
             // 4. 게임 입장 요청
-            Timber.d("🚪 게임($gameId) 입장 요청")
+            Timber.d("socket 🚪 게임($gameId) 입장 요청")
             gameSocketManager.joinGame(gameId)
 
             // 5. [안전장치] 방장이 5초 이벤트를 놓쳤을 경우를 대비한 동기화 요청
-            delay(500)
-            gameSocketManager.syncGameInfo()
+//            delay(500)
+//            gameSocketManager.syncGameInfo()
         }
     }
 
@@ -115,7 +117,7 @@ class GameSessionRepositoryImpl @Inject constructor(
         gameSocketManager.setOnJoinedRoom { gameId, memberId, message -> }
 
         gameSocketManager.setOnWillStartGame { gameId, willStartAt ->
-            Timber.d("⏰ get will start game 수신 - gameId: $gameId, willStartAt: $willStartAt")
+            Timber.d("socket ⏰ get will start game 수신 - gameId: $gameId, willStartAt: $willStartAt")
         }
 
         gameSocketManager.setOnGameInfoSynced { data ->
@@ -150,6 +152,19 @@ class GameSessionRepositoryImpl @Inject constructor(
             }
         }
 
+        // 게임 종료 수신 -> 상세 결과 요청
+        gameSocketManager.setOnGameEnded { winnerPosition, _ ->
+            Timber.d("socket 🏁 게임 종료: $winnerPosition 승리 -> 상세 결과 요청")
+            gameSocketManager.postAfterGameEnd(_gameId.value)
+        }
+
+        // 상세 결과 수신 -> 이동 이벤트 발송
+        gameSocketManager.setOnEndGameAfter { data ->
+            repositoryScope.launch {
+                // 뷰모델에게 이동 신호 전송
+                _eventFlow.emit(GameSessionEvent.NavigateToNews(_gameId.value))
+            }
+        }
     }
 
     override fun startGameSession(){
@@ -162,7 +177,7 @@ class GameSessionRepositoryImpl @Inject constructor(
         gameStartTime = System.currentTimeMillis()
 
         gpsJob = repositoryScope.launch {
-            Timber.d("🚀 레포지토리: GPS 전송 시작")
+            Timber.d("socket 🚀 레포지토리: GPS 전송 시작")
             while (isActive) {
                 val location = locationRepository.currentLocation.value
                 // 리셋된 걸음 수를 가져옴 (StepSensorManager에 gameStepCountFlow가 있다고 가정)
@@ -178,6 +193,7 @@ class GameSessionRepositoryImpl @Inject constructor(
                         walk = steps,
                         longestSurvived = longestSurvived
                     )
+                    Timber.d("socket sendGPS: $location, $steps, $longestSurvived")
                 }
                 delay(1000L)
             }
@@ -189,7 +205,7 @@ class GameSessionRepositoryImpl @Inject constructor(
         gpsJob?.cancel()
         gpsJob = null
         gameStartTime = 0L
-        Timber.d("레포지토리: GPS 전송 중단")
+        Timber.d("socket 레포지토리: GPS 전송 중단")
     }
 
     override fun leaveGame() {
@@ -212,4 +228,6 @@ sealed class GameSessionEvent {
 
     // 3. (예시) 에러 발생 신호
     data class ErrorOccurred(val message: String) : GameSessionEvent()
+
+    data class NavigateToNews(val gameId: Long) : GameSessionEvent()
 }
