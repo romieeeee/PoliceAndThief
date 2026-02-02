@@ -248,7 +248,7 @@ export class RoomController {
         const members = await this.gameMemberService.findMembersWithProfileByGameId(roomId);
         const gameSkill = await this.gameSkillService.findGameSkillByGameId(roomId);
 
-        this.io.to(roomId).emit("get game start", { room, roomSetting, chiefMemberId: gameSkill.memberId, members });
+        this.io.to(roomId).emit("get game start", { room, roomSetting, chiefMemberId: gameSkill ? gameSkill.memberId : null, members });
     }
 
     disconnect = async (data) => {
