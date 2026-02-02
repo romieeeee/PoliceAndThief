@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,6 +35,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
@@ -45,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.PixelButtonCode
@@ -71,40 +75,42 @@ enum class ReportStep { NONE, INPUT, CONFIRM, SUCCESS }
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GameResultScreen(
-    gameId: Long, // 추가
-    onBackToHome: () -> Unit, // 추가
-    onBackToWaitingRoom: (Long) -> Unit, // 추가
-    isPolice: Boolean = true,
+    gameId: Long,
+    onBackToHome: () -> Unit,
+    onBackToWaitingRoom: (Long) -> Unit,
+    isPolice: Boolean = true, // 기본값
     isWin: Boolean = true,
-    mvpList: List<MvpData> = listOf(
-        MvpData(
-            "MVP",
-            if (isPolice) "경찰" else "도둑",
-            "박정후",
-            "생존 시간",
-            "16:39",
-            android.R.drawable.btn_star_big_on
-        ),
-        MvpData(
-            "ACE",
-            if (isPolice) "경찰" else "도둑",
-            "김철수",
-            "검거 수",
-            "5명",
-            android.R.drawable.ic_menu_myplaces
-        )
-    ),
-    @DrawableRes tierIconRes: Int = R.drawable.img_tier_police_2,
-    tierName: String = "경장",
-    statsValue: String = "24명",
+    mvpList: List<MvpData> = listOf(),
     viewModel: GameResultViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    if (uiState is UiState.Loading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(DarkBackground),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.material3.CircularProgressIndicator(
+                color = AccentYellow
+            )
+        }
+        return
+    }
+
+    val realData = (uiState as? UiState.Success<GameResultUiData>)?.data
+
+    val finalIsPolice = realData?.isPolice ?: isPolice
+    val finalIsWin = realData?.isWin ?: isWin
+    val finalMvpList = realData?.mvpList ?: mvpList
+
+    val myGameStat = realData?.myGameStat ?: "0명"
+    val myBestStat = realData?.myBestStat ?: "기록 없음"
+    val myTierIcon = realData?.myTierIconRes ?: R.drawable.police_lv1
 
     DisposableEffect(Unit) {
-        onDispose {
-            // 게임 결과 화면 벗어나면 게임 소켓 정리
-            viewModel.cleanupGameSocket()
-        }
+        onDispose { viewModel.cleanupGameSocket() }
     }
 
     val blinkAlpha by rememberInfiniteTransition(label = "winlose-blink")
@@ -118,20 +124,18 @@ fun GameResultScreen(
             label = "alpha"
         )
 
-    val pagerState = rememberPagerState(pageCount = { mvpList.size })
+    val pagerState = rememberPagerState(pageCount = { finalMvpList.size })
 
-    val titleColor = if (isWin) WinColor else LoseColor
-    val titleText = if (isWin) "WIN!" else "LOSE"
-    val statsLabel = if (isPolice) "검거한 도둑 수" else "최장 생존 시간"
+    val titleColor = if (finalIsWin) WinColor else LoseColor
+    val titleText = if (finalIsWin) "WIN!" else "LOSE"
+    val statsLabel = if (finalIsPolice) "검거한 도둑 수" else "최장 생존 시간"
     val mvpBoxBgColor = Color(0xFF35384F)
-
-    // ✅ 참가자 목록 (현재는 임시 포함. 실제로는 룸 스냅샷에서 받아오는 값으로 교체)
-    val participantNames = mvpList.map { it.nickname } + listOf("치와와", "이래롬")
+    val participantNames = finalMvpList.map { it.nickname }
 
     val characterImageRes = when {
-        isPolice && isWin -> R.drawable.img_police_win
-        isPolice && !isWin -> R.drawable.img_police_lose
-        !isPolice && isWin -> R.drawable.img_thief_win
+        finalIsPolice && finalIsWin -> R.drawable.img_police_win
+        finalIsPolice && !finalIsWin -> R.drawable.img_police_lose
+        !finalIsPolice && finalIsWin -> R.drawable.img_thief_win
         else -> R.drawable.img_thief_lose
     }
 
@@ -162,7 +166,7 @@ fun GameResultScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // ✅ 신고 버튼
+            // 신고 버튼
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
@@ -239,7 +243,7 @@ fun GameResultScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // RANK
+                    // RANK (내 정보)
                     Column(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -251,23 +255,25 @@ fun GameResultScreen(
                             fontSize = 14.sp,
                             color = Color.LightGray
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Image(
-                            painter = painterResource(id = tierIconRes),
-                            contentDescription = "Tier",
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = tierName,
-                            fontFamily = PixelFont,
-                            fontWeight = FontWeight.Normal,
-                            fontSize = 16.sp,
-                            color = Color.LightGray
-                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
+                        ) {
+                            Image(
+                                painter = painterResource(id = myTierIcon),
+                                contentDescription = "Tier",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .scale(1.6f)
+                            )
+                        }
                     }
 
-                    // Stat
+                    // Stat (내 이번 판 기록)
                     Column(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -280,7 +286,7 @@ fun GameResultScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = statsValue,
+                            text = myGameStat,
                             fontFamily = PixelFont,
                             fontWeight = FontWeight.Bold,
                             fontSize = 36.sp,
@@ -297,10 +303,9 @@ fun GameResultScreen(
                                 contentDescription = null,
                                 tint = Color.Unspecified
                             )
-
                             Text(
                                 textAlign = TextAlign.Center,
-                                text = "최고기록 13:30",
+                                text = "최고기록 $myBestStat",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = TextSecondary
                             )
@@ -326,7 +331,7 @@ fun GameResultScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) { page ->
                     MvpCard(
-                        mvpData = mvpList[page],
+                        mvpData = finalMvpList[page],
                         backgroundColor = mvpBoxBgColor,
                     )
                 }
@@ -338,7 +343,6 @@ fun GameResultScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // 대기방으로 돌아가기 버튼
                 PixelButtonCode(
                     text = "대기방",
                     onClick = {
@@ -354,7 +358,6 @@ fun GameResultScreen(
                     modifier = Modifier.weight(1f)
                 )
 
-                // 홈으로 가기 버튼
                 PixelButtonCode(
                     text = "홈으로",
                     onClick = {
@@ -370,7 +373,7 @@ fun GameResultScreen(
             }
         }
 
-        // ✅ 신고 다이얼로그 플로우 (ViewModel 상태 기반)
+        // 신고 다이얼로그
         when (viewModel.reportStep) {
             ReportStep.INPUT -> {
                 ReportDialog(
@@ -490,3 +493,12 @@ fun MvpCard(
         }
     }
 }
+
+data class GameResultUiData(
+    val isPolice: Boolean,
+    val isWin: Boolean,
+    val mvpList: List<MvpData>,
+    val myTierIconRes: Int,
+    val myGameStat: String,
+    val myBestStat: String
+)

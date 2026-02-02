@@ -32,6 +32,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
+import org.json.JSONArray
+import org.json.JSONObject
 
 @HiltViewModel
 class GamePlayViewModel @Inject constructor(
@@ -55,7 +57,7 @@ class GamePlayViewModel @Inject constructor(
     val uiEvent = _uiEvent.asSharedFlow()
     val isOutOfBoundary = gameSessionRepository.isOutOfBoundary
 
-    // ✅ Beep 이벤트 (도둑 쪽에서만 화면이 소리 재생하도록 Screen에서 필터)
+    // Beep 이벤트 (도둑 쪽에서만 화면이 소리 재생하도록 Screen에서 필터)
     private val _beepEvent = MutableSharedFlow<BeepUseResponse>(extraBufferCapacity = 16)
     val beepEvent = _beepEvent.asSharedFlow()
 
@@ -88,7 +90,11 @@ class GamePlayViewModel @Inject constructor(
     private var myMemberId: Long = 0L
     private var warningJob: Job? = null
 
+
+    private var myArrestCount = 0
+
     init {
+        fetchMyId()
         setupSocketListeners()
         gameSessionRepository.gameInit()
         observeRepositoryEvents()
@@ -144,7 +150,7 @@ class GamePlayViewModel @Inject constructor(
     }
 
     private fun setupSocketListeners() {
-        // 비프음 수신 (GameSocketManager에서 이미 get beep use 파싱/콜백 호출 중)
+        // 비프음 수신
         gameSocketManager.setOnBeepReceived { policeId, thiefId, distance ->
             _beepEvent.tryEmit(
                 BeepUseResponse(
@@ -206,6 +212,80 @@ class GamePlayViewModel @Inject constructor(
                 Timber.d("📋 탈출 큐에 추가: $thiefNickname (현재 큐 크기: ${_escapeQueue.value.size})")
             }
         }
+
+        // ✅ [추가] 내가 도둑을 잡았을 때 카운트 증가 (경찰용)
+        // (주의: GameSocketManager에 setOnArrestResult 리스너가 있어야 합니다. 없으면 추가 필요)
+        gameSocketManager.setOnArrestResult { result, _, policeId, _, _ ->
+            if (result == "SUCCESS" && policeId == myMemberId) {
+                myArrestCount++
+                Timber.d("👮 내 체포 카운트 증가: $myArrestCount")
+            }
+        }
+
+        gameSocketManager.setOnGameEnded { winTeam, data ->
+            viewModelScope.launch {
+                Timber.d("🏁 게임 종료 처리 시작")
+
+                // 1. 내 기록 저장
+                saveMyStatToRepository(data)
+
+                // 2. 화면 이동 (showGameOverOverlay는 Composable State이므로 여기서 변경 불가)
+                // 대신 NavigateToLoading 이벤트를 Screen에서 받아서 Overlay를 띄우도록 합니다.
+                // Screen에서 이미 그렇게 구현되어 있습니다.
+                _uiEvent.emit(GameSessionEvent.NavigateToLoading(gameId))
+            }
+        }
+    }
+
+    // 내 기록 파싱
+    private fun saveMyStatToRepository(data: JSONObject) {
+        try {
+            val memberStats = data.optJSONArray("memberStats")
+            var myStatString = "기록 없음"
+
+            if (memberStats != null) {
+                for (i in 0 until memberStats.length()) {
+                    val stat = memberStats.getJSONObject(i)
+
+                    // 내 ID와 일치하는지 확인
+                    val id = stat.optLong("memberId", -1L)
+                    // 만약 0이 나온다면 gameMemberId일 수도 있으니 확인 필요
+                    val gameMemberId = stat.optLong("gameMemberId", -1L)
+
+                    // 내 아이디와 매칭 (안전하게 둘 중 하나라도 맞으면)
+                    if (id == myMemberId || (gameMemberId != -1L && gameMemberId == myMemberId)) {
+
+                        val position = stat.optString("position")
+
+                        if (position == "THIEF") {
+                            val survived = stat.optInt("longestSurvived", 0)
+                            val min = survived / 60
+                            val sec = survived % 60
+                            myStatString = String.format(java.util.Locale.getDefault(), "%02d:%02d", min, sec)
+                        } else {
+                            // [경찰]
+                            val serverCount = stat.optInt("arrestCount", -1)
+
+                            if (serverCount != -1) {
+                                myStatString = "${serverCount}명"
+                            } else {
+                                myStatString = "${myArrestCount}명"
+                            }
+                        }
+                        break
+                    }
+                }
+            }
+
+            // 저장!
+            gameRepository.myLastGameStat = myStatString
+            Timber.d("💾 내 기록 저장 완료: $myStatString (ID: $myMemberId)")
+
+        } catch (e: Exception) {
+            Timber.e(e, "기록 저장 실패")
+            val isPolice = thiefMembers.value.none { it.memberId == myMemberId }
+            gameRepository.myLastGameStat = if (isPolice) "0명" else "00:00"
+        }
     }
 
     fun removeFirstEscape() {
@@ -215,10 +295,6 @@ class GamePlayViewModel @Inject constructor(
 
     private fun updateMembersList(newList: List<GameMemberSocketDto>) {
         _allMembers.value = newList
-
-        newList.forEach { member ->
-            Timber.d("🕵️ 멤버 확인: ${member.nickname} / 포지션: [${member.position}] / 상태: ${member.rawStatus}")
-        }
 
         _thiefMembers.value = newList.filter {
             it.position.equals("THIEF", ignoreCase = true)

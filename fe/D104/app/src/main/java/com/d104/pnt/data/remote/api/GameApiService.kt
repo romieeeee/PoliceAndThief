@@ -2,6 +2,7 @@ package com.d104.pnt.data.remote.api
 
 import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.data.remote.model.response.GameNewsResponse
+import com.d104.pnt.data.remote.model.response.GameResultResponse
 import com.d104.pnt.data.remote.model.response.MissionResponse
 import retrofit2.Response
 import retrofit2.http.DELETE
@@ -32,4 +33,8 @@ interface GameApiService {
     ):Response<BaseResponse<GameNewsResponse>>
 
 
+    @GET("api/games/{gameId}/result")
+    suspend fun getGameResult(
+        @Path("gameId") gameId: Long
+    ): Response<BaseResponse<GameResultResponse>>
 }
