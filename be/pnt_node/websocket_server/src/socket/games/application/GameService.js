@@ -100,6 +100,8 @@ export class GameService {
                 member.isConnected
             );
 
+        logger.info(`[GameService] checkGameHaveToFinish: gameId: ${gameId}, thiefMembers: ${thiefMembers.length}, policeMembers: ${policeMembers.length}`);
+
         let isGameEnd = false;
 
         if (thiefMembers.length === 0) {
