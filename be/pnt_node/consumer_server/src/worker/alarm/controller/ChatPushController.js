@@ -11,7 +11,7 @@ class ChatPushMq {
         try {
             this.channel = await mq.createChannel(MQConfig.MQ_ALARM);
             // 안전 장치 추가: 큐가 없으면 생성하고, 있으면 넘어감
-            await this.channel.assertQueue(MQConfig.MQ_ALARM, {durable: true});
+            await this.channel.assertQueue(MQConfig.MQ_ALARM, { durable: true });
             this.chatPushService = new ChatPushService();
             return this;
         } catch (err) {
@@ -32,7 +32,7 @@ class ChatPushMq {
 
                 const chatRoom = await this.chatPushService.findChatRoomById(data.chatRoomId);
                 console.log("chatRoom", chatRoom);
-                
+
                 data.title = chatRoom.title;
 
                 if (!tokens || tokens.length === 0) {
@@ -40,8 +40,10 @@ class ChatPushMq {
                     return;
                 }
 
+                console.log("will push data", data);
                 await sendChatPush(tokens, data);
                 console.log("data consumed", data);
+                this.channel.ack(msg);
 
             } catch (err) {
                 console.error(err);
