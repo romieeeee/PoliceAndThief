@@ -3,6 +3,7 @@ package com.d104.pnt.data.remote.api
 import com.d104.pnt.data.remote.model.request.LiveKitTokenRequest
 import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.data.remote.model.response.GameNewsResponse
+import com.d104.pnt.data.remote.model.response.GameResultResponse
 import com.d104.pnt.data.remote.model.response.LiveKitTokenResponse
 import com.d104.pnt.data.remote.model.response.MissionResponse
 import retrofit2.Response
@@ -34,6 +35,11 @@ interface GameApiService {
     suspend fun getGameNews(
         @Path("gameId") gameId: Long
     ): Response<BaseResponse<GameNewsResponse>>
+
+    @GET("games/{gameId}/result")
+    suspend fun getGameResult(
+        @Path("gameId") gameId: Long
+    ): Response<BaseResponse<GameResultResponse>>
 
     @POST("api/livekit/token")
     suspend fun getLiveKitToken(

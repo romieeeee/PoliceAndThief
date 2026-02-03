@@ -62,7 +62,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     private var onSkillResult: ((String, String?, Long, String?) -> Unit)? = null
     private var onRadioReceived: ((Long, Long) -> Unit)? = null
     private var onEndGameAfter: ((JSONObject) -> Unit)? = null
-    private var onGameEnded: ((String, String) -> Unit)? = null
+    private var onGameEnded: ((String, JSONObject) -> Unit)? = null
     private var onNewsReceived: ((Long, Long) -> Unit)? = null
     private var onReconnected: ((Long) -> Unit)? = null
 
@@ -259,7 +259,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val message = data.optString("message", "게임이 종료되었습니다.")
 
                 Timber.d("🎮 게임 종료 수신: 승리팀=$winTeam, 메시지=$message")
-                onGameEnded?.invoke(winTeam, message)
+
+                onGameEnded?.invoke(winTeam, data)
+
             } catch (e: Exception) {
                 Timber.e(e, "❌ 게임 종료 파싱 실패: ${e.message}")
                 Timber.e("받은 데이터: ${args[0]}")
@@ -565,7 +567,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onEndGameAfter = callback
     }
 
-    fun setOnGameEnded(callback: (winnerPosition: String, message: String) -> Unit) {
+    fun setOnGameEnded(callback: (winTeam: String, data: JSONObject) -> Unit) {
         onGameEnded = callback
     }
 
