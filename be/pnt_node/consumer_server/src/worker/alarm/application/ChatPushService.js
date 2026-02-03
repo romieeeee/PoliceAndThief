@@ -18,6 +18,7 @@ export class ChatPushService {
         const resData = [];
         
         joinRoomMembers.forEach((data) => resData.push(data.memberId));
+        console.log("joinRoomMembers", joinRoomMembers);
 
         return resData;
     } 
