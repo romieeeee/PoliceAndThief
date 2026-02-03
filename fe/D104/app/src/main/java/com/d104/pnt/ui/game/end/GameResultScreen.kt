@@ -78,41 +78,65 @@ fun GameResultScreen(
     gameId: Long,
     onBackToHome: () -> Unit,
     onBackToWaitingRoom: (Long) -> Unit,
-    isPolice: Boolean = true, // 기본값
-    isWin: Boolean = true,
-    mvpList: List<MvpData> = listOf(),
     viewModel: GameResultViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    if (uiState is UiState.Loading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(DarkBackground),
-            contentAlignment = Alignment.Center
-        ) {
-            androidx.compose.material3.CircularProgressIndicator(
-                color = AccentYellow
-            )
-        }
-        return
-    }
-
-    val realData = (uiState as? UiState.Success<GameResultUiData>)?.data
-
-    val finalIsPolice = realData?.isPolice ?: isPolice
-    val finalIsWin = realData?.isWin ?: isWin
-    val finalMvpList = realData?.mvpList ?: mvpList
-
-    val myGameStat = realData?.myGameStat ?: "0명"
-    val myBestStat = realData?.myBestStat ?: "기록 없음"
-    val myTierIcon = realData?.myTierIconRes ?: R.drawable.police_lv1
 
     DisposableEffect(Unit) {
         onDispose { viewModel.cleanupGameSocket() }
     }
 
+    when (uiState) {
+        is UiState.Loading, is UiState.Idle -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(DarkBackground),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.CircularProgressIndicator(
+                    color = AccentYellow
+                )
+            }
+        }
+
+        is UiState.Error -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(DarkBackground),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = (uiState as UiState.Error).message,
+                    color = Color.White,
+                    fontFamily = PixelFont
+                )
+            }
+        }
+
+        is UiState.Success<GameResultUiData> -> {
+            val data = (uiState as UiState.Success<GameResultUiData>).data
+            GameResultContent(
+                gameId            = gameId,
+                data              = data,
+                onBackToHome      = onBackToHome,
+                onBackToWaitingRoom = onBackToWaitingRoom,
+                viewModel         = viewModel
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun GameResultContent(
+    gameId: Long,
+    data: GameResultUiData,
+    onBackToHome: () -> Unit,
+    onBackToWaitingRoom: (Long) -> Unit,
+    viewModel: GameResultViewModel
+) {
     val blinkAlpha by rememberInfiniteTransition(label = "winlose-blink")
         .animateFloat(
             initialValue = 1f,
@@ -124,19 +148,19 @@ fun GameResultScreen(
             label = "alpha"
         )
 
-    val pagerState = rememberPagerState(pageCount = { finalMvpList.size })
+    val pagerState = rememberPagerState(pageCount = { data.mvpList.size })
 
-    val titleColor = if (finalIsWin) WinColor else LoseColor
-    val titleText = if (finalIsWin) "WIN!" else "LOSE"
-    val statsLabel = if (finalIsPolice) "검거한 도둑 수" else "최장 생존 시간"
+    val titleColor = if (data.isWin) WinColor else LoseColor
+    val titleText  = if (data.isWin) "WIN!" else "LOSE"
+    val statsLabel = if (data.isPolice) "검거한 도둑 수" else "최장 생존 시간"
     val mvpBoxBgColor = Color(0xFF35384F)
-    val participantNames = finalMvpList.map { it.nickname }
+    val participantNames = data.mvpList.map { it.nickname }
 
     val characterImageRes = when {
-        finalIsPolice && finalIsWin -> R.drawable.img_police_win
-        finalIsPolice && !finalIsWin -> R.drawable.img_police_lose
-        !finalIsPolice && finalIsWin -> R.drawable.img_thief_win
-        else -> R.drawable.img_thief_lose
+        data.isPolice &&  data.isWin -> R.drawable.img_police_win
+        data.isPolice && !data.isWin -> R.drawable.img_police_lose
+        !data.isPolice &&  data.isWin -> R.drawable.img_thief_win
+        else                         -> R.drawable.img_thief_lose
     }
 
     Box(
@@ -158,7 +182,6 @@ fun GameResultScreen(
                 .background(Color.Black.copy(alpha = 0.6f))
         )
 
-        // 메인 레이아웃
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -243,7 +266,7 @@ fun GameResultScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // RANK (내 정보)
+                    // RANK
                     Column(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -263,7 +286,7 @@ fun GameResultScreen(
                                 .clip(CircleShape)
                         ) {
                             Image(
-                                painter = painterResource(id = myTierIcon),
+                                painter = painterResource(id = data.myTierIconRes),
                                 contentDescription = "Tier",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
@@ -273,7 +296,7 @@ fun GameResultScreen(
                         }
                     }
 
-                    // Stat (내 이번 판 기록)
+                    // Stat
                     Column(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -286,7 +309,7 @@ fun GameResultScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = myGameStat,
+                            text = data.myGameStat,
                             fontFamily = PixelFont,
                             fontWeight = FontWeight.Bold,
                             fontSize = 36.sp,
@@ -305,7 +328,7 @@ fun GameResultScreen(
                             )
                             Text(
                                 textAlign = TextAlign.Center,
-                                text = "최고기록 $myBestStat",
+                                text = "최고기록 ${data.myBestStat}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = TextSecondary
                             )
@@ -317,7 +340,7 @@ fun GameResultScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             val isFirst = pagerState.currentPage == 0
-            val isLast = pagerState.currentPage == pagerState.pageCount - 1
+            val isLast  = pagerState.currentPage == pagerState.pageCount - 1
 
             // MVP 카드
             Box(modifier = Modifier.fillMaxWidth()) {
@@ -331,7 +354,7 @@ fun GameResultScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) { page ->
                     MvpCard(
-                        mvpData = finalMvpList[page],
+                        mvpData = data.mvpList[page],
                         backgroundColor = mvpBoxBgColor,
                     )
                 }

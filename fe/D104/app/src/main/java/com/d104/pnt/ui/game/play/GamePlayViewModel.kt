@@ -57,7 +57,7 @@ class GamePlayViewModel @Inject constructor(
     val uiEvent = _uiEvent.asSharedFlow()
     val isOutOfBoundary = gameSessionRepository.isOutOfBoundary
 
-    // Beep 이벤트 (도둑 쪽에서만 화면이 소리 재생하도록 Screen에서 필터)
+    // Beep 이벤트
     private val _beepEvent = MutableSharedFlow<BeepUseResponse>(extraBufferCapacity = 16)
     val beepEvent = _beepEvent.asSharedFlow()
 
@@ -90,11 +90,7 @@ class GamePlayViewModel @Inject constructor(
     private var myMemberId: Long = 0L
     private var warningJob: Job? = null
 
-
     private var myArrestCount = 0
-
-    // 🧪 테스트용 플래그 — 테스트 완료 후 false로 바꾸세요
-    private val TEST_MOCK_ENABLED = true
 
     init {
         fetchMyId()
@@ -216,8 +212,7 @@ class GamePlayViewModel @Inject constructor(
             }
         }
 
-        // ✅ [추가] 내가 도둑을 잡았을 때 카운트 증가 (경찰용)
-        // (주의: GameSocketManager에 setOnArrestResult 리스너가 있어야 합니다. 없으면 추가 필요)
+        // 체포 카운트
         gameSocketManager.setOnArrestResult { result, _, policeId, _, _ ->
             if (result == "SUCCESS" && policeId == myMemberId) {
                 myArrestCount++
@@ -229,27 +224,23 @@ class GamePlayViewModel @Inject constructor(
             viewModelScope.launch {
                 Timber.d("🏁 게임 종료 처리 시작")
 
-                // 1. 내 기록 저장
+                // 내 기록 저장
                 saveMyStatToRepository(data)
 
-                // 2. 화면 이동 (showGameOverOverlay는 Composable State이므로 여기서 변경 불가)
-                // 대신 NavigateToLoading 이벤트를 Screen에서 받아서 Overlay를 띄우도록 합니다.
-                // Screen에서 이미 그렇게 구현되어 있습니다.
+                // 화면 이동
                 _uiEvent.emit(GameSessionEvent.NavigateToLoading(gameId))
             }
         }
     }
 
-    // 내 기록 파싱
+    // 내 기록 저장
     private fun saveMyStatToRepository(data: JSONObject) {
         try {
-            Timber.d("🧪 RAW DATA: ${data.toString()}")
             val memberStats = data.optJSONArray("memberStats")
             var myStatString = "기록 없음"
             var myPosition = ""
 
             if (memberStats != null) {
-                // ✅ 백엔드가 memberStats를 보내는 경우 — 실제 파싱
                 for (i in 0 until memberStats.length()) {
                     val stat = memberStats.getJSONObject(i)
                     val id = stat.optLong("memberId", -1L)
@@ -269,15 +260,8 @@ class GamePlayViewModel @Inject constructor(
                         break
                     }
                 }
-            } else if (TEST_MOCK_ENABLED) {
-                // 🧪 백엔드 미구현 중 — myMemberId 기준 mock
-                Timber.d("🧪 memberStats null → mock 사용 (myMemberId=$myMemberId)")
-                when (myMemberId) {
-                    8L  -> { myPosition = "POLICE"; myStatString = "4명" }     // tes11
-                    11L -> { myPosition = "POLICE"; myStatString = "3명" }     // tes12
-                    12L -> { myPosition = "POLICE"; myStatString = "1명" }     // tes13
-                    13L -> { myPosition = "THIEF";  myStatString = "10:00" }   // tes14
-                }
+            } else {
+                Timber.w("memberStats 필드가 null — 결과 화면은 GET /games/{id}/result로 직접 조회")
             }
 
             gameRepository.saveMyGameStat(myStatString, myPosition)
@@ -305,7 +289,7 @@ class GamePlayViewModel @Inject constructor(
             it.position.equals("THIEF", ignoreCase = true)
         }
 
-        Timber.d("📋 필터링된 도둑 수: ${_thiefMembers.value.size}명")
+        Timber.d("📋 필터됨 도둑 수: ${_thiefMembers.value.size}명")
     }
 
     override fun onCleared() {
@@ -324,7 +308,6 @@ class GamePlayViewModel @Inject constructor(
                     context.startForegroundService(intent)
                 } else {
                     context.startService(intent)
-
                 }
             }
         }
@@ -333,9 +316,7 @@ class GamePlayViewModel @Inject constructor(
     fun manualLeaveGame() {
         viewModelScope.launch {
             Timber.d("🚪 유저가 직접 게임 종료를 선택함")
-            // 1. GPS 서비스 중단
             startService(GameActiveService.ACTION_STOP)
-            // 2. 소켓 연결 해제 및 세션 정리 (post disconnect 포함)
             gameSessionRepository.leaveGame()
         }
     }

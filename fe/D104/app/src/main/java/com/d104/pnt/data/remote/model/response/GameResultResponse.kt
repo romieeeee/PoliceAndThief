@@ -2,12 +2,13 @@ package com.d104.pnt.data.remote.model.response
 
 data class GameResultResponse(
     val gameId: Long,
-    val winner: String, // "POLICE" 또는 "THIEF"
+    val winner: String,
     val endedAt: String,
     val stats: GameStats,
     val mvp: PlayerResult?,
     val winningSecond: PlayerResult?,
-    val losingFirst: PlayerResult?
+    val losingFirst: PlayerResult?,
+    val myStat: GameResultMyStat
 )
 
 data class GameStats(
@@ -21,4 +22,16 @@ data class PlayerResult(
     val nickname: String,
     val role: String,
     val description: String
+)
+
+data class GameResultMyStat(
+    val memberId: Long,
+    val nickname: String,
+    val role: String,
+    val walk: Int,
+    val arrestCount: Int,
+    val longestSurvived: Int,
+    val rank: String,
+    val maxArrestCount: Int,
+    val maxSurvivalTime: Int
 )
