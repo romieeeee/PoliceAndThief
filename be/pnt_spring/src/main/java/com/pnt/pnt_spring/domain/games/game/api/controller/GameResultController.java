@@ -12,6 +12,7 @@ import com.pnt.pnt_spring.domain.games.game.api.req.GameResultRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameResultResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameResultService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
+import com.pnt.pnt_spring.global.utils.SecurityUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,10 +35,14 @@ public class GameResultController {
 	}
 
 	// 클라이언트가 결과 화면 조회 (앱이 호출)
-	@Operation(summary = "게임 결과 조회", description = "저장된 게임 결과를 바탕으로 승리 팀, MVP, 통계를 조회합니다.")
+	@Operation(summary = "게임 결과 조회", description = "저장된 게임 결과를 바탕으로 승리 팀, MVP, 통계, 그리고 내 스탯을 조회합니다.")
 	@GetMapping("/{gameId}/result")
 	public CommonResponse<GameResultResponse> getGameResult(@PathVariable Long gameId) {
-		GameResultResponse response = gameResultService.getGameResult(gameId);
+		// 현재 로그인한 멤버 ID 추출
+		Long memberId = SecurityUtils.currentMemberId();
+
+		// memberId를 서비스에 전달
+		GameResultResponse response = gameResultService.getGameResult(gameId, memberId);
 		return new CommonResponse<>(response, "게임 결과 조회 성공", HttpStatus.OK);
 	}
 }
