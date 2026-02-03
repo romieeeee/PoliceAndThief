@@ -47,7 +47,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     // Callbacks
     private var onJoinedRoom: ((Long, Long, String) -> Unit)? = null
-    private var onGpsReceived: ((Long?, String?,Int, JSONArray) -> Unit)? = null
+    private var onGpsReceived: ((sec: Int, locations: JSONArray, cctvThiefId: Long?, skillUsedAt: String?) -> Unit)? = null
     private var onWillStartGame: ((Long, String) -> Unit)? = null
     private var onGameStarted: ((Long, String) -> Unit)? = null
     private var onThiefEscaped: ((gameId: Long, thiefId: Long, escapedAt: String) -> Unit)? = null
@@ -62,8 +62,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     private var onNewsReceived: ((Long, Long) -> Unit)? = null
     private var onReconnected: ((Long) -> Unit)? = null
 
-    private var onBeepUse: ((org.json.JSONObject) -> Unit)? = null
-
+    private var onBeepUse: ((JSONObject) -> Unit)? = null
+    private var onHelicopterSkillReceived:
+            ((gameId: Long, policeId: Long, result: String, reason: String?, startedAt: String?, usedAt: String?) -> Unit)? = null
 
     override fun setupCustomListeners() {
         // 게임 입장 확인
@@ -81,16 +82,29 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         }
 
         // GPS 위치 정보 수신 (1초마다)
+        // payload:
+        // { gameId, sec, cctvThiefId, skillUsedAt, locations:[...] }
         on(EVENT_GET_GPS) { args ->
             try {
                 val data = args[0] as JSONObject
-                val gameId = data.getInt("gameId")
-                val cctvThiefId = data.getLong("cctvThiefId")
-                val skillUsedAt = data.getString("skillUsedAt")
-                val sec = data.getInt("sec")
+                val gameId = data.optLong("gameId", -1L)
+                val sec = data.optInt("sec", 0)
                 val locations = data.getJSONArray("locations")
-                Timber.d("GPS 위치 정보: gameId=$gameId, sec=$sec, 참여자=${locations.length()}명")
-                onGpsReceived?.invoke(cctvThiefId, skillUsedAt, sec, locations)
+
+                // cctvThiefId: 없거나 0/음수면 null 처리
+                val cctvThiefIdRaw = data.optLong("cctvThiefId", -1L)
+                val cctvThiefId = cctvThiefIdRaw.takeIf { it > 0L }
+
+                // skillUsedAt: null/"null"/"" -> null 처리
+                val skillUsedAtRaw = data.optString("skillUsedAt", null)
+                val skillUsedAt = skillUsedAtRaw
+                    ?.takeIf { it.isNotBlank() && it.lowercase() != "null" }
+
+                Timber.d(
+                    "GPS 수신: gameId=$gameId sec=$sec, cctvThiefId=$cctvThiefId, skillUsedAt=$skillUsedAt, 참여자=${locations.length()}"
+                )
+
+                onGpsReceived?.invoke(sec, locations, cctvThiefId, skillUsedAt)
             } catch (e: Exception) {
                 Timber.e(e, "GPS 정보 파싱 실패")
             }
@@ -224,9 +238,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         on(EVENT_GET_END_GAME) { args ->
             try {
                 val data = args[0] as JSONObject
-
                 val winTeam = data.getString("winTeam")
-
                 val message = data.optString("message", "게임이 종료되었습니다.")
 
                 Timber.d("🎮 게임 종료 수신: 승리팀=$winTeam, 메시지=$message")
@@ -248,6 +260,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             }
         }
 
+        // 뉴스
         on(EVENT_GET_NEWS) { args ->
             try {
                 val data = args[0] as JSONObject
@@ -258,27 +271,24 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 Timber.d("📰 뉴스 생성 완료: gameId=$gameId, newsId=$newsId")
                 onNewsReceived?.invoke(gameId, newsId)
             } catch (e: Exception) {
-                Timber.e(e, "게임 종료 파싱 실패")
+                Timber.e(e, "뉴스 수신 파싱 실패")
             }
         }
 
+        // 재연결
         on(EVENT_GET_RECONNECT) { args ->
             try {
                 val data = args[0] as JSONObject
                 val gameId = data.optLong("gameId")
                 Timber.d("🔄 서버로부터 재연결 승인 수신: gameId=$gameId")
 
-                // 기존에 정의하신 onReconnect 호출 (내부에서 syncGameInfo() 실행)
                 onReconnect(data)
-
-                // ViewModel 등에 알림
                 onReconnected?.invoke(gameId)
             } catch (e: Exception) {
                 Timber.e(e, "재연결 데이터 파싱 실패")
             }
         }
     }
-
 
     override fun onReconnect(data: JSONObject) {
         super.onReconnect(data)
@@ -297,9 +307,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     // ==================== Request Methods ====================
 
-    /**
-     * 게임 입장
-     */
     fun joinGame(gameId: Long) {
         currentGameId = gameId
 
@@ -318,7 +325,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             Timber.e("gameId가 없어서 GPS 전송 불가")
             return
         }
-
         val data = JSONObject().apply {
             put("gameId", gameId)
             put("lat", lat)
@@ -326,7 +332,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             put("walk", walk)
             put("longestSurvived", longestSurvived)
         }
-
         emit(EVENT_POST_GPS, data)
     }
 
@@ -338,13 +343,11 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             Timber.e("gameId가 없어서 체포 불가")
             return
         }
-
         val data = JSONObject().apply {
             put("gameId", gameId)
             put("policeId", policeId)
             put("thiefId", thiefId)
         }
-
         emit(EVENT_POST_ARREST, data)
     }
 
@@ -356,12 +359,10 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             Timber.e("gameId가 없어서 스킬 사용 불가")
             return
         }
-
         val data = JSONObject().apply {
             put("gameId", gameId)
             put("policeId", policeId)
         }
-
         emit(EVENT_POST_SKILL_USE, data)
     }
 
@@ -373,14 +374,12 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             Timber.e("gameId가 없어서 미션 이미지 제출 불가")
             return
         }
-
         val data = JSONObject().apply {
             put("gameId", gameId)
             put("memberId", memberId)
             put("gameMissionId", gameMissionId)
             put("imageUrl", imageUrl)
         }
-
         emit(EVENT_POST_MISSION_IMAGE, data)
     }
 
@@ -451,14 +450,12 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onReconnected = callback
     }
 
-
     // ==================== Callback Setters ====================
 
     fun setOnJoinedRoom(callback: (gameId: Long, memberId: Long, message: String) -> Unit) {
         onJoinedRoom = callback
     }
-
-    fun setOnGpsReceived(callback: (cctvThiefId: Long?, skillUsedAt: String?, sec: Int, locations: JSONArray) -> Unit) {
+    fun setOnGpsReceived(callback: (sec: Int, locations: JSONArray, cctvThiefId: Long?, skillUsedAt: String?) -> Unit) {
         onGpsReceived = callback
     }
 
@@ -498,7 +495,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onSkillResult = callback
     }
 
-
     fun setOnEndGameAfter(callback: (JSONObject) -> Unit) {
         onEndGameAfter = callback
     }
@@ -532,6 +528,11 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onGameInfoSynced = null
         onSkillResult = null
         onGameEnded = null
+        onEndGameAfter = null
+        onNewsReceived = null
+        onReconnected = null
+        onBeepUse = null
+        onHelicopterSkillReceived = null
     }
 
     public override fun removeAllListeners() {
@@ -548,5 +549,8 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         off(EVENT_GET_SYNC_GAME_INFO)
         off(EVENT_GET_SKILL_USE)
         off(EVENT_GET_END_GAME)
+        off(EVENT_GET_END_GAME_AFTER)
+        off(EVENT_GET_NEWS)
+        off(EVENT_GET_RECONNECT)
     }
 }
