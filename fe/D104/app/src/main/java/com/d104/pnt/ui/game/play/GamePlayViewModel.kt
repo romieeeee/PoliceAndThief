@@ -93,6 +93,9 @@ class GamePlayViewModel @Inject constructor(
 
     private var myArrestCount = 0
 
+    // 🧪 테스트용 플래그 — 테스트 완료 후 false로 바꾸세요
+    private val TEST_MOCK_ENABLED = true
+
     init {
         fetchMyId()
         setupSocketListeners()
@@ -240,51 +243,53 @@ class GamePlayViewModel @Inject constructor(
     // 내 기록 파싱
     private fun saveMyStatToRepository(data: JSONObject) {
         try {
+            Timber.d("🧪 RAW DATA: ${data.toString()}")
             val memberStats = data.optJSONArray("memberStats")
             var myStatString = "기록 없음"
+            var myPosition = ""
 
             if (memberStats != null) {
+                // ✅ 백엔드가 memberStats를 보내는 경우 — 실제 파싱
                 for (i in 0 until memberStats.length()) {
                     val stat = memberStats.getJSONObject(i)
-
-                    // 내 ID와 일치하는지 확인
                     val id = stat.optLong("memberId", -1L)
-                    // 만약 0이 나온다면 gameMemberId일 수도 있으니 확인 필요
-                    val gameMemberId = stat.optLong("gameMemberId", -1L)
 
-                    // 내 아이디와 매칭 (안전하게 둘 중 하나라도 맞으면)
-                    if (id == myMemberId || (gameMemberId != -1L && gameMemberId == myMemberId)) {
+                    if (id == myMemberId) {
+                        myPosition = stat.optString("position")
 
-                        val position = stat.optString("position")
-
-                        if (position == "THIEF") {
+                        if (myPosition == "THIEF") {
                             val survived = stat.optInt("longestSurvived", 0)
                             val min = survived / 60
                             val sec = survived % 60
                             myStatString = String.format(java.util.Locale.getDefault(), "%02d:%02d", min, sec)
                         } else {
-                            // [경찰]
                             val serverCount = stat.optInt("arrestCount", -1)
-
-                            if (serverCount != -1) {
-                                myStatString = "${serverCount}명"
-                            } else {
-                                myStatString = "${myArrestCount}명"
-                            }
+                            myStatString = if (serverCount != -1) "${serverCount}명" else "${myArrestCount}명"
                         }
                         break
                     }
                 }
+            } else if (TEST_MOCK_ENABLED) {
+                // 🧪 백엔드 미구현 중 — myMemberId 기준 mock
+                Timber.d("🧪 memberStats null → mock 사용 (myMemberId=$myMemberId)")
+                when (myMemberId) {
+                    8L  -> { myPosition = "POLICE"; myStatString = "4명" }     // tes11
+                    11L -> { myPosition = "POLICE"; myStatString = "3명" }     // tes12
+                    12L -> { myPosition = "POLICE"; myStatString = "1명" }     // tes13
+                    13L -> { myPosition = "THIEF";  myStatString = "10:00" }   // tes14
+                }
             }
 
-            // 저장!
-            gameRepository.myLastGameStat = myStatString
-            Timber.d("💾 내 기록 저장 완료: $myStatString (ID: $myMemberId)")
+            gameRepository.saveMyGameStat(myStatString, myPosition)
+            Timber.d("💾 내 기록 저장 완료: $myStatString, role=$myPosition (ID: $myMemberId)")
 
         } catch (e: Exception) {
             Timber.e(e, "기록 저장 실패")
             val isPolice = thiefMembers.value.none { it.memberId == myMemberId }
-            gameRepository.myLastGameStat = if (isPolice) "0명" else "00:00"
+            gameRepository.saveMyGameStat(
+                stat = if (isPolice) "0명" else "00:00",
+                role = if (isPolice) "POLICE" else "THIEF"
+            )
         }
     }
 

@@ -17,5 +17,7 @@ interface GameRepository {
 
     suspend fun getGameResult(gameId: Long): BaseResult<GameResultResponse>
 
-    var myLastGameStat: String?
+    fun saveMyGameStat(stat: String, role: String)
+    fun getMyGameStat(): String?
+    fun getMyGameRole(): String?
 }

@@ -33,7 +33,7 @@ interface GameApiService {
     ):Response<BaseResponse<GameNewsResponse>>
 
 
-    @GET("api/games/{gameId}/result")
+    @GET("games/{gameId}/result")
     suspend fun getGameResult(
         @Path("gameId") gameId: Long
     ): Response<BaseResponse<GameResultResponse>>

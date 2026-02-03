@@ -166,20 +166,6 @@ class GameSessionRepositoryImpl @Inject constructor(
             }
         }
 
-        // 게임 종료 수신 -> 상세 결과 요청
-        gameSocketManager.setOnGameEnded { winnerPosition, _ ->
-            Timber.d("socket 🏁 게임 종료: $winnerPosition 승리 -> 상세 결과 요청")
-            stopGameSession()
-            gameSocketManager.postAfterGameEnd(_gameId.value)
-        }
-
-        // 상세 결과 수신 -> 이동 이벤트 발송
-        gameSocketManager.setOnEndGameAfter { data ->
-            repositoryScope.launch {
-                _eventFlow.emit(GameSessionEvent.NavigateToLoading(_gameId.value))
-            }
-        }
-
         // 뉴스 생성 완료 수신
         gameSocketManager.setOnNewsReceived { gameId, newsId ->
             repositoryScope.launch {
