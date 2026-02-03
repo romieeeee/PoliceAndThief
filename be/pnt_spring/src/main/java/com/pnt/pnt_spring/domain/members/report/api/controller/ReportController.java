@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.pnt.pnt_spring.domain.members.report.api.req.ReportRequest;
 import com.pnt.pnt_spring.domain.members.report.api.resp.ReportResponse;
-import com.pnt.pnt_spring.domain.members.report.application.ReportServiceImpl;
+import com.pnt.pnt_spring.domain.members.report.application.ReportService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import com.pnt.pnt_spring.global.utils.SecurityUtils;
 
@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/reports")
 @RequiredArgsConstructor
 public class ReportController {
-	private final ReportServiceImpl reportService;
+	private final ReportService reportService;
 
 	@Operation(summary = "멤버 신고", description = "멤버 신고 기능을 지원합니다.")
 	@PostMapping
