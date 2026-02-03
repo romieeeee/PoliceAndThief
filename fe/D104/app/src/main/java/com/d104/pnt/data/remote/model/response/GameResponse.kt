@@ -9,4 +9,6 @@ data class MissionResponse(
     val title: String,
     @SerializedName("description")
     val description: String,
+    @SerializedName("keyword")
+    val keyword: String,
 )

@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.ui.theme.MissionYellow
 
@@ -37,6 +38,7 @@ fun ExpandableCard(
     backgroundColor: Color = Color(0xFF1A1E23),
     titleColor: Color = MissionYellow,
     initialExpanded: Boolean = false,
+    disabled: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(initialExpanded) }
@@ -65,16 +67,29 @@ fun ExpandableCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = titleColor,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(vertical = 10.dp)
-                )
-
+                if (disabled) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        textDecoration = TextDecoration.LineThrough,
+                        color = Color.Gray,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(vertical = 10.dp)
+                    )
+                }
+                else {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = titleColor,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(vertical = 10.dp)
+                    )
+                }
             }
 
             AnimatedVisibility(
