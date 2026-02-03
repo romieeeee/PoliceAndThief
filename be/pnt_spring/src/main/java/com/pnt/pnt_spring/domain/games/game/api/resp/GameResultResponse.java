@@ -9,19 +9,21 @@ import lombok.Getter;
 @Builder
 public class GameResultResponse {
 	private Long gameId;
-	private String winner; // "POLICE" | "THIEF"
+	private String winner;
 	private OffsetDateTime endedAt;
-	private TotalStats stats; // 총 게임 스탯(모든 유저들이 쌓은 스탯)
-	private MvpResponse mvp;          // MVP (이긴 팀 1등)
-	private MvpResponse winningSecond; // 이긴 팀 2등
-	private MvpResponse losingFirst;   // 진 팀 1등
+	private TotalStats stats;
+	private MvpResponse mvp;
+	private MvpResponse winningSecond;
+	private MvpResponse losingFirst;
+
+	private GameMemberStat myStat;
 
 	@Getter
 	@Builder
 	public static class TotalStats {
-		private int arrests;         // 총 체포 횟수
-		private int missionsCleared; // 완료된 총 미션 수
-		private int durationSec;     // 실제 게임 진행 시간(초)s
+		private int arrests;
+		private int missionsCleared;
+		private int durationSec;
 	}
 
 	@Getter
@@ -31,5 +33,22 @@ public class GameResultResponse {
 		private String nickname;
 		private String role;
 		private String description;
+	}
+
+	@Getter
+	@Builder
+	public static class GameMemberStat {
+		private Long memberId;
+		private String nickname;
+		private String role;
+
+		// 이번 게임 기록
+		private Integer walk;
+		private Integer arrestCount;     // 이번 판 체포 수
+		private Integer longestSurvived; // 이번 판 생존 시간
+
+		private String rank;             // 현재 등급 (예: "브론즈", "실버")
+		private Integer maxArrestCount;  // (경찰일 때) 개인 최고 체포 기록
+		private Integer maxSurvivalTime; // (도둑일 때) 개인 최고 생존 시간
 	}
 }
