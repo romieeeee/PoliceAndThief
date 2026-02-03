@@ -60,7 +60,7 @@ import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.game.play.mission.MissionBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
-import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieScreen
+import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieContent
 import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
 import com.d104.pnt.ui.theme.PixelFont
@@ -102,6 +102,17 @@ fun GamePlayScreen(
 
     val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
 
+    var showThiefEscaped by remember { mutableStateOf(false) }
+    var escapedThiefNickname by remember { mutableStateOf("") }
+
+    val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
+
+    val walkieState by viewModel.walkieState.collectAsStateWithLifecycle()
+    val walkieConnected by viewModel.walkieConnected.collectAsStateWithLifecycle()
+    val walkieMicEnabled by viewModel.walkieMicEnabled.collectAsStateWithLifecycle()
+    val walkieParticipantCount by viewModel.walkieParticipantCount.collectAsStateWithLifecycle()
+    val isSomeoneTalking by viewModel.isSomeoneTalking.collectAsStateWithLifecycle()
+
     // ✅ 경고음/진동 매니저 (1번만 선언)
     val feedbackManager = remember { GameFeedbackManager(context.applicationContext) }
 
@@ -118,10 +129,26 @@ fun GamePlayScreen(
 
     var showGameOverOverlay by remember { mutableStateOf(false) }
 
-    var showThiefEscaped by remember { mutableStateOf(false) }
-    var escapedThiefNickname by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        viewModel.initGame()
 
-    val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
+        // 무전기 연결
+        if (role == GameRole.POLICE) {
+            delay(500) // 게임 정보 동기화 대기
+            viewModel.connectWalkie()
+        }
+
+        // 게임 종료 후 다음 화면으로 이동
+        viewModel.uiEvent.collect { event ->
+            if (event is GameSessionEvent.NavigateToLoading) {
+                showGameOverOverlay = true
+
+                delay(5000L)
+
+                onNavigateToLoading(event.gameId)
+            }
+        }
+    }
 
     BackHandler {
         if (System.currentTimeMillis() - backPressedTime <= 1500) {
@@ -149,19 +176,9 @@ fun GamePlayScreen(
             context.startService(serviceIntent)
         }
 
-        onDispose { context.stopService(serviceIntent) }
-    }
-
-    // 게임 초기화 + UI 이벤트
-    LaunchedEffect(Unit) {
-        viewModel.initGame()
-
-        viewModel.uiEvent.collect { event ->
-            if (event is GameSessionEvent.NavigateToLoading) {
-                showGameOverOverlay = true
-                delay(5000L)
-                onNavigateToLoading(event.gameId)
-            }
+        onDispose {
+            context.stopService(serviceIntent)
+            viewModel.disconnectWalkie()
         }
     }
 
@@ -171,11 +188,12 @@ fun GamePlayScreen(
 
         viewModel.beepEvent.collect { beep ->
             Timber.d("🚨 beepEvent: policeId=${beep.policeId}, thiefId=${beep.thiefId}, distance=${beep.distance}")
+
+            // distance 기반 난이도 패턴 적용
             feedbackManager.playBeepAlert(distance = beep.distance)
         }
     }
 
-    // 탈출 큐 처리
     LaunchedEffect(Unit) {
         while (true) {
             if (escapeQueue.isNotEmpty() && !showThiefEscaped) {
@@ -185,6 +203,7 @@ fun GamePlayScreen(
                 delay(3000)
 
                 showThiefEscaped = false
+
                 viewModel.removeFirstEscape()
 
                 delay(500)
@@ -323,10 +342,10 @@ fun GamePlayScreen(
                     helicopterEnabled = helicopterEnabled,
                     onHelicopterClick = { viewModel.useHelicopterSkill() }
                 )
+
             }
         }
 
-        // 하단 시트
         if (role == GameRole.THIEF) {
             MissionBottomSheet {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -337,6 +356,7 @@ fun GamePlayScreen(
                         textAlign = TextAlign.Center,
                         color = Color.White
                     )
+
                     Text(
                         modifier = Modifier.fillMaxWidth(),
                         text = "CCTV에 포착되지 않습니다",
@@ -388,14 +408,36 @@ fun GamePlayScreen(
                     item { Spacer(modifier = Modifier.height(100.dp)) }
                 }
             }
+
         } else {
             WalkieBottomSheet {
-                WalkieTalkieScreen(
-                    gameId = "1f",
-                    teamType = "police"
+                WalkieTalkieContent(
+                    channel = when (walkieState) {
+                        is WalkieConnectionState.Idle -> "CH 00 · 대기 중"
+                        is WalkieConnectionState.Connecting -> "CH 00 · 연결 중..."
+                        is WalkieConnectionState.Connected -> "CH 00 · MAIN (${walkieParticipantCount}명)"
+                        is WalkieConnectionState.Error -> "CH 00 · 오류 발생"
+                    },
+                    isTalking = walkieMicEnabled,
+                    isSomeoneTalking = isSomeoneTalking, // ✅ 추가
+                    onPttDown = {
+                        if (walkieConnected && !isSomeoneTalking) {
+                            viewModel.startTalking()
+                        } else if (isSomeoneTalking) {
+                            Timber.d("📻 다른 경찰이 말하는 중 - PTT 무시")
+                        }
+                    },
+                    onPttUp = {
+                        if (walkieConnected) viewModel.stopTalking()
+                    },
+                    onChannelDown = { /* 채널 변경 (추후) */ },
+                    onChannelUp = { /* 채널 변경 (추후) */ }
                 )
+
             }
+
         }
+
     }
 
     // PhoneFrame (NPE 방지)

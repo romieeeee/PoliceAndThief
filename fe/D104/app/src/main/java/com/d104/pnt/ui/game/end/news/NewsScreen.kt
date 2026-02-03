@@ -79,7 +79,10 @@ fun NewsScreen(
                     NewsAnchor(modifier = Modifier.size(240.dp), isSpeaking = true)
 
                     // 타이핑 효과가 적용된 뉴스 본문
-                    NewsScriptBox(content = news.content)
+                    NewsScriptBox(
+                        content = news.content,
+                        onFinish = { onNextClick() }
+                    )
                 }
 
                 // 4. 하단 뉴스 티커 (승리 팀 및 요약 정보)

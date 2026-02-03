@@ -211,7 +211,10 @@ class GameRoomViewModel @Inject constructor(
         roomSocketManager.setOnGameStarted { data ->
             viewModelScope.launch {
                 try {
-                    // ✅ 1) 경찰청장(chiefMemberId) 저장 (0이면 null 처리)
+                    val currentCode = _roomInfo.value.roomCode
+                    gameSessionRepository.setRoomCode(currentCode)
+
+                    // 경찰청장(chiefMemberId) 저장 (0이면 null 처리)
                     val chiefId = data.optLong("chiefMemberId", 0L).let { if (it == 0L) null else it }
                     gameSessionRepository.setChiefMemberId(chiefId)
                     Timber.d("👮‍♂️ chiefMemberId 저장: $chiefId")
@@ -391,6 +394,10 @@ class GameRoomViewModel @Inject constructor(
                 prison = Location(data.roomSetting.prisonLat, data.roomSetting.prisonLng),
                 polygon = data.roomSetting.boundaryGeo.coordinates[0].map { Location(it[1], it[0]) }
             )
+
+            val currentCode = _roomInfo.value.roomCode
+            gameSessionRepository.setRoomCode(currentCode)
+
             Timber.d("감옥 위치 ${_roomInfo.value.prison}, 폴리곤 ${_roomInfo.value.polygon}")
 
         } catch (e: Exception) {
