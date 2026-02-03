@@ -11,6 +11,7 @@ object NavArgs {
     const val GAME_ID = "gameId"
     const val ROLE = "role"
     const val RESULT = "result"
+    const val MISSION_ID = "missionId"
     const val NEWS_ID = "newsId"
 
     // 프로필

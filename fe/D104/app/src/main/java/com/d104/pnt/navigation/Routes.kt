@@ -51,6 +51,7 @@ object Routes {
     }
 
     const val MISSION_CAMERA = "mission_camera"
+    fun buildMissionCamera(missionId: Long) = "$MISSION_CAMERA/$missionId"
 
     const val GAME_NEWS_LOADING = "game_news_loading"
     fun buildNewsLoading(gameId: Long) = "$GAME_NEWS_LOADING/$gameId"

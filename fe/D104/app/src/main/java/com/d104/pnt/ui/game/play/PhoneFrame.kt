@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.R
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
+import com.d104.pnt.data.remote.model.response.MemberLocationSocketDto
 import com.d104.pnt.data.remote.model.response.ThiefStatus
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
@@ -53,7 +54,7 @@ fun PhoneFrame(
     areaPoints: List<LatLng> = emptyList(),
     prisonLocation: LatLng,
     thiefMembers: List<GameMemberSocketDto> = emptyList(),
-    playerLocations: List<PlayerData> = emptyList()
+    playerLocations: List<MemberLocationSocketDto> = emptyList()
 ) {
     Box(
         modifier = Modifier,
@@ -112,7 +113,7 @@ fun MiniMapScreen(
     currentLocation: LatLng,
     areaPoints: List<LatLng>,
     prisonLocation: LatLng,
-    playerLocations: List<PlayerData>
+    playerLocations: List<MemberLocationSocketDto>
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         GoogleMaps(
