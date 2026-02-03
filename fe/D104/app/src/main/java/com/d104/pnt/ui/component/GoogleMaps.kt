@@ -20,6 +20,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.BuildConfig
 import com.d104.pnt.R
+import com.d104.pnt.data.remote.model.response.MemberLocationSocketDto
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.PlayerData
@@ -48,12 +49,7 @@ import com.google.maps.android.compose.rememberMarkerState
 fun GoogleMaps(
     modifier: Modifier,
     currentLocation: LatLng = LatLng(37.56681969564895, 126.97864094105321),
-    /**
-     *  여기에는 "표시할 플레이어만" 넣어주세요.
-     * - 경찰 화면: ViewModel.minimapPlayers
-     * - 도둑 화면: 빈 리스트거나 경찰만(원하는 정책대로)
-     */
-    playerLocations: List<PlayerData> = emptyList(),
+    playerLocations: List<MemberLocationSocketDto> = emptyList(),
     prisonLocation: LatLng? = null,
     inGameMinimap: Boolean = false,
     isPreview: Boolean = true,
@@ -150,17 +146,20 @@ fun GoogleMaps(
                 )
             }
 
-            /**
-             *  표시할 플레이어는 ViewModel에서 이미 걸러서 playerLocations에 넣어주세요.
-             * - 경찰+도둑(조건부) 모두 여기서 그냥 찍기만 함.
-             */
+
             if (role == GameRole.POLICE) {
-                playerLocations.forEach { p ->
-                    val markerType = resolveMarkerType(p)
+                playerLocations.forEach { player ->
+                    if (player.position == "POLICE")
                     PixelMarker(
-                        location = LatLng(p.lat, p.lng),
-                        position = markerType
+                        location = LatLng(player.lat, player.lng),
+                        position = "POLICE"
                     )
+                    else if (player.status != "FREE"){
+                        PixelMarker(
+                            location = LatLng(player.lat, player.lng),
+                            position = player.status
+                        )
+                    }
                 }
             }
 
@@ -295,22 +294,5 @@ fun GoogleMaps(
                 )
             }
         }
-    }
-}
-
-/**
- *  마커 타입 결정
- * - 기본은 position(POLICE/THIEF)
- * - 도둑이 상태가 TRANSFER/PRISON이면 상태 마커를 우선 적용
- *   (PixelMarker가 "TRANSFER"도 받도록 되어있음)
- */
-private fun resolveMarkerType(p: PlayerData): String {
-    val pos = p.position.uppercase()
-    val status = p.status.uppercase()
-
-    return if (pos == "THIEF" && (status == "TRANSFER" || status == "PRISON")) {
-        status
-    } else {
-        pos
     }
 }
