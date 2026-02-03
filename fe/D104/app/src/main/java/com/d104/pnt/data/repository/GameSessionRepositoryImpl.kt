@@ -48,6 +48,8 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _isOutOfBoundary = MutableStateFlow(false)
     override val isOutOfBoundary = _isOutOfBoundary.asStateFlow()
 
+    private val _chiefMemberId = MutableStateFlow<Long?>(null)
+    override val chiefMemberId = _chiefMemberId.asStateFlow()
     private var isConnecting = false
 
     private val _myMemberId = MutableStateFlow(0L)
@@ -56,12 +58,20 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _myRole = MutableStateFlow("")
     override val myRole = _myRole.asStateFlow()
 
+    private val _roomCode = MutableStateFlow("")
+    override val roomCode = _roomCode.asStateFlow()
+
     override fun setMemberId(memberId: Long) {
         _myMemberId.value = memberId
     }
 
     override fun setFinalRole(role: String) {
         _myRole.value = role
+    }
+
+    override fun setRoomCode(code: String) {
+        _roomCode.value = code
+        Timber.d("📍 Repository에 roomCode 저장 완료: $code")
     }
 
     private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -247,6 +257,10 @@ class GameSessionRepositoryImpl @Inject constructor(
 
         _members.value = emptyList()
         _gameId.value = 0L
+    }
+
+    override fun setChiefMemberId(id: Long?) {
+        _chiefMemberId.value = id
     }
 
     private fun showWarningEffect() {
