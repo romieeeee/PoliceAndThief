@@ -1,9 +1,9 @@
 module.exports = {
-    apps : [
+    apps: [
         {
-            name : "websocket-server",
+            name: "websocket-server",
             script: "./src/server-register.js",
-            exec_mode: "cluster",
+            exec_mode: "fork",
             watch: false,
             instances: 4
         }

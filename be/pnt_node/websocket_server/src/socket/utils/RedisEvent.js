@@ -4,8 +4,10 @@ import expiredChannel from "./channels/ExpiredChannel.js";
 import { ChatRoomService } from "../chats/application/ChatRoomService.js";
 import { WebSocketReconnect } from "./reconnect/ReconnectCacheExpired.js";
 import { GameService } from "../games/application/GameService.js";
-import { GameMemberPosition } from "../games/application/GameMemberService.js";
+import { GameMemberPosition } from "../../global/db/sequelize/status/GameMemberPosition.js"; 
 import logger from "../../global/config/logger.js";
+import { GameController } from "../games/controller/GameController.js";
+import { RedisClient } from "./client/RedisClient.js";
 
 export class RedisEvent {
     constructor(chatIo, readyRoomIo, gameIo) {
@@ -18,6 +20,8 @@ export class RedisEvent {
 
         this.webSocketReconnect = new WebSocketReconnect(chatIo, readyRoomIo, gameIo);
         this.gameService = new GameService();
+        this.gameController = new GameController();
+        this.redisClient = new RedisClient();
     }
 
     listen = async () => {
@@ -38,6 +42,7 @@ export class RedisEvent {
                 // message: JSON string { type: 'ARREST_CHECK', gameId, memberId }
                 try {
                     const payload = JSON.parse(message);
+                    logger.info(`[RedisEvent] game:event:trigger: ${payload}`);
                     if (payload.type === 'ARREST_CHECK') {
                         const { gameId } = payload;
                         /* Logic to check game end */
@@ -45,14 +50,9 @@ export class RedisEvent {
 
                         if (isGameEnd) {
                             // Game End Logic
+                            logger.info(`[RedisEvent] game:end: ${gameId}`);
                             const winner = GameMemberPosition.POLICE;
-                            const res = await this.gameService.endGame(gameId, winner);
-                            if (res) {
-                                this.gameIo.to(gameId).emit("get game end", {
-                                    gameId: gameId,
-                                    winner: winner
-                                });
-                            }
+                            this.gameController.gameEnd(this.gameIo, this.redisClient, gameId, GameMemberPosition.POLICE);
                         }
                     }
                 } catch (e) {

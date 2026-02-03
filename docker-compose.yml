@@ -133,7 +133,7 @@ services:
       dockerfile: Dockerfile
     container_name: websocket-server
     ports:
-      - "8090:8090"
+      - "8090-8093:8090-8093"
     env_file:
       - .env
     environment:

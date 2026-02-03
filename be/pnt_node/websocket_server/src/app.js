@@ -10,7 +10,8 @@ import specs from "./global/swagger/swagger.js";
 import morgan from "morgan";
 import logger from "./global/config/logger.js";
 
-const port = 8090;
+const instanceId = parseInt(process.env.NODE_APP_INSTANCE || 0);
+const port = 8090 + instanceId;
 
 process.on('uncaughtException', (err) => {
     logger.error('Uncaught Exception:', err);
