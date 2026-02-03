@@ -15,19 +15,28 @@ export class ChatPushService {
             }
         });
 
+        // 디버깅용: 조건 없이 해당 방의 모든 멤버 조회
+        const allMembers = await MemberChatRoom.findAll({
+            where: {
+                chatRoomId: parseInt(params.chatRoomId),
+                isDeleted: false
+            }
+        });
+        console.log(`[Debug] All members in room ${params.chatRoomId}:`, allMembers.map(m => ({ mid: m.memberId, conn: m.isConnected })));
+
         const resData = [];
-        
+
         joinRoomMembers.forEach((data) => resData.push(data.memberId));
         console.log("joinRoomMembers", joinRoomMembers);
 
         return resData;
-    } 
+    }
 
     // 유저 fcm 토큰 값 가져오는 로직
     async getUserTokens(params) {
         const fcmTokens = await FcmToken.findAll({
             where: {
-                memberId: {[Op.in]: params},
+                memberId: { [Op.in]: params },
                 isActive: true,
                 isDeleted: false
             }
@@ -46,7 +55,7 @@ export class ChatPushService {
                 isDeleted: false
             }
         });
-        
+
         return chatRoom;
     }
 }
