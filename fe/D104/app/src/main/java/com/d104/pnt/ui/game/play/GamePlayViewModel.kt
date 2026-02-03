@@ -11,7 +11,6 @@ import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.model.response.BeepUseResponse
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
 import com.d104.pnt.data.repository.AuthRepository
-import com.d104.pnt.data.repository.GameRepository
 import com.d104.pnt.data.repository.GameSessionEvent
 import com.d104.pnt.data.repository.GameSessionRepository
 import com.d104.pnt.data.repository.LocationRepository
@@ -41,7 +40,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import org.json.JSONArray
 import timber.log.Timber
 import java.time.Instant
 import javax.inject.Inject
@@ -54,7 +52,6 @@ class GamePlayViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val gameSocketManager: GameSocketManager,
     savedStateHandle: SavedStateHandle,
-    private val gameRepository: GameRepository,
     private val gameSessionRepository: GameSessionRepository,
     private val stepSensorManager: StepSensorManager,
     private val walkieRepository: WalkieRepository
@@ -66,8 +63,7 @@ class GamePlayViewModel @Inject constructor(
     )
     val uiEvent = _uiEvent.asSharedFlow()
 
-    // ===== Beep 이벤트 (도둑 쪽에서만 화면이 소리 재생하도록 Screen에서 필터) =====
-    // Beep 이벤트
+    // Beep 이벤트 (도둑 쪽에서만 화면이 소리 재생하도록 Screen에서 필터)
     private val _beepEvent = MutableSharedFlow<BeepUseResponse>(extraBufferCapacity = 16)
     val beepEvent = _beepEvent.asSharedFlow()
 
@@ -166,7 +162,6 @@ class GamePlayViewModel @Inject constructor(
         }
     }
 
-
     private fun startService(action: String) {
         Intent(context, GameActiveService::class.java).also { intent ->
             intent.action = action
@@ -178,7 +173,6 @@ class GamePlayViewModel @Inject constructor(
                     context.startForegroundService(intent)
                 } else {
                     context.startService(intent)
-
                 }
             }
         }
@@ -217,9 +211,7 @@ class GamePlayViewModel @Inject constructor(
     fun manualLeaveGame() {
         viewModelScope.launch {
             Timber.d("🚪 유저가 직접 게임 종료를 선택함")
-            // 1. GPS 서비스 중단
             startService(GameActiveService.ACTION_STOP)
-            // 2. 소켓 연결 해제 및 세션 정리 (post disconnect 포함)
             gameSessionRepository.leaveGame()
         }
     }
