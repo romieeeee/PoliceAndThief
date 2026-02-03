@@ -8,30 +8,43 @@ class ChatPushMq {
     chatPushService;
 
     create = async () => {
-        this.channel = await mq.createChannel(MQConfig.MQ_ALARM);
-        // 안전 장치 추가: 큐가 없으면 생성하고, 있으면 넘어감
-        await this.channel.assertQueue(MQConfig.MQ_ALARM, {durable: true});
-        this.chatPushService = new ChatPushService();
-        return this;
+        try {
+            this.channel = await mq.createChannel(MQConfig.MQ_ALARM);
+            // 안전 장치 추가: 큐가 없으면 생성하고, 있으면 넘어감
+            await this.channel.assertQueue(MQConfig.MQ_ALARM, { durable: true });
+            this.chatPushService = new ChatPushService();
+            return this;
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     consume = async () => {
         this.channel.consume(MQConfig.MQ_ALARM, async (msg) => {
             try {
                 const data = JSON.parse(msg.content.toString());
-
-                const memberIds = await this.chatPushService.getNotConnectedInRoom(data.chatRoomId);
-
-                const tokens = await this.chatPushService.getUserTokens(memberIds);
-
-                const chatRoom = await this.chatPushService.findChatRoomById(data.chatRoomId);
-                
-                data.title = chatRoom.title;
-
-                await sendChatPush(tokens, data);
                 console.log("data consumed", data);
 
+                const memberIds = await this.chatPushService.getNotConnectedInRoom(data);
+
+                const tokens = await this.chatPushService.getUserTokens(memberIds);
+                console.log("tokens", tokens);
+
+                const chatRoom = await this.chatPushService.findChatRoomById(data.chatRoomId);
+                console.log("chatRoom", chatRoom);
+
+                data.title = chatRoom.title;
+
+                if (!tokens || tokens.length === 0) {
+                    this.channel.ack(msg);
+                    return;
+                }
+
+                console.log("will push data", data);
+                await sendChatPush(tokens, data);
+                console.log("data consumed", data);
                 this.channel.ack(msg);
+
             } catch (err) {
                 console.error(err);
                 this.channel.nack(msg, false, true);

@@ -88,6 +88,14 @@ public class ChatRoomMemberServiceImpl implements ChatRoomMemberService {
 			return;
 		}
 
+		// 방장 위임 로직 (나가기 직전에 수행)
+		if (room.getOwnerId().equals(memberId)) {
+			memberChatRoomRepository.findFirstByChatRoomIdAndMemberIdNotAndIsDeletedFalseOrderByCreatedAtAsc(chatRoomId, memberId)
+				.ifPresent(nextOwner -> {
+					room.delegateOwner(nextOwner.getMemberId());
+				});
+		}
+
 		// 3) soft delete + 접속 종료
 		mcr.leave();
 

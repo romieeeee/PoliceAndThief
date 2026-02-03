@@ -49,4 +49,6 @@ public interface MemberChatRoomRepository extends JpaRepository<MemberChatRoom, 
 		""")
 	List<ChatRoom> findMyJoinedChatRooms(@Param("memberId") Long memberId);
 
+	// 다음 방장 후보 조회: "내"가 아니고(Not), "나가지 않은"(DeletedAtIsNull) 멤버 중, "가장 먼저 온"(OrderByCreatedAtAsc) 사람
+	Optional<MemberChatRoom> findFirstByChatRoomIdAndMemberIdNotAndIsDeletedFalseOrderByCreatedAtAsc(Long chatRoomId, Long memberId);
 }
