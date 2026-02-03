@@ -8,3 +8,12 @@ data class PresignedUrlResponse (
     @SerializedName("imageKey")
     val imageKey: String
 )
+
+data class MissionPresignedUrlResponse (
+    @SerializedName("presignedUrl")
+    val presignedUrl: String,
+    @SerializedName("downloadUrl")
+    val downloadUrl: String,
+    @SerializedName("imageKey")
+    val imageKey: String
+)

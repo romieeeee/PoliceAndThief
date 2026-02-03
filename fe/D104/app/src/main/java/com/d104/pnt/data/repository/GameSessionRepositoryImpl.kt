@@ -4,7 +4,10 @@ import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.response.BeepUseResponse
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
 import com.d104.pnt.data.remote.model.response.MemberLocationSocketDto
+import com.d104.pnt.data.remote.model.response.Mission
 import com.d104.pnt.data.remote.model.response.MissionSocketDto
+import com.d104.pnt.domain.model.common.BaseResult
+import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.util.StepSensorManager
 import com.d104.pnt.util.socket.GameSocketManager
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +28,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,7 +37,8 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val gameSocketManager: GameSocketManager,
     private val stepSensorManager: StepSensorManager,
     private val authRepository: AuthRepository,
-    private val locationRepository: LocationRepository
+    private val locationRepository: LocationRepository,
+    private val imageRepository: ImageRepository
 ) : GameSessionRepository {
     private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -70,6 +75,13 @@ class GameSessionRepositoryImpl @Inject constructor(
 
     private val _isOutOfBoundary = MutableStateFlow(false)
     override val isOutOfBoundary = _isOutOfBoundary.asStateFlow()
+
+    private val _missionState = MutableStateFlow(MissionStatus.IDLE)
+    override val missionState = _missionState.asStateFlow()
+
+    private val _missionFailReason = MutableStateFlow("")
+    override val missionFailReason = _missionFailReason.asStateFlow()
+
 
     private var isConnecting = false
 
@@ -290,6 +302,36 @@ class GameSessionRepositoryImpl @Inject constructor(
             Timber.w("⚠️ 경고: 구역 이탈 발생! (Game: $gameId)")
             showWarningEffect()
         }
+
+        // 게임 미션 결과 수신 -> 성공 / 실패
+        gameSocketManager.setOnMissionResult { gameId, missionId, thiefId, success, reason, completedAt ->
+            if (success) {
+                if (_myMemberId.value == thiefId) {
+                    _missionState.value = MissionStatus.SUCCESS
+                }
+                val missionList = mutableListOf<MissionSocketDto>()
+                _missions.value.forEach { mission ->
+                    if (mission.id == missionId) {
+                        val newMission = mission.copy(status = "SUCCESS")
+                        missionList.add(newMission)
+                    }
+                    else { missionList.add(mission) }
+                }
+                _missions.value = missionList
+                Timber.d("미션 목록 업데이트: $_missions.value")
+            } else {
+                if (_myMemberId.value == thiefId) {
+                    _missionState.value = MissionStatus.FAIL
+                    _missionFailReason.value = when (reason){
+                        "ALREADY_COMPLETED" -> "다른 도둑에게 이 미션을 빼앗겼습니다!!"
+                        "NOT_MATCHED" -> "목표를 찾지 못했습니다!"
+                        else -> "사진을 인식하지 못했습니다!"
+                    }
+                }
+                Timber.d("도둑 $thiefId 번 미션 실패!")
+            }
+
+        }
     }
 
     override fun startGameSession() {
@@ -323,6 +365,30 @@ class GameSessionRepositoryImpl @Inject constructor(
                 delay(1000L)
             }
         }
+    }
+
+    override fun uploadMissionImage(image: File, missionId: Long) {
+        repositoryScope.launch {
+            _missionState.value = MissionStatus.IN_ANALYZE
+            delay(3000L)
+            when (val result = imageRepository.getPresignedUrlToMission(image.name)) {
+                is BaseResult.Success -> {
+                    imageRepository.uploadImage(result.data.presignedUrl, image)
+                    gameSocketManager.submitMissionImage(
+                        authRepository.getMemberId().first(),
+                        missionId,
+                        result.data.downloadUrl
+                    )
+                }
+                is BaseResult.Error -> {
+                    Timber.e(result.error.message)
+                }
+            }
+        }
+    }
+
+    override fun missionInit() {
+        _missionState.value = MissionStatus.IDLE
     }
 
     // 서비스 종료 시 호출할 함수
@@ -374,4 +440,8 @@ sealed class GameSessionEvent {
 
     data class NavigateToLoading(val gameId: Long) : GameSessionEvent()
     data class NavigateToNews(val gameId: Long, val newsId: Long) : GameSessionEvent() // 실제 뉴스로 이동
+}
+
+enum class MissionStatus {
+    IDLE, IN_ANALYZE, SUCCESS, FAIL
 }

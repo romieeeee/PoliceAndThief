@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
@@ -52,15 +53,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.data.repository.GameSessionEvent
+import com.d104.pnt.data.repository.MissionStatus
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.Mission
 import com.d104.pnt.service.location.LocationService
 import com.d104.pnt.ui.component.ContDownUI
 import com.d104.pnt.ui.component.ExpandableCard
 import com.d104.pnt.ui.component.GameEndOverlay
+import com.d104.pnt.ui.component.PixelAlertDialog
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
+import com.d104.pnt.ui.component.PixelLoading
 import com.d104.pnt.ui.game.play.PhoneScreen.THIEF_LIST
 import com.d104.pnt.ui.game.play.mission.MissionBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
@@ -100,6 +104,8 @@ fun GamePlayScreen(
     val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
     val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
     val missions by viewModel.missions.collectAsStateWithLifecycle()
+    val missionState by viewModel.missionState.collectAsStateWithLifecycle()
+    val missionFailReason by viewModel.missionFailReason.collectAsStateWithLifecycle()
     val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
 
     // ✅ ToneGenerator 직접 생성 금지 -> GameFeedbackManager로 통일
@@ -540,6 +546,53 @@ fun GamePlayScreen(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
+        }
+    }
+
+    // 미션 제출 결과 알림창
+    Box (modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        when (missionState) {
+            MissionStatus.IDLE -> {}
+            MissionStatus.IN_ANALYZE -> {
+                PixelLoading(message = "미션 수행중...")
+            }
+
+            MissionStatus.SUCCESS -> {
+                Box(
+                    modifier = Modifier
+                        .height(200.dp)
+                        .width(400.dp)
+                ) {
+                    PixelAlertDialog(
+                        title = "미션 성공!",
+                        message = "감시망을 교묘하게 피하는데 성공했습니다! \n 이제 더이상 CCTV에 노출되지 않습니다.",
+                    ) {
+                        PixelButtonCode(
+                            text = "확인",
+                            onClick = { viewModel.missionInit() }
+                        )
+                    }
+                }
+            }
+
+            MissionStatus.FAIL -> {
+                Box(
+                    modifier = Modifier
+                        .height(200.dp)
+                        .width(400.dp)
+                ) {
+                    PixelAlertDialog(
+                        title = "미션 실패",
+                        message = missionFailReason,
+                    ) {
+                        PixelButtonCode(
+                            text = "확인",
+                            fontSize = 20,
+                            onClick = { viewModel.missionInit() }
+                        )
+                    }
+                }
+            }
         }
     }
 

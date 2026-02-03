@@ -1,6 +1,7 @@
 package com.d104.pnt.data.remote.api
 
 import com.d104.pnt.data.remote.model.response.BaseResponse
+import com.d104.pnt.data.remote.model.response.MissionPresignedUrlResponse
 import com.d104.pnt.data.remote.model.response.PresignedUrlResponse
 import okhttp3.RequestBody
 import retrofit2.Response
@@ -29,5 +30,5 @@ interface ImageApiService {
     @GET("games/missions/upload-url")
     suspend fun getPresignedUrlForMission(
         @Query("fileName") fileName: String,
-    ): Response<BaseResponse<PresignedUrlResponse>>
+    ): Response<BaseResponse<MissionPresignedUrlResponse>>
 }

@@ -66,6 +66,8 @@ class GamePlayViewModel @Inject constructor(
     val members = gameSessionRepository.members
     val gameStatus = gameSessionRepository.gameStatus
     val missions = gameSessionRepository.missions
+    val missionState = gameSessionRepository.missionState
+    val missionFailReason = gameSessionRepository.missionFailReason
     val isOutOfBoundary = gameSessionRepository.isOutOfBoundary
     val thiefMembers = gameSessionRepository.thiefMembers
     val escapeQueue = gameSessionRepository.escapeQueue
@@ -118,6 +120,12 @@ class GamePlayViewModel @Inject constructor(
     fun dequeEscape() {
         viewModelScope.launch {
             escapeQueue.value.drop(1)
+        }
+    }
+
+    fun missionInit() {
+        viewModelScope.launch {
+            gameSessionRepository.missionInit()
         }
     }
 

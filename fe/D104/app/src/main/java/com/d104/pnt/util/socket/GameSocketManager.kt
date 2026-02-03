@@ -43,6 +43,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         private const val EVENT_GET_END_GAME_AFTER = "get end game after"
         private const val EVENT_GET_NEWS = "get news"
         private const val EVENT_GET_RECONNECT = "reconnect"
+        private const val EVENT_GET_MISSION_RESULT = "get mission result"
     }
 
     // Callbacks
@@ -63,6 +64,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     private var onReconnected: ((Long) -> Unit)? = null
 
     private var onBeepUse: ((org.json.JSONObject) -> Unit)? = null
+    private var onMissionResult: ((Long, Long, Long, Boolean, String, String) -> Unit)? = null
 
 
     override fun setupCustomListeners() {
@@ -275,6 +277,23 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 onReconnected?.invoke(gameId)
             } catch (e: Exception) {
                 Timber.e(e, "재연결 데이터 파싱 실패")
+            }
+        }
+
+        on(EVENT_GET_MISSION_RESULT) { args ->
+            try {
+                val data = args[0] as JSONObject
+                val gameId = data.optLong("gameId")
+                val missionId = data.optLong("missionId")
+                val thiefId = data.optLong("thiefId")
+                val success = data.optBoolean("success")
+                val reason = data.optString("reason", null)
+                val completedAt = data.optString("completedAt", null)
+
+                Timber.d("미션 결과 수신: result: $success / reason: $reason")
+                onMissionResult?.invoke(gameId, missionId, thiefId, success, reason, completedAt)
+            } catch (e: Exception) {
+                Timber.e(e, "미션 결과 파싱 실패")
             }
         }
     }
@@ -509,6 +528,10 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     fun setOnNewsReceived(callback: (gameId: Long, newsId: Long) -> Unit) {
         onNewsReceived = callback
+    }
+
+    fun setOnMissionResult(callback: (gameId: Long, missionId: Long, thiefId: Long, success: Boolean, reason: String?, completedAt: String?) -> Unit) {
+        onMissionResult = callback
     }
 
     fun cleanup() {

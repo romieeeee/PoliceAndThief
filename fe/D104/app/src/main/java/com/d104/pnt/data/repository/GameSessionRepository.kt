@@ -6,6 +6,7 @@ import com.d104.pnt.data.remote.model.response.MemberLocationSocketDto
 import com.d104.pnt.data.remote.model.response.MissionSocketDto
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.io.File
 
 interface GameSessionRepository {
     val members: StateFlow<List<GameMemberSocketDto>>
@@ -23,13 +24,15 @@ interface GameSessionRepository {
     val beepEvent: SharedFlow<BeepUseResponse>
     val longestSurvivalTime: StateFlow<Int>
     val survivalTime: StateFlow<Int>
-
-
+    val missionState: StateFlow<MissionStatus>
+    val missionFailReason: StateFlow<String>
 
     fun setMemberId(memberId: Long)
     fun setFinalRole(role: String)
     fun connectAndJoin(gameId: Long)
     fun gameInit()
+    fun uploadMissionImage(image: File, missionId: Long)
+    fun missionInit()
     fun dequeEscape()
     fun startGameSession()
     fun stopGameSession()
