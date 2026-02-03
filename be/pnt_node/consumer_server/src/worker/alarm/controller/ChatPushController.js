@@ -8,11 +8,15 @@ class ChatPushMq {
     chatPushService;
 
     create = async () => {
-        this.channel = await mq.createChannel(MQConfig.MQ_ALARM);
-        // 안전 장치 추가: 큐가 없으면 생성하고, 있으면 넘어감
-        await this.channel.assertQueue(MQConfig.MQ_ALARM, {durable: true});
-        this.chatPushService = new ChatPushService();
-        return this;
+        try {
+            this.channel = await mq.createChannel(MQConfig.MQ_ALARM);
+            // 안전 장치 추가: 큐가 없으면 생성하고, 있으면 넘어감
+            await this.channel.assertQueue(MQConfig.MQ_ALARM, {durable: true});
+            this.chatPushService = new ChatPushService();
+            return this;
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     consume = async () => {
@@ -20,7 +24,7 @@ class ChatPushMq {
             try {
                 const data = JSON.parse(msg.content.toString());
 
-                const memberIds = await this.chatPushService.getNotConnectedInRoom(data.chatRoomId);
+                const memberIds = await this.chatPushService.getNotConnectedInRoom(data);
 
                 const tokens = await this.chatPushService.getUserTokens(memberIds);
 
