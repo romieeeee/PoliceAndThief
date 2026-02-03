@@ -210,7 +210,6 @@ public class GameRoomServiceImpl implements GameRoomService {
 
 			remainingCount -= take;
 		}
-
 		// 3. 저장
 		gameMissionRepository.saveAll(gameMissions);
 	}

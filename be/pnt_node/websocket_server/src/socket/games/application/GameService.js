@@ -81,9 +81,9 @@ export class GameService {
     // 게임 종료 조건 확인 => 모든 도둑이 잡혔을때 종료.
     // 게임 승리팀 상태를 비관적 락으로 처리해야할 수도 있음.
     checkGameHaveToFinish = async (gameId) => {
-        const game = await this.findGame(gameId, GameStatus.IN_GAME);
+        const game = await this.redisClient.getGameTimer(gameId);
 
-        if (!game || game.status === GameStatus.ENDED) {
+        if (!game) {
             return false;
         }
 
