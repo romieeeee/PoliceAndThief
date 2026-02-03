@@ -1,6 +1,9 @@
 package com.d104.pnt.data.repository
 
+import androidx.lifecycle.viewModelScope
+import com.d104.pnt.data.remote.model.response.BeepUseResponse
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
+import com.d104.pnt.data.remote.model.response.MemberLocationSocketDto
 import com.d104.pnt.data.remote.model.response.MissionSocketDto
 import com.d104.pnt.util.StepSensorManager
 import com.d104.pnt.util.socket.GameSocketManager
@@ -12,9 +15,12 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -29,15 +35,32 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val authRepository: AuthRepository,
     private val locationRepository: LocationRepository
 ) : GameSessionRepository {
+    private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
     // 실시간 데이터를 저장할 메모리 공간
     private val _gameId = MutableStateFlow(0L)
     override val gameId = _gameId.asStateFlow()
     private val _gameStatus = MutableStateFlow("")
     override val gameStatus = _gameStatus.asStateFlow()
+
+    private val _gameTime = MutableStateFlow(0)
+    override val gameTime = _gameTime.asStateFlow()
+
     private val _missions = MutableStateFlow<List<MissionSocketDto>>(emptyList())
     override val missions = _missions.asStateFlow()
     private val _members = MutableStateFlow<List<GameMemberSocketDto>>(emptyList())
     override val members = _members.asStateFlow()
+
+    private val _memberLocation = MutableStateFlow<List<MemberLocationSocketDto>>(emptyList())
+    override val memberLocation = _memberLocation.asStateFlow()
+
+    override val thiefMembers = _members.map { list ->
+        list.filter { it.position.equals("THIEF", ignoreCase = true) }
+    }.stateIn(
+        scope = repositoryScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     private val _eventFlow = MutableSharedFlow<GameSessionEvent>(
         replay = 1,
@@ -56,6 +79,20 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _myRole = MutableStateFlow("")
     override val myRole = _myRole.asStateFlow()
 
+    private val _escapeQueue = MutableStateFlow<List<String>>(emptyList())
+    override val escapeQueue = _escapeQueue.asStateFlow()
+
+    private val _beepEvent = MutableSharedFlow<BeepUseResponse>(extraBufferCapacity = 16)
+    override val beepEvent = _beepEvent.asSharedFlow()
+
+    private val _baseTime = MutableStateFlow(0) // 탈옥 시 해당 시간으로 초기화
+    private val _survivalTime = MutableStateFlow(0)
+    override val survivalTime = _survivalTime.asStateFlow()
+
+    private val _longestSurvivalTime = MutableStateFlow(0)
+    override val longestSurvivalTime = _longestSurvivalTime.asStateFlow()
+
+
     override fun setMemberId(memberId: Long) {
         _myMemberId.value = memberId
     }
@@ -64,7 +101,6 @@ class GameSessionRepositoryImpl @Inject constructor(
         _myRole.value = role
     }
 
-    private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var gpsJob: Job? = null
     private var warningJob: Job? = null
     private var gameStartTime: Long = 0L
@@ -78,6 +114,7 @@ class GameSessionRepositoryImpl @Inject constructor(
             gameSocketManager.syncGameInfo()
         }
         stepSensorManager.startListening()
+
     }
 
     override fun connectAndJoin(gameId: Long) {
@@ -121,7 +158,26 @@ class GameSessionRepositoryImpl @Inject constructor(
             }
         }
         gameSocketManager.setOnGpsReceived {cctvThiefId, skillUsedAt, sec, locations ->
-            Timber.d("socket GPS 수신: ${sec}초 경과, 위치 목록${locations}")
+            _gameTime.value = sec
+            try {
+                if (locations.length() != 0) {
+                    val newMemberLocation = mutableListOf<MemberLocationSocketDto>()
+                    for (i in 0 until locations.length()) {
+                        val locationJson = locations.getJSONObject(i)
+                        if (cctvThiefId != null) {
+                            if (locationJson.optLong("memberId") == cctvThiefId) {
+                                locationJson.put("status", "CCTV")
+                            }
+                        }
+                        newMemberLocation.add(MemberLocationSocketDto.fromJson(locationJson))
+                    }
+                    _memberLocation.value = newMemberLocation
+                    Timber.d("멤버 위치 파싱 완료: ${newMemberLocation}")
+                }
+            }
+            catch (e:Exception) {
+                Timber.e(e, "멤버 위치 파싱 실패")
+            }
         }
 
         gameSocketManager.setOnJoinedRoom { gameId, memberId, message ->
@@ -131,10 +187,15 @@ class GameSessionRepositoryImpl @Inject constructor(
             Timber.d("socket ⏰ get will start game 수신 - gameId: $gameId, willStartAt: $willStartAt")
         }
 
+        // 전체 게임 정보 동기화
         gameSocketManager.setOnGameInfoSynced { data ->
             try {
+                Timber.d("전체 데이터: $data")
                 val gameId = data.optLong("gameId")
                 if (gameId != 0L) _gameId.value = gameId // ⭐ 저장
+
+                val gameStatus = data.optString("gameStatus")
+                if (gameStatus != "") _gameStatus.value = gameStatus
 
                 val membersArray = data.optJSONArray("members")
                 if (membersArray != null) {
@@ -147,6 +208,16 @@ class GameSessionRepositoryImpl @Inject constructor(
                     _members.value = newMembers
                     Timber.d("GamePlayViewModel: 전체 멤버 동기화 완료 (${newMembers.size}명)")
                 }
+                val missionArray = data.optJSONArray("missions")
+                if (missionArray != null) {
+                    val newMissions = mutableListOf<MissionSocketDto>()
+                    for (i in 0 until missionArray.length()) {
+                        val missionJson = missionArray.getJSONObject(i)
+                        newMissions.add(MissionSocketDto.fromJson(missionJson))
+                    }
+                    _missions.value = newMissions
+                    Timber.d("GamePlayViewModel: 전체 미션 동기화 완료 (${newMissions})")
+                }
             } catch (e: Exception) {
                 Timber.e(e, "GamePlayViewModel: 게임 정보 파싱 실패")
             }
@@ -154,16 +225,42 @@ class GameSessionRepositoryImpl @Inject constructor(
 
         // 실시간 상태 변경
         gameSocketManager.setOnMemberStatusChanged { gameId, thiefId, status, arrestedAt ->
-            _members.update { currentList ->
-                // currentList는 현재 시점의 최신 데이터임이 보장됨
-                currentList.map { member ->
-                    if (member.memberId == thiefId) {
-                        member.copy(rawStatus = status)
-                    } else {
-                        member
+            repositoryScope.launch {
+                _members.update { currentList ->
+                    currentList.map { member ->
+                        if (member.memberId == thiefId) {
+                            member.copy(rawStatus = status)
+                        }
+                        else member
                     }
                 }
+                Timber.d("GamePlayViewModel: 도둑($thiefId) 상태 변경 -> $status")
             }
+        }
+
+        // 도둑 탈출 수신
+        gameSocketManager.setOnThiefEscaped { gameId, thiefId, escapedAt ->
+            repositoryScope.launch {
+                Timber.d("🏃 도둑 탈출 알림 수신: thiefId=$thiefId, escapedAt=$escapedAt")
+
+                val escapedThief = members.value.find { it.memberId == thiefId }
+                val thiefNickname = escapedThief?.nickname ?: "도둑"
+
+                _escapeQueue.update {it + thiefNickname}
+                Timber.d("📋 탈출 큐에 추가: $thiefNickname (현재 큐 크기: ${_escapeQueue.value.size})")
+            }
+        }
+
+        // 비프음 수신 (GameSocketManager에서 이미 get beep use 파싱/콜백 호출 중)
+        gameSocketManager.setOnBeepReceived { policeId, thiefId, distance ->
+            _beepEvent.tryEmit(
+                BeepUseResponse(
+                    policeId = policeId,
+                    thiefId = thiefId,
+                    distance = distance
+                )
+            )
+            Timber.d("📢 beep 수신: policeId=$policeId, thiefId=$thiefId, distance=$distance")
         }
 
         // 게임 종료 수신 -> 상세 결과 요청
@@ -214,17 +311,14 @@ class GameSessionRepositoryImpl @Inject constructor(
                 val steps = stepSensorManager.stepCountFlow.value
 
                 if (location != null) {
-                    val longestSurvived = if (_myRole.value == "THIEF") {
-                        ((System.currentTimeMillis() - gameStartTime) / 1000).toInt()
-                    } else 0
 
                     gameSocketManager.sendGPS(
                         lat = location.latitude,
                         lng = location.longitude,
                         walk = steps,
-                        longestSurvived = longestSurvived
+                        longestSurvived = _longestSurvivalTime.value
                     )
-                    Timber.d("socket sendGPS: $location, $steps, $longestSurvived")
+                    Timber.d("socket sendGPS: $location, $steps, $_longestSurvivalTime")
                 }
                 delay(1000L)
             }
@@ -256,6 +350,11 @@ class GameSessionRepositoryImpl @Inject constructor(
             delay(3000) // 3초간 유지
             _isOutOfBoundary.value = false
         }
+    }
+
+    override fun dequeEscape(){
+        _escapeQueue.value = _escapeQueue.value.drop(1)
+        Timber.d("📋 탈출 큐에서 제거 (남은 큐 크기: ${_escapeQueue.value.size})")
     }
 }
 

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -52,10 +53,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.data.repository.GameSessionEvent
 import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.domain.model.Mission
 import com.d104.pnt.service.location.LocationService
 import com.d104.pnt.ui.component.ContDownUI
 import com.d104.pnt.ui.component.ExpandableCard
 import com.d104.pnt.ui.component.GameEndOverlay
+import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.game.play.PhoneScreen.THIEF_LIST
@@ -77,31 +80,27 @@ fun GamePlayScreen(
     role: GameRole,
     onBackToHome: () -> Unit,
     onNavigateToLoading: (Long) -> Unit,
-    goToCamera: () -> Unit,
+    goToCamera: (Long) -> Unit,
     viewModel: GamePlayViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var backPressedTime by remember { mutableLongStateOf(0L) }
-
     var clicked by remember { mutableStateOf(false) }
     var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
-
-    val currentLocation = viewModel.userLocation.collectAsState().value
-    val areaPoints = viewModel.polygonPoints.collectAsStateWithLifecycle().value
-    val prisonLocation = viewModel.prisonLocation.collectAsState().value
-
-    val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
-
-    val isOutOfBoundary by viewModel.isOutOfBoundary.collectAsStateWithLifecycle()
-
     var showGameOverOverlay by remember { mutableStateOf(false) }
-
     var showThiefEscaped by remember { mutableStateOf(false) }
     var escapedThiefNickname by remember { mutableStateOf("") }
 
+    val currentLocation = viewModel.userLocation.collectAsStateWithLifecycle().value
+    val areaPoints = viewModel.polygonPoints.collectAsStateWithLifecycle().value
+    val prisonLocation = viewModel.prisonLocation.collectAsStateWithLifecycle().value
+    val isOutOfBoundary by viewModel.isOutOfBoundary.collectAsStateWithLifecycle()
+    val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
     val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
+    val missions by viewModel.missions.collectAsStateWithLifecycle()
+    val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
 
     // ✅ ToneGenerator 직접 생성 금지 -> GameFeedbackManager로 통일
     // (테스트용이라도 여기서 직접 ToneGenerator 만들면 연타 시 AudioTrack(-12) 가능)
@@ -200,7 +199,7 @@ fun GamePlayScreen(
 
                 showThiefEscaped = false
 
-                viewModel.removeFirstEscape()
+                viewModel.dequeEscape()
 
                 delay(500)
             } else {
@@ -343,7 +342,7 @@ fun GamePlayScreen(
 
                 FlipImage(
                     role = role,
-                    memberId = 16L // TODO: 여기에 본인 멤버 아이디 넣기
+                    memberId = myMemberId
                 )
 
             }
@@ -379,16 +378,18 @@ fun GamePlayScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     userScrollEnabled = true
                 ) {
-                    items(6) { index ->
+                    items(missions) { mission ->
                         ExpandableCard(
-                            title = "맨홀 뚜껑 촬영하기 ${index + 1}"
+                            modifier = Modifier,
+                            title = mission.Mission.title,
+                            disabled = mission.status == "SUCCESS",
                         ) {
                             Column(
                                 verticalArrangement = Arrangement.spacedBy(20.dp)
                             ) {
                                 Text(
                                     modifier = Modifier.fillMaxWidth(),
-                                    text = "주변의 맨홀 뚜껑을 촬영하여 지하 탈출구를 확보하세요.",
+                                    text = mission.Mission.description,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = Color.White
                                 )
@@ -396,7 +397,7 @@ fun GamePlayScreen(
                                 PixelContainer(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable(onClick = { goToCamera() }),
+                                        .clickable(onClick = { if (mission.status == "IN_PROGRESS") goToCamera(mission.id) }),
                                     backgroundColor = Color.Transparent,
                                     borderColor = MissionYellow,
                                     borderWidth = 8f

@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavArgs
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,6 +39,7 @@ fun CameraScreen(
     compressionQuality: Int = 80, // 압축 품질 (0-100)
     maxWidth: Int = 1280,        // 최대 가로 해상도
     maxHeight: Int = 720,          // 최대 세로 해상도
+    missionId: Long,
     viewModel: CameraViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -138,7 +140,8 @@ fun CameraScreen(
                 photoFile = compressedPhotoFile!!,
                 onConfirm = {
                     // 확인 버튼 클릭 시 - 압축된 파일을 서버로 전송
-                    viewModel.uploadImage(compressedPhotoFile!!)
+                    viewModel.uploadImage(compressedPhotoFile!!, missionId)
+                    onPhotoConfirmed()
                 },
                 onCancel = {
                     // 취소 버튼 클릭 시 - 파일 삭제하고 다시 촬영

@@ -43,3 +43,39 @@ data class GameMemberSocketDto(
         }
     }
 }
+
+// 플레이어 위치 정보 소켓
+data class MemberLocationSocketDto(
+    val memberId: Long,
+    val gameId: Long,
+    val lat: Double,
+    val lng: Double,
+    val walk: Int,
+    val longestSurvived: Int,
+    val position: String,
+    val status: String,
+    val penalty: Int,
+    val missionCompleted: Boolean,
+    val timestamp: String
+) {
+    val statusEnum: ThiefStatus
+        get() = ThiefStatus.fromKey(status)
+
+    companion object {
+        fun fromJson(json: JSONObject): MemberLocationSocketDto {
+            return MemberLocationSocketDto(
+                memberId = json.optLong("memberId"),
+                gameId = json.optLong("gameId"),
+                lat = json.optDouble("lat"),
+                lng = json.optDouble("lng"),
+                walk = json.optInt("walk"),
+                longestSurvived = json.optInt("longestSurvived"),
+                position = json.optString("position"),
+                status = json.optString("status"),
+                penalty = json.optInt("penalty"),
+                missionCompleted = json.optBoolean("missionCompleted"),
+                timestamp = json.optString("timestamp")
+            )
+        }
+    }
+}

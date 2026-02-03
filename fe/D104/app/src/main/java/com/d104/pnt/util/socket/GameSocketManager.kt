@@ -47,7 +47,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     // Callbacks
     private var onJoinedRoom: ((Long, Long, String) -> Unit)? = null
-    private var onGpsReceived: ((Long?, String?,Int, JSONArray) -> Unit)? = null
+    private var onGpsReceived: ((Long?, String? ,Int, JSONArray) -> Unit)? = null
     private var onWillStartGame: ((Long, String) -> Unit)? = null
     private var onGameStarted: ((Long, String) -> Unit)? = null
     private var onThiefEscaped: ((gameId: Long, thiefId: Long, escapedAt: String) -> Unit)? = null
@@ -85,8 +85,8 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             try {
                 val data = args[0] as JSONObject
                 val gameId = data.getInt("gameId")
-                val cctvThiefId = data.getLong("cctvThiefId")
-                val skillUsedAt = data.getString("skillUsedAt")
+                val cctvThiefId: Long? = if (data.isNull("cctvThiefId")) null else data.getLong("cctvThiefId")
+                val skillUsedAt: String? = if (data.isNull("skillUsedAt")) null else (data.getString("skillUsedAt"))
                 val sec = data.getInt("sec")
                 val locations = data.getJSONArray("locations")
                 Timber.d("GPS 위치 정보: gameId=$gameId, sec=$sec, 참여자=${locations.length()}명")
@@ -368,7 +368,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     /**
      * 미션 이미지 제출
      */
-    fun submitMissionImage(memberId: Long, gameMissionId: Long, imageUrl: String) {
+    fun submitMissionImage(memberId: Long, gameMissionId: Long, image: String) {
         val gameId = currentGameId ?: run {
             Timber.e("gameId가 없어서 미션 이미지 제출 불가")
             return
@@ -378,7 +378,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             put("gameId", gameId)
             put("memberId", memberId)
             put("gameMissionId", gameMissionId)
-            put("imageUrl", imageUrl)
+            put("image", image)
         }
 
         emit(EVENT_POST_MISSION_IMAGE, data)
