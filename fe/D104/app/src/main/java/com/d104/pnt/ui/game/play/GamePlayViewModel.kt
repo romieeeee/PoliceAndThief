@@ -3,9 +3,11 @@ package com.d104.pnt.ui.game.play
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.model.response.BeepUseResponse
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
 import com.d104.pnt.data.repository.AuthRepository
@@ -13,7 +15,9 @@ import com.d104.pnt.data.repository.GameRepository
 import com.d104.pnt.data.repository.GameSessionEvent
 import com.d104.pnt.data.repository.GameSessionRepository
 import com.d104.pnt.data.repository.LocationRepository
+import com.d104.pnt.data.repository.WalkieRepository
 import com.d104.pnt.domain.model.PlayerData
+import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.service.game.GameActiveService
 import com.d104.pnt.util.StepSensorManager
@@ -35,12 +39,14 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import timber.log.Timber
 import java.time.Instant
 import javax.inject.Inject
 
+@RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
 class GamePlayViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -50,11 +56,12 @@ class GamePlayViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val gameRepository: GameRepository,
     private val gameSessionRepository: GameSessionRepository,
-    private val stepSensorManager: StepSensorManager
+    private val stepSensorManager: StepSensorManager,
+    private val walkieRepository: WalkieRepository
 ) : ViewModel() {
     private val gameId: Long = savedStateHandle.get<Long>(NavArgs.GAME_ID) ?: 0L
+    private val roleString: String = savedStateHandle.get<String>(NavArgs.ROLE) ?: "THIEF"
 
-    // UI 이벤트
     private val _uiEvent = MutableSharedFlow<GameSessionEvent>(
         replay = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
@@ -63,6 +70,7 @@ class GamePlayViewModel @Inject constructor(
     val uiEvent = _uiEvent.asSharedFlow()
     val isOutOfBoundary = gameSessionRepository.isOutOfBoundary
 
+    // ===== Beep 이벤트 (도둑 쪽에서만 화면이 소리 재생하도록 Screen에서 필터) =====
     // Beep 이벤트
     private val _beepEvent = MutableSharedFlow<BeepUseResponse>(extraBufferCapacity = 16)
     val beepEvent = _beepEvent.asSharedFlow()
@@ -89,14 +97,37 @@ class GamePlayViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    // 내 id
-    private val _myMemberId = MutableStateFlow(0L)
-    val myMemberId: StateFlow<Long> = _myMemberId.asStateFlow()
+    private val _isOutOfBoundary = MutableStateFlow(false)
 
     private val _escapeQueue = MutableStateFlow<List<String>>(emptyList())
     val escapeQueue = _escapeQueue.asStateFlow()
 
+    private val _myMemberId = MutableStateFlow(0L)
+    val myMemberId: StateFlow<Long> = _myMemberId.asStateFlow()
+
     private var warningJob: Job? = null
+    private var pttHeartbeatJob: Job? = null
+    private var radioTimeoutJob: Job? = null
+
+    // ===== 무전기 =====
+    val walkieConnected = walkieRepository.isConnected
+    val walkieMicEnabled = walkieRepository.isMicEnabled
+    val walkieParticipantCount = walkieRepository.participantCount
+
+    private val _walkieState = MutableStateFlow<WalkieConnectionState>(WalkieConnectionState.Idle)
+    val walkieState = _walkieState.asStateFlow()
+
+    private val _isSomeoneTalking = MutableStateFlow(false)
+    val isSomeoneTalking = _isSomeoneTalking.asStateFlow()
+
+
+    private val _isTransmitting = MutableStateFlow(false)
+    val isTransmitting = _isTransmitting.asStateFlow()
+
+    private val _talkingMemberId = MutableStateFlow<Long?>(null)
+
+    val talkingMemberId = _talkingMemberId.asStateFlow()
+
 
     // =========================
     // 🚁 Helicopter Skill State
@@ -122,6 +153,7 @@ class GamePlayViewModel @Inject constructor(
         gameSessionRepository.chiefMemberId
             .map { it ?: 0L }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0L)
+
     /**
      * ✅ 청장 여부
      * - gameSessionRepository에 chiefMemberId가 있어야 함 (StateFlow<Long?> 같은 형태)
@@ -280,6 +312,10 @@ class GamePlayViewModel @Inject constructor(
             }
         }
 
+        gameSocketManager.setOnRadioReceived { _, memberId ->
+            handleRadioSignal(memberId)
+        }
+
         // 게임 종료
         gameSocketManager.setOnGameEnded { winnerPosition, _ ->
             Timber.d("🏁 게임 종료 수신: $winnerPosition 승리")
@@ -302,7 +338,16 @@ class GamePlayViewModel @Inject constructor(
 
     private fun updateMembersList(newList: List<GameMemberSocketDto>) {
         _allMembers.value = newList
-        Timber.d("👥 멤버 리스트 갱신: ${newList.size}명 / thief=${newList.count { it.position.equals("THIEF", true) }}")
+        Timber.d(
+            "👥 멤버 리스트 갱신: ${newList.size}명 / thief=${
+                newList.count {
+                    it.position.equals(
+                        "THIEF",
+                        true
+                    )
+                }
+            }"
+        )
     }
 
     fun setDefaultArea(context: Context) {
@@ -450,16 +495,6 @@ class GamePlayViewModel @Inject constructor(
         _minimapPlayers.value = police + visibleThieves
     }
 
-    override fun onCleared() {
-        super.onCleared()
-
-        startService(GameActiveService.ACTION_STOP)
-        gameSessionRepository.leaveGame()
-        gameSocketManager.leaveGame()
-        gameSocketManager.removeAllListeners()
-    }
-
-
     private fun startService(action: String) {
         Intent(context, GameActiveService::class.java).also { intent ->
             intent.action = action
@@ -477,6 +512,7 @@ class GamePlayViewModel @Inject constructor(
         }
     }
 
+
     fun manualLeaveGame() {
         viewModelScope.launch {
             Timber.d("🚪 유저가 직접 게임 종료를 선택함")
@@ -486,6 +522,172 @@ class GamePlayViewModel @Inject constructor(
             gameSessionRepository.leaveGame()
         }
     }
+
+    /**
+     * ====================
+     * 무전기 연결 (경찰만)
+     * ====================
+     */
+    fun connectWalkie() {
+        // 경찰이 아니면 무시
+        if (roleString != "POLICE") {
+            Timber.d("🎙️ 도둑은 무전기 연결 안함")
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _walkieState.value = WalkieConnectionState.Connecting
+
+                // 1. roomCode 가져오기
+                val roomCode = gameSessionRepository.roomCode.first()
+                if (roomCode.isBlank()) {
+                    _walkieState.value = WalkieConnectionState.Error("방 코드가 없습니다")
+                    Timber.e("🎙️ 무전기 연결 실패: roomCode 없음")
+                    return@launch
+                }
+
+                Timber.d("🎙️ LiveKit 토큰 요청: roomCode=$roomCode")
+
+                // 2. 토큰 발급
+                when (val result = gameRepository.getLiveKitToken(roomCode)) {
+                    is BaseResult.Success -> {
+                        val tokenResponse = result.data
+                        Timber.d("🎙️ 토큰 발급 성공: ${tokenResponse.identity}")
+
+                        // 3. LiveKit 연결
+                        walkieRepository.connect(
+                            serverUrl = Constants.LIVEKIT_URL,
+                            token = tokenResponse.token,
+                            roomName = tokenResponse.roomCode
+                        )
+
+                        _walkieState.value = WalkieConnectionState.Connected
+                        Timber.d("🎙️ 무전기 연결 완료")
+                    }
+
+                    is BaseResult.Error -> {
+                        val errorMsg = result.error.message ?: "토큰 발급 실패"
+                        _walkieState.value = WalkieConnectionState.Error(errorMsg)
+                        Timber.e("🎙️ 토큰 발급 실패: $errorMsg")
+                    }
+                }
+            } catch (e: Exception) {
+                _walkieState.value = WalkieConnectionState.Error(e.message ?: "연결 실패")
+                Timber.e(e, "🎙️ 무전기 연결 실패")
+            }
+        }
+    }
+
+    fun disconnectWalkie() {
+        viewModelScope.launch {
+            try {
+                walkieRepository.disconnect()
+                _walkieState.value = WalkieConnectionState.Idle
+                Timber.d("🎙️ 무전기 연결 해제")
+            } catch (e: Exception) {
+                Timber.e(e, "🎙️ 연결 해제 실패")
+            }
+        }
+    }
+
+    private fun handleRadioSignal(memberId: Long) {
+        if (_isTransmitting.value) {
+            Timber.d("📻 Radio : [필터] 내가 송신 중이므로 수신 신호 무시")
+            return
+        }
+
+        if (memberId == myMemberId.value || myMemberId.value == 0L) {
+            return
+        }
+
+        viewModelScope.launch {
+            // 3. 다른 사람이 말하고 있음을 표시
+            _isSomeoneTalking.value = true
+            _talkingMemberId.value = memberId
+
+            Timber.d("📻 Radio: [수신] memberId=$memberId 송신 중")
+
+            // 4. 타이머: 1.5초 동안 다음 신호가 안 오면 종료
+            radioTimeoutJob?.cancel()
+            radioTimeoutJob = launch {
+                delay(1500) // heartbeat 1초 + 여유 0.5초
+                _isSomeoneTalking.value = false
+                _talkingMemberId.value = null
+                Timber.d("📻 Radio: [수신] 무전 신호 종료 (Timeout)")
+            }
+        }
+
+
+        viewModelScope.launch {
+            // 2. 남이 말하고 있음을 표시
+            _isSomeoneTalking.value = true
+            _talkingMemberId.value = memberId
+
+            // 3. 타이머 리셋: 1초 동안 다음 신호가 안 오면 종료로 간주
+            radioTimeoutJob?.cancel()
+            radioTimeoutJob = launch {
+                delay(1000)
+                _isSomeoneTalking.value = false
+                _talkingMemberId.value = null
+                Timber.d("📻 Radio: [수신] 무전 신호 종료 (Timeout)")
+            }
+        }
+    }
+
+    fun startTalking() {
+        if (roleString != "POLICE") return
+
+        viewModelScope.launch {
+            try {
+                launch { walkieRepository.enableMic() }
+
+                pttHeartbeatJob?.cancel()
+                pttHeartbeatJob = launch {
+                    while (isActive) {
+                        gameSocketManager.sendRadio()
+                        Timber.d("📻 [PTT] Heartbeat 송신 중...")
+                        delay(1000) // 서버 전송 주기
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "🎙️ PTT 시작 실패")
+            }
+        }
+    }
+
+    fun stopTalking() {
+        if (roleString != "POLICE") return
+
+        viewModelScope.launch {
+            try {
+                // 1. Heartbeat 중단
+                pttHeartbeatJob?.cancel()
+                pttHeartbeatJob = null
+
+                // 2. LiveKit 마이크 비활성화
+                walkieRepository.disableMic()
+
+                Timber.d("🎙️ [PTT] 송신 중지")
+            } catch (e: Exception) {
+                Timber.e(e, "🎙️ PTT 중지 실패")
+            }
+        }
+    }
+
+
+    override fun onCleared() {
+        super.onCleared()
+        disconnectWalkie()
+        startService(GameActiveService.ACTION_STOP)
+    }
+}
+
+sealed class WalkieConnectionState {
+    object Idle : WalkieConnectionState()
+    object Connecting : WalkieConnectionState()
+    object Connected : WalkieConnectionState()
+    data class Error(val message: String) : WalkieConnectionState()
 }
 
 data class HelicopterUiState(
