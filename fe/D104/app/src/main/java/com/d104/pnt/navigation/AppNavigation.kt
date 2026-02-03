@@ -43,6 +43,7 @@ import timber.log.Timber
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AppNavigation(
+    startChatRoomId: Long? = null,
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -217,7 +218,8 @@ fun AppNavigation(
                 MainScreen(
                     navigateToIntro = {
                         Timber.d("Navigation: Main -> Intro (Logout)")
-                    }
+                    },
+                    startChatRoomId = startChatRoomId
                 )
             }
         }

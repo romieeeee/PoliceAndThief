@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -22,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -54,7 +57,11 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 @Composable
-fun MainScreen(navigateToIntro: () -> Unit) {
+fun MainScreen(
+    navigateToIntro: () -> Unit,
+    startChatRoomId: Long? = null,
+    viewModel: MainViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val activity = context as? Activity
@@ -70,6 +77,16 @@ fun MainScreen(navigateToIntro: () -> Unit) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    val pendingChatId by viewModel.pendingChatRoomId.collectAsStateWithLifecycle()
+
+    LaunchedEffect(pendingChatId) {
+        pendingChatId?.let { chatId ->
+            navController.navigate(Routes.buildChatRoom(chatId)) {
+                popUpTo(Routes.HOME) { inclusive = false }
+            }
+33            viewModel.clearPendingChatRoomId()
+        }
+    }
 
     // BottomNav 화면에서 뒤로가기 처리
     BackHandler(enabled = currentRoute in bottomBarRoutes) {
@@ -287,14 +304,21 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                 )
             }
 
-            composable(Routes.MISSION_CAMERA) {
+            composable(
+                route = "${Routes.MISSION_CAMERA}/{${NavArgs.MISSION_ID}}",
+                arguments = listOf(
+                    navArgument(NavArgs.MISSION_ID) { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val missionId = backStackEntry.arguments?.getLong(NavArgs.MISSION_ID) ?: 0L
                 CameraScreen(
                     onPhotoConfirmed = {
                         navController.popBackStack()
                     },
                     compressionQuality = 80, // 압축 품질 (0-100) - 기본값 80
                     maxWidth = 1280,         // 최대 가로 해상도 - 기본값 1280px
-                    maxHeight = 720          // 최대 세로 해상도 - 기본값 720px
+                    maxHeight = 720,         // 최대 세로 해상도 - 기본값 720px
+                    missionId = missionId
                 )
             }
 
@@ -324,7 +348,13 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                             popUpTo(Routes.HOME) { inclusive = false }
                         }
                     },
-                    goToCamera = { navController.navigate(Routes.MISSION_CAMERA) }
+                    goToCamera = { missionId ->
+                        navController.navigate(
+                            Routes.buildMissionCamera(
+                                missionId
+                            )
+                        )
+                    }
                 )
             }
 
@@ -387,7 +417,12 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                         }
                     },
                     onBackToWaitingRoom = { roomId ->
-                        navController.navigate(Routes.buildGameRoom(roomId, GameRole.ANY.roleNameEn)) {
+                        navController.navigate(
+                            Routes.buildGameRoom(
+                                roomId,
+                                GameRole.ANY.roleNameEn
+                            )
+                        ) {
                             popUpTo(Routes.HOME) { inclusive = false }
                         }
                     }
