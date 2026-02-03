@@ -116,14 +116,14 @@ private fun PttCircle(
     )
 
     val circleColor = when {
-        isSomeoneTalking -> Color(0xFFFFA500) // 남이 말하면 주황색
         isPressed || isTalking -> WalkieColor.Danger
+        isSomeoneTalking -> Color(0xFFFFA500)
         else -> WalkieColor.Panel
     }
 
     val displayText = when {
-        isSomeoneTalking -> "다른 경찰 송신 중"
         isPressed || isTalking -> "송신 중…"
+        isSomeoneTalking -> "다른 경찰 송신 중"
         else -> "누르고 말하세요"
     }
 
@@ -137,12 +137,39 @@ private fun PttCircle(
                 scaleY = scale
                 alpha = if (isSomeoneTalking) 0.6f else 1f
             }
-            .pointerInput(isSomeoneTalking) {
-                if (isSomeoneTalking) return@pointerInput
-
+            .pointerInput(Unit) { // ⭐ Key를 Unit으로 해서 GPS나 남의 신호에 제스처가 끊기지 않게 함
                 awaitPointerEventScope {
                     while (true) {
-                        awaitFirstDown()
+                        val down = awaitFirstDown()
+
+                        // ❌ 남이 이미 말하고 있으면 터치 무시
+                        if (isSomeoneTalking) {
+                            Timber.d("📻 수신 중에는 송신 불가")
+                            continue
+                        }
+
+                        // ✅ 송신 시작
+                        isPressed = true
+                        onDown()
+
+                        // 뗄 때까지 대기
+                        waitForUpOrCancellation()
+
+                        // ✅ 송신 종료
+                        isPressed = false
+                        onUp()
+                    }
+                }
+            }.pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val down = awaitFirstDown()
+
+                        if (isSomeoneTalking) {
+                            Timber.d("📻 수신 중에는 송신 불가")
+                            continue
+                        }
+
                         isPressed = true
                         onDown()
 

@@ -16,6 +16,8 @@ interface GameSessionRepository {
     val myRole: StateFlow<String>
     val roomCode: StateFlow<String>
 
+    val chiefMemberId: StateFlow<Long?>
+
     fun setMemberId(memberId: Long)
     fun setFinalRole(role: String)
     fun setRoomCode(code: String)
@@ -24,4 +26,6 @@ interface GameSessionRepository {
     fun startGameSession()
     fun stopGameSession()
     fun leaveGame()
+
+    fun setChiefMemberId(id: Long?)
 }
