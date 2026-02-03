@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.api.AuthApiService
 import com.d104.pnt.data.remote.model.request.CheckDuplicateRequest
+import com.d104.pnt.data.remote.model.request.FcmTokenRequest
 import com.d104.pnt.data.remote.model.request.LoginRequest
 import com.d104.pnt.data.remote.model.request.SignupRequest
 import com.d104.pnt.data.remote.model.request.SocialLoginRequest
@@ -16,16 +17,23 @@ import com.d104.pnt.data.remote.model.response.DuplicateCheckResponse
 import com.d104.pnt.data.remote.model.response.LoginResponse
 import com.d104.pnt.data.remote.model.response.SignupResponse
 import com.d104.pnt.domain.model.common.BaseResult
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class AuthRepositoryImpl @Inject constructor(
     private val apiService: AuthApiService,
     private val dataStore: DataStore<Preferences>
 ) : AuthRepository, BaseRepository() {
+
     // DataStore Keys
     private val KEY_ACCESS_TOKEN = stringPreferencesKey(Constants.KEY_ACCESS_TOKEN)
     private val KEY_REFRESH_TOKEN = stringPreferencesKey(Constants.KEY_REFRESH_TOKEN)
@@ -33,6 +41,24 @@ class AuthRepositoryImpl @Inject constructor(
     private val KEY_MEMBER_ID = longPreferencesKey(Constants.KEY_MEMBER_ID) // memberId
     private val KEY_IS_LOGGED_IN = booleanPreferencesKey(Constants.KEY_IS_LOGGED_IN)
 
+    override suspend fun sendFcmToken(active: Boolean): BaseResult<Unit> {
+        return safeApiCall {
+            // 현재 기기의 FCM 토큰을 비동기로 가져옴
+            val token = suspendCoroutine<String?> { continuation ->
+                FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                    if (task.isSuccessful) continuation.resume(task.result)
+                    else continuation.resume(null)
+                }
+            }
+
+            if (token != null) {
+                // 서버에 토큰과 활성 상태 전송
+                apiService.postFcmToken(FcmTokenRequest(value = token, active = active))
+            } else {
+                throw Exception("FCM 토큰을 가져올 수 없습니다.")
+            }
+        }
+    }
 
     override suspend fun login(id: String, password: String): BaseResult<LoginResponse> {
         return safeApiCall(
@@ -43,6 +69,10 @@ class AuthRepositoryImpl @Inject constructor(
                     userId = loginResponse.member.id,
                     memberId = loginResponse.member.memberId
                 )
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    sendFcmToken(true)
+                }
             }
         ) {
             apiService.login(LoginRequest(id, password))
@@ -99,10 +129,16 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout(): BaseResult<String> {
+        // 로그아웃 시작 시점에 토큰 비활성화 먼저 시도
+        CoroutineScope(Dispatchers.IO).launch {
+            sendFcmToken(false)
+        }
+
         return safeApiCall(
             onSuccess = { clearAuthData() }
         ) {
             apiService.logout()
+
         }
     }
 

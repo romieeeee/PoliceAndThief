@@ -28,6 +28,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.navigation.BottomNavBar
 import com.d104.pnt.navigation.BottomNavItem
@@ -153,6 +154,11 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                 route = "${Routes.CHAT_ROOM}/{${NavArgs.CHAT_ID}}",
                 arguments = listOf(
                     navArgument(NavArgs.CHAT_ID) { type = NavType.LongType }
+                ),
+                deepLinks = listOf(
+                    navDeepLink {
+                        uriPattern = "pnt://chat/{${NavArgs.CHAT_ID}}"
+                    }
                 )
             ) { backStackEntry ->
                 val chatId = backStackEntry.arguments?.getLong(NavArgs.CHAT_ID) ?: 0L
@@ -161,7 +167,8 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                     modifier = Modifier.fillMaxSize(),
                     onBackPressed = {
                         navController.popBackStack(Routes.CHAT, inclusive = false)
-                    })
+                    }
+                )
             }
 
             // ===== 게임 대기방 =====
