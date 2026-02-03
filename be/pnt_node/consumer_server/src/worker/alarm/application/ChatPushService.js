@@ -1,5 +1,6 @@
 import MemberChatRoom from "../../../global/db/sequelize/entity/MemberChatRoom.js";
 import FcmToken from "../../../global/db/sequelize/entity/FcmToken.js";
+import ChatRoom from "../../../global/db/sequelize/entity/ChatRoom.js";
 import { Op } from "sequelize";
 
 
@@ -35,5 +36,16 @@ export class ChatPushService {
         fcmTokens.forEach((data) => resData.push(data.value));
 
         return resData;
+    }
+
+    async findChatRoomById(chatRoomId) {
+        const chatRoom = await ChatRoom.findOne({
+            where: {
+                id: chatRoomId,
+                isDeleted: false
+            }
+        });
+
+        return chatRoom;
     }
 }
