@@ -10,7 +10,7 @@ async function sendChatPush(tokens, data) {
         data: {
             title: data.title,
             body: data.content,
-            chatRoomId: parseInt(data.chatRoomId)
+            chatRoomId: String(data.chatRoomId)
         },
         tokens: tokens
     };
