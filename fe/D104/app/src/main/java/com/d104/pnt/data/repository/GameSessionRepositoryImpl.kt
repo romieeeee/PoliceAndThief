@@ -58,12 +58,20 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _myRole = MutableStateFlow("")
     override val myRole = _myRole.asStateFlow()
 
+    private val _roomCode = MutableStateFlow("")
+    override val roomCode = _roomCode.asStateFlow()
+
     override fun setMemberId(memberId: Long) {
         _myMemberId.value = memberId
     }
 
     override fun setFinalRole(role: String) {
         _myRole.value = role
+    }
+
+    override fun setRoomCode(code: String) {
+        _roomCode.value = code
+        Timber.d("📍 Repository에 roomCode 저장 완료: $code")
     }
 
     private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())

@@ -23,7 +23,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun NewsScriptBox(
     content: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onFinish: () -> Unit
 ) {
     val scrollState = rememberScrollState()
     var textToDisplay by remember { mutableStateOf("") }
@@ -39,7 +40,11 @@ fun NewsScriptBox(
             }  // 에러를 무시
 
             delay(60)
+
         }
+        delay(5000L) // content 끝난 후 5초 대기
+
+        onFinish()
     }
 
     PixelContainer(
