@@ -23,12 +23,24 @@ interface GameSessionRepository {
     val escapeQueue: StateFlow<List<String>>
     val beepEvent: SharedFlow<BeepUseResponse>
     val longestSurvivalTime: StateFlow<Int>
+    val skillUsedAt: StateFlow<Int?>
     val survivalTime: StateFlow<Int>
     val missionState: StateFlow<MissionStatus>
     val missionFailReason: StateFlow<String>
+    val roomCode: StateFlow<String>
+    val chiefMemberId: StateFlow<Long?>
+    val isChief: StateFlow<Boolean>
+    val helicopterButtonEnabled: StateFlow<Boolean>
+    val helicopterUsed: StateFlow<Boolean>
+    val helicopterState: StateFlow<HelicopterPhase>
+    val walkieState: StateFlow<WalkieConnectionState>
+    val isSomeoneTalking: StateFlow<Boolean>
+    val talkingMemberId: StateFlow<Long?>
+    val isTransmitting: StateFlow<Boolean>
 
     fun setMemberId(memberId: Long)
     fun setFinalRole(role: String)
+    fun setRoomCode(code: String)
     fun connectAndJoin(gameId: Long)
     fun gameInit()
     fun uploadMissionImage(image: File, missionId: Long)
@@ -37,4 +49,10 @@ interface GameSessionRepository {
     fun startGameSession()
     fun stopGameSession()
     fun leaveGame()
+    fun setChiefMemberId(id: Long?)
+    fun useHelicopterSkill()
+    fun connectWalkie()
+    fun disconnectWalkie()
+    fun startTalking()
+    fun stopTalking()
 }

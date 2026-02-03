@@ -1,7 +1,9 @@
 package com.d104.pnt.data.repository
 
 import com.d104.pnt.data.remote.api.GameApiService
+import com.d104.pnt.data.remote.model.request.LiveKitTokenRequest
 import com.d104.pnt.data.remote.model.response.GameNewsResponse
+import com.d104.pnt.data.remote.model.response.LiveKitTokenResponse
 import com.d104.pnt.data.remote.model.response.MissionResponse
 import com.d104.pnt.domain.model.common.BaseResult
 import javax.inject.Inject
@@ -27,5 +29,13 @@ class GameRepositoryImpl @Inject constructor(
 
     override suspend fun getGameNews(gameId: Long): BaseResult<GameNewsResponse> {
         return safeApiCall { gameApiService.getGameNews(gameId) }
+    }
+
+    override suspend fun getLiveKitToken(roomCode: String): BaseResult<LiveKitTokenResponse> {
+        return safeApiCall {
+            gameApiService.getLiveKitToken(
+                LiveKitTokenRequest(roomCode = roomCode)
+            )
+        }
     }
 }
