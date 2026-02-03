@@ -561,7 +561,7 @@ export class GameController {
         const gameMembers = await redisClient.getAllLocations(integerGameId);
 
         const memberStats = gameMembers.map(member => ({
-            gameMemberId: member.memberId,
+            memberId: member.memberId,
             position: member.position,
             walk: member.walk,
             longestSurvived: member.longestSurvived,
