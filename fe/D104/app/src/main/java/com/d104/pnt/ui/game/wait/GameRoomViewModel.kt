@@ -236,6 +236,7 @@ class GameRoomViewModel @Inject constructor(
                     // 결정된 정보 저장
                     gameSessionRepository.setFinalRole(myFinalRole)
                     gameSessionRepository.setMemberId(myId)
+                    gameSessionRepository.setCctvInterval(roomInfo.value.cctvCycle)
                     locationRepository.setPrisonLocation(LatLng(_roomInfo.value.prison!!.lat, _roomInfo.value.prison!!.lng))
                     locationRepository.setPolygonPoints(_roomInfo.value.polygon!!.map { LatLng(it.lat, it.lng) })
 
