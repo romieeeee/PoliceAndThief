@@ -186,15 +186,12 @@ class GameSessionRepositoryImpl @Inject constructor(
             isConnecting = true
 
             try {
-                // 1. 리스너부터 확실히 먼저 등록 (신호를 놓치지 않게)
                 gameSocketManager.removeAllListeners()
                 setupSocketListeners()
 
-                // 2. 연결 시도
                 val token = authRepository.getAccessToken().first()
                 gameSocketManager.connect(token)
 
-                // 3. 연결될 때까지 대기
                 var retry = 0
                 while (!gameSocketManager.isConnected() && retry < 30) {
                     delay(100)
@@ -202,7 +199,6 @@ class GameSessionRepositoryImpl @Inject constructor(
                 }
 
                 if (gameSocketManager.isConnected()) {
-                    // 4. 연결 성공 후 딱 한 번만 Join 요청
                     gameSocketManager.joinGame(gameId)
                 }
             } finally {
@@ -215,7 +211,6 @@ class GameSessionRepositoryImpl @Inject constructor(
         gameSocketManager.setOnGameStarted { gameId, startTime ->
             _gameId.value = gameId
             repositoryScope.launch {
-                // 뷰모델에게 "넘어가라"고 신호 보냄
                 _eventFlow.emit(GameSessionEvent.GameStarted(gameId, startTime))
             }
         }
@@ -321,7 +316,7 @@ class GameSessionRepositoryImpl @Inject constructor(
             }
         }
 
-        // 도둑 탈출 수신
+        // 도둑 탈출
         gameSocketManager.setOnThiefEscaped { gameId, thiefId, escapedAt ->
             repositoryScope.launch {
                 Timber.d("🏃 도둑 탈출 알림 수신: thiefId=$thiefId, escapedAt=$escapedAt")
@@ -334,7 +329,7 @@ class GameSessionRepositoryImpl @Inject constructor(
             }
         }
 
-        // 비프음 수신 (GameSocketManager에서 이미 get beep use 파싱/콜백 호출 중)
+        // 비프음
         gameSocketManager.setOnBeepReceived { policeId, thiefId, distance ->
             _beepEvent.tryEmit(
                 BeepUseResponse(
@@ -346,21 +341,21 @@ class GameSessionRepositoryImpl @Inject constructor(
             Timber.d("📢 beep 수신: policeId=$policeId, thiefId=$thiefId, distance=$distance")
         }
 
-        // 게임 종료 수신 -> 상세 결과 요청
+        // 게임 종료
         gameSocketManager.setOnGameEnded { winnerPosition, _ ->
             Timber.d("socket 🏁 게임 종료: $winnerPosition 승리 -> 상세 결과 요청")
             stopGameSession()
             gameSocketManager.postAfterGameEnd(_gameId.value)
         }
 
-        // 상세 결과 수신 -> 이동 이벤트 발송
+        // 상세 결과
         gameSocketManager.setOnEndGameAfter { data ->
             repositoryScope.launch {
                 _eventFlow.emit(GameSessionEvent.NavigateToLoading(_gameId.value))
             }
         }
 
-        // 뉴스 생성 완료 수신
+        // 뉴스 생성 완료
         gameSocketManager.setOnNewsReceived { gameId, newsId ->
             repositoryScope.launch {
                 Timber.d("socket 📰 뉴스 도착 알림 수신: newsId=$newsId")
@@ -368,13 +363,13 @@ class GameSessionRepositoryImpl @Inject constructor(
             }
         }
 
-        // 경게 벗어남 이벤트 수신 ->  경고 오버레이 띄움
+        // 경게 벗어남 이벤트
         gameSocketManager.setOnOutOfBoundary { gameId, memberId ->
             Timber.w("⚠️ 경고: 구역 이탈 발생! (Game: $gameId)")
             showWarningEffect()
         }
 
-        // 게임 미션 결과 수신 -> 성공 / 실패
+        // 게임 미션 결과
         gameSocketManager.setOnMissionResult { gameId, missionId, thiefId, success, reason, completedAt ->
             if (success) {
                 if (_myMemberId.value == thiefId) {
@@ -404,7 +399,7 @@ class GameSessionRepositoryImpl @Inject constructor(
 
         }
 
-        // ✅ 스킬 결과(성공/실패) 수신: 실패면 used 롤백
+        // 스킬 결과
         gameSocketManager.setOnSkillResult { result, reason, policeId, startedAt ->
             Timber.d("🚁 스킬 결과 수신: result=$result, reason=$reason, policeId=$policeId, startedAt=$startedAt")
 
@@ -413,7 +408,6 @@ class GameSessionRepositoryImpl @Inject constructor(
             if (success) {
                 _helicopterUsed.value = true // 확정
             } else {
-                // 내가 눌렀던 건데 실패면 롤백해줘야 버튼이 다시 살아남
                 val myId = _myMemberId.value
                 if (policeId == myId) {
                     _helicopterUsed.value = false
@@ -436,12 +430,11 @@ class GameSessionRepositoryImpl @Inject constructor(
         gameStartTime = System.currentTimeMillis()
 
         gpsJob = repositoryScope.launch {
-            // gameId가 0보다 커질 때까지 대기
             gameId.first { it > 0 }
             Timber.d("socket 🚀 레포지토리: GPS 전송 시작")
             while (isActive) {
                 val location = locationRepository.currentLocation.value
-                // 리셋된 걸음 수를 가져옴 (StepSensorManager에 gameStepCountFlow가 있다고 가정)
+                // 리셋된 걸음 수
                 val steps = stepSensorManager.stepCountFlow.value
 
                 if (location != null) {
@@ -530,7 +523,7 @@ class GameSessionRepositoryImpl @Inject constructor(
             try {
                 _walkieState.value = WalkieConnectionState.Connecting
 
-                // 1. roomCode 가져오기
+                // roomCode 가져오기
                 val roomCode = roomCode.first()
                 if (roomCode.isBlank()) {
                     _walkieState.value = WalkieConnectionState.Error("방 코드가 없습니다")
@@ -592,13 +585,13 @@ class GameSessionRepositoryImpl @Inject constructor(
         }
 
         repositoryScope.launch {
-            // 3. 다른 사람이 말하고 있음을 표시
+            // 다른 사람이 말하고 있음 표시
             _isSomeoneTalking.value = true
             _talkingMemberId.value = memberId
 
             Timber.d("📻 Radio: [수신] memberId=$memberId 송신 중")
 
-            // 4. 타이머: 1.5초 동안 다음 신호가 안 오면 종료
+            // 1.5초 동안 다음 신호가 안 오면 종료
             radioTimeoutJob?.cancel()
             radioTimeoutJob = launch {
                 delay(1500) // heartbeat 1초 + 여유 0.5초
@@ -609,11 +602,11 @@ class GameSessionRepositoryImpl @Inject constructor(
         }
 
         repositoryScope.launch {
-            // 2. 남이 말하고 있음을 표시
+            // 남이 말하고 있음 표시
             _isSomeoneTalking.value = true
             _talkingMemberId.value = memberId
 
-            // 3. 타이머 리셋: 1초 동안 다음 신호가 안 오면 종료로 간주
+            // 1초 동안 다음 신호가 안 오면 종료로 간주
             radioTimeoutJob?.cancel()
             radioTimeoutJob = launch {
                 delay(1000)
@@ -650,11 +643,9 @@ class GameSessionRepositoryImpl @Inject constructor(
 
         repositoryScope.launch {
             try {
-                // 1. Heartbeat 중단
                 pttHeartbeatJob?.cancel()
                 pttHeartbeatJob = null
 
-                // 2. LiveKit 마이크 비활성화
                 walkieRepository.disableMic()
 
                 Timber.d("🎙️ [PTT] 송신 중지")
@@ -665,22 +656,18 @@ class GameSessionRepositoryImpl @Inject constructor(
     }
 
     override fun useHelicopterSkill() {
-        // 청장만
         if (_myMemberId.value == 0L || _myMemberId.value != _chiefMemberId.value) {
             Timber.w("🚁 스킬 사용 불가: 청장 아님 (my=${_myMemberId.value}, chief=${_chiefMemberId.value})")
             return
         }
 
-        // 1회 제한
         if (_helicopterUsed.value) {
             Timber.w("🚁 스킬 사용 불가: 이미 사용됨")
             return
         }
 
-        // ✅ 중복 탭 방지: 누르는 순간 잠궈둠 (실패하면 onSkillResult에서 롤백)
         _helicopterUsed.value = true
 
-        // ✅ 소켓 발행
         gameSocketManager.useSkill(policeId = _myMemberId.value)
         Timber.d("🚁 post skill use 요청: gameId=$gameId, policeId=${_myMemberId.value}")
     }
@@ -688,16 +675,16 @@ class GameSessionRepositoryImpl @Inject constructor(
 
 sealed class GameSessionEvent {
 
-    // 1. 게임 시작 신호 (게임 ID와 시작 시간을 담아서 보냄)
+    // 게임 시작 신호
     data class GameStarted(
         val gameId: Long,
         val startTime: String
     ) : GameSessionEvent()
 
-    // 2. (예시) 게임 종료 신호
+    // 게임 종료 신호
     data object GameEnded : GameSessionEvent()
 
-    // 3. (예시) 에러 발생 신호
+    // 에러 발생 신호
     data class ErrorOccurred(val message: String) : GameSessionEvent()
 
     data class NavigateToLoading(val gameId: Long) : GameSessionEvent()
