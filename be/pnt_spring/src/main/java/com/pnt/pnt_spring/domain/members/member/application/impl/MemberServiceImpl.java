@@ -40,7 +40,11 @@ public class MemberServiceImpl implements MemberService {
 	public MemberProfileResponse getMemberProfile(Long memberId) {
 		// 1. DB에서 멤버 정보 조회
 		Member member = memberRepository.findMemberWithAllStats(memberId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+		if (member.getMemberProfile() == null) {
+			throw new BusinessException(ErrorCode.PROFILE_NOT_FOUND);
+		}
 
 		// 2. DB에 저장된 Key 꺼내기 (예: "profiles/1/eb9ab..._1")
 		String storedKey = member.getMemberProfile().getAvatarUrl();
@@ -62,7 +66,7 @@ public class MemberServiceImpl implements MemberService {
 
 		// 멤버 존재 확인
 		Member member = memberRepository.findById(memberId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
 		return MemberPoliceResponse.of(memberId, member.getMemberStatPolice());
 	}
@@ -72,7 +76,7 @@ public class MemberServiceImpl implements MemberService {
 
 		// 멤버 존재 확인
 		Member member = memberRepository.findById(memberId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
 		// 도둑 스탯 확인
 		return MemberThiefResponse.of(memberId, member.getMemberStatThief());
@@ -82,7 +86,11 @@ public class MemberServiceImpl implements MemberService {
 	@Transactional
 	public MemberProfileUpdateResponse updateProfile(Long memberId, MemberProfileUpdateRequest request) {
 		Member member = memberRepository.findById(memberId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+
+		if (member.getMemberProfile() == null) {
+			throw new BusinessException(ErrorCode.PROFILE_NOT_FOUND);
+		}
 
 		String oldAvatarKey = member.getMemberProfile().getAvatarUrl();
 		String newAvatarKey = request.getAvatarUrl();
@@ -90,7 +98,7 @@ public class MemberServiceImpl implements MemberService {
 		member.getMemberProfile().updateProfile(request.getNickname(), newAvatarKey);
 
 		MemberDoc memberDoc = memberMongoRepository.findByMemberId(memberId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 		memberDoc.update(request.getNickname(), newAvatarKey);
 
 		if (oldAvatarKey != null && !oldAvatarKey.isBlank() && !oldAvatarKey.equals(newAvatarKey)) {
@@ -111,13 +119,22 @@ public class MemberServiceImpl implements MemberService {
 	@Transactional
 	public FcmTokenRegisterResponse registerFcmToken(Long memberId, FcmTokenRegisterRequest request) {
 		Member member = memberRepository.findById(memberId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
-		FcmToken token = FcmToken.builder()
-			.member(member)
-			.value(request.getValue())
-			.isActive(request.isActive())
-			.build();
+		FcmToken token = member.getFcmToken();
+
+		if (token != null) {
+			token.updateActive(true);
+			token.updateValue(request.getValue());
+
+			return FcmTokenRegisterResponse.from(token);
+		}
+
+		token = FcmToken.builder()
+				.member(member)
+				.value(request.getValue())
+				.isActive(request.isActive())
+				.build();
 
 		FcmToken savedToken = fcmTokenRepository.save(token);
 
@@ -128,9 +145,12 @@ public class MemberServiceImpl implements MemberService {
 	@Transactional
 	public FcmTokenUpdateResponse updateFcmToken(Long memberId, FcmTokenUpdateRequest request) {
 		Member member = memberRepository.findById(memberId)
-			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
 		FcmToken fcmToken = member.getFcmToken();
+		if (fcmToken == null) {
+			throw new BusinessException(ErrorCode.FCM_TOKEN_NOT_FOUND);
+		}
 		fcmToken.updateActive(request.isActive());
 
 		return FcmTokenUpdateResponse.from(fcmToken);

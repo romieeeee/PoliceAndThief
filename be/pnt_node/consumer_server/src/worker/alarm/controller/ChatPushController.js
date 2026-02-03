@@ -24,11 +24,7 @@ class ChatPushMq {
             try {
                 const data = JSON.parse(msg.content.toString());
 
-<<<<<<< HEAD
                 const memberIds = await this.chatPushService.getNotConnectedInRoom(data);
-=======
-                const memberIds = await this.chatPushService.getNotConnectedInRoom(data.chatRoomId);
->>>>>>> origin/backend
 
                 const tokens = await this.chatPushService.getUserTokens(memberIds);
 
