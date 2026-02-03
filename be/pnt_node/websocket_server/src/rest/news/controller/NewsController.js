@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { Emitter } from "@socket.io/redis-emitter";
 import { RedisClient } from "../../../socket/utils/client/RedisClient";
+import logger from "../../../global/config/logger";
 
 const GAME_NAMESPACE = "/game";
 
@@ -33,7 +34,6 @@ export class NewController {
 
             res.status(200).json({ message: "News sent successfully" });
         } catch (error) {
-            console.error("sendNews error", error);
             res.status(error.code || 500).json({ message: error.message });
         }
     }
