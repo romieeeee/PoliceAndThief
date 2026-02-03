@@ -33,7 +33,7 @@ fun PixelMarker(
                 modifier = Modifier.size(20.dp)
             )
 
-            "THIEF" -> Image(
+            "CCTV" -> Image(
                 painter = painterResource(id = R.drawable.map_marker_red),
                 contentDescription = "픽셀 커스텀 마커",
                 modifier = Modifier.size(20.dp)
@@ -46,6 +46,11 @@ fun PixelMarker(
             )
 
             "PRISON" -> Image(
+                painter = painterResource(id = R.drawable.map_marker_gray),
+                contentDescription = "픽셀 커스텀 마커",
+                modifier = Modifier.size(20.dp)
+            )
+            else -> Image(
                 painter = painterResource(id = R.drawable.map_marker_gray),
                 contentDescription = "픽셀 커스텀 마커",
                 modifier = Modifier.size(20.dp)

@@ -29,9 +29,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.R
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
+import com.d104.pnt.data.remote.model.response.MemberLocationSocketDto
 import com.d104.pnt.data.remote.model.response.ThiefStatus
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.domain.model.PlayerData
 import com.d104.pnt.ui.component.GoogleMaps
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.QRcodeScanner
@@ -51,7 +53,8 @@ fun PhoneFrame(
     currentLocation: LatLng,
     areaPoints: List<LatLng> = emptyList(),
     prisonLocation: LatLng,
-    thiefMembers: List<GameMemberSocketDto> = emptyList()
+    thiefMembers: List<GameMemberSocketDto> = emptyList(),
+    playerLocations: List<MemberLocationSocketDto> = emptyList()
 ) {
     Box(
         modifier = Modifier,
@@ -76,12 +79,12 @@ fun PhoneFrame(
             when (screen) {
                 NO_SIGNAL, THIEF_LIST -> ThiefListScreen(thiefMembers)
                 MAP -> MiniMapScreen(
-                    role,
+                    role = role,
                     currentLocation = currentLocation,
                     areaPoints = areaPoints,
-                    prisonLocation = prisonLocation
+                    prisonLocation = prisonLocation,
+                    playerLocations = playerLocations
                 )
-
                 CAMERA -> CameraScanScreen(onScanSuccess)
             }
         }
@@ -104,28 +107,24 @@ fun ThiefListScreen(
     }
 }
 
-
 @Composable
 fun MiniMapScreen(
     role: GameRole,
     currentLocation: LatLng,
     areaPoints: List<LatLng>,
-    prisonLocation: LatLng
+    prisonLocation: LatLng,
+    playerLocations: List<MemberLocationSocketDto>
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize(),
-    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         GoogleMaps(
             modifier = Modifier,
             currentLocation = currentLocation,
-            polygonPoints = areaPoints.map {
-                DraggableLatLng(position = it)
-            }.toMutableStateList(),
+            polygonPoints = areaPoints.map { DraggableLatLng(position = it) }.toMutableStateList(),
             inGameMinimap = true,
             isPreview = true,
             prisonLocation = prisonLocation,
-            role = role
+            role = role,
+            playerLocations = playerLocations
         )
     }
 }
@@ -134,10 +133,7 @@ fun MiniMapScreen(
 fun CameraScanScreen(
     onScanSuccess: (String) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize(),
-    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         QRcodeScanner(
             modifier = Modifier.fillMaxSize(),
             onScan = { result ->
@@ -148,10 +144,8 @@ fun CameraScanScreen(
     }
 }
 
-
 @Composable
 fun ThiefRow(thief: GameMemberSocketDto) {
-
     val (statusText, statusColor) = when (thief.status) {
         ThiefStatus.FREE -> "수배" to WantedRed
         ThiefStatus.TRANSFER -> "이송" to Color(0xFF4CAF50)
@@ -206,3 +200,4 @@ fun ThiefRow(thief: GameMemberSocketDto) {
         }
     }
 }
+

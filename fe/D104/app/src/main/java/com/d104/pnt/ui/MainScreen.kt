@@ -280,14 +280,21 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                 )
             }
 
-            composable(Routes.MISSION_CAMERA) {
+            composable(
+                route = "${Routes.MISSION_CAMERA}/{${NavArgs.MISSION_ID}}",
+                arguments = listOf(
+                    navArgument(NavArgs.MISSION_ID) { type = NavType.LongType }
+                )
+            ) { backStackEntry ->
+                val missionId = backStackEntry.arguments?.getLong(NavArgs.MISSION_ID) ?: 0L
                 CameraScreen(
                     onPhotoConfirmed = {
                         navController.popBackStack()
                     },
                     compressionQuality = 80, // 압축 품질 (0-100) - 기본값 80
                     maxWidth = 1280,         // 최대 가로 해상도 - 기본값 1280px
-                    maxHeight = 720          // 최대 세로 해상도 - 기본값 720px
+                    maxHeight = 720,         // 최대 세로 해상도 - 기본값 720px
+                    missionId = missionId
                 )
             }
 
@@ -317,7 +324,7 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                             popUpTo(Routes.HOME) { inclusive = false }
                         }
                     },
-                    goToCamera = { navController.navigate(Routes.MISSION_CAMERA) }
+                    goToCamera = { missionId -> navController.navigate(Routes.buildMissionCamera(missionId)) }
                 )
             }
 
