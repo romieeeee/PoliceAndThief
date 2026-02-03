@@ -3,7 +3,7 @@ import { Emitter } from "@socket.io/redis-emitter";
 import { GameMissionService } from "../application/GameMissionService";
 import { MissionStatus } from "../../../global/db/sequelize/status/MissionStatus";
 import { RedisClient } from "../../../socket/utils/client/RedisClient";
-import { generateToken } from "../../../global/auth/JwtProvider";
+
 
 const GAME_NAMESPACE = "/game";
 
@@ -28,7 +28,7 @@ export class MissionController {
         try {
             const payload = req.body;
             const { gameId, missionId, memberId, success } = payload;
-            const gameMission = await this.gameMissionService.findOne(gameId, missionId);
+            const gameMission = await this.gameMissionService.findOne(missionId);
             
             const gameMember = await this.redisClient.getLocation(memberId, gameId);
 
@@ -59,7 +59,7 @@ export class MissionController {
 
             // 성공시에만 업데이트
             if (success) {
-                await this.gameMissionService.update(gameId, missionId, {
+                await this.gameMissionService.update(missionId, {
                     completedBy: memberId,
                     completedAt: completedAt,
                     status: MissionStatus.SUCCESS
