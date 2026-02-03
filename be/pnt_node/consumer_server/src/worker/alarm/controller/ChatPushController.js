@@ -20,15 +20,18 @@ class ChatPushMq {
             try {
                 const data = JSON.parse(msg.content.toString());
 
-                // const memberIds = await this.chatPushService.getNotConnectedInRoom(data.chatRoomId);
+                const memberIds = await this.chatPushService.getNotConnectedInRoom(data.chatRoomId);
 
-                // const tokens = await this.chatPushService.getUserTokens(memberIds);
+                const tokens = await this.chatPushService.getUserTokens(memberIds);
 
-                // await sendChatPush(tokens, data);
+                const chatRoom = await this.chatPushService.findChatRoomById(data.chatRoomId);
+                
+                data.title = chatRoom.title;
+
+                await sendChatPush(tokens, data);
                 console.log("data consumed", data);
 
                 this.channel.ack(msg);
-
             } catch (err) {
                 console.error(err);
                 this.channel.nack(msg, false, true);

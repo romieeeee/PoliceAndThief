@@ -65,4 +65,6 @@ public class Member extends BaseEntity {
 	@OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
 	private MemberStatThief memberStatThief;
 
+	@OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+	private FcmToken fcmToken;
 }
