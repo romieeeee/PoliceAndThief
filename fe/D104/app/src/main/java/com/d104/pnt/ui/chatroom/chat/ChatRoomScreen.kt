@@ -29,6 +29,7 @@ fun ChatRoomScreen(
     val message by viewModel.message.collectAsStateWithLifecycle()
     val chatMessages by viewModel.chatMessages.collectAsStateWithLifecycle()
     val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val roomInfo by viewModel.roomInfo.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
@@ -87,12 +88,19 @@ fun ChatRoomScreen(
             ChatRoomMemberDrawer(
                 visible = drawerOpen,
                 members = members,
+                myMemberId = myMemberId, // ✅ ID 전달
                 onDismiss = { drawerOpen = false },
                 onLeaveRoom = {
                     drawerOpen = false
                     viewModel.leaveRoom {
                         onBackPressed()
                     }
+                },
+                onDelegate = { targetId -> // ✅ 위임 액션 연결
+                    viewModel.delegateHost(targetId)
+                },
+                onKick = { targetId, reason -> // ✅ 강퇴 액션 연결
+                    viewModel.kickMember(targetId, reason)
                 }
             )
 
