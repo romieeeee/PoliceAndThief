@@ -13,7 +13,6 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Generated;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -51,5 +50,14 @@ public class FcmToken extends BaseEntity {
 
 	public void updateValue(String value) {
 		this.value = value;
+	}
+
+	public void recreate(boolean isActive) {
+		this.isActive = isActive;
+		this.isDeleted = false;
+	}
+
+	public void delete() {
+		this.isDeleted = true;
 	}
 }
