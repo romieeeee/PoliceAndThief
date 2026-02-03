@@ -9,6 +9,6 @@ public interface GameResultService {
 	void saveGameResult(GameResultRequest request);
 
 	// 게임 결과 조회
-	GameResultResponse getGameResult(Long gameId);
+	GameResultResponse getGameResult(Long gameId, Long memberId);
 
 }
