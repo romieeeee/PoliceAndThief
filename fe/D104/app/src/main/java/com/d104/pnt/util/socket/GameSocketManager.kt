@@ -45,11 +45,12 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         private const val EVENT_GET_END_GAME_AFTER = "get end game after"
         private const val EVENT_GET_NEWS = "get news"
         private const val EVENT_GET_RECONNECT = "reconnect"
+        private const val EVENT_GET_MISSION_RESULT = "get mission result"
     }
 
     // Callbacks
     private var onJoinedRoom: ((Long, Long, String) -> Unit)? = null
-    private var onGpsReceived: ((sec: Int, locations: JSONArray, cctvThiefId: Long?, skillUsedAt: String?) -> Unit)? = null
+    private var onGpsReceived: ((Long?, String? ,Int, JSONArray) -> Unit)? = null
     private var onWillStartGame: ((Long, String) -> Unit)? = null
     private var onGameStarted: ((Long, String) -> Unit)? = null
     private var onThiefEscaped: ((gameId: Long, thiefId: Long, escapedAt: String) -> Unit)? = null
@@ -64,7 +65,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     private var onGameEnded: ((String, String) -> Unit)? = null
     private var onNewsReceived: ((Long, Long) -> Unit)? = null
     private var onReconnected: ((Long) -> Unit)? = null
-    private var onBeepUse: ((JSONObject) -> Unit)? = null
+
+    private var onBeepUse: ((org.json.JSONObject) -> Unit)? = null
+    private var onMissionResult: ((Long, Long, Long, Boolean, String, String) -> Unit)? = null
     private var onHelicopterSkillReceived:
             ((gameId: Long, policeId: Long, result: String, reason: String?, startedAt: String?, usedAt: String?) -> Unit)? = null
 
@@ -89,8 +92,8 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         on(EVENT_GET_GPS) { args ->
             try {
                 val data = args[0] as JSONObject
-                val gameId = data.optLong("gameId", -1L)
-                val sec = data.optInt("sec", 0)
+                val gameId = data.getInt("gameId")
+                val sec = data.getInt("sec")
                 val locations = data.getJSONArray("locations")
 
                 // cctvThiefId: 없거나 0/음수면 null 처리
@@ -106,7 +109,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                     "GPS 수신: gameId=$gameId sec=$sec, cctvThiefId=$cctvThiefId, skillUsedAt=$skillUsedAt, 참여자=${locations.length()}"
                 )
 
-                onGpsReceived?.invoke(sec, locations, cctvThiefId, skillUsedAt)
+                onGpsReceived?.invoke(cctvThiefId, skillUsedAt, sec, locations)
             } catch (e: Exception) {
                 Timber.e(e, "GPS 정보 파싱 실패")
             }
@@ -302,6 +305,23 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 Timber.e(e, "재연결 데이터 파싱 실패")
             }
         }
+
+        on(EVENT_GET_MISSION_RESULT) { args ->
+            try {
+                val data = args[0] as JSONObject
+                val gameId = data.optLong("gameId")
+                val missionId = data.optLong("missionId")
+                val thiefId = data.optLong("thiefId")
+                val success = data.optBoolean("success")
+                val reason = data.optString("reason", null)
+                val completedAt = data.optString("completedAt", null)
+
+                Timber.d("미션 결과 수신: result: $success / reason: $reason")
+                onMissionResult?.invoke(gameId, missionId, thiefId, success, reason, completedAt)
+            } catch (e: Exception) {
+                Timber.e(e, "미션 결과 파싱 실패")
+            }
+        }
     }
 
     override fun onReconnect(data: JSONObject) {
@@ -392,7 +412,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     /**
      * 미션 이미지 제출
      */
-    fun submitMissionImage(memberId: Long, gameMissionId: Long, imageUrl: String) {
+    fun submitMissionImage(memberId: Long, gameMissionId: Long, image: String) {
         val gameId = currentGameId ?: run {
             Timber.e("gameId가 없어서 미션 이미지 제출 불가")
             return
@@ -402,7 +422,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             put("gameId", gameId)
             put("memberId", memberId)
             put("gameMissionId", gameMissionId)
-            put("imageUrl", imageUrl)
+            put("image", image)
         }
 
         emit(EVENT_POST_MISSION_IMAGE, data)
@@ -497,7 +517,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     fun setOnJoinedRoom(callback: (gameId: Long, memberId: Long, message: String) -> Unit) {
         onJoinedRoom = callback
     }
-    fun setOnGpsReceived(callback: (sec: Int, locations: JSONArray, cctvThiefId: Long?, skillUsedAt: String?) -> Unit) {
+    fun setOnGpsReceived(callback: (cctvThiefId: Long?, skillUsedAt: String?, sec: Int, locations: JSONArray) -> Unit) {
         onGpsReceived = callback
     }
 
@@ -553,6 +573,10 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onNewsReceived = callback
     }
 
+    fun setOnMissionResult(callback: (gameId: Long, missionId: Long, thiefId: Long, success: Boolean, reason: String?, completedAt: String?) -> Unit) {
+        onMissionResult = callback
+    }
+
     fun cleanup() {
         Timber.d("🧹 Game 소켓 완전 정리")
         clearCallbacks()
@@ -580,6 +604,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onReconnected = null
         onBeepUse = null
         onHelicopterSkillReceived = null
+        onMissionResult = null
     }
 
     public override fun removeAllListeners() {
@@ -600,5 +625,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         off(EVENT_GET_END_GAME_AFTER)
         off(EVENT_GET_NEWS)
         off(EVENT_GET_RECONNECT)
+        off(EVENT_GET_MISSION_RESULT)
     }
 }

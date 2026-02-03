@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
@@ -51,13 +52,20 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.data.repository.GameSessionEvent
+import com.d104.pnt.data.repository.MissionStatus
+import com.d104.pnt.data.repository.WalkieConnectionState
 import com.d104.pnt.domain.model.GameRole
+import com.d104.pnt.domain.model.Mission
 import com.d104.pnt.service.location.LocationService
 import com.d104.pnt.ui.component.ContDownUI
 import com.d104.pnt.ui.component.ExpandableCard
 import com.d104.pnt.ui.component.GameEndOverlay
+import com.d104.pnt.ui.component.PixelAlertDialog
+import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
+import com.d104.pnt.ui.component.PixelLoading
+import com.d104.pnt.ui.game.play.PhoneScreen.THIEF_LIST
 import com.d104.pnt.ui.game.play.mission.MissionBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieContent
@@ -76,37 +84,34 @@ fun GamePlayScreen(
     role: GameRole,
     onBackToHome: () -> Unit,
     onNavigateToLoading: (Long) -> Unit,
-    goToCamera: () -> Unit,
+    goToCamera: (Long) -> Unit,
     viewModel: GamePlayViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var backPressedTime by remember { mutableLongStateOf(0L) }
-
     var clicked by remember { mutableStateOf(false) }
     var phoneScreen by remember { mutableStateOf(PhoneScreen.NO_SIGNAL) }
+    var showGameOverOverlay by remember { mutableStateOf(false) }
+    var showThiefEscaped by remember { mutableStateOf(false) }
+    var escapedThiefNickname by remember { mutableStateOf("") }
+
 
     val currentLocation = viewModel.userLocation.collectAsStateWithLifecycle().value
     val areaPoints = viewModel.polygonPoints.collectAsStateWithLifecycle().value
     val prisonLocation = viewModel.prisonLocation.collectAsStateWithLifecycle().value
-
-    val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
     val isOutOfBoundary by viewModel.isOutOfBoundary.collectAsStateWithLifecycle()
-    val minimapPlayers by viewModel.minimapPlayers.collectAsStateWithLifecycle()
-
-    // 🚁 헬기 상태 + 권한
+    val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
+    val memberLocation by viewModel.memberLocation.collectAsStateWithLifecycle()
+    val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
+    val missions by viewModel.missions.collectAsStateWithLifecycle()
+    val missionState by viewModel.missionState.collectAsStateWithLifecycle()
+    val missionFailReason by viewModel.missionFailReason.collectAsStateWithLifecycle()
+    val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
     val helicopterState by viewModel.helicopterState.collectAsStateWithLifecycle()
     val isChief by viewModel.isChief.collectAsStateWithLifecycle()
     val helicopterEnabled by viewModel.helicopterButtonEnabled.collectAsStateWithLifecycle()
-
-    val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
-
-    var showThiefEscaped by remember { mutableStateOf(false) }
-    var escapedThiefNickname by remember { mutableStateOf("") }
-
-    val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
-
     val walkieState by viewModel.walkieState.collectAsStateWithLifecycle()
     val walkieConnected by viewModel.walkieConnected.collectAsStateWithLifecycle()
     val walkieMicEnabled by viewModel.walkieMicEnabled.collectAsStateWithLifecycle()
@@ -126,8 +131,6 @@ fun GamePlayScreen(
         delay(2000)
         feedbackManager.playBeepAlert(distance = 12.0)
     }
-
-    var showGameOverOverlay by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.initGame()
@@ -204,7 +207,7 @@ fun GamePlayScreen(
 
                 showThiefEscaped = false
 
-                viewModel.removeFirstEscape()
+                viewModel.dequeEscape()
 
                 delay(500)
             } else {
@@ -373,12 +376,18 @@ fun GamePlayScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     userScrollEnabled = true
                 ) {
-                    items((1..6).toList()) { index ->
-                        ExpandableCard(title = "맨홀 뚜껑 촬영하기 $index") {
-                            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                    items(missions) { mission ->
+                        ExpandableCard(
+                            modifier = Modifier,
+                            title = mission.Mission.title,
+                            disabled = mission.status == "SUCCESS",
+                        ) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(20.dp)
+                            ) {
                                 Text(
                                     modifier = Modifier.fillMaxWidth(),
-                                    text = "주변의 맨홀 뚜껑을 촬영하여 지하 탈출구를 확보하세요.",
+                                    text = mission.Mission.description,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = Color.White
                                 )
@@ -386,7 +395,7 @@ fun GamePlayScreen(
                                 PixelContainer(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clickable(onClick = { goToCamera() }),
+                                        .clickable(onClick = { if (mission.status == "IN_PROGRESS") goToCamera(mission.id) }),
                                     backgroundColor = Color.Transparent,
                                     borderColor = MissionYellow,
                                     borderWidth = 8f
@@ -458,7 +467,7 @@ fun GamePlayScreen(
                 areaPoints = areaPoints,
                 prisonLocation = LatLng(prisonLocation.latitude, prisonLocation.longitude),
                 thiefMembers = thiefMembers,
-                playerLocations = if (role == GameRole.POLICE) minimapPlayers else emptyList()
+                playerLocations = if (role == GameRole.POLICE) memberLocation else emptyList()
             )
         }
     }
@@ -539,6 +548,53 @@ fun GamePlayScreen(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
+        }
+    }
+
+    // 미션 제출 결과 알림창
+    Box (modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        when (missionState) {
+            MissionStatus.IDLE -> {}
+            MissionStatus.IN_ANALYZE -> {
+                PixelLoading(message = "미션 수행중...")
+            }
+
+            MissionStatus.SUCCESS -> {
+                Box(
+                    modifier = Modifier
+                        .height(200.dp)
+                        .width(400.dp)
+                ) {
+                    PixelAlertDialog(
+                        title = "미션 성공!",
+                        message = "감시망을 교묘하게 피하는데 성공했습니다! \n 이제 더이상 CCTV에 노출되지 않습니다.",
+                    ) {
+                        PixelButtonCode(
+                            text = "확인",
+                            onClick = { viewModel.missionInit() }
+                        )
+                    }
+                }
+            }
+
+            MissionStatus.FAIL -> {
+                Box(
+                    modifier = Modifier
+                        .height(200.dp)
+                        .width(400.dp)
+                ) {
+                    PixelAlertDialog(
+                        title = "미션 실패",
+                        message = missionFailReason,
+                    ) {
+                        PixelButtonCode(
+                            text = "확인",
+                            fontSize = 20,
+                            onClick = { viewModel.missionInit() }
+                        )
+                    }
+                }
+            }
         }
     }
 
