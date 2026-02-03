@@ -28,6 +28,7 @@ class ChatPushMq {
                 const memberIds = await this.chatPushService.getNotConnectedInRoom(data);
 
                 const tokens = await this.chatPushService.getUserTokens(memberIds);
+                console.log("tokens", tokens);
 
                 const chatRoom = await this.chatPushService.findChatRoomById(data.chatRoomId);
                 console.log("chatRoom", chatRoom);
