@@ -55,6 +55,9 @@ public enum ErrorCode {
 	// 등급
 	GRADE_NOT_FOUND(HttpStatus.NOT_FOUND, 2, "등급을 찾을 수 없습니다."),
 
+	// FCM
+	FCM_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, 2, "등록된 FCM 토큰이 없습니다."),
+
 	// =========================
 	// ROOM / MATCHING (3xxx)
 	// =========================

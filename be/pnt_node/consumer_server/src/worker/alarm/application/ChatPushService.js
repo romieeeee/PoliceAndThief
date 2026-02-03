@@ -10,7 +10,7 @@ export class ChatPushService {
         const joinRoomMembers = await MemberChatRoom.findAll({
             where: {
                 isConnected: false,
-                chatRoomId: params.chatRoomId,
+                chatRoomId: parseInt(params.chatRoomId),
                 isDeleted: false
             }
         });
@@ -41,11 +41,11 @@ export class ChatPushService {
     async findChatRoomById(chatRoomId) {
         const chatRoom = await ChatRoom.findOne({
             where: {
-                id: chatRoomId,
+                id: parseInt(chatRoomId),
                 isDeleted: false
             }
         });
-
+        
         return chatRoom;
     }
 }

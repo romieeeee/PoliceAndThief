@@ -23,12 +23,13 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Table(name = "fcm_token")
+
 public class FcmToken extends BaseEntity {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@JoinColumn(name = "member_id")
+	@JoinColumn(name = "member_id", unique = true)
 	@OneToOne
 	private Member member;
 
@@ -46,5 +47,9 @@ public class FcmToken extends BaseEntity {
 	// active 업데이트
 	public void updateActive(boolean isActive) {
 		this.isActive = isActive;
+	}
+
+	public void updateValue(String value) {
+		this.value = value;
 	}
 }
