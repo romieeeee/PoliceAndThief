@@ -3,7 +3,7 @@ package com.d104.pnt.base
 object Constants {
 
     // API
-    const val BASE_URL = "http://i14d104.p.ssafy.io/"
+    const val BASE_URL = "https://i14d104.p.ssafy.io/"
     const val SPRING_SERVER_URL = "${BASE_URL}spring/"
     const val LIVEKIT_URL = "wss://ssafy-d104-f7ty2iv4.livekit.cloud"
 

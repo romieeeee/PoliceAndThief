@@ -37,6 +37,8 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
     private var onPreviousMessages: ((List<JSONObject>, Int) -> Unit)? = null
     private var onSyncMessages: ((List<JSONObject>, Int) -> Unit)? = null
     private var onReconnected: ((Long) -> Unit)? = null
+    private var onOwnerDelegated: ((JSONObject) -> Unit)? = null
+    private var onMemberKicked: ((JSONObject) -> Unit)? = null
 
     override fun setupCustomListeners() {
         // 채팅방 입장 확인
@@ -140,6 +142,27 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
             } catch (e: Exception) {
                 Timber.e(e, "동기화 메시지 파싱 실패")
                 onSyncMessages?.invoke(emptyList(), 0)
+            }
+        }
+
+        on("get delegate owner") { args ->
+            try {
+                val data = args[0] as JSONObject
+                Timber.d("📩 방장 위임 결과: $data")
+                onOwnerDelegated?.invoke(data)  // 콜백 호출
+            } catch (e: Exception) {
+                Timber.e(e, "방장 위임 결과 파싱 실패")
+            }
+        }
+
+        // ⭐ 강퇴 이벤트 (여기로 이동)
+        on("get kick member") { args ->
+            try {
+                val data = args[0] as JSONObject
+                Timber.d("📩 강퇴 이벤트 수신: $data")
+                onMemberKicked?.invoke(data)  // 콜백 호출
+            } catch (e: Exception) {
+                Timber.e(e, "강퇴 이벤트 파싱 실패")
             }
         }
     }
@@ -295,6 +318,8 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
         onPreviousMessages = null
         onSyncMessages = null
         onReconnected = null
+        onOwnerDelegated = null
+        onMemberKicked = null
     }
 
     override fun removeAllListeners() {
@@ -303,5 +328,47 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
         off(EVENT_GET_MESSAGE)
         off(EVENT_GET_PREV_CHAT)
         off(EVENT_GET_SYNC_CHAT)
+        off("get delegate owner")
+        off("get kick member")
+    }
+
+    // 방장 위임 요청
+    fun delegateOwner(targetMemberId: Long) {
+        if (!isConnected()) {
+            Timber.e("소켓 연결 안 됨 - 방장 위임 불가")
+            return
+        }
+
+        val data = JSONObject().apply {
+            put("targetMemberId", targetMemberId)
+        }
+
+        Timber.d("🔄 방장 위임 요청: targetMemberId=$targetMemberId")
+        socket?.emit("post delegate owner", data)
+    }
+
+    // 방장 위임 결과 수신
+    fun setOnOwnerDelegated(callback: (JSONObject) -> Unit) {
+        onOwnerDelegated = callback  // 콜백만 저장
+    }
+
+    // 강퇴 이벤트 수신
+    fun setOnMemberKicked(callback: (JSONObject) -> Unit) {
+        onMemberKicked = callback  // 콜백만 저장
+    }
+
+    // 강퇴 확인 websocket event
+    fun notifyKickMember(kickMemberId: Long) {
+        if (!isConnected()) {
+            Timber.e("소켓 연결 안 됨 - 강퇴 알림 불가")
+            return
+        }
+
+        val data = JSONObject().apply {
+            put("kickMemberId", kickMemberId)
+        }
+
+        Timber.d("🔨 강퇴 알림 전송: kickMemberId=$kickMemberId")
+        socket?.emit("post kick member", data)
     }
 }
