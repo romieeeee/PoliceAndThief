@@ -133,18 +133,6 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun delegateChatRoomOwner(
-        chatRoomId: Long,
-        targetMemberId: Long
-    ): BaseResult<Unit> {
-        return safeApiCall {
-            chatApiService.delegateChatRoomOwner(
-                chatRoomId,
-                ChatDelegateRequest(targetMemberId)
-            )
-        }
-    }
-
     override suspend fun kickChatRoomMember(
         chatRoomId: Long,
         targetMemberId: Long,

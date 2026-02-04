@@ -69,11 +69,6 @@ interface ChatRepository {
     suspend fun leaveChatRoom(chatRoomId: Long): BaseResult<Unit>
     suspend fun disconnectChatRoom(chatRoomId: Long): BaseResult<Unit>
 
-    suspend fun delegateChatRoomOwner(
-        chatRoomId: Long,
-        targetMemberId: Long
-    ): BaseResult<Unit>
-
     suspend fun kickChatRoomMember(
         chatRoomId: Long,
         targetMemberId: Long,

@@ -168,6 +168,46 @@ class ChatRoomViewModel @Inject constructor(
                 }
             }
         }
+
+        // 방장 위임 결과 수신
+        chatSocketManager.setOnOwnerDelegated { data ->
+            val roomId = data.optLong("roomId")
+            val newOwnerId = data.optLong("newOwnerId")
+
+            Timber.d("✅ 방장 위임 완료: roomId=$roomId, newOwnerId=$newOwnerId")
+
+            viewModelScope.launch {
+                // 모든 클라이언트가 멤버 목록 갱신
+                loadMembers()
+
+                // 내가 새 방장이 되었다면 알림
+                if (newOwnerId == myMemberId.value) {
+                    _uiState.value = UiState.Success("방장이 되었습니다")
+                }
+            }
+        }
+
+        // 강퇴 이벤트 수신
+        chatSocketManager.setOnMemberKicked { data ->
+            val chatRoomId = data.optLong("chatRoomId")
+            val kickedMemberId = data.optLong("kickMemberId")
+
+            Timber.d("📢 강퇴 이벤트: chatRoomId=$chatRoomId, kickedMemberId=$kickedMemberId")
+
+            viewModelScope.launch {
+                if (kickedMemberId == myMemberId.value) {
+                    Timber.e("❌ 본인이 강퇴당함 - 연결 종료")
+
+                    chatSocketManager.disconnect()
+
+                    _uiState.value = UiState.Error("채팅방에서 강퇴되었습니다")
+
+                } else {
+                    Timber.d("다른 멤버 강퇴됨 - 목록 갱신")
+                    loadMembers()
+                }
+            }
+        }
     }
 
     private fun parseMessage(data: JSONObject): ChatMessage? {
@@ -277,30 +317,21 @@ class ChatRoomViewModel @Inject constructor(
 
     // 방장 위임
     fun delegateHost(targetMemberId: Long) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            when (val result = chatRepository.delegateChatRoomOwner(chatRoomId, targetMemberId)) {
-                is BaseResult.Success -> {
-                    Timber.d("방장 위임 성공")
-                    loadMembers()
-                }
-                is BaseResult.Error -> {
-                    Timber.e("방장 위임 실패: ${result.error.message}")
-                    _uiState.value = UiState.Error(result.error.message ?: "위임 실패")
-                }
-            }
-            _isLoading.value = false
-        }
+        Timber.d("방장 위임 요청: targetMemberId=$targetMemberId")
+        chatSocketManager.delegateOwner(targetMemberId)
     }
 
     // 강퇴하기
     fun kickMember(targetMemberId: Long, reason: String) {
         viewModelScope.launch {
             _isLoading.value = true
+
+            // REST API 호출
             when (val result = chatRepository.kickChatRoomMember(chatRoomId, targetMemberId, reason)) {
                 is BaseResult.Success -> {
-                    Timber.d("강퇴 성공")
-                    loadMembers()
+                    Timber.d("강퇴 API 호출 성공")
+
+                    chatSocketManager.notifyKickMember(targetMemberId)
                 }
                 is BaseResult.Error -> {
                     Timber.e("강퇴 실패: ${result.error.message}")

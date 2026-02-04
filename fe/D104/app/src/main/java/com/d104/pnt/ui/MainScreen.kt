@@ -161,7 +161,9 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                     modifier = Modifier.fillMaxSize(),
                     onBackPressed = {
                         navController.popBackStack(Routes.CHAT, inclusive = false)
-                    })
+                    },
+                    navController = navController
+                )
             }
 
             // ===== 게임 대기방 =====
