@@ -48,7 +48,6 @@ abstract class BaseSocketManager(
                 reconnectionAttempts = 5
                 reconnectionDelay = 1000
                 forceNew = true
-                transports = arrayOf("websocket")
             }
 
             socket = IO.socket(socketUrl, options)

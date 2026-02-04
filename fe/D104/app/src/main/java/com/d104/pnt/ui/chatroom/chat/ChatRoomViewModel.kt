@@ -11,10 +11,13 @@ import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.util.socket.ChatSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import timber.log.Timber
 import javax.inject.Inject
@@ -255,18 +258,22 @@ class ChatRoomViewModel @Inject constructor(
         }
     }
 
-//    fun disconnectRoom() {
-//        viewModelScope.launch {
-//            when (val result = chatRepository.disconnectChatRoom(chatRoomId)) {
-//                is BaseResult.Success -> Timber.d("채팅방 disconnect 성공")
-//                is BaseResult.Error -> Timber.e("채팅방 disconnect 실패: ${result.error.message}")
-//            }
-//        }
-//    }
+    fun disconnectRoom() {
+        // viewModelScope가 취소되어도 이 블록은 끝까지 실행됨
+        viewModelScope.launch(Dispatchers.IO) {
+            withContext(NonCancellable) {
+                Timber.d("🚀 서버에 disconnect 요청 중...")
+                chatRepository.disconnectChatRoom(chatRoomId)
+                chatSocketManager.disconnect() // 소켓도 여기서 같이 끊어줘 행님!
+                Timber.d("✅ 모든 정리 작업 완료")
+            }
+        }
+    }
 
 
     override fun onCleared() {
         super.onCleared()
+        disconnectRoom()
         Timber.d("ChatRoomViewModel cleared")
     }
 }
