@@ -81,6 +81,9 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _members = MutableStateFlow<List<GameMemberSocketDto>>(emptyList())
     override val members = _members.asStateFlow()
 
+    private val _myState = MutableStateFlow<String?>(null)
+    override val myState = _myState.asStateFlow()
+
     private val _memberLocation = MutableStateFlow<List<MemberLocationSocketDto>>(emptyList())
     override val memberLocation = _memberLocation.asStateFlow()
 
@@ -291,6 +294,9 @@ class GameSessionRepositoryImpl @Inject constructor(
                     val newMemberLocation = mutableListOf<MemberLocationSocketDto>()
                     for (i in 0 until locations.length()) {
                         val locationJson = locations.getJSONObject(i)
+                        if (locationJson.optLong("memberId") == _myMemberId.value) {
+                            _myState.value = locationJson.optString("status")
+                        }
                         if (cctvThiefId != null
                             && locationJson.optLong("memberId") == cctvThiefId
                             && _cctvPhase.value == CctvPhase.REVEAL
