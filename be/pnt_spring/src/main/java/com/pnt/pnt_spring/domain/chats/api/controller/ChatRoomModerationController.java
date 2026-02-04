@@ -1,7 +1,5 @@
 package com.pnt.pnt_spring.domain.chats.api.controller;
 
-import com.pnt.pnt_spring.domain.chats.api.req.ChatRoomOwnerDelegateRequest;
-import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomOwnerDelegateResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.pnt.pnt_spring.domain.chats.api.req.ChatRoomKickRequest;
+import com.pnt.pnt_spring.domain.chats.api.req.ChatRoomOwnerDelegateRequest;
+import com.pnt.pnt_spring.domain.chats.api.resp.ChatRoomOwnerDelegateResponse;
 import com.pnt.pnt_spring.domain.chats.application.ChatRoomModerationService;
 import com.pnt.pnt_spring.global.api.response.CommonResponse;
 import com.pnt.pnt_spring.global.utils.SecurityUtils;
@@ -53,8 +53,8 @@ public class ChatRoomModerationController {
 		Long actorMemberId = SecurityUtils.currentMemberId();
 
 		ChatRoomOwnerDelegateResponse chatRoomOwnerDelegateResponse = moderationService.delegateOwner(
-				actorMemberId,
 				chatRoomId,
+				actorMemberId,
 				req.getTargetMemberId()
 		);
 
