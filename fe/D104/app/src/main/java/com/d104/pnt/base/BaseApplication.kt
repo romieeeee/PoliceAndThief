@@ -29,12 +29,6 @@ class BaseApplication : Application() {
             return instance?.applicationContext
                 ?: throw IllegalStateException("Application not initialized")
         }
-
-        // Notification Channel IDs
-        const val CHANNEL_LOCATION_SERVICE = "location_service_channel"
-        const val CHANNEL_GAME_ALERT = "game_alert_channel"
-        const val CHANNEL_BOUNDARY_WARNING = "boundary_warning_channel"
-
     }
 
 

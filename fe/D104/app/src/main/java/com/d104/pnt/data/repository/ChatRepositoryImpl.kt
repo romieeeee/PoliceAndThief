@@ -2,6 +2,8 @@ package com.d104.pnt.data.repository
 
 import com.d104.pnt.data.remote.api.ChatApiService
 import com.d104.pnt.data.remote.model.request.ChatCreateRequest
+import com.d104.pnt.data.remote.model.request.ChatDelegateRequest
+import com.d104.pnt.data.remote.model.request.ChatKickRequest
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
 import com.d104.pnt.data.remote.model.response.ChatRoomResponse
 import com.d104.pnt.data.remote.model.response.ChatSearchResponse
@@ -131,5 +133,16 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-
+    override suspend fun kickChatRoomMember(
+        chatRoomId: Long,
+        targetMemberId: Long,
+        reason: String
+    ): BaseResult<Unit> {
+        return safeApiCall {
+            chatApiService.kickChatRoomMember(
+                chatRoomId,
+                ChatKickRequest(targetMemberId, reason)
+            )
+        }
+    }
 }
