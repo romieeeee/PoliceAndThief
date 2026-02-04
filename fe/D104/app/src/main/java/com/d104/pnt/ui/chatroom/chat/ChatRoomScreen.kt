@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.domain.model.ChatsData
 import com.d104.pnt.ui.theme.DarkBackground
+import timber.log.Timber
 
 @Composable
 fun ChatRoomScreen(
@@ -35,6 +37,14 @@ fun ChatRoomScreen(
     //  우측 드로어 상태 + 멤버 목록
     var drawerOpen by remember { mutableStateOf(false) }
     val members by viewModel.members.collectAsStateWithLifecycle()
+
+    DisposableEffect(Unit) {
+        onDispose {
+            Timber.d("👋 사용자가 채팅방 화면을 떠납니다. 정리 시작!")
+            // 주의: 여기서도 비동기 작업(API)을 하려면 ViewModel의 헬퍼 함수를 불러야 해
+            viewModel.disconnectRoom()
+        }
+    }
 
     Scaffold(
         modifier = modifier

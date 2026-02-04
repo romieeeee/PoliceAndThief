@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.d104.pnt.R
 import com.d104.pnt.ui.theme.MissionYellow
 import com.d104.pnt.ui.theme.PixelFont
+import com.d104.pnt.ui.theme.PoliceBlue
 
 @Composable
 fun WarningOverlay(
@@ -114,7 +115,7 @@ fun WarningOverlay(
                         .alpha(alphaAnim),
                     text = warningTitle,
                     fontFamily = PixelFont,
-                    color = MissionYellow,
+                    color = PoliceBlue,
                     fontSize = 40.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
@@ -128,7 +129,7 @@ fun WarningOverlay(
                         .alpha(alphaAnim),
                     text = warningMessage,
                     fontFamily = PixelFont,
-                    color = MissionYellow,
+                    color = PoliceBlue,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,

@@ -599,6 +599,7 @@ fun GamePlayScreen(
                     ) {
                         PixelButtonCode(
                             text = "확인",
+                            fontSize = 20,
                             onClick = { viewModel.missionInit() }
                         )
                     }

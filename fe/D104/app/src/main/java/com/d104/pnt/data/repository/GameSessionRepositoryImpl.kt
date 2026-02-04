@@ -548,12 +548,50 @@ class GameSessionRepositoryImpl @Inject constructor(
     }
 
     override fun leaveGame() {
+        // GPS 서비스 종료
         stopGameSession()
 
+        // 소켓 정리
         gameSocketManager.leaveGame()
-
+        gameSocketManager.removeAllListeners()
+        // 게임 데이터 초기화
         _members.value = emptyList()
         _gameId.value = 0L
+        _gameStatus.value = ""
+        _gameTime.value = 0
+        _cctvInterval.value = 0
+        _cctvPhase.value = CctvPhase.IDLE
+        _cctvThiefId.value = null
+        _warningReason.value = WarningReason.NONE
+        _missions.value = emptyList()
+        _myMemberId.value = 0L
+        _myRole.value = ""
+        _roomCode.value = ""
+        _memberLocation.value = emptyList()
+        _chiefMemberId.value = null
+        _missionState.value = MissionStatus.IDLE
+        _missionFailReason.value = ""
+        _arrestState.value = ArrestStatus.IDLE
+        _arrestFailReason.value = ""
+        _helicopterUsed.value = false
+        isConnecting = false
+        _baseTime.value = 0
+        _survivalTime.value = 0
+        _longestSurvivalTime.value = 0
+        _skillUsedAt.value = null
+        _helicopterState.value = HelicopterPhase.IDLE
+        _escapeQueue.value = emptyList()
+        _walkieState.value = WalkieConnectionState.Idle
+        _isSomeoneTalking.value = false
+        _isTransmitting.value = false
+        _talkingMemberId.value = null
+        gpsJob = null
+        warningJob?.cancel()
+        warningJob = null
+        radioTimeoutJob?.cancel()
+        radioTimeoutJob = null
+        pttHeartbeatJob?.cancel()
+        pttHeartbeatJob = null
     }
 
     override fun setChiefMemberId(id: Long?) {
