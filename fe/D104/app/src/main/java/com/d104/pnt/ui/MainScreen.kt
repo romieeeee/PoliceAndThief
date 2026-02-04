@@ -196,7 +196,8 @@ fun MainScreen(
                     modifier = Modifier.fillMaxSize(),
                     onBackPressed = {
                         navController.popBackStack(Routes.CHAT, inclusive = false)
-                    }
+                    },
+                    navController = navController
                 )
             }
 
