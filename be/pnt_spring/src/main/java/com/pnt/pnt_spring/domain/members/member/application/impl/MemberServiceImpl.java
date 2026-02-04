@@ -86,7 +86,7 @@ public class MemberServiceImpl implements MemberService {
 	@Transactional
 	public MemberProfileUpdateResponse updateProfile(Long memberId, MemberProfileUpdateRequest request) {
 		Member member = memberRepository.findById(memberId)
-				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 
 		if (member.getMemberProfile() == null) {
 			throw new BusinessException(ErrorCode.PROFILE_NOT_FOUND);
@@ -97,18 +97,24 @@ public class MemberServiceImpl implements MemberService {
 
 		member.getMemberProfile().updateProfile(request.getNickname(), newAvatarKey);
 
-		MemberDoc memberDoc = memberMongoRepository.findByMemberId(memberId)
-				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
-		memberDoc.update(request.getNickname(), newAvatarKey);
+		String effectiveAvatarKey = (newAvatarKey != null) ? newAvatarKey : oldAvatarKey;
 
-		if (oldAvatarKey != null && !oldAvatarKey.isBlank() && !oldAvatarKey.equals(newAvatarKey)) {
-			// "기본 이미지"가 있다면 그것은 삭제하면 안 됨 (예: "profiles/default.png")
+		MemberDoc memberDoc = memberMongoRepository.findByMemberId(memberId)
+			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+		// Mongo에도 null이 들어가는 것을 방지하기 위해 effectiveAvatarKey 사용
+		memberDoc.update(request.getNickname(), effectiveAvatarKey);
+
+		// 3. S3 파일 삭제 로직
+		// newAvatarKey가 존재하고(null이 아니고), 기존 키와 다를 때만 삭제 수행
+		if (newAvatarKey != null && oldAvatarKey != null && !oldAvatarKey.isBlank() && !oldAvatarKey.equals(newAvatarKey)) {
+			// "기본 이미지"가 아니라면 삭제
 			if (!isDefaultImage(oldAvatarKey)) {
 				s3Service.deleteFile(oldAvatarKey);
 			}
 		}
 
-		String viewableUrl = s3Service.getPresignedGetUrl(newAvatarKey);
+		String viewableUrl = s3Service.getPresignedGetUrl(effectiveAvatarKey);
+
 		MemberProfileUpdateResponse response = MemberProfileUpdateResponse.from(member.getMemberProfile());
 		response.setAvatarUrl(viewableUrl);
 
