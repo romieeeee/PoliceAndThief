@@ -5,6 +5,7 @@ import { MQConfig } from "../../../global/mq/MQConfig.js";
 import { sendError } from "../../../global/util/SocketError.js";
 import { generateMemberAccessToken } from "../../../global/auth/JwtProvider.js";
 import axios from "axios";
+import logger from "../../../global/config/logger.js";
 
 export class ChatController {
 
@@ -126,9 +127,10 @@ export class ChatController {
     }
 
     kickMember = async (payload) => {
-        const chatRoomId = String(this.socket.data.chatRoomId);
+        logger.info("kick member", payload);
+        const chatRoomId = this.socket.data.chatRoomId;
         const kickMemberId = parseInt(payload.kickMemberId);
-        this.io.to(chatRoomId).emit("get kick member", { chatRoomId: parseInt(chatRoomId), kickMemberId: kickMemberId });
+        this.io.to(chatRoomId).emit("get kick member", { chatRoomId: chatRoomId, kickMemberId: kickMemberId });
     }
 
     /**
