@@ -336,6 +336,8 @@ class GameRoomViewModel @Inject constructor(
      */
     private fun parseFullRoomInfo(data: RoomInfoResponse) {
         try {
+            Timber.d("🔍 전체 방 정보: $data")
+
             // 1. 소켓 데이터에서 방장 ID를 미리 가져옵니다.
             val hostId = data.room.hostMemberId
             val myId = _myMemberId.value
@@ -349,6 +351,8 @@ class GameRoomViewModel @Inject constructor(
             }
 
             _players.value = data.members.distinctBy { it.memberId }.map { member ->
+                Timber.d("👤 Member: ${member.memberDetail.profile.nickname}, avatarUrl: ${member.memberDetail.profile.avatarUrl}")
+
                 val isMe = member.memberId == myId
 
                 val isThisMemberHost = (member.memberId == hostId)
@@ -374,6 +378,10 @@ class GameRoomViewModel @Inject constructor(
                     _isMeReady.value = adjustedReady
                 }
 
+                val avatarUrl = member.memberDetail.profile.avatarUrl
+                Timber.d("👤 Player: ${member.memberDetail.profile.nickname}, avatarUrl: $avatarUrl")
+
+
                 WaitingPlayer(
                     id = member.memberId,
                     nickname = member.memberDetail.profile.nickname,
@@ -381,7 +389,7 @@ class GameRoomViewModel @Inject constructor(
                     isReady = adjustedReady,
                     profileUrl = member.memberDetail.profile.avatarUrl,
                     isChangingRole = isChangingRole,
-                    isHost = isThisMemberHost // UI에도 방장 여부 전달
+                    isHost = isThisMemberHost
                 )
             }
 
