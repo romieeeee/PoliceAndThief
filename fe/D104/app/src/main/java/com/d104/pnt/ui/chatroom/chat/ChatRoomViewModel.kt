@@ -21,6 +21,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import timber.log.Timber
 import javax.inject.Inject
+import com.d104.pnt.domain.model.common.UiState
 
 @HiltViewModel
 class ChatRoomViewModel @Inject constructor(
@@ -47,9 +48,11 @@ class ChatRoomViewModel @Inject constructor(
 
     val myMemberId = MutableStateFlow<Long>(0)
 
-    // ✅ 멤버 목록(우측 드로어에서 사용)
     private val _members = MutableStateFlow<List<ChatRoomMemberUi>>(emptyList())
     val members: StateFlow<List<ChatRoomMemberUi>> = _members.asStateFlow()
+
+    private val _uiState = MutableStateFlow<UiState<String>>(UiState.Idle)
+    val uiState: StateFlow<UiState<String>> = _uiState.asStateFlow()
 
     init {
         Timber.d("ChatRoomViewModel 초기화 - chatRoomId: $chatRoomId")
@@ -83,13 +86,15 @@ class ChatRoomViewModel @Inject constructor(
                     chatSocketManager.connect(token)
 
                     if (chatSocketManager.getCurrentChatRoomId() == chatRoomId) {
-                        Timber.d("이미 입장됨 - 메시지만 로드")
                         loadInitialMessages()
                     } else {
-                        Timber.d("채팅방 입장 필요")
                         chatSocketManager.joinRoom(chatRoomId) { success, message ->
                             if (success) {
                                 Timber.d("채팅방 입장 성공: $message")
+                                viewModelScope.launch {
+                                    // REST join — 백엔드 멤버 등록
+                                    chatRepository.joinChatRoom(chatRoomId)
+                                }
                                 loadInitialMessages()
                             } else {
                                 Timber.e("채팅방 입장 실패: $message")
@@ -163,6 +168,46 @@ class ChatRoomViewModel @Inject constructor(
                 } else {
                     Timber.d("메시지 없음 - 초기 로드")
                     loadInitialMessages()
+                }
+            }
+        }
+
+        // 방장 위임 결과 수신
+        chatSocketManager.setOnOwnerDelegated { data ->
+            val roomId = data.optLong("roomId")
+            val newOwnerId = data.optLong("newOwnerId")
+
+            Timber.d("✅ 방장 위임 완료: roomId=$roomId, newOwnerId=$newOwnerId")
+
+            viewModelScope.launch {
+                // 모든 클라이언트가 멤버 목록 갱신
+                loadMembers()
+
+                // 내가 새 방장이 되었다면 알림
+                if (newOwnerId == myMemberId.value) {
+                    _uiState.value = UiState.Success("방장이 되었습니다")
+                }
+            }
+        }
+
+        // 강퇴 이벤트 수신
+        chatSocketManager.setOnMemberKicked { data ->
+            val chatRoomId = data.optLong("chatRoomId")
+            val kickedMemberId = data.optLong("kickMemberId")
+
+            Timber.d("📢 강퇴 이벤트: chatRoomId=$chatRoomId, kickedMemberId=$kickedMemberId")
+
+            viewModelScope.launch {
+                if (kickedMemberId == myMemberId.value) {
+                    Timber.e("❌ 본인이 강퇴당함 - 연결 종료")
+
+                    chatSocketManager.disconnect()
+
+                    _uiState.value = UiState.Error("채팅방에서 강퇴되었습니다")
+
+                } else {
+                    Timber.d("다른 멤버 강퇴됨 - 목록 갱신")
+                    loadMembers()
                 }
             }
         }
@@ -276,4 +321,36 @@ class ChatRoomViewModel @Inject constructor(
         disconnectRoom()
         Timber.d("ChatRoomViewModel cleared")
     }
+
+    // 방장 위임
+    fun delegateHost(targetMemberId: Long) {
+        Timber.d("방장 위임 요청: targetMemberId=$targetMemberId")
+        chatSocketManager.delegateOwner(targetMemberId)
+    }
+
+    // 강퇴하기
+    fun kickMember(targetMemberId: Long, reason: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+
+            // REST API 호출
+            when (val result = chatRepository.kickChatRoomMember(chatRoomId, targetMemberId, reason)) {
+                is BaseResult.Success -> {
+                    Timber.d("강퇴 API 호출 성공")
+
+                    chatSocketManager.notifyKickMember(targetMemberId)
+                }
+                is BaseResult.Error -> {
+                    Timber.e("강퇴 실패: ${result.error.message}")
+                    _uiState.value = UiState.Error(result.error.message ?: "강퇴 실패")
+                }
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun clearUiState() {
+        _uiState.value = UiState.Idle
+    }
 }
+
