@@ -84,8 +84,12 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _memberLocation = MutableStateFlow<List<MemberLocationSocketDto>>(emptyList())
     override val memberLocation = _memberLocation.asStateFlow()
 
-    override val thiefMembers = _members.map { list ->
-        list.filter { it.position.equals("THIEF", ignoreCase = true) }
+    override val thiefMembers = combine(_members, _memberLocation) { members, locations ->
+        members.filter { it.position.equals("THIEF", ignoreCase = true) }
+            .map { member ->
+                val location = locations.find { it.memberId == member.memberId }
+                member.copy(rawStatus = location?.status ?: "FREE")
+            }
     }.stateIn(
         scope = repositoryScope,
         started = SharingStarted.WhileSubscribed(5000),
