@@ -8,6 +8,8 @@ import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.data.repository.GameSessionRepository
 import com.d104.pnt.data.repository.LocationRepository
+import com.d104.pnt.data.repository.ProfileRepository
+import com.d104.pnt.ui.chatroom.chat.ProfileData
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.GameRoomInfoState
@@ -40,6 +42,7 @@ class GameRoomViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
     private val roomSocketManager: RoomSocketManager,
     private val gameSessionRepository: GameSessionRepository,
+    private val profileRepository: ProfileRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -69,6 +72,13 @@ class GameRoomViewModel @Inject constructor(
 
     private val _uiEvent = MutableSharedFlow<GameRoomUiEvent>()
     val uiEvent: SharedFlow<GameRoomUiEvent> = _uiEvent.asSharedFlow()
+
+    // 프로필
+    private val _selectedProfile = MutableStateFlow<ProfileData?>(null)
+    val selectedProfile: StateFlow<ProfileData?> = _selectedProfile.asStateFlow()
+
+    private val _isProfileLoading = MutableStateFlow(false)
+    val isProfileLoading: StateFlow<Boolean> = _isProfileLoading.asStateFlow()
 
     // 역할 변경 중 상태
     private val _changingRoleMemberIds = MutableStateFlow<Set<Long>>(emptySet())
@@ -646,5 +656,33 @@ class GameRoomViewModel @Inject constructor(
 
     fun addPointToList(targetList: MutableList<DraggableLatLng>, newPoint: LatLng) {
         locationRepository.addPointToList(targetList, newPoint)
+    }
+
+    fun loadUserProfile(memberId: Long) {
+        viewModelScope.launch {
+            _isProfileLoading.value = true
+
+            when (val result = profileRepository.getMyProfile(memberId)) {
+                is BaseResult.Success -> {
+                    val profile = result.data
+                    _selectedProfile.value = ProfileData(
+                        nickname = profile.nickname ?: "알 수 없음",
+                        avatarUrl = profile.avatarUrl,
+                        policeGrade = profile.stat.policeGrade,
+                        thiefGrade = profile.stat.thiefGrade
+                    )
+                }
+                is BaseResult.Error -> {
+                    Timber.e("프로필 조회 실패: ${result.error.message}")
+                    _selectedProfile.value = null
+                }
+            }
+
+            _isProfileLoading.value = false
+        }
+    }
+
+    fun clearSelectedProfile() {
+        _selectedProfile.value = null
     }
 }

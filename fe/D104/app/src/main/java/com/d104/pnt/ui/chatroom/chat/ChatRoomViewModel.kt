@@ -34,7 +34,6 @@ class ChatRoomViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val chatRoomId: Long = savedStateHandle.get<Long>(NavArgs.CHAT_ID) ?: 0
-
     private val _roomInfo = MutableStateFlow<ChatRoomResponse?>(null)
     val roomInfo: StateFlow<ChatRoomResponse?> = _roomInfo.asStateFlow()
 
