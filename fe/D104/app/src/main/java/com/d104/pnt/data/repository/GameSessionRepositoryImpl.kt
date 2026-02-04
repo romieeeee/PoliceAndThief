@@ -1,15 +1,11 @@
 package com.d104.pnt.data.repository
 
-import androidx.lifecycle.viewModelScope
 import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.model.response.BeepUseResponse
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
 import com.d104.pnt.data.remote.model.response.MemberLocationSocketDto
-import com.d104.pnt.data.remote.model.response.Mission
 import com.d104.pnt.data.remote.model.response.MissionSocketDto
 import com.d104.pnt.domain.model.common.BaseResult
-import com.d104.pnt.domain.model.common.UiState
-import com.d104.pnt.service.game.GameActiveService
 import com.d104.pnt.util.StepSensorManager
 import com.d104.pnt.util.socket.GameSocketManager
 import kotlinx.coroutines.CoroutineScope
@@ -48,7 +44,8 @@ class GameSessionRepositoryImpl @Inject constructor(
 ) : GameSessionRepository {
     private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val WARNING_TIME = 5
-    private val HELICOPTER_TIME = 5
+    private val HELICOPTER_TIME = 10
+    private val CCTV_TIME = 10
 
     // 실시간 데이터를 저장할 메모리 공간
     private val _gameId = MutableStateFlow(0L)
@@ -56,8 +53,28 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _gameStatus = MutableStateFlow("")
     override val gameStatus = _gameStatus.asStateFlow()
 
+    private val _TotalTime = MutableStateFlow(0)
+    override val TotalTime = _TotalTime.asStateFlow()
+
+    private val _remainingTime = MutableStateFlow(0)
+    override val remainingTime = _remainingTime.asStateFlow()
+
     private val _gameTime = MutableStateFlow(0)
     override val gameTime = _gameTime.asStateFlow()
+
+    private val _cctvInterval = MutableStateFlow(0)
+    override val cctvInterval = _cctvInterval.asStateFlow()
+
+    private val _cctvPhase = MutableStateFlow(CctvPhase.IDLE)
+    override val cctvPhase = _cctvPhase.asStateFlow()
+
+    private val _cctvThiefId = MutableStateFlow<Long?>(null)
+    override val cctvThiefId = _cctvThiefId.asStateFlow()
+
+    private val _boundaryWarningTargets = MutableStateFlow<MutableList<Long>>(mutableListOf())
+
+    private val _onBoundaryWarning = MutableStateFlow<List<Long>>(emptyList())
+    override val onBoundaryWarning = _onBoundaryWarning.asStateFlow()
 
     private val _missions = MutableStateFlow<List<MissionSocketDto>>(emptyList())
     override val missions = _missions.asStateFlow()
@@ -67,8 +84,12 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _memberLocation = MutableStateFlow<List<MemberLocationSocketDto>>(emptyList())
     override val memberLocation = _memberLocation.asStateFlow()
 
-    override val thiefMembers = _members.map { list ->
-        list.filter { it.position.equals("THIEF", ignoreCase = true) }
+    override val thiefMembers = combine(_members, _memberLocation) { members, locations ->
+        members.filter { it.position.equals("THIEF", ignoreCase = true) }
+            .map { member ->
+                val location = locations.find { it.memberId == member.memberId }
+                member.copy(rawStatus = location?.status ?: "FREE")
+            }
     }.stateIn(
         scope = repositoryScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -81,9 +102,6 @@ class GameSessionRepositoryImpl @Inject constructor(
     )
     override val eventFlow = _eventFlow.asSharedFlow()
 
-    private val _isOutOfBoundary = MutableStateFlow(false)
-    override val isOutOfBoundary = _isOutOfBoundary.asStateFlow()
-
     private val _chiefMemberId = MutableStateFlow<Long?>(null)
     override val chiefMemberId = _chiefMemberId.asStateFlow()
 
@@ -92,6 +110,12 @@ class GameSessionRepositoryImpl @Inject constructor(
 
     private val _missionFailReason = MutableStateFlow("")
     override val missionFailReason = _missionFailReason.asStateFlow()
+
+    private val _arrestState = MutableStateFlow(ArrestStatus.IDLE)
+    override val arrestState = _arrestState.asStateFlow()
+
+    private val _arrestFailReason = MutableStateFlow("")
+    override val arrestFailReason = _arrestFailReason.asStateFlow()
 
     private var isConnecting = false
 
@@ -162,6 +186,14 @@ class GameSessionRepositoryImpl @Inject constructor(
         Timber.d("📍 Repository에 roomCode 저장 완료: $code")
     }
 
+    override fun setTotalTime(minutes: Int) {
+        _TotalTime.value = minutes
+    }
+
+    override fun setCctvInterval(interval: Int) {
+        _cctvInterval.value = interval
+    }
+
     private var gpsJob: Job? = null
     private var warningJob: Job? = null
     private var gameStartTime: Long = 0L
@@ -215,7 +247,25 @@ class GameSessionRepositoryImpl @Inject constructor(
             }
         }
         gameSocketManager.setOnGpsReceived {cctvThiefId, skillUsedAt, sec, locations ->
-            _gameTime.value = sec
+            _gameTime.value = sec // 인게임 시간 sync
+            _remainingTime.value = (_TotalTime.value*60) - sec
+            Timber.d("현재 남은시간: ${_remainingTime.value}")
+            _onBoundaryWarning.value = _boundaryWarningTargets.value.toList() // 경고 목록 업데이트
+            _boundaryWarningTargets.value.clear() // 경고 예정 목록 초기화
+
+            // 인게임 시간에 맞춰 cctv 주기 설정
+            if (_cctvInterval.value != 0 && _gameTime.value > 100) {
+                if (_gameTime.value % (_cctvInterval.value * 60) < WARNING_TIME) {
+                    _cctvPhase.value = CctvPhase.NOTIFY
+                } else if (_gameTime.value % (_cctvInterval.value * 60) < WARNING_TIME + CCTV_TIME) {
+                    _cctvPhase.value = CctvPhase.REVEAL
+                } else {
+                    _cctvPhase.value = CctvPhase.IDLE
+                }
+            }
+            Timber.d("현재 $sec 초 경과, CCTV 주기: ${_cctvPhase.value}")
+
+            // 경찰 헬기 주기
             try {
                 if (skillUsedAt != null && _skillUsedAt.value == null) {
                     _skillUsedAt.value = sec
@@ -227,7 +277,7 @@ class GameSessionRepositoryImpl @Inject constructor(
                     _helicopterState.value = HelicopterPhase.REVEAL
                 }
                 if (_helicopterState.value == HelicopterPhase.REVEAL &&
-                    sec >= _skillUsedAt.value!! + WARNING_TIME + HELICOPTER_TIME
+                    sec > _skillUsedAt.value!! + WARNING_TIME + HELICOPTER_TIME
                 ) {
                     _helicopterState.value = HelicopterPhase.IDLE
                 }
@@ -235,18 +285,22 @@ class GameSessionRepositoryImpl @Inject constructor(
                 _skillUsedAt.value = sec
                 _helicopterState.value = HelicopterPhase.IDLE
             }
+
             try {
                 if (locations.length() != 0) {
                     val newMemberLocation = mutableListOf<MemberLocationSocketDto>()
                     for (i in 0 until locations.length()) {
                         val locationJson = locations.getJSONObject(i)
-                        if (cctvThiefId != null) {
-                            if (locationJson.optLong("memberId") == cctvThiefId) {
-                                locationJson.put("status", "CCTV")
-                            }
+                        if (cctvThiefId != null
+                            && locationJson.optLong("memberId") == cctvThiefId
+                            && _cctvPhase.value == CctvPhase.REVEAL
+                        ) {
+                            locationJson.put("status", "CCTV")
+                            Timber.d("CCTV 포착됨! - memberId: $cctvThiefId")
                         }
                         if (_helicopterState.value == HelicopterPhase.REVEAL) {
                             locationJson.put("status", "CCTV")
+                            Timber.d("헬리콥터 포착됨!")
                         }
                         newMemberLocation.add(MemberLocationSocketDto.fromJson(locationJson))
                     }
@@ -366,7 +420,7 @@ class GameSessionRepositoryImpl @Inject constructor(
         // 경게 벗어남 이벤트
         gameSocketManager.setOnOutOfBoundary { gameId, memberId ->
             Timber.w("⚠️ 경고: 구역 이탈 발생! (Game: $gameId)")
-            showWarningEffect()
+            _boundaryWarningTargets.value.add(memberId)
         }
 
         // 게임 미션 결과
@@ -417,6 +471,27 @@ class GameSessionRepositoryImpl @Inject constructor(
 
         gameSocketManager.setOnRadioReceived { _, memberId ->
             handleRadioSignal(memberId)
+        }
+
+        gameSocketManager.setOnArrestResult { result, reason, policeId, thiefId, _ ->
+            Timber.d("getArrest 수신: policeId=$policeId, thiefId=${thiefId}")
+            if (policeId == null || policeId != myMemberId.value) {
+                return@setOnArrestResult
+            }
+            if (result == "SUCCESS") {
+                repositoryScope.launch{
+                    _arrestState.value = ArrestStatus.SUCCESS
+                    delay(5000L)
+                    _arrestState.value = ArrestStatus.IDLE
+                }
+            }
+            else {
+                repositoryScope.launch{
+                    _arrestState.value = ArrestStatus.FAIL
+                    delay(5000L)
+                    _arrestState.value = ArrestStatus.IDLE
+                }
+            }
         }
     }
 
@@ -472,6 +547,13 @@ class GameSessionRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun arrestThief(thiefId: Long) {
+        gameSocketManager.arrestThief(
+            policeId = _myMemberId.value,
+            thiefId = thiefId,
+        )
+    }
+
     override fun missionInit() {
         _missionState.value = MissionStatus.IDLE
     }
@@ -486,25 +568,53 @@ class GameSessionRepositoryImpl @Inject constructor(
     }
 
     override fun leaveGame() {
+        // GPS 서비스 종료
         stopGameSession()
 
+        // 소켓 정리
         gameSocketManager.leaveGame()
-
+        gameSocketManager.removeAllListeners()
+        // 게임 데이터 초기화
         _members.value = emptyList()
         _gameId.value = 0L
+        _gameStatus.value = ""
+        _gameTime.value = 0
+        _cctvInterval.value = 0
+        _cctvPhase.value = CctvPhase.IDLE
+        _cctvThiefId.value = null
+        _missions.value = emptyList()
+        _myMemberId.value = 0L
+        _myRole.value = ""
+        _roomCode.value = ""
+        _memberLocation.value = emptyList()
+        _chiefMemberId.value = null
+        _missionState.value = MissionStatus.IDLE
+        _missionFailReason.value = ""
+        _arrestState.value = ArrestStatus.IDLE
+        _arrestFailReason.value = ""
+        _helicopterUsed.value = false
+        isConnecting = false
+        _baseTime.value = 0
+        _survivalTime.value = 0
+        _longestSurvivalTime.value = 0
+        _skillUsedAt.value = null
+        _helicopterState.value = HelicopterPhase.IDLE
+        _escapeQueue.value = emptyList()
+        _walkieState.value = WalkieConnectionState.Idle
+        _isSomeoneTalking.value = false
+        _isTransmitting.value = false
+        _talkingMemberId.value = null
+        gpsJob = null
+        warningJob?.cancel()
+        warningJob = null
+        radioTimeoutJob?.cancel()
+        radioTimeoutJob = null
+        pttHeartbeatJob?.cancel()
+        pttHeartbeatJob = null
     }
 
     override fun setChiefMemberId(id: Long?) {
         _chiefMemberId.value = id
-    }
-
-    private fun showWarningEffect() {
-        warningJob?.cancel()
-        warningJob = repositoryScope.launch {
-            _isOutOfBoundary.value = true
-            delay(3000) // 3초간 유지
-            _isOutOfBoundary.value = false
-        }
     }
 
     override fun dequeEscape(){
@@ -697,13 +807,27 @@ sealed class WalkieConnectionState {
     object Connected : WalkieConnectionState()
     data class Error(val message: String) : WalkieConnectionState()
 }
-
 enum class HelicopterPhase {
     IDLE,
     NOTIFY,
     REVEAL
 }
 
+enum class CctvPhase {
+    IDLE,
+    NOTIFY,
+    REVEAL
+}
+
 enum class MissionStatus {
-    IDLE, IN_ANALYZE, SUCCESS, FAIL
+    IDLE,
+    IN_ANALYZE,
+    SUCCESS,
+    FAIL
+}
+
+enum class ArrestStatus {
+    IDLE,
+    SUCCESS,
+    FAIL
 }

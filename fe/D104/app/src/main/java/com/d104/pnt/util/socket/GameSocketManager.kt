@@ -539,7 +539,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onOutOfBoundary = callback
     }
 
-    fun setOnArrestResult(callback: (result: String, reason: String?, policeId: Long, thiefId: Long, arrestedAt: String?) -> Unit) {
+    fun setOnArrestResult(callback: (result: String, reason: String?, policeId: Long?, thiefId: Long, arrestedAt: String?) -> Unit) {
         onArrestResult = callback
     }
 

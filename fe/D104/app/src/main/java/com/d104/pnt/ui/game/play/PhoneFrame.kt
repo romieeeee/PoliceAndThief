@@ -150,7 +150,7 @@ fun ThiefRow(thief: GameMemberSocketDto) {
         ThiefStatus.FREE -> "수배" to WantedRed
         ThiefStatus.TRANSFER -> "이송" to Color(0xFF4CAF50)
         ThiefStatus.PRISON -> "검거" to Color.Gray
-        else -> "-" to Color.DarkGray
+        else -> "수배" to WantedRed
     }
 
     Row(
