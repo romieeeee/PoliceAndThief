@@ -130,6 +130,4 @@ class ChatRepositoryImpl @Inject constructor(
             chatApiService.disconnectChatRoom(chatRoomId)
         }
     }
-
-
 }
