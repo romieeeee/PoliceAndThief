@@ -10,6 +10,12 @@ import kotlinx.coroutines.flow.Flow
 interface AuthRepository {
 
     /**
+     * 서버로 FCM 토큰 전송
+     */
+    suspend fun sendFcmToken(active: Boolean): BaseResult<Unit>
+
+
+    /**
      * 로그인
      */
     suspend fun login(id: String, password: String): BaseResult<LoginResponse>
@@ -48,12 +54,14 @@ interface AuthRepository {
         accessToken: String,
         refreshToken: String,
         userId: String,
-        memberId: Long
+        memberId: Long,
+        lastRefresh: Long = System.currentTimeMillis()
     )
 
     suspend fun refreshTokens(
         accessToken: String,
-        refreshToken: String
+        refreshToken: String,
+        lastRepository: Long = System.currentTimeMillis()
     )
 
     /**

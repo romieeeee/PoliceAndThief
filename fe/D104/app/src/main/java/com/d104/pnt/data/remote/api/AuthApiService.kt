@@ -1,6 +1,7 @@
 package com.d104.pnt.data.remote.api
 
 import com.d104.pnt.data.remote.model.request.CheckDuplicateRequest
+import com.d104.pnt.data.remote.model.request.FcmTokenRequest
 import com.d104.pnt.data.remote.model.request.LoginRequest
 import com.d104.pnt.data.remote.model.request.RefreshRequest
 import com.d104.pnt.data.remote.model.request.SignupRequest
@@ -17,6 +18,14 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface AuthApiService {
+
+    /**
+     * FCM Token 전송 API
+     */
+    @POST("members/fcm-token")
+    suspend fun postFcmToken(
+        @Body request: FcmTokenRequest
+    ): Response<BaseResponse<Unit>>
 
     /**
      * 로그인 API

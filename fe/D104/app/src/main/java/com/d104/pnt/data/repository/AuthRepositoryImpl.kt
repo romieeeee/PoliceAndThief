@@ -9,30 +9,67 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.api.AuthApiService
 import com.d104.pnt.data.remote.model.request.CheckDuplicateRequest
+import com.d104.pnt.data.remote.model.request.FcmTokenRequest
 import com.d104.pnt.data.remote.model.request.LoginRequest
+import com.d104.pnt.data.remote.model.request.RefreshRequest
 import com.d104.pnt.data.remote.model.request.SignupRequest
 import com.d104.pnt.data.remote.model.request.SocialLoginRequest
 import com.d104.pnt.data.remote.model.response.DuplicateCheckResponse
 import com.d104.pnt.data.remote.model.response.LoginResponse
 import com.d104.pnt.data.remote.model.response.SignupResponse
 import com.d104.pnt.domain.model.common.BaseResult
+import com.d104.pnt.util.AuthEventBus
+import com.google.firebase.messaging.FirebaseMessaging
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 import javax.inject.Inject
+import javax.inject.Provider
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class AuthRepositoryImpl @Inject constructor(
     private val apiService: AuthApiService,
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
+    private val authAPiServiceProvider: Provider<AuthApiService>,
+    private val authEventBus: AuthEventBus
 ) : AuthRepository, BaseRepository() {
+
     // DataStore Keys
     private val KEY_ACCESS_TOKEN = stringPreferencesKey(Constants.KEY_ACCESS_TOKEN)
     private val KEY_REFRESH_TOKEN = stringPreferencesKey(Constants.KEY_REFRESH_TOKEN)
     private val KEY_USER_ID = stringPreferencesKey(Constants.KEY_USER_ID) // userId
     private val KEY_MEMBER_ID = longPreferencesKey(Constants.KEY_MEMBER_ID) // memberId
     private val KEY_IS_LOGGED_IN = booleanPreferencesKey(Constants.KEY_IS_LOGGED_IN)
+    private val KEY_LAST_REFRESH = longPreferencesKey(Constants.KEY_LAST_REFRESH)
+    private val _30MINUTE = 1800000L
+    private val _5MINUTE = 300000L
 
+
+    override suspend fun sendFcmToken(active: Boolean): BaseResult<Unit> {
+        return safeApiCall {
+            // 현재 기기의 FCM 토큰을 비동기로 가져옴
+            val token = suspendCoroutine<String?> { continuation ->
+                FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                    if (task.isSuccessful) continuation.resume(task.result)
+                    else continuation.resume(null)
+                }
+            }
+
+            if (token != null) {
+                // 서버에 토큰과 활성 상태 전송
+                apiService.postFcmToken(FcmTokenRequest(value = token, active = active))
+            } else {
+                throw Exception("FCM 토큰을 가져올 수 없습니다.")
+            }
+        }
+    }
 
     override suspend fun login(id: String, password: String): BaseResult<LoginResponse> {
         return safeApiCall(
@@ -43,6 +80,10 @@ class AuthRepositoryImpl @Inject constructor(
                     userId = loginResponse.member.id,
                     memberId = loginResponse.member.memberId
                 )
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    sendFcmToken(true)
+                }
             }
         ) {
             apiService.login(LoginRequest(id, password))
@@ -99,10 +140,16 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout(): BaseResult<String> {
+        // 로그아웃 시작 시점에 토큰 비활성화 먼저 시도
+        CoroutineScope(Dispatchers.IO).launch {
+            sendFcmToken(false)
+        }
+
         return safeApiCall(
             onSuccess = { clearAuthData() }
         ) {
             apiService.logout()
+
         }
     }
 
@@ -127,7 +174,51 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override fun getAccessToken(): Flow<String> {
-        return dataStore.data.map { it[KEY_ACCESS_TOKEN] ?: "" }
+        Timber.d("AccessToken request")
+        return dataStore.data.transform { preferences ->
+            val lastRefresh = preferences[KEY_LAST_REFRESH] ?: 0L
+            val currentTime = System.currentTimeMillis()
+            val expireTime = lastRefresh + _30MINUTE
+            if (currentTime + _5MINUTE > expireTime) {
+                try {
+                    val refreshCall = authAPiServiceProvider.get().refreshTokenCall(
+                        RefreshRequest(
+                            grantType = "Bearer",
+                            accessToken = preferences[KEY_ACCESS_TOKEN] ?: "",
+                            refreshToken = preferences[KEY_REFRESH_TOKEN] ?: "",
+                            accessTokenExpiresIn = 0,
+                            refreshTokenExpiresIn = 0
+                        )
+                    )
+                    val refreshResponse = refreshCall.execute()
+                    if (refreshResponse.isSuccessful && refreshResponse.body() != null) {
+                        val newTokens = refreshResponse.body()!!
+                        refreshTokens(newTokens.data!!.accessToken, newTokens.data.refreshToken)
+                        Timber.d("newTokens = $newTokens")
+                        emit(newTokens.data.accessToken)
+                    }
+                    else {
+                        sessionExpired()
+                    }
+                } catch (e: Exception) {
+                    sessionExpired()
+                }
+            } else {
+                emit(preferences[KEY_ACCESS_TOKEN] ?: "")
+            }
+        }
+    }
+
+    private suspend fun sessionExpired(){
+        dataStore.edit { preferences ->
+            preferences.remove(stringPreferencesKey(Constants.KEY_ACCESS_TOKEN))
+            preferences.remove(stringPreferencesKey(Constants.KEY_REFRESH_TOKEN))
+            preferences.remove(stringPreferencesKey(Constants.KEY_USER_ID))
+            preferences.remove(longPreferencesKey(Constants.KEY_MEMBER_ID))
+            preferences[booleanPreferencesKey(Constants.KEY_IS_LOGGED_IN)] = false
+            preferences[KEY_LAST_REFRESH] = 0L
+        }
+        authEventBus.emit(AuthEventBus.AuthEvent.TokenExpired)
     }
 
     override fun getRefreshToken(): Flow<String> {
@@ -138,7 +229,8 @@ class AuthRepositoryImpl @Inject constructor(
         accessToken: String,
         refreshToken: String,
         userId: String,
-        memberId: Long
+        memberId: Long,
+        lastRefresh: Long
     ) {
         dataStore.edit { preferences ->
             preferences[KEY_ACCESS_TOKEN] = accessToken
@@ -146,6 +238,7 @@ class AuthRepositoryImpl @Inject constructor(
             preferences[KEY_USER_ID] = userId
             preferences[KEY_MEMBER_ID] = memberId
             preferences[KEY_IS_LOGGED_IN] = true
+            preferences[KEY_LAST_REFRESH] = lastRefresh
         }
 
         Timber.d("Login data saved for user: $userId")
@@ -155,17 +248,20 @@ class AuthRepositoryImpl @Inject constructor(
                     refreshToken = $refreshToken
                     userId = $userId
                     memberId = $memberId
+                    lastRefresh = $lastRefresh
                 """.trimIndent()
         )
     }
 
     override suspend fun refreshTokens(
         accessToken: String,
-        refreshToken: String
+        refreshToken: String,
+        lastRepository: Long
     ) {
         dataStore.edit { preferences ->
             preferences[KEY_ACCESS_TOKEN] = accessToken
             preferences[KEY_REFRESH_TOKEN] = refreshToken
+            preferences[KEY_LAST_REFRESH] = lastRepository
         }
     }
 

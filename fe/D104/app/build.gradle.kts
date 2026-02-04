@@ -7,6 +7,7 @@ plugins {
     id("kotlin-kapt")
     id("kotlin-parcelize")
     id("com.google.dagger.hilt.android")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -238,5 +239,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // java.time desugaring
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
