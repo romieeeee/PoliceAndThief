@@ -141,7 +141,7 @@ fun ProfileCardSection(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            textAlign = TextAlign.Center
                         ),
                         modifier = Modifier
                             .width(140.dp)
