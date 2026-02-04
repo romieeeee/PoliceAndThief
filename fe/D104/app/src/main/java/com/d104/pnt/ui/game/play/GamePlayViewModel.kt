@@ -72,6 +72,7 @@ class GamePlayViewModel @Inject constructor(
 
     // 게임 스탯 정보
     val gameId = gameSessionRepository.gameId
+    val remainingTime = gameSessionRepository.remainingTime
     val myMemberId = gameSessionRepository.myMemberId
     val myRole = gameSessionRepository.myRole
     val members = gameSessionRepository.members
@@ -86,11 +87,11 @@ class GamePlayViewModel @Inject constructor(
     // 게임 상태(Flow) 정보
     val gameStatus = gameSessionRepository.gameStatus
     val missionState = gameSessionRepository.missionState
-    val warningStatus = gameSessionRepository.warningReason
     val helicopterPhase = gameSessionRepository.helicopterState
     val cctvPhase = gameSessionRepository.cctvPhase
     val arrestStatus = gameSessionRepository.arrestState
     val arrestFailReason = gameSessionRepository.arrestFailReason
+    val onBoundaryWarning = gameSessionRepository.onBoundaryWarning
 
     // ===== 무전기 =====
     val walkieConnected = walkieRepository.isConnected

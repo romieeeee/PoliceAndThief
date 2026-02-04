@@ -27,6 +27,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.d104.pnt.R
 import com.d104.pnt.ui.theme.MissionYellow
@@ -118,7 +119,8 @@ fun WarningOverlay(
                     color = PoliceBlue,
                     fontSize = 40.sp,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    lineHeight = 1.3.em
                 )
 
                 Spacer(modifier = Modifier.height(50.dp))
@@ -133,7 +135,7 @@ fun WarningOverlay(
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
-                    lineHeight = 32.sp
+                    lineHeight = 1.3.em
                 )
             }
         }

@@ -12,11 +12,13 @@ interface GameSessionRepository {
     val members: StateFlow<List<GameMemberSocketDto>>
     val gameStatus: StateFlow<String>
     val gameId: StateFlow<Long>
+    val TotalTime: StateFlow<Int>
+    val remainingTime: StateFlow<Int>
     val gameTime: StateFlow<Int>
     val cctvInterval: StateFlow<Int>
     val cctvPhase: StateFlow<CctvPhase>
     val cctvThiefId: StateFlow<Long?>
-    val warningReason: StateFlow<WarningReason>
+    val onBoundaryWarning: StateFlow<List<Long>>
     val missions: StateFlow<List<MissionSocketDto>>
     val memberLocation: StateFlow<List<MemberLocationSocketDto>>
     val eventFlow: SharedFlow<GameSessionEvent>
@@ -45,6 +47,7 @@ interface GameSessionRepository {
 
     fun setMemberId(memberId: Long)
     fun setFinalRole(role: String)
+    fun setTotalTime(minutes: Int)
     fun setCctvInterval(interval: Int)
     fun setRoomCode(code: String)
     fun connectAndJoin(gameId: Long)

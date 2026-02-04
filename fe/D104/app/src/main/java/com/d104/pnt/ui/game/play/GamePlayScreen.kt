@@ -57,7 +57,6 @@ import com.d104.pnt.data.repository.GameSessionEvent
 import com.d104.pnt.data.repository.HelicopterPhase
 import com.d104.pnt.data.repository.MissionStatus
 import com.d104.pnt.data.repository.WalkieConnectionState
-import com.d104.pnt.data.repository.WarningReason
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.Mission
 import com.d104.pnt.service.location.LocationService
@@ -109,7 +108,8 @@ fun GamePlayScreen(
     val currentLocation = viewModel.userLocation.collectAsStateWithLifecycle().value
     val areaPoints = viewModel.polygonPoints.collectAsStateWithLifecycle().value
     val prisonLocation = viewModel.prisonLocation.collectAsStateWithLifecycle().value
-    val warningReason = viewModel.warningStatus.collectAsStateWithLifecycle()
+    val remainingTime = viewModel.remainingTime.collectAsStateWithLifecycle()
+    val onBoundaryWarning = viewModel.onBoundaryWarning.collectAsStateWithLifecycle()
     val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
     val memberLocation by viewModel.memberLocation.collectAsStateWithLifecycle()
     val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
@@ -201,9 +201,10 @@ fun GamePlayScreen(
 
         viewModel.beepEvent.collect { beep ->
             Timber.d("🚨 beepEvent: policeId=${beep.policeId}, thiefId=${beep.thiefId}, distance=${beep.distance}")
-
-            // distance 기반 난이도 패턴 적용
-            feedbackManager.playBeepAlert(distance = beep.distance)
+            if (viewModel.myMemberId.value == beep.thiefId) {
+                // distance 기반 난이도 패턴 적용
+                feedbackManager.playBeepAlert(distance = beep.distance)
+            }
         }
     }
 
@@ -345,7 +346,7 @@ fun GamePlayScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                ContDownUI(remainingSeconds = 180)
+                ContDownUI(remainingSeconds = remainingTime.value)
                 Spacer(modifier = Modifier.height(30.dp))
 
                 FlipImage(
@@ -516,7 +517,7 @@ fun GamePlayScreen(
                 screen = phoneScreen,
                 onScanSuccess = { thiefId ->
                     viewModel.arrestThief(thiefId.toLong())
-                    phoneScreen = PhoneScreen.NO_SIGNAL
+                    clicked = false
                 },
                 role = role,
                 currentLocation = LatLng(currentLocation.latitude, currentLocation.longitude),
@@ -529,7 +530,7 @@ fun GamePlayScreen(
     }
 
     // 경기구역이탈 오버레이
-    if (warningReason.value == WarningReason.OUT_OF_BOUNDARY) {
+    if (myMemberId in onBoundaryWarning.value) {
         WarningOverlay(
             onWarning = true,
             warningTitle = "경기구역이탈!",
@@ -538,7 +539,7 @@ fun GamePlayScreen(
     }
 
     // 도둑 CCTV 발각 경고 오버레이
-    if (cctvPhase == CctvPhase.REVEAL && role == GameRole.THIEF) {
+    if (cctvPhase == CctvPhase.REVEAL && role == GameRole.THIEF && viewModel.myMemberId == viewModel.cctvThief) {
         WarningOverlay(
             onWarning = true,
             warningTitle = "위치 노출!",

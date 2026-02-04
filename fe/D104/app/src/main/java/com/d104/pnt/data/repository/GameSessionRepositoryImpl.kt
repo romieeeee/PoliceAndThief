@@ -1,15 +1,11 @@
 package com.d104.pnt.data.repository
 
-import androidx.lifecycle.viewModelScope
 import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.model.response.BeepUseResponse
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
 import com.d104.pnt.data.remote.model.response.MemberLocationSocketDto
-import com.d104.pnt.data.remote.model.response.Mission
 import com.d104.pnt.data.remote.model.response.MissionSocketDto
 import com.d104.pnt.domain.model.common.BaseResult
-import com.d104.pnt.domain.model.common.UiState
-import com.d104.pnt.service.game.GameActiveService
 import com.d104.pnt.util.StepSensorManager
 import com.d104.pnt.util.socket.GameSocketManager
 import kotlinx.coroutines.CoroutineScope
@@ -57,6 +53,12 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _gameStatus = MutableStateFlow("")
     override val gameStatus = _gameStatus.asStateFlow()
 
+    private val _TotalTime = MutableStateFlow(0)
+    override val TotalTime = _TotalTime.asStateFlow()
+
+    private val _remainingTime = MutableStateFlow(0)
+    override val remainingTime = _remainingTime.asStateFlow()
+
     private val _gameTime = MutableStateFlow(0)
     override val gameTime = _gameTime.asStateFlow()
 
@@ -69,8 +71,10 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _cctvThiefId = MutableStateFlow<Long?>(null)
     override val cctvThiefId = _cctvThiefId.asStateFlow()
 
-    private val _warningReason = MutableStateFlow(WarningReason.NONE)
-    override val warningReason = _warningReason.asStateFlow()
+    private val _boundaryWarningTargets = MutableStateFlow<MutableList<Long>>(mutableListOf())
+
+    private val _onBoundaryWarning = MutableStateFlow<List<Long>>(emptyList())
+    override val onBoundaryWarning = _onBoundaryWarning.asStateFlow()
 
     private val _missions = MutableStateFlow<List<MissionSocketDto>>(emptyList())
     override val missions = _missions.asStateFlow()
@@ -178,6 +182,10 @@ class GameSessionRepositoryImpl @Inject constructor(
         Timber.d("📍 Repository에 roomCode 저장 완료: $code")
     }
 
+    override fun setTotalTime(minutes: Int) {
+        _TotalTime.value = minutes
+    }
+
     override fun setCctvInterval(interval: Int) {
         _cctvInterval.value = interval
     }
@@ -236,6 +244,10 @@ class GameSessionRepositoryImpl @Inject constructor(
         }
         gameSocketManager.setOnGpsReceived {cctvThiefId, skillUsedAt, sec, locations ->
             _gameTime.value = sec // 인게임 시간 sync
+            _remainingTime.value = (_TotalTime.value*60) - sec
+            Timber.d("현재 남은시간: ${_remainingTime.value}")
+            _onBoundaryWarning.value = _boundaryWarningTargets.value.toList() // 경고 목록 업데이트
+            _boundaryWarningTargets.value.clear() // 경고 예정 목록 초기화
 
             // 인게임 시간에 맞춰 cctv 주기 설정
             if (_cctvInterval.value != 0 && _gameTime.value > 100) {
@@ -404,7 +416,7 @@ class GameSessionRepositoryImpl @Inject constructor(
         // 경게 벗어남 이벤트
         gameSocketManager.setOnOutOfBoundary { gameId, memberId ->
             Timber.w("⚠️ 경고: 구역 이탈 발생! (Game: $gameId)")
-            showWarningEffect()
+            _boundaryWarningTargets.value.add(memberId)
         }
 
         // 게임 미션 결과
@@ -457,7 +469,11 @@ class GameSessionRepositoryImpl @Inject constructor(
             handleRadioSignal(memberId)
         }
 
-        gameSocketManager.setOnArrestResult { result, reason, _, _, _ ->
+        gameSocketManager.setOnArrestResult { result, reason, policeId, thiefId, _ ->
+            Timber.d("getArrest 수신: policeId=$policeId, thiefId=${thiefId}")
+            if (policeId == null || policeId != myMemberId.value) {
+                return@setOnArrestResult
+            }
             if (result == "SUCCESS") {
                 repositoryScope.launch{
                     _arrestState.value = ArrestStatus.SUCCESS
@@ -562,7 +578,6 @@ class GameSessionRepositoryImpl @Inject constructor(
         _cctvInterval.value = 0
         _cctvPhase.value = CctvPhase.IDLE
         _cctvThiefId.value = null
-        _warningReason.value = WarningReason.NONE
         _missions.value = emptyList()
         _myMemberId.value = 0L
         _myRole.value = ""
@@ -596,15 +611,6 @@ class GameSessionRepositoryImpl @Inject constructor(
 
     override fun setChiefMemberId(id: Long?) {
         _chiefMemberId.value = id
-    }
-
-    private fun showWarningEffect() {
-        warningJob?.cancel()
-        warningJob = repositoryScope.launch {
-            _warningReason.value = WarningReason.OUT_OF_BOUNDARY
-            delay(3000)
-            _warningReason.value = WarningReason.NONE
-        }
     }
 
     override fun dequeEscape(){
@@ -797,7 +803,6 @@ sealed class WalkieConnectionState {
     object Connected : WalkieConnectionState()
     data class Error(val message: String) : WalkieConnectionState()
 }
-
 enum class HelicopterPhase {
     IDLE,
     NOTIFY,
@@ -821,10 +826,4 @@ enum class ArrestStatus {
     IDLE,
     SUCCESS,
     FAIL
-}
-
-enum class WarningReason {
-    NONE,
-    OUT_OF_BOUNDARY,
-    CCTV_DETECTION
 }
