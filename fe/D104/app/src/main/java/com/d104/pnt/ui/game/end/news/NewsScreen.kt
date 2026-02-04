@@ -27,20 +27,22 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.game.end.GameResultViewModel
 import com.d104.pnt.ui.theme.PixelFont
-
+import com.d104.pnt.data.remote.model.response.GameNewsResponse
 
 @Composable
 fun NewsScreen(
     gameId: Long,
     newsId: Long,
-    viewModel: GameResultViewModel = hiltViewModel(),
+    viewModel: GameNewsViewModel = hiltViewModel(),
     onNextClick: () -> Unit
 ) {
-    val newsState = viewModel.newsState
+    // 이제 newsState가 GameNewsViewModel 안에 있으므로 에러가 사라집니다.
+    val newsState by viewModel.newsState.collectAsStateWithLifecycle() // compose lifecycle 의존성이 있다면 사용, 아니면 viewModel.newsState.collectAsState()
     var showSkipDialog by remember { mutableStateOf(false) }
 
     // 뒤로가기 시 스킵 다이얼로그 표시
@@ -48,11 +50,11 @@ fun NewsScreen(
 
     when (newsState) {
         is UiState.Success -> {
-            val news = newsState.data
+            val news = (newsState as UiState.Success<GameNewsResponse>).data
 
-            // 메인 뉴스 화면 레이아웃
+            // 메인 뉴스 화면
             Box(modifier = Modifier.fillMaxSize()) {
-                // 1. 배경 (뉴스 스튜디오)
+                //  배경
                 Image(
                     painter = painterResource(id = R.drawable.img_breaking_news),
                     contentDescription = "뉴스 스튜디오",
@@ -60,14 +62,13 @@ fun NewsScreen(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // 2. 어두운 오버레이
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black.copy(alpha = 0.2f))
                 )
 
-                // 3. 중앙 뉴스 콘텐츠 (아나운서 + 스크립트)
+                // 아나운서 + 스크립트
                 Column(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -75,7 +76,6 @@ fun NewsScreen(
                         .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // 아나운서 캐릭터
                     NewsAnchor(modifier = Modifier.size(240.dp), isSpeaking = true)
 
                     // 타이핑 효과가 적용된 뉴스 본문
@@ -85,14 +85,14 @@ fun NewsScreen(
                     )
                 }
 
-                // 4. 하단 뉴스 티커 (승리 팀 및 요약 정보)
+                // 하단 뉴스 티커
                 val tickerText = news.title
 
                 Box(modifier = Modifier.align(Alignment.BottomCenter)) {
                     NewsTickerBar(text = tickerText)
                 }
 
-                // 5. 우측 상단 스킵 버튼
+                // 우측 상단 스킵 버튼
                 SkipButton(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -100,12 +100,12 @@ fun NewsScreen(
                     onClick = { showSkipDialog = true }
                 )
 
-                // 6. 스킵 확인 다이얼로그 (1분 대기 안내 포함 가능)
+                // 스킵 확인 다이얼로그
                 if (showSkipDialog) {
                     SkipConfirmationDialog(
                         onConfirm = {
                             showSkipDialog = false
-                            onNextClick() // 대기방(Home)으로 이동
+                            onNextClick()
                         },
                         onDismiss = { showSkipDialog = false }
                     )
@@ -114,12 +114,11 @@ fun NewsScreen(
         }
 
         is UiState.Error -> {
-            // 에러 발생 시 처리 (재시도 버튼 등 추가 가능)
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = "⚠️ 뉴스를 불러오지 못했습니다.", color = Color.White, fontFamily = PixelFont)
                     Text(
-                        text = newsState.message,
+                        text = (newsState as? UiState.Error)?.message ?: "알 수 없는 오류",
                         color = Color.Red.copy(alpha = 0.7f),
                         fontSize = 12.sp
                     )
