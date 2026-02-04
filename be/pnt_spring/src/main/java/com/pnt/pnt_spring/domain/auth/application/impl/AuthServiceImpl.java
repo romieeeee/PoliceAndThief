@@ -79,7 +79,6 @@ public class AuthServiceImpl implements AuthService {
 
 		// 이메일 체크
 		if (StringUtils.isNotBlank(request.getEmail()) && memberRepository.existsByEmail(request.getEmail())) {
-			// ErrorCode에 DUPLICATE_EMAIL이 없다면 새로 만드시거나 VALIDATION_ERROR 등을 사용하세요.
 			throw new BusinessException(ErrorCode.VALIDATION_ERROR, "이미 사용 중인 이메일입니다.");
 		}
 
@@ -128,16 +127,16 @@ public class AuthServiceImpl implements AuthService {
 
 		// 유저 조회
 		Member member = memberRepository.findByLoginId(request.getId())
-				.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
+			.orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_ERROR, "존재하지 않는 아이디입니다."));
 
 		// 패스워드 검사
 		if (!passwordEncoder.matches(request.getPassword(), member.getPassword())) {
-			throw new BusinessException(ErrorCode.INVALID_PASSWORD);
+			throw new BusinessException(ErrorCode.VALIDATION_ERROR, "비밀번호가 일치하지 않습니다.");
 		}
 
 		// 프로필 조회
 		MemberProfile memberProfile = memberProfileRepository.findByMember(member)
-				.orElseThrow(() -> new BusinessException(ErrorCode.PROFILE_NOT_FOUND));
+			.orElseThrow(() -> new BusinessException(ErrorCode.PROFILE_NOT_FOUND, "프로필을 찾을 수 없습니다"));
 
 		// 인증 객체 생성 (DB에 저장된 Role 사용)
 		Authentication authentication = new UsernamePasswordAuthenticationToken(
