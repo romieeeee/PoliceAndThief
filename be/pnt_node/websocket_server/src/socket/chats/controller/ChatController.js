@@ -103,9 +103,10 @@ export class ChatController {
     delegateOwer = async (payload) => {
         const chatRoomId = String(this.socket.data.chatRoomId);
         const targetMemberId = parseInt(payload.targetMemberId);
+        const memberId = parseInt(this.socket.data.memberId);
 
         try {
-            const accessToken = generateMemberAccessToken(this.socket.data.memberId, 0);
+            const accessToken = generateMemberAccessToken(memberId, 0);
             const response = await axios.post(`${process.env.SPRING_BOOT_URL}/chats/${chatRoomId}/owner`, { targetMemberId: targetMemberId }, {
                 headers: {
                     "Content-Type": "application/json",
@@ -124,6 +125,11 @@ export class ChatController {
         }
     }
 
+    kickMember = async (payload) => {
+        const chatRoomId = String(this.socket.data.chatRoomId);
+        const kickMemberId = parseInt(payload.kickMemberId);
+        this.io.to(chatRoomId).emit("get kick member", { chatRoomId: chatRoomId, kickMemberId: kickMemberId });
+    }
 
     /**
      * 사용자 요청에 의한 채팅방 나가기 -> api 로 disconnect 호출
