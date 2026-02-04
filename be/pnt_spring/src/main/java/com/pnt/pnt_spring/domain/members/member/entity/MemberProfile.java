@@ -2,14 +2,7 @@ package com.pnt.pnt_spring.domain.members.member.entity;
 
 import com.pnt.pnt_spring.domain.utils.BaseEntity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,6 +29,7 @@ public class MemberProfile extends BaseEntity {
 	private String nickname;
 
 	@Builder.Default
+	@Column(length = 2048)
 	private String avatarUrl = "default.png";
 
 	public void updateProfile(String nickname, String avatarUrl) {
