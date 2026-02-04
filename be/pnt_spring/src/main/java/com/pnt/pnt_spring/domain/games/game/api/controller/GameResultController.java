@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 @Tag(name = "Game Result", description = "게임 결과 및 통계 API")
 @RestController
-@RequestMapping("/api/games")
+@RequestMapping("/games")
 @RequiredArgsConstructor
 public class GameResultController {
 
