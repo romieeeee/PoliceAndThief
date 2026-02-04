@@ -17,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -178,30 +179,38 @@ class ChatRoomCreateViewModel @Inject constructor(
     }
 
     /**
-     * 4소켓을 통한 채팅방 입장
+     * 소켓을 통한 채팅방 입장
      */
     private fun joinChatRoomViaSocket(chatRoomId: Long) {
         Timber.d("소켓 입장 시도: $chatRoomId")
 
         viewModelScope.launch {
-            // 소켓이 연결되어 있지 않으면 먼저 연결
+            // 토큰 확보
+            val token = authRepository.getAccessToken().first()
+            if (token.isEmpty()) {
+                Timber.e("❌ 토큰 없음")
+                _joinRoomState.value = JoinRoomState.Error("인증 정보가 없습니다.")
+                return@launch
+            }
+
+            // 소켓 연결 확인 및 대기
             if (!chatSocketManager.isConnected()) {
-                authRepository.getAccessToken().collect { token ->
-                    if (token.isNotEmpty()) {
-                        Timber.d("소켓 연결 중...")
-                        chatSocketManager.connect(token)
+                Timber.d("🔌 소켓 연결 시도...")
+                chatSocketManager.connect(token)
 
-                        // 연결 대기 (소켓 연결 완료까지 잠시 대기)
-                        delay(1000)
-
-                        // 채팅방 입장
-                        joinRoomInternal(chatRoomId)
-                    }
-                    return@collect
+                var retryCount = 0
+                while (!chatSocketManager.isConnected() && retryCount < 50) {
+                    delay(100)
+                    retryCount++
                 }
-            } else {
-                // 이미 연결되어 있으면 바로 입장
+            }
+
+            if (chatSocketManager.isConnected()) {
+                Timber.d("✅ 소켓 연결됨. 입장 요청 전송.")
                 joinRoomInternal(chatRoomId)
+            } else {
+                Timber.e("❌ 소켓 연결 타임아웃 (5초 초과)")
+                _joinRoomState.value = JoinRoomState.Error("채팅 서버 연결에 실패했습니다.")
             }
         }
     }
@@ -224,7 +233,6 @@ class ChatRoomCreateViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         // 소켓 연결은 유지 (다음 화면에서 사용할 수 있음)
-        // 필요시 명시적으로 disconnect 호출
         Timber.d("ChatRoomCreateViewModel cleared")
     }
 }

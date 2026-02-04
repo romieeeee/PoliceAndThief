@@ -1,6 +1,8 @@
 package com.d104.pnt.data.remote.api
 
 import com.d104.pnt.data.remote.model.request.ChatCreateRequest
+import com.d104.pnt.data.remote.model.request.ChatDelegateRequest
+import com.d104.pnt.data.remote.model.request.ChatKickRequest
 import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.data.remote.model.response.ChatCreateResponse
 import com.d104.pnt.data.remote.model.response.ChatRoomMemberResponse
@@ -83,4 +85,21 @@ interface ChatApiService {
         @Path("id") chatRoomId: Long
     ): Response<BaseResponse<Unit>>
 
+    /**
+     * 채팅방 방장 위임 API
+     */
+    @POST("chats/{chatRoomId}/owner")
+    suspend fun delegateChatRoomOwner(
+        @Path("chatRoomId") chatRoomId: Long,
+        @Body request: ChatDelegateRequest
+    ): Response<BaseResponse<Unit>>
+
+    /**
+     * 채팅방 강퇴 API
+     */
+    @POST("chats/{chatRoomId}/kick")
+    suspend fun kickChatRoomMember(
+        @Path("chatRoomId") chatRoomId: Long,
+        @Body request: ChatKickRequest
+    ): Response<BaseResponse<Unit>>
 }
