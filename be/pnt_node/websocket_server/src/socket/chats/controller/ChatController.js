@@ -128,7 +128,7 @@ export class ChatController {
     kickMember = async (payload) => {
         const chatRoomId = String(this.socket.data.chatRoomId);
         const kickMemberId = parseInt(payload.kickMemberId);
-        this.io.to(chatRoomId).emit("get kick member", { chatRoomId: chatRoomId, kickMemberId: kickMemberId });
+        this.io.to(chatRoomId).emit("get kick member", { chatRoomId: parseInt(chatRoomId), kickMemberId: kickMemberId });
     }
 
     /**
