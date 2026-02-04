@@ -334,6 +334,8 @@ public class GameResultServiceImpl implements GameResultService {
 		// 여기서 totalGames, thiefGame 등이 +1 됨
 		memberStat.updateGameStats(isWin, position);
 
+		memberStatRepository.save(memberStat);
+
 		if (position == Position.POLICE) {
 			// 1. 경찰 누적 스탯 조회 (없으면 초기 생성)
 			MemberStatPolice policeStat = memberStatPoliceRepository.findById(member.getId())
