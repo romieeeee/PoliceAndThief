@@ -218,8 +218,7 @@ fun AppNavigation(
                 MainScreen(
                     navigateToIntro = {
                         Timber.d("Navigation: Main -> Intro (Logout)")
-                    },
-                    startChatRoomId = startChatRoomId
+                    }
                 )
             }
         }

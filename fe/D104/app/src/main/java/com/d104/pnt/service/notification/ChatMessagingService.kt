@@ -50,11 +50,21 @@ class ChatMessagingService : FirebaseMessagingService() {
 
         if (message.data.isNotEmpty()) {
 
+            Timber.d("알림 수신 : ${message.data}")
+
             val title = message.data["title"] ?: "새 메시지"
             val body = message.data["body"] ?: ""
-            val roomId = message.data["roomId"] ?: ""
+            val roomId = message.data["chatRoomId"] ?: ""
 
-            sendNotification(title, body, roomId)
+            Timber.d("알림 생성 - title: $title, body: $body, roomId: $roomId")
+
+            if (roomId.isNotEmpty()) {
+                sendNotification(title, body, roomId)
+            } else {
+                Timber.w("roomId가 비어있어 알림을 표시하지 않습니다")
+            }
+        } else {
+            Timber.w("FCM 데이터가 비어있습니다")
         }
     }
 
@@ -63,19 +73,33 @@ class ChatMessagingService : FirebaseMessagingService() {
         val channelId = Constants.CHANNEL_CHAT_ROOM
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel =
-                NotificationChannel(channelId, "채팅 알림", NotificationManager.IMPORTANCE_HIGH)
-            notificationManager.createNotificationChannel(channel)
+            val existingChannel = notificationManager.getNotificationChannel(channelId)
+            if (existingChannel == null) {
+                val channel = NotificationChannel(
+                    channelId,
+                    "채팅 알림",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "채팅방 메시지 알림"
+                    enableVibration(true)
+                    enableLights(true)
+                }
+                notificationManager.createNotificationChannel(channel)
+                Timber.d("알림 채널 생성 완료: $channelId")
+            }
         }
 
-        // 1. 딥링크 URI 생성 (예: pnt://chat/{roomId})
-        val deepLinkUri = "pnt://chat/$roomId"
-
+        // Intent 생성 - roomId를 Extra로 전달
         val intent = Intent(this, MainActivity::class.java).apply {
-            action = Intent.ACTION_VIEW
-            data = deepLinkUri.toUri() // URI 설정
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+
+            // roomId를 String으로 전달
             putExtra("roomId", roomId)
+
+            // 알림으로부터 왔다는 표시
+            putExtra("from_notification", true)
+
+            Timber.d("Intent 생성 - roomId: $roomId")
         }
 
         val pendingIntent = PendingIntent.getActivity(
@@ -85,6 +109,7 @@ class ChatMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+        // 알림 빌드
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_logo)
             .setContentTitle(title)
@@ -92,8 +117,10 @@ class ChatMessagingService : FirebaseMessagingService() {
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-        // 알림 표시 (알림 ID도 roomId.hashCode로 하면 같은 방 알림은 갱신됨)
-        notificationManager.notify(roomId.hashCode(), notificationBuilder.build())
+        val notificationId = roomId.hashCode()
+        notificationManager.notify(notificationId, notificationBuilder.build())
     }
 }

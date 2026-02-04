@@ -53,13 +53,13 @@ import com.d104.pnt.ui.game.wait.GameRoomScreen
 import com.d104.pnt.ui.game.wait.role.RoleSelectScreen
 import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 @Composable
 fun MainScreen(
     navigateToIntro: () -> Unit,
-    startChatRoomId: Long? = null,
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
@@ -81,10 +81,22 @@ fun MainScreen(
 
     LaunchedEffect(pendingChatId) {
         pendingChatId?.let { chatId ->
+            Timber.d("pendingChatId 감지: $chatId, 채팅방으로 이동")
+
+            // navigation이 준비될 때까지 약간의 딜레이
+            delay(100)
+
             navController.navigate(Routes.buildChatRoom(chatId)) {
-                popUpTo(Routes.HOME) { inclusive = false }
+                // HOME을 포함하여 스택 정리
+                popUpTo(Routes.HOME) {
+                    inclusive = false
+                    saveState = false
+                }
+                launchSingleTop = true
+                restoreState = false
             }
-33            viewModel.clearPendingChatRoomId()
+
+            viewModel.clearPendingChatRoomId()
         }
     }
 
