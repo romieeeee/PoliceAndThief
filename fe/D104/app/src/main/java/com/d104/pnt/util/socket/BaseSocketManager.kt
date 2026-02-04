@@ -1,8 +1,10 @@
 package com.d104.pnt.util.socket
 
 import com.d104.pnt.base.Constants
+import com.d104.pnt.data.repository.AuthRepository
 import io.socket.client.IO
 import io.socket.client.Socket
+import kotlinx.coroutines.flow.first
 import org.json.JSONObject
 import timber.log.Timber
 
@@ -11,7 +13,7 @@ import timber.log.Timber
  * - 연결, 재연결, 에러 처리, 이벤트 등록/해제
  */
 abstract class BaseSocketManager(
-    private val namespace: String
+    private val namespace: String,
 ) {
     protected var socket: Socket? = null
     private var isManualDisconnect = false
