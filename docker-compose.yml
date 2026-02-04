@@ -5,8 +5,10 @@ services:
     container_name: nginx-proxy
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
+      - /etc/letsencrypt:/etc/letsencrypt
     depends_on:
       - spring-app
       - websocket-server
@@ -133,7 +135,7 @@ services:
       dockerfile: Dockerfile
     container_name: websocket-server
     ports:
-      - "8090:8090"
+      - "8090-8093:8090-8093"
     env_file:
       - .env
     environment:
