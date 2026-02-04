@@ -69,12 +69,8 @@ fun ProfileScreen(
                     profile = currentProfile,
                     onLogoutClick = { viewModel.safeLogout() },
                     onUpdateNickname = { newName ->
-                        val safeAvatarUrl =
-                            if (currentProfile.avatarUrl.isNullOrBlank()) "default.jpeg" else currentProfile.avatarUrl
-
-                        viewModel.updateProfile(
+                        viewModel.updateNickname(
                             nickname = newName,
-                            imageKey = safeAvatarUrl
                         )
                     },
                     onUpdateAvatar = {
@@ -113,10 +109,7 @@ fun ProfileScreen(
                 currentAvatarUrl = currentAvatarUrl,
                 onDismissRequest = { showImageDialog = false },
                 onImageSelected = { selectedImage ->
-                    val currentNickname = (profileState as? UiState.Success)?.data?.nickname
-                    val safeNickname =
-                        if (currentNickname.isNullOrBlank()) "이름 없음" else currentNickname
-                    viewModel.uploadProfileImage(context, selectedImage, safeNickname)
+                    viewModel.uploadProfileImage(context, selectedImage)
                 }
             )
         }
