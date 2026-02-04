@@ -206,6 +206,27 @@ services:
     networks:
       - backend-network
 
+  # 10. GPS Consumer Server
+  gps-consumer-server:
+    build:
+      context: ./be/pnt_node/gps_consumer_server
+      dockerfile: Dockerfile
+    container_name: gps-consumer-server
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Seoul
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+      websocket-server:
+        condition: service_started
+    networks:
+      - backend-network
+
 networks:
   backend-network:
     driver: bridge

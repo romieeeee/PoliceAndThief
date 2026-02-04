@@ -69,16 +69,6 @@ const loop = async () => {
     } catch (error) {
         console.error("Error in GPS Worker Loop:", error);
     } finally {
-        // 정확한 1초 간격 보다는, 작업이 끝난 후 1초 뒤에 실행하는 것이 아니라
-        // 1초 주기를 맞추기 위해 setTimeout을 조정하거나 setInterval을 쓸 수 있지만
-        // 여기서는 drift를 최소화하기 위해 단순 setInterval을 사용하는 것이 아니라
-        // 재귀적 setTimeout을 사용하되, 실행 시간을 고려하여 딜레이를 조절하는 것이 좋으나
-        // 간단하게 recursive implementation으로 1초 마다 실행 (이전 작업이 길어지면 그만큼 늦어짐 -> 하지만 병렬 처리로 인해 빠름)
-        // 요구사항은 "1초 마다" 이므로 setInterval과 유사하게 동작하도록 함.
-
-        // 하지만 사용자 요청대로 "프로세스 분리"의 이점인 "Blocking 방지"를 위해
-        // 여기서는 단순 루프 보다는, 정확한 타이밍을 위해 매초 정각에 가까운 trigger를 쓰는 것이 좋음.
-        // 일단 심플하게 구현.
     }
 };
 

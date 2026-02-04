@@ -29,6 +29,7 @@
     "pg-hstore": "^2.3.4",
     "pm2": "^6.0.14",
     "redis": "^5.10.0",
+    "redis-streams-nodejs": "^1.1.5",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.2.8",
