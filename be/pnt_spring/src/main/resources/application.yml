@@ -62,8 +62,10 @@ springdoc:
     disabled: true  # OpenAPI 문서의 캐싱 비활성화 (기본값: false)
   show-actuator: false  # Spring Actuator 엔드포인트를 Swagger UI에 표시할지 여부 (기본값: false)
   servers:
-    - url: http://localhost:8080  # 기본 서버 URL 설정
-      description: "Local 개발 환경"
+    - url: https://i14d104.p.ssafy.io/spring
+      description: "Production Server"
+    - url: http://localhost:8080/spring
+      description: "Local Development"
 
 jwt:
   secret: ${JWT_SECRET}
@@ -75,6 +77,7 @@ oauth2:
     client-id:
 
 server:
+  forward-headers-strategy: framework
   servlet:
     context-path: /spring
 
