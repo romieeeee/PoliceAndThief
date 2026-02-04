@@ -105,6 +105,8 @@ public class GameResultServiceImpl implements GameResultService {
 
 			stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived());
 
+			gameMemberStatRepository.save(stat);
+
 			// 2-3. 누적 스탯 및 등급 업데이트
 			updateMemberGradeAndStats(stat, request.getWinTeam(), statReq.getPosition());
 		}
@@ -166,7 +168,7 @@ public class GameResultServiceImpl implements GameResultService {
 
 		int durationSec = (int)Duration.between(game.getStartTime(), game.getEndTime()).toSeconds();
 
-		// [수정] 내 스탯 + 등급/최고기록 조회 로직 추가
+		// 내 스탯 + 등급/최고기록 조회 로직 추가
 		GameMemberStat myGameStat = allStats.stream()
 			.filter(stat -> stat.getGameMember().getMember().getId().equals(memberId))
 			.findFirst()
@@ -325,7 +327,7 @@ public class GameResultServiceImpl implements GameResultService {
 		boolean isWin = (position == Position.POLICE && winTeam == WinTeam.POLICE) ||
 			(position == Position.THIEF && winTeam == WinTeam.THIEF);
 
-		// 1. [공통] MemberStat (전체 통계) 먼저 업데이트
+		// 1. MemberStat (전체 통계) 먼저 업데이트
 		MemberStat memberStat = memberStatRepository.findById(member.getId())
 			.orElseGet(() -> memberStatRepository.save(MemberStat.createInitial(member)));
 
@@ -354,6 +356,8 @@ public class GameResultServiceImpl implements GameResultService {
 				policeStat.changeGrade(nextGrade);
 			}
 
+			memberStatPoliceRepository.save(policeStat);
+
 		} else if (position == Position.THIEF) {
 			// 1. 도둑 누적 스탯 조회
 			MemberStatThief thiefStat = memberStatThiefRepository.findById(member.getId())
@@ -379,6 +383,8 @@ public class GameResultServiceImpl implements GameResultService {
 					.orElse(thiefStat.getGradeThief());
 				thiefStat.changeGrade(nextGrade);
 			}
+
+			memberStatThiefRepository.save(thiefStat);
 		}
 	}
 
