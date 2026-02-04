@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +37,10 @@ import com.d104.pnt.ui.component.UserProfileCard
 import com.d104.pnt.ui.game.wait.DelegateHostConfirmDialog
 import com.d104.pnt.ui.game.wait.ReasonButtonRow
 import com.d104.pnt.ui.theme.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d104.pnt.ui.chatroom.chat.ChatRoomViewModel
+import com.d104.pnt.ui.chatroom.chat.ProfileData
 
 @Composable
 fun ChatRoomMemberDrawer(
@@ -46,11 +51,15 @@ fun ChatRoomMemberDrawer(
     onLeaveRoom: () -> Unit,
     onDelegate: (Long) -> Unit,
     onKick: (Long, String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: ChatRoomViewModel = hiltViewModel()
 ) {
     var delegateTarget by remember { mutableStateOf<ChatRoomMemberUi?>(null) }
     var kickTarget by remember { mutableStateOf<ChatRoomMemberUi?>(null) }
     var profileTarget by remember { mutableStateOf<ChatRoomMemberUi?>(null) }
+
+    val isProfileLoading by viewModel.isProfileLoading.collectAsStateWithLifecycle()
+    val selectedProfile by viewModel.selectedProfile.collectAsStateWithLifecycle()
 
     val amIHost = members.find { it.memberId == myMemberId }?.isHost == true
 
@@ -123,7 +132,10 @@ fun ChatRoomMemberDrawer(
                                     isMe = member.memberId == myMemberId,
                                     onAction = { action ->
                                         when (action) {
-                                            "PROFILE" -> profileTarget = member
+                                            "PROFILE" -> {
+                                                profileTarget = member
+                                                viewModel.loadUserProfile(member.memberId)  // ⭐ API 호출 추가
+                                            }
                                             "DELEGATE" -> delegateTarget = member
                                             "KICK" -> kickTarget = member
                                         }
@@ -171,8 +183,12 @@ fun ChatRoomMemberDrawer(
     // 프로필 다이얼로그
     if (profileTarget != null) {
         ChatPlayerInfoDialog(
-            member = profileTarget!!,
-            onDismiss = { profileTarget = null }
+            profile = selectedProfile,
+            isLoading = isProfileLoading,
+            onDismiss = {
+                profileTarget = null
+                viewModel.clearSelectedProfile()
+            }
         )
     }
 
@@ -318,10 +334,14 @@ private fun ChatMenuButton(text: String, textColor: Color, onClick: () -> Unit) 
 }
 
 
-// --- 채팅방 전용 다이얼로그 (GameRoomDialog와 유사하지만 모델 타입이 다름) ---
+// --- 채팅방 전용 다이얼로그 ---
 
 @Composable
-fun ChatPlayerInfoDialog(member: ChatRoomMemberUi, onDismiss: () -> Unit) {
+fun ChatPlayerInfoDialog(
+    profile: ProfileData?,
+    isLoading: Boolean,
+    onDismiss: () -> Unit
+) {
     Dialog(onDismissRequest = onDismiss) {
         Box(
             contentAlignment = Alignment.Center,
@@ -329,14 +349,19 @@ fun ChatPlayerInfoDialog(member: ChatRoomMemberUi, onDismiss: () -> Unit) {
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
         ) {
-            // TODO: UserProfileCard 실제 파라미터와 매칭 확인 필요
-            UserProfileCard(
-                nickname = member.nickname,
-                avatarUrl = null, // 채팅 멤버 API에 아바타가 없다면 null
-                policeGrade = "정보 없음",
-                thiefGrade = "정보 없음",
-                modifier = Modifier.fillMaxWidth()
-            )
+            if (isLoading) {
+                CircularProgressIndicator(color = Color.White)
+            } else {
+                profile?.let { data ->
+                    UserProfileCard(
+                        nickname = data.nickname,
+                        avatarUrl = data.avatarUrl,
+                        policeGrade = data.policeGrade,
+                        thiefGrade = data.thiefGrade,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
         }
     }
 }
