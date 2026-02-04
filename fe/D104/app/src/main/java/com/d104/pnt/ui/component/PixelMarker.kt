@@ -50,11 +50,6 @@ fun PixelMarker(
                 contentDescription = "픽셀 커스텀 마커",
                 modifier = Modifier.size(20.dp)
             )
-            else -> Image(
-                painter = painterResource(id = R.drawable.map_marker_gray),
-                contentDescription = "픽셀 커스텀 마커",
-                modifier = Modifier.size(20.dp)
-            )
         }
     }
 }
