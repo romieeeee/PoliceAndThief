@@ -43,6 +43,7 @@ import timber.log.Timber
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun AppNavigation(
+    startChatRoomId: Long? = null,
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current

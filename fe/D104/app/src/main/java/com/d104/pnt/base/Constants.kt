@@ -19,4 +19,6 @@ object Constants {
     const val KEY_MEMBER_ID = "member_id"
     const val KEY_IS_LOGGED_IN = "is_logged_in"
 
+    const val CHANNEL_CHAT_ROOM = "chat_notification_channel"
+
 }

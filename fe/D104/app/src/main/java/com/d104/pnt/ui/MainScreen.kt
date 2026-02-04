@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -22,12 +23,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.navigation.BottomNavBar
 import com.d104.pnt.navigation.BottomNavItem
@@ -49,11 +53,15 @@ import com.d104.pnt.ui.game.wait.GameRoomScreen
 import com.d104.pnt.ui.game.wait.role.RoleSelectScreen
 import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 @Composable
-fun MainScreen(navigateToIntro: () -> Unit) {
+fun MainScreen(
+    navigateToIntro: () -> Unit,
+    viewModel: MainViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val activity = context as? Activity
@@ -69,6 +77,28 @@ fun MainScreen(navigateToIntro: () -> Unit) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    val pendingChatId by viewModel.pendingChatRoomId.collectAsStateWithLifecycle()
+
+    LaunchedEffect(pendingChatId) {
+        pendingChatId?.let { chatId ->
+            Timber.d("pendingChatId 감지: $chatId, 채팅방으로 이동")
+
+            // navigation이 준비될 때까지 약간의 딜레이
+            delay(100)
+
+            navController.navigate(Routes.buildChatRoom(chatId)) {
+                // HOME을 포함하여 스택 정리
+                popUpTo(Routes.HOME) {
+                    inclusive = false
+                    saveState = false
+                }
+                launchSingleTop = true
+                restoreState = false
+            }
+
+            viewModel.clearPendingChatRoomId()
+        }
+    }
 
     // BottomNav 화면에서 뒤로가기 처리
     BackHandler(enabled = currentRoute in bottomBarRoutes) {
@@ -153,6 +183,11 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                 route = "${Routes.CHAT_ROOM}/{${NavArgs.CHAT_ID}}",
                 arguments = listOf(
                     navArgument(NavArgs.CHAT_ID) { type = NavType.LongType }
+                ),
+                deepLinks = listOf(
+                    navDeepLink {
+                        uriPattern = "pnt://chat/{${NavArgs.CHAT_ID}}"
+                    }
                 )
             ) { backStackEntry ->
                 val chatId = backStackEntry.arguments?.getLong(NavArgs.CHAT_ID) ?: 0L
@@ -326,7 +361,13 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                             popUpTo(Routes.HOME) { inclusive = false }
                         }
                     },
-                    goToCamera = { missionId -> navController.navigate(Routes.buildMissionCamera(missionId)) }
+                    goToCamera = { missionId ->
+                        navController.navigate(
+                            Routes.buildMissionCamera(
+                                missionId
+                            )
+                        )
+                    }
                 )
             }
 
@@ -389,7 +430,12 @@ fun MainScreen(navigateToIntro: () -> Unit) {
                         }
                     },
                     onBackToWaitingRoom = { roomId ->
-                        navController.navigate(Routes.buildGameRoom(roomId, GameRole.ANY.roleNameEn)) {
+                        navController.navigate(
+                            Routes.buildGameRoom(
+                                roomId,
+                                GameRole.ANY.roleNameEn
+                            )
+                        ) {
                             popUpTo(Routes.HOME) { inclusive = false }
                         }
                     }
