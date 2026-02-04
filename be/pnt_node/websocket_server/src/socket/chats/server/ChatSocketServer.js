@@ -30,6 +30,7 @@ const chatSocketServer = (io) => {
             socket.on("post prev chat", withLogging("getPrevChat", chatController.getPrevChat, socket, "ChatError"));
             socket.on("post sync chat", withLogging("syncChat", chatController.syncChat, socket, "ChatError"));
             socket.on("post delegate owner", withLogging("delegateOwer", chatController.delegateOwer, socket, "ChatError"));
+            socket.on("post kick member", withLogging("kickMember", chatController.kickMember, socket, "ChatError"));
 
             socket.on("post disconnect", withLogging("disconnect", chatController.disconnect, socket, "ChatError"));
 
