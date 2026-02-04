@@ -2,6 +2,11 @@ package com.d104.pnt.ui.auth
 
 import android.content.pm.PackageManager
 import android.util.Base64
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -39,6 +44,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.d104.pnt.R
 import com.d104.pnt.data.remote.model.response.LoginResponse
@@ -71,6 +77,24 @@ fun LoginScreen(
         }
     }
 
+    val infiniteTransition = rememberInfiniteTransition(label = "NeonFlicker")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 2000
+                0.9f at 1500
+                0.2f at 1600
+                1.0f at 1650
+                0.4f at 1700
+                1.0f at 1750
+            },
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "Alpha"
+    )
+
     Surface(modifier = Modifier.fillMaxSize()) {
 
         // 배경 이미지
@@ -100,11 +124,17 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(20.dp))
             Text(
                 text = "게임 시작하기",
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontSize = 28.sp,
+                    shadow = androidx.compose.ui.graphics.Shadow(
+                        color = AccentRed.copy(alpha = alpha),
+                        blurRadius = 10f
+                    )
+                ),
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .padding(bottom = 40.dp),
-                color = Color.White
+                color = Color.White.copy(alpha = alpha.coerceAtLeast(0.5f)),
             )
 
             // Login Section
@@ -126,6 +156,7 @@ fun LoginScreen(
                         onValueChange = { viewModel.updateId(it) },
                         placeholder = "아이디",
                         modifier = Modifier.fillMaxWidth(),
+                        backgroundColor = Color.White.copy(alpha = 0.9f),
                         borderColor = BorderDefault
                     )
 
@@ -134,6 +165,7 @@ fun LoginScreen(
                         onValueChange = { viewModel.updatePassword(it) },
                         placeholder = "비밀번호",
                         modifier = Modifier.fillMaxWidth(),
+                        backgroundColor = Color.White.copy(alpha = 0.9f),
                         borderColor = BorderDefault,
                         isPassword = true
                     )
@@ -152,7 +184,7 @@ fun LoginScreen(
 
                         viewModel.login()
                     },
-                    mainColor = AccentRed,
+                    mainColor = AccentRed.copy(alpha = 0.9f),
                     borderColor = BorderDefault,
                 )
             }
@@ -187,7 +219,7 @@ fun LoginScreen(
                     Text(
                         text = "회원가입",
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White
+                        color = Color.White.copy(alpha = 0.9f),
                     )
                     IconButton(
                         onClick = { goToSignup() }
@@ -206,7 +238,7 @@ fun LoginScreen(
                     Text(
                         text = "비밀번호 찾기",
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color.White
+                        color = Color.White.copy(alpha = 0.9f),
                     )
                     IconButton(
                         onClick = {}
@@ -219,7 +251,7 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(15.dp))
 
 
             // ----- Divider -----
@@ -246,9 +278,8 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(25.dp))
 
-            // Social Login Section
             Image(
                 modifier = Modifier
                     .aspectRatio(7f)
@@ -258,23 +289,8 @@ fun LoginScreen(
                     ) {
                         viewModel.loginWithKakao(context)
                     },
-                painter = painterResource(R.drawable.kakao_login_btn),
+                painter = painterResource(R.drawable.center),
                 contentDescription = "카카오 로그인",
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Image(
-                modifier = Modifier
-                    .aspectRatio(7f)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-
-                    },
-                painter = painterResource(R.drawable.google_login_btn),
-                contentDescription = "구글 로그인",
             )
         }
     }

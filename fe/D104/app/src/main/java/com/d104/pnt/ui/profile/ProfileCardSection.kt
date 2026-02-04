@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -75,7 +76,7 @@ fun ProfileCardSection(
 
     PixelContainer(
         modifier = modifier,
-        backgroundColor = Color(0xFF3F3F68),
+        backgroundColor = Color(0xFF3F3F68).copy(alpha = 0.5f),
         borderColor = Color(0xFF8D90B3),
         borderWidth = 8f,
         cornerSize = 30f
@@ -128,7 +129,7 @@ fun ProfileCardSection(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
             ) {
                 Spacer(modifier = Modifier.width(counterBalanceWidth))
 
@@ -141,7 +142,7 @@ fun ProfileCardSection(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            textAlign = TextAlign.Center
                         ),
                         modifier = Modifier
                             .width(140.dp)
@@ -161,7 +162,7 @@ fun ProfileCardSection(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(iconSpacing))
+//                Spacer(modifier = Modifier.width(iconSpacing))
 
                 Image(
                     painter = painterResource(id = if (isEditing) R.drawable.check else R.drawable.ic_edit),
@@ -187,9 +188,9 @@ fun ProfileCardSection(
             Spacer(modifier = Modifier.height(12.dp))
 
             HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 20.dp),
+                modifier = Modifier.padding(horizontal = 12.dp),
                 thickness = 2.dp,
-                color = Color.White
+                color = Color(0xFF8D90B3)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -203,7 +204,8 @@ fun ProfileCardSection(
                 // 기존 티어 Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     val policeRes = getPoliceTierImage(policeGrade)
                     GradeItem(
@@ -241,7 +243,7 @@ fun ProfileCardSection(
                     tint = Color(0xFFC4C4C4),
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(end = 8.dp, top = 0.dp)
+                        .padding(end = 0.dp, top = 0.dp)
                         .size(24.dp)
                         .clickable { showTierGuide = true }
                 )
@@ -297,21 +299,21 @@ private fun GradeItem(
         verticalArrangement = Arrangement.Center
     ) {
         Spacer(modifier = Modifier.height(12.dp))
-        // 타이틀
+
         Text(
             text = title,
-            fontFamily = PixelFont,
             color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontSize = 18.sp
+            )
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // 이미지
         Box(
             modifier = Modifier
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 10.dp)
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .clip(androidx.compose.ui.graphics.RectangleShape)
@@ -320,9 +322,9 @@ private fun GradeItem(
                 painter = painterResource(id = iconRes),
                 contentDescription = "$title 티어",
                 contentScale = ContentScale.Crop,
+                alpha = 0.8f,
                 modifier = Modifier
                     .matchParentSize()
-                    // 여백이 있어서, 확대 후 테두리 제거
                     .graphicsLayer(
                         scaleX = 2f,
                         scaleY = 2f,

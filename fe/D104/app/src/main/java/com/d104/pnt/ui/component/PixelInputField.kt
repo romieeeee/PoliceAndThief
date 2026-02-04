@@ -43,7 +43,10 @@ fun PixelInputField(
             borderColor = borderColor
         ) {
             Box(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(if (singleLine) 20.dp else 40.dp),
+                contentAlignment = Alignment.CenterStart
             ) {
                 BasicTextField(
                     value = value,
@@ -62,17 +65,18 @@ fun PixelInputField(
                         PasswordVisualTransformation()
                     } else {
                         VisualTransformation.None
+                    },
+                    decorationBox = { innerTextField ->
+                        if (value.isEmpty()) {
+                            Text(
+                                text = placeholder,
+                                color = Color.Gray,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        innerTextField()
                     }
                 )
-
-                if (value.isEmpty()) {
-                    Text(
-                        text = placeholder,
-                        color = Color.Gray,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.align(Alignment.CenterStart)
-                    )
-                }
             }
         }
 

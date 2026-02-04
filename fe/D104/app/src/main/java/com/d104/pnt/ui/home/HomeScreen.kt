@@ -1,6 +1,11 @@
 package com.d104.pnt.ui.home
 
 import android.widget.Toast
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,20 +32,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
-import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.theme.BorderDefault
-import com.d104.pnt.ui.theme.TextPrimary
+import com.d104.pnt.ui.theme.CustomBlue
+import com.d104.pnt.ui.theme.CustomRed
+import com.d104.pnt.ui.theme.DarkGray
+import com.d104.pnt.ui.theme.PixelFont
+import com.d104.pnt.ui.theme.RoomBorder
+import com.d104.pnt.ui.theme.RoomContainer
 
 @Composable
 fun HomeScreen(
@@ -51,6 +69,24 @@ fun HomeScreen(
     val context = LocalContext.current
     var showJoinDialog by remember { mutableStateOf(false) }
     val joinCode by viewModel.joinCode.collectAsStateWithLifecycle()
+
+    val neonAlpha by rememberInfiniteTransition(label = "neon-flicker").animateFloat(
+        initialValue = 1f,    // 가장 밝을 때 (투명도 100%)
+        targetValue = 0.5f,  // 가장 어두울 때 (투명도 50%)
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 3000 // 3초 동안 한 주기가 돌아감
+                1.0f at 0
+                1.0f at 2500       // 2.5초까지는 가만히 있다가
+                0.3f at 2600       // 2.6초에 갑자기 지직! (어두워짐)
+                0.8f at 2700
+                0.2f at 2800       // 또 한 번 지직!
+                1.0f at 2900       // 다시 원래대로
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "flicker"
+    )
 
     LaunchedEffect(Unit) {
         viewModel.cleanupSocket()
@@ -77,51 +113,96 @@ fun HomeScreen(
         }
     }
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    val policeRed = Color(0xFFB71C1C)   // 묵직한 레드
+    val policeNavy = Color(0xFF1A237E)  // 짙은 남색
+    val amberLight = Color(0xFFFFB300)  // 포인트 호박색
 
+    val arcadeColors = listOf(
+        policeRed,
+        amberLight,
+        policeRed.copy(alpha = 0.8f),
+        Color(0xFF880E4F)
+    )
+
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
         Image(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(alpha = 0.5f),
             painter = painterResource(R.drawable.img_main_bg),
             contentDescription = null,
             contentScale = ContentScale.Crop
         )
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 50.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-
-            PixelIconButton(
-                onClick = {
-                    showJoinDialog = true
-                },
+        Box(modifier = Modifier.fillMaxSize()) {
+            // --- 상단 GAME & 안내 문구 ---
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
+                    .align(Alignment.TopCenter)
+                    .padding(top = 100.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    modifier = Modifier.padding(vertical = 2.dp),
-                    text = "게임 입장하기",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.Black
+                    text = "GAME",
+                    fontFamily = PixelFont,
+                    fontSize = 100.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    style = TextStyle(
+                        brush = Brush.verticalGradient(arcadeColors),
+                        shadow = Shadow(
+                            color = policeRed.copy(alpha = neonAlpha), // 레드 네온 글로우로 통일
+                            offset = Offset(0f, 0f),
+                            blurRadius = 35f
+                        )
+                    ),
+                    modifier = Modifier
+                        .graphicsLayer(alpha = neonAlpha)
+                        .zIndex(1f)
+                )
+
+                Text(
+                    text = "INSERT COIN",
+                    color = amberLight, // 호박색 통일
+                    fontSize = 18.sp,
+                    fontFamily = PixelFont,
+                    modifier = Modifier
+                        .graphicsLayer(alpha = if (neonAlpha > 0.8f) 1f else 0.2f)
+                        .padding(top = 12.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(30.dp))
-
-            PixelIconButton(
-                onClick = { goToGameCreate() },
+            // --- 중앙 버튼부 (원래 사각형 버튼 복구) ---
+            Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
+                    .fillMaxSize()
+                    .padding(horizontal = 40.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(32.dp)
             ) {
-                Text(
-                    text = "게임 생성하기",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.Black
+                // HOST 버튼 (적색)
+                PixelButtonCode(
+                    modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(1f),
+                    text = "HOST",
+                    textColor = Color.White,
+                    fontSize = 30,
+                    onClick = { goToGameCreate() },
+                    mainColor = CustomRed,
+                    borderColor = DarkGray
+                )
+
+                // JOIN 버튼 (남색)
+                PixelButtonCode(
+                    modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(1f),
+                    text = "JOIN",
+                    textColor = Color.White,
+                    fontSize = 30,
+                    onClick = { showJoinDialog = true },
+                    mainColor = CustomBlue,
+                    borderColor = DarkGray
                 )
             }
         }
@@ -151,6 +232,7 @@ fun HomeScreen(
     }
 }
 
+
 @Composable
 fun JoinGameDialog(
     onDismiss: () -> Unit,
@@ -160,8 +242,8 @@ fun JoinGameDialog(
 ) {
     PixelContainer(
         modifier = Modifier.width(320.dp),
-        backgroundColor = TextPrimary,
-        borderColor = BorderDefault,
+        backgroundColor = RoomContainer,
+        borderColor = RoomBorder,
         borderWidth = 6f,
         cornerSize = 20f
     ) {
@@ -174,7 +256,7 @@ fun JoinGameDialog(
             Text(
                 text = "참여 코드 입력",
                 style = MaterialTheme.typography.titleLarge,
-                color = Color.Black
+                color = Color.White
             )
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -195,28 +277,31 @@ fun JoinGameDialog(
 
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 PixelButtonCode(
-                    text = "취소",
-                    onClick = onDismiss,
                     modifier = Modifier.weight(1f),
-                    mainColor = TextPrimary,
+                    text = "취소",
+                    onClick = {
+                        onDismiss()
+                    },
+                    mainColor = Color.Gray,
                     borderColor = BorderDefault,
-                    textColor = Color.Black,
+                    textColor = Color.White,
                     fontSize = 16,
                     blockHeight = 10
                 )
 
                 PixelButtonCode(
-                    text = "확인",
-                    onClick = onConfirm,
                     modifier = Modifier.weight(1f),
-                    mainColor = TextPrimary,
+                    text = "확인",
+                    onClick = {
+                        onConfirm()
+                    },
+                    mainColor = CustomBlue,
                     borderColor = BorderDefault,
-                    textColor = Color.Black,
+                    textColor = Color.White,
                     fontSize = 16,
                     blockHeight = 10
                 )

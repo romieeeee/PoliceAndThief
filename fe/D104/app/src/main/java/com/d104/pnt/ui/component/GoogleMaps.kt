@@ -78,7 +78,7 @@ fun GoogleMaps(
             polygonPoints.forEach { builder.include(it.position) }
             try {
                 val bounds = builder.build()
-                cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 20))
+                cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 50))
             } catch (e: Exception) {
                 e.printStackTrace()
             }

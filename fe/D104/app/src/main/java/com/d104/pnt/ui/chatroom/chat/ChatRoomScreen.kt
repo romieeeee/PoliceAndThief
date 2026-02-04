@@ -1,6 +1,6 @@
 package com.d104.pnt.ui.chatroom.chat
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,10 +16,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d104.pnt.R
 import com.d104.pnt.domain.model.ChatsData
-import com.d104.pnt.ui.theme.DarkBackground
 import timber.log.Timber
 
 @Composable
@@ -46,66 +49,76 @@ fun ChatRoomScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier
-            .fillMaxSize()
-            .background(DarkBackground)
-            .statusBarsPadding()
-            .navigationBarsPadding(),
-        topBar = {
-            roomInfo?.let { info ->
-                ChatRoomHeader(
-                    modifier = Modifier.fillMaxWidth(),
-                    roomData = ChatsData(
-                        id = info.chatRoomId,
-                        title = info.title,
-                        description = info.description,
-                        maxMember = info.maxMembers,
-                        currentMember = info.currentMembers
-                    ),
-                    onLeaveClick = { onBackPressed() },
-                    onMenuClick = {
-                        drawerOpen = true
-                        viewModel.loadMembers()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.background),
+            contentDescription = "배경 화면",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        Scaffold(
+            modifier = modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+            containerColor = Color.Transparent,
+            topBar = {
+                roomInfo?.let { info ->
+                    ChatRoomHeader(
+                        modifier = Modifier.fillMaxWidth(),
+                        roomData = ChatsData(
+                            id = info.chatRoomId,
+                            title = info.title,
+                            description = info.description,
+                            maxMember = info.maxMembers,
+                            currentMember = info.currentMembers
+                        ),
+                        onLeaveClick = { onBackPressed() },
+                        onMenuClick = {
+                            drawerOpen = true
+                            viewModel.loadMembers()
+                        }
+                    )
+                }
+            },
+            bottomBar = {
+                ChatRoomFooter(
+                    modifier = Modifier.imePadding(),
+                    onSendMessage = { viewModel.sendMessage() },
+                    onValueChange = { viewModel.writeMessage(it) },
+                    message = message
+                )
+            }
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                Chats(
+                    modifier = Modifier.fillMaxSize(),
+                    chatMessages = chatMessages,
+                    myMemberId = myMemberId,
+                    isLoading = isLoading,
+                    onLoadMore = { viewModel.loadMoreMessages() }
+                )
+
+                // 우측 멤버 드로어 오버레이
+                ChatRoomMemberDrawer(
+                    visible = drawerOpen,
+                    members = members,
+                    onDismiss = { drawerOpen = false },
+                    onLeaveRoom = {
+                        drawerOpen = false
+                        viewModel.leaveRoom {
+                            onBackPressed()
+                        }
                     }
                 )
             }
-        },
-        bottomBar = {
-            ChatRoomFooter(
-                modifier = Modifier.imePadding(),
-                onSendMessage = { viewModel.sendMessage() },
-                onValueChange = { viewModel.writeMessage(it) },
-                message = message
-            )
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            Chats(
-                modifier = Modifier.fillMaxSize(),
-                chatMessages = chatMessages,
-                myMemberId = myMemberId,
-                isLoading = isLoading,
-                onLoadMore = { viewModel.loadMoreMessages() }
-            )
-
-            // 우측 멤버 드로어 오버레이
-            ChatRoomMemberDrawer(
-                visible = drawerOpen,
-                members = members,
-                onDismiss = { drawerOpen = false },
-                onLeaveRoom = {
-                    drawerOpen = false
-                    viewModel.leaveRoom {
-                        onBackPressed()
-                    }
-                }
-            )
 
         }
+
     }
 }

@@ -13,7 +13,8 @@ val Pink40 = Color(0xFF7D5260)
 
 // Base Background
 val DarkBackground = Color(0xFF1A2938)
-val DarkSurface = Color(0xFF233342)
+val DarkSurface = Color(0xFF2D3242)
+//val DarkSurface = Color(0xFF233342)
 val DarkCard = Color(0xFF1E3445)
 val DeepDark = Color(0xFF1D1F24)
 
@@ -40,7 +41,8 @@ val NeutralColor = Color(0xFF989898)
 // Border / Divider
 val BorderDefault = Color(0xFF000000)
 val DividerColor = Color(0xFF293D36)
-val DialogBorderColor = Color(0xFF81B0FF)
+val DialogBorderColor = Color(0xFF6591E9)
+//val DialogBorderColor = Color(0xFF81B0FF)
 
 val CheckGreen = Color(0xFF8EE334)
 
@@ -59,3 +61,13 @@ val OutOfArea = Color(0x99000000)
 val WantedRed = Color(0xFFB72222)
 
 val MissionYellow = Color(0xFFFFF344)
+
+val DarkGray = Color(0xFFFF2B2B2B)
+
+val CustomRed = Color(0xFFC94A4A)
+val CustomBlue = Color(0xFF4A76C9)
+
+val RoomContainer = Color(0xFF2D3242)
+val RoomBorder = Color(0xFF6591E9)
+
+val CancelGray = Color(0xFF3B4049)

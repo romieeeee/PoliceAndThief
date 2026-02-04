@@ -1,19 +1,19 @@
 package com.d104.pnt.ui.chatroom.chat
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,9 +25,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.ChatsData
-import com.d104.pnt.ui.component.PixelContainer
-import com.d104.pnt.ui.theme.DarkBackground
-import com.d104.pnt.ui.theme.DarkCard
 import com.d104.pnt.ui.theme.TextPrimary
 import com.d104.pnt.ui.theme.TextSecondary
 
@@ -40,78 +37,59 @@ fun ChatRoomHeader(
 ) {
     Box(
         modifier = modifier
-            .background(DarkBackground)
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        PixelContainer(
+
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            cornerSize = 10f,
-            backgroundColor = DarkCard,
-            borderColor = TextSecondary,
-            innerVerticalPadding = 16
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+
+            IconButton(
+                onClick = { onLeaveClick() }
             ) {
-                // 뒤로가기
-                PixelContainer(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clickable(onClick = onLeaveClick),
-                    backgroundColor = DarkCard,
-                    borderColor = Color.White,
-                    innerVerticalPadding = 10,
-                    innerHorizontalPadding = 10
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            modifier = Modifier.size(32.dp),
-                            painter = painterResource(R.drawable.ic_back),
-                            contentDescription = "나가기",
-                            tint = Color.Unspecified,
-                        )
-                    }
-                }
+                Icon(
+                    modifier = Modifier.size(20.dp),
+                    painter = painterResource(R.drawable.ic_back),
+                    contentDescription = "나가기",
+                    tint = Color.Unspecified,
+                )
+            }
 
-                Spacer(Modifier.width(20.dp))
+            Spacer(Modifier.width(20.dp))
 
-                // 제목
+            // 제목
+            Text(
+                modifier = Modifier.weight(1f),
+                text = roomData.title,
+                style = MaterialTheme.typography.titleLarge,
+                color = TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            // 인원수 + 메뉴
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    modifier = Modifier.weight(1f),
-                    text = roomData.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    text = "${roomData.currentMember}/${roomData.maxMember}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = TextSecondary,
                 )
 
-                // 인원수 + 메뉴
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "${roomData.currentMember}/${roomData.maxMember}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = TextSecondary,
-                    )
-
-                    // 멤버 목록(드로어 열기)
-                    Icon(
-                        modifier = Modifier
-                            .size(22.dp)
-                            .clickable(onClick = onMenuClick),
-                        imageVector = Icons.Filled.Menu,
-                        contentDescription = "멤버 목록",
-                        tint = TextPrimary
-                    )
-                }
+                // 멤버 목록(드로어 열기)
+                Icon(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable(onClick = onMenuClick),
+                    painter = painterResource(R.drawable.bars),
+                    contentDescription = "멤버 목록",
+                    tint = TextPrimary
+                )
             }
         }
     }

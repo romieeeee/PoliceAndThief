@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.domain.model.ChatMessage
@@ -77,12 +78,12 @@ fun ChatBubble(
             PixelContainer(
                 modifier = Modifier,
                 cornerSize = 20f,
-                backgroundColor = if (isMe) ButtonHighlight else NeutralColor
+                backgroundColor = Color.White.copy(alpha = 0.8f)
             ) {
                 Text(
                     text = message.content,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (isMe) TextPrimary else BorderDefault,
+                    color = Color.Black,
                     modifier = Modifier.padding(4.dp)
                 )
             }

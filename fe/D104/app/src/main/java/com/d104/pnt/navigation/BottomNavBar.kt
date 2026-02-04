@@ -69,7 +69,7 @@ fun BottomNavBar(navController: NavHostController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(64.dp)
-                .background(DeepDark),
+                .background(DeepDark.copy(0.8f)),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceAround
         ) {
@@ -96,8 +96,8 @@ fun BottomNavBar(navController: NavHostController) {
 
         Box(
             modifier = Modifier
-                .size(120.dp)
-                .offset(y = (-10).dp)
+                .size(72.dp)
+                .offset(y = (-20).dp)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null

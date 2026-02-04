@@ -46,7 +46,6 @@ fun NewsLoadingScreen(
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is NewsLoadingUiEvent.NavigateToActualNews -> {
-                    // 소켓 OK + HTTP OK인 상태! 이제 진짜 뉴스로 이동
                     onNewsReady(event.gameId, event.newsId)
                 }
             }
@@ -139,7 +138,7 @@ fun TypewriterText(texts: List<String>) {
         text = textToDisplay,
         color = Color.White,
         fontFamily = PixelFont,
-        fontSize = 20.sp,
+        fontSize = 18.sp,
         lineHeight = 30.sp
     )
 }
