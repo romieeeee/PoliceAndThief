@@ -1,7 +1,8 @@
 package com.d104.pnt.data.repository
 
 import com.d104.pnt.data.remote.api.ProfileApiService
-import com.d104.pnt.data.remote.model.request.UpdateProfileRequest
+import com.d104.pnt.data.remote.model.request.UpdateNicknameRequest
+import com.d104.pnt.data.remote.model.request.UpdateProfileImageRequest
 import com.d104.pnt.data.remote.model.response.PoliceStatResponse
 import com.d104.pnt.data.remote.model.response.ProfileResponse
 import com.d104.pnt.data.remote.model.response.ThiefStatResponse
@@ -30,15 +31,26 @@ class ProfileRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateProfile(
+    override suspend fun updateProfileImage(
         memberId: Long,
-        nickname: String,
         avatarUrl: String
     ): BaseResult<ProfileResponse> {
         return safeApiCall {
-            profileApiService.updateProfile(
+            profileApiService.updateProfileImage(
                 memberId = memberId,
-                request = UpdateProfileRequest(nickname, avatarUrl)
+                request = UpdateProfileImageRequest(avatarUrl)
+            )
+        }
+    }
+
+    override suspend fun updateNickname(
+        memberId: Long,
+        nickname: String
+    ): BaseResult<ProfileResponse> {
+        return safeApiCall {
+            profileApiService.updateNickname(
+                memberId = memberId,
+                request = UpdateNicknameRequest(nickname)
             )
         }
     }

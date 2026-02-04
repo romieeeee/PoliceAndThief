@@ -86,13 +86,13 @@ class ProfileViewModel @Inject constructor(
     }
 
     // 프로필 수정
-    fun updateProfile(nickname: String, imageKey: String) {
+    fun updateProfileImage(imageKey: String) {
         val currentId = memberId.value
         if (currentId == 0L) return
 
         viewModelScope.launch {
             // 수정 요청
-            val result = profileRepository.updateProfile(currentId, nickname, imageKey)
+            val result = profileRepository.updateProfileImage(currentId, imageKey)
 
             when (result) {
                 is BaseResult.Success -> {
@@ -107,7 +107,28 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun uploadProfileImage(context: Context, selectedImage: AvatarImage, safeNickname: String) {
+    fun updateNickname(nickname: String) {
+        val currentId = memberId.value
+        if (currentId == 0L) return
+
+        viewModelScope.launch {
+            // 수정 요청
+            val result = profileRepository.updateNickname(currentId, nickname)
+
+            when (result) {
+                is BaseResult.Success -> {
+                    _profileState.value = UiState.Success(result.data)
+                    Timber.d("프로필 수정 성공")
+                }
+
+                is BaseResult.Error -> {
+                    Timber.e("프로필 수정 실패: ${result.error.message}")
+                }
+            }
+        }
+    }
+
+    fun uploadProfileImage(context: Context, selectedImage: AvatarImage) {
         viewModelScope.launch {
             _uploadState.value = UiState.Loading
 
@@ -160,7 +181,7 @@ class ProfileViewModel @Inject constructor(
                             val imageKey = result.data.imageKey
                             Timber.d("업로드 성공 Key: $imageKey")
                             _uploadState.value = UiState.Success(result.data)
-                            updateProfile(safeNickname, imageKey)
+                            updateProfileImage(imageKey)
                         }
                         is BaseResult.Error -> {
                             _uploadState.value = UiState.Error(uploadResult.error.message)
