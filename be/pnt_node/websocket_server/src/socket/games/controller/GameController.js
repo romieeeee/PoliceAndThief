@@ -223,7 +223,6 @@ export class GameController {
 
         const { lat, lng, walk, longestSurvived } = payload;
 
-
         const memberId = this.socket.data.memberId; // 미들웨어에서 가져온 ID
         const gameMember = await this.gameMemberService.findMemberGame(gameId, memberId);
         const position = gameMember.position;
@@ -274,8 +273,7 @@ export class GameController {
             return;
         }
 
-
-        if (!isInBoundary && position === GameMemberPosition.THIEF) {
+        if (!isInBoundary && position === GameMemberPosition.THIEF && (!status || status === GameMemberStatus.FREE)) {
             const res = {
                 gameId: gameId,
                 memberId: memberId,
