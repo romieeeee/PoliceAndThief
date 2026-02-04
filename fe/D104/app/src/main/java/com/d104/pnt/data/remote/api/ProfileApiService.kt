@@ -1,6 +1,7 @@
 package com.d104.pnt.data.remote.api
 
-import com.d104.pnt.data.remote.model.request.UpdateProfileRequest
+import com.d104.pnt.data.remote.model.request.UpdateNicknameRequest
+import com.d104.pnt.data.remote.model.request.UpdateProfileImageRequest
 import com.d104.pnt.data.remote.model.response.BaseResponse
 import com.d104.pnt.data.remote.model.response.PoliceStatResponse
 import com.d104.pnt.data.remote.model.response.ProfileResponse
@@ -41,8 +42,14 @@ interface ProfileApiService {
      * 프로필 수정 API
      */
     @PATCH("members/{id}")
-    suspend fun updateProfile(
+    suspend fun updateProfileImage(
         @Path("id") memberId: Long,
-        @Body request: UpdateProfileRequest
+        @Body request: UpdateProfileImageRequest
+    ): Response<BaseResponse<ProfileResponse>>
+
+    @PATCH("members/{id}")
+    suspend fun updateNickname(
+        @Path("id") memberId: Long,
+        @Body request: UpdateNicknameRequest
     ): Response<BaseResponse<ProfileResponse>>
 }
