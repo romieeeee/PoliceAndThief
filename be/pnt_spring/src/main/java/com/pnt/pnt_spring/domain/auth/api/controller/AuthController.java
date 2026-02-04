@@ -43,7 +43,7 @@ public class AuthController {
 	// 로그인
 	@Operation(summary = "로그인", description = "유저 로그인을 진행합니다.")
 	@PostMapping("/login")
-	public CommonResponse<LoginResponse> signin(@RequestBody LoginRequest request) {
+	public CommonResponse<LoginResponse> signin(@Valid @RequestBody LoginRequest request) {
 		LoginResponse loginResponse = authService.login(request);
 		return new CommonResponse<>(loginResponse, "로그인에 성공했습니다.", HttpStatus.OK);
 	}
