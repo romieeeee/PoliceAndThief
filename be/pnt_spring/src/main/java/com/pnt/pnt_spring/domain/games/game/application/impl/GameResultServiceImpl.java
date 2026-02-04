@@ -117,14 +117,12 @@ public class GameResultServiceImpl implements GameResultService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public GameResultResponse getGameResult(Long gameId) {
+	public GameResultResponse getGameResult(Long gameId, Long memberId) {
 		Game game = gameRepository.findById(gameId)
 			.orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
-		// 1. 해당 게임의 모든 멤버 스탯 조회 (N+1 방지를 위해 Fetch Join 쿼리 사용 권장)
 		List<GameMemberStat> allStats = gameMemberStatRepository.findAllByGameId(gameId);
 
-		// 2. 팀별 분류 및 전체 통계 집계
 		List<GameMemberStat> policeStats = new ArrayList<>();
 		List<GameMemberStat> thiefStats = new ArrayList<>();
 		int totalArrests = 0;
@@ -136,13 +134,11 @@ public class GameResultServiceImpl implements GameResultService {
 				thiefStats.add(stat);
 			}
 
-			// 전체 통계 합산
 			if (stat.getArrestCount() != null)
 				totalArrests += stat.getArrestCount();
 		}
 
-		// 3. 정렬 (경찰: 체포수 내림차순 후 걸음, 도둑: 생존시간 내림차순) - triggerAiNewsGeneration과 동일 로직
-		// 경찰: 체포수(1순위) -> 걸음수(2순위) 내림차순
+		// MVP 산정 로직
 		policeStats.sort((a, b) -> {
 			int result = compareStats(b.getArrestCount(), a.getArrestCount());
 			if (result == 0) {
@@ -152,7 +148,6 @@ public class GameResultServiceImpl implements GameResultService {
 		});
 		thiefStats.sort((a, b) -> compareStats(b.getLongestSurvived(), a.getLongestSurvived()));
 
-		// 4. 승리/패배 팀 데이터 추출
 		List<GameMemberStat> winnerStats;
 		List<GameMemberStat> loserStats;
 		boolean isPoliceWin = (game.getWinTeam() == WinTeam.POLICE);
@@ -165,14 +160,57 @@ public class GameResultServiceImpl implements GameResultService {
 			loserStats = policeStats;
 		}
 
-		// 5. 주요 플레이어 선정 (MVP, Winning 2nd, Losing 1st)
 		GameMemberStat mvpStat = winnerStats.isEmpty() ? null : winnerStats.get(0);
 		GameMemberStat winningSecondStat = (winnerStats.size() > 1) ? winnerStats.get(1) : null;
 		GameMemberStat losingFirstStat = loserStats.isEmpty() ? null : loserStats.get(0);
 
 		int durationSec = (int)Duration.between(game.getStartTime(), game.getEndTime()).toSeconds();
 
-		// 6. 응답 생성
+		// [수정] 내 스탯 + 등급/최고기록 조회 로직 추가
+		GameMemberStat myGameStat = allStats.stream()
+			.filter(stat -> stat.getGameMember().getMember().getId().equals(memberId))
+			.findFirst()
+			.orElse(null);
+
+		GameResultResponse.GameMemberStat myStatResponse = null;
+
+		if (myGameStat != null) {
+			Member member = myGameStat.getGameMember().getMember();
+			String rankName = "Unknown";
+			Integer maxArrest = null;
+			Integer maxSurvival = null;
+
+			// 역할에 따라 DB에서 등급과 최고 기록 조회
+			if (myGameStat.getPosition() == Position.POLICE) {
+				MemberStatPolice policeInfo = memberStatPoliceRepository.findById(member.getId())
+					.orElse(null);
+				if (policeInfo != null) {
+					rankName = policeInfo.getGradePolice().getName();
+					maxArrest = policeInfo.getMostArrestsInGame();
+				}
+			} else if (myGameStat.getPosition() == Position.THIEF) {
+				MemberStatThief thiefInfo = memberStatThiefRepository.findById(member.getId())
+					.orElse(null);
+				if (thiefInfo != null) {
+					rankName = thiefInfo.getGradeThief().getName();
+					maxSurvival = thiefInfo.getLongestSurvivalSec();
+				}
+			}
+
+			myStatResponse = GameResultResponse.GameMemberStat.builder()
+				.memberId(member.getId())
+				.nickname(getNickname(myGameStat))
+				.role(myGameStat.getPosition().name())
+				.walk(myGameStat.getWalk())
+				.arrestCount(myGameStat.getArrestCount())
+				.longestSurvived(myGameStat.getLongestSurvived())
+				// 추가된 필드 매핑
+				.rank(rankName)
+				.maxArrestCount(maxArrest)
+				.maxSurvivalTime(maxSurvival)
+				.build();
+		}
+
 		return GameResultResponse.builder()
 			.gameId(game.getId())
 			.winner(game.getWinTeam().toString())
@@ -182,9 +220,10 @@ public class GameResultServiceImpl implements GameResultService {
 			.losingFirst(toMvpResponse(losingFirstStat, "패배팀 1위"))
 			.stats(GameResultResponse.TotalStats.builder()
 				.arrests(totalArrests)
-				.missionsCleared(0) // 미션 완료 수는 별도 집계 필요 (현재는 0)
+				.missionsCleared(0)
 				.durationSec(durationSec)
 				.build())
+			.myStat(myStatResponse)
 			.build();
 	}
 

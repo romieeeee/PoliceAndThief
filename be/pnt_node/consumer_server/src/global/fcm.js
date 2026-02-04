@@ -9,7 +9,8 @@ async function sendChatPush(tokens, data) {
     const message = {
         data: {
             title: data.title,
-            body: data.body
+            body: data.content,
+            chatRoomId: String(data.chatRoomId)
         },
         tokens: tokens
     };
