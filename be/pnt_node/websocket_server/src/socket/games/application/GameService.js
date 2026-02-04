@@ -1,6 +1,5 @@
 import Game from "../../../global/db/sequelize/entity/Game.js"
 import GameSetting from "../../../global/db/sequelize/entity/GameSetting.js";
-import db from "../../../global/db/sequelize/SequelizeDB.js";
 import { GameMemberService } from "./GameMemberService.js";
 import { GameMemberStatService } from "./GameMemberStatService.js";
 import { GameMemberStatus } from "../../../global/db/sequelize/status/GameMemberStatus.js";

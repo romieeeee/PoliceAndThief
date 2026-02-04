@@ -51,7 +51,6 @@ export class RedisEvent {
                         if (isGameEnd) {
                             // Game End Logic
                             logger.info(`[RedisEvent] game:end: ${gameId}`);
-                            const winner = GameMemberPosition.POLICE;
                             this.gameController.gameEnd(this.gameIo, this.redisClient, gameId, GameMemberPosition.POLICE);
                         }
                     }
