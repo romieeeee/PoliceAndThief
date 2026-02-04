@@ -294,7 +294,7 @@ export class GameController {
             locationData.penalty = res.penalty;
             await this.redisClient.setLocation(memberId, gameId, locationData);
 
-            if (count >= 3 && status === GameMemberStatus.FREE) {
+            if (count >= 3 && (!status || status === GameMemberStatus.FREE)) {
                 locationData.status = GameMemberStatus.TRANSFER;
                 await this.redisClient.deletePenalty(memberId, gameId);
 
