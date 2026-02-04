@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.response.ChatRoomResponse
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.ChatRepository
+import com.d104.pnt.data.repository.ProfileRepository
 import com.d104.pnt.domain.model.ChatMessage
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.navigation.NavArgs
@@ -28,7 +29,8 @@ class ChatRoomViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val authRepository: AuthRepository,
     private val chatRepository: ChatRepository,
-    private val chatSocketManager: ChatSocketManager
+    private val chatSocketManager: ChatSocketManager,
+    private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
     private val chatRoomId: Long = savedStateHandle.get<Long>(NavArgs.CHAT_ID) ?: 0
@@ -53,6 +55,12 @@ class ChatRoomViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<UiState<String>>(UiState.Idle)
     val uiState: StateFlow<UiState<String>> = _uiState.asStateFlow()
+
+    private val _selectedProfile = MutableStateFlow<ProfileData?>(null)
+    val selectedProfile: StateFlow<ProfileData?> = _selectedProfile.asStateFlow()
+
+    private val _isProfileLoading = MutableStateFlow(false)
+    val isProfileLoading: StateFlow<Boolean> = _isProfileLoading.asStateFlow()
 
     init {
         Timber.d("ChatRoomViewModel 초기화 - chatRoomId: $chatRoomId")
@@ -352,5 +360,39 @@ class ChatRoomViewModel @Inject constructor(
     fun clearUiState() {
         _uiState.value = UiState.Idle
     }
+
+    fun loadUserProfile(memberId: Long) {
+        viewModelScope.launch {
+            _isProfileLoading.value = true
+
+            when (val result = profileRepository.getMyProfile(memberId)) {
+                is BaseResult.Success -> {
+                    val profile = result.data
+                    _selectedProfile.value = ProfileData(
+                        nickname = profile.nickname ?: "알 수 없음",
+                        avatarUrl = profile.avatarUrl,
+                        policeGrade = profile.stat.policeGrade,
+                        thiefGrade = profile.stat.thiefGrade
+                    )
+                }
+                is BaseResult.Error -> {
+                    Timber.e("프로필 조회 실패: ${result.error.message}")
+                    _selectedProfile.value = null
+                }
+            }
+
+            _isProfileLoading.value = false
+        }
+    }
+
+    fun clearSelectedProfile() {
+        _selectedProfile.value = null
+    }
 }
 
+data class ProfileData(
+    val nickname: String,
+    val avatarUrl: String?,
+    val policeGrade: String,
+    val thiefGrade: String
+)
