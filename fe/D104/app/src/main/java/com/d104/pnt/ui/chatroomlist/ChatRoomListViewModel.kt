@@ -212,6 +212,24 @@ class ChatRoomListViewModel @Inject constructor(
         }
     }
 
+    fun refreshCurrentView() {
+        when (_viewMode.value) {
+            ViewMode.Me -> {
+                getJoinedChatRoom()
+            }
+            ViewMode.Region -> {
+                val code = _searchRegionQuery.value
+                if (code != -1) {
+                    searchChatRoom(title = null, regionCode = code)
+                }
+            }
+            ViewMode.Title -> {
+                val code = if (_searchRegionQuery.value != -1) _searchRegionQuery.value else null
+                searchChatRoom(title = _searchQuery.value.ifEmpty { null }, regionCode = code)
+            }
+        }
+    }
+
     enum class ViewMode(val value: String) {
         Me("Me"),
         Title("title"),
