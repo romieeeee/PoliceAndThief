@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -129,6 +130,24 @@ fun ChatRoomListScreen(
 
             Spacer(modifier = Modifier.width(10.dp))
 
+            // 새로고침 버튼
+            PixelIconButton(
+                modifier = Modifier.size(48.dp),
+                mainColor = ButtonPrimary,
+                borderColor = ButtonHighlight,
+                onClick = { viewModel.refreshCurrentView() }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "새로고침",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // 검색 버튼
             PixelIconButton(
                 modifier = Modifier.size(48.dp),
                 mainColor = ButtonPrimary,
