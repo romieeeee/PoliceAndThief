@@ -24,6 +24,7 @@ interface GameSessionRepository {
     val eventFlow: SharedFlow<GameSessionEvent>
     val myMemberId: StateFlow<Long>
     val myRole: StateFlow<String>
+    val myState: StateFlow<String?>
     val thiefMembers: StateFlow<List<GameMemberSocketDto>>
     val escapeQueue: StateFlow<List<String>>
     val beepEvent: SharedFlow<BeepUseResponse>
