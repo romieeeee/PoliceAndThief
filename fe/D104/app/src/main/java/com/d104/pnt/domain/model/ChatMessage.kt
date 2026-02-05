@@ -5,7 +5,7 @@ data class ChatMessage(
     val chatRoomId: Long,
     val memberId: Long,
     val senderNickname: String,
-    val avataUrl: String,
+    val avatarUrl: String,
     val content: String,
 //    val createdAt: Instant,
 )

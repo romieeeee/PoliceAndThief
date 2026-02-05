@@ -208,7 +208,7 @@ fun PlayerSlotCard(
                     android.util.Log.d("PlayerProfile", "Nickname: ${player.nickname}")
                     android.util.Log.d("PlayerProfile", "Original profileUrl: ${player.profileUrl}")
 
-                    // ⭐ when 블록 수정 - 각 케이스마다 로그 추가
+                    // when 블록 수정 - 각 케이스마다 로그 추가
                     val fullImageUrl = when {
                         player.profileUrl.isNullOrEmpty() -> {
                             android.util.Log.d("PlayerProfile", "❌ profileUrl is null or empty")

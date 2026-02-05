@@ -227,7 +227,7 @@ class ChatRoomViewModel @Inject constructor(
                 chatRoomId = chatRoomId,
                 memberId = data.optLong("senderId", data.optLong("memberId", 0)),
                 senderNickname = data.optString("senderNickname", "익명"),
-                avataUrl = data.optString("avataUrl", ""),
+                avatarUrl = data.optString("avatarUrl", ""),
                 content = data.getString("content"),
             )
         } catch (e: Exception) {
