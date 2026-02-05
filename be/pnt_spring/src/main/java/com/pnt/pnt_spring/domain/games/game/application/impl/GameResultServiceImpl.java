@@ -29,6 +29,9 @@ import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GradePoliceRepository;
 import com.pnt.pnt_spring.domain.games.game.repository.GradeThiefRepository;
+import com.pnt.pnt_spring.domain.games.mission.entity.GameMission;
+import com.pnt.pnt_spring.domain.games.mission.entity.MissionStatus;
+import com.pnt.pnt_spring.domain.games.mission.repository.GameMissionRepository;
 import com.pnt.pnt_spring.domain.games.news.api.req.AiNewsRequest;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.members.stat.entity.GradePolice;
@@ -62,6 +65,7 @@ public class GameResultServiceImpl implements GameResultService {
 	private final MemberStatThiefRepository memberStatThiefRepository;
 	private final GradePoliceRepository gradePoliceRepository;
 	private final GradeThiefRepository gradeThiefRepository;
+	private final GameMissionRepository gameMissionRepository;
 
 	private static final long MIN_GRADE_ID = 1L;
 	private static final long MAX_GRADE_ID = 11L;
@@ -81,6 +85,16 @@ public class GameResultServiceImpl implements GameResultService {
 
 		game.end(request.getWinTeam());
 
+		List<GameMission> completedMissions = gameMissionRepository.findByGameId(game.getId()).stream()
+			.filter(gm -> gm.getStatus() == MissionStatus.SUCCESS && gm.getCompletedBy() != null)
+			.toList();
+
+		Map<Long, Integer> missionCountMap = completedMissions.stream()
+			.collect(Collectors.groupingBy(
+				gm -> gm.getCompletedBy().getId(),
+				Collectors.summingInt(e -> 1)
+			));
+
 		List<GameMember> allMembers = gameMemberRepository.findAllByGameId(request.getGameId());
 		Map<Long, GameMember> memberMap = allMembers.stream()
 			.collect(Collectors.toMap(gm -> gm.getMember().getId(), Function.identity()));
@@ -96,22 +110,25 @@ public class GameResultServiceImpl implements GameResultService {
 			// 1. isConnected가 false인 경우 -> 방 나가기 처리 (isDeleted = true) 후 스킵
 			if (Boolean.FALSE.equals(statReq.getIsConnected())) {
 				gameMember.leave(); // 상태 초기화 및 isDeleted = true
-				log.info("Member {} disconnected. Marked as deleted.", gameMember.getId());
 				continue; // 스탯 업데이트 로직 수행 안 함
 			}
 
 			// 2. isConnected가 true인 경우 -> 스탯 업데이트 진행
 
+
+			int calculatedMissionCount = missionCountMap.getOrDefault(statReq.getMemberId(), 0);
+
+
 			// 2-2. GameMemberStat 업데이트
 			GameMemberStat stat = gameMemberStatRepository.findByGameMemberId(gameMember.getId())
 				.orElseGet(() -> gameMemberStatRepository.save(GameMemberStat.createInitialStat(gameMember)));
 
-			stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived());
+			stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived(), calculatedMissionCount);
 
 			gameMemberStatRepository.save(stat);
 
 			// 2-3. 누적 스탯 및 등급 업데이트
-			updateMemberGradeAndStats(stat, request.getWinTeam(), statReq.getPosition());
+			updateMemberGradeAndStats(stat, request.getWinTeam(), statReq.getPosition(), calculatedMissionCount);
 		}
 
 		GameSetting setting = gameSettingRepository.findByGameIdAndIsDeletedFalse(game.getId())
@@ -127,6 +144,11 @@ public class GameResultServiceImpl implements GameResultService {
 			.orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
 		List<GameMemberStat> allStats = gameMemberStatRepository.findAllByGameId(gameId);
+
+		long totalMissionsClearedLong = gameMissionRepository.findByGameId(gameId).stream()
+			.filter(gm -> gm.getStatus() == MissionStatus.SUCCESS)
+			.count();
+		int totalMissionsCleared = (int) totalMissionsClearedLong;
 
 		List<GameMemberStat> policeStats = new ArrayList<>();
 		List<GameMemberStat> thiefStats = new ArrayList<>();
@@ -218,6 +240,7 @@ public class GameResultServiceImpl implements GameResultService {
 				.rank(rankName)
 				.maxArrestCount(maxArrest)
 				.maxSurvivalTime(maxSurvival)
+				.isMissionCleared(myGameStat.getMissionCount() != null && myGameStat.getMissionCount() > 0)
 				.build();
 		}
 
@@ -230,7 +253,7 @@ public class GameResultServiceImpl implements GameResultService {
 			.losingFirst(toMvpResponse(losingFirstStat, "패배팀 1위"))
 			.stats(GameResultResponse.TotalStats.builder()
 				.arrests(totalArrests)
-				.missionsCleared(0)
+				.missionsCleared(totalMissionsCleared) // 전체 개수만 전달
 				.durationSec(durationSec)
 				.build())
 			.myStat(myStatResponse)
@@ -341,6 +364,7 @@ public class GameResultServiceImpl implements GameResultService {
 			.rank(rankName)
 			.maxArrestCount(maxArrest)
 			.maxSurvivalTime(maxSurvival)
+			.isMissionCleared(stat.getMissionCount() != null && stat.getMissionCount() > 0)
 			.build();
 	}
 
@@ -356,7 +380,7 @@ public class GameResultServiceImpl implements GameResultService {
 		return Integer.compare(val1, val2);
 	}
 
-	private void updateMemberGradeAndStats(GameMemberStat gameStat, WinTeam winTeam, Position position) {
+	private void updateMemberGradeAndStats(GameMemberStat gameStat, WinTeam winTeam, Position position, Integer missionCount) {
 		GameMember gameMember = gameStat.getGameMember();
 		Member member = gameMember.getMember();
 
@@ -410,7 +434,8 @@ public class GameResultServiceImpl implements GameResultService {
 			thiefStat.updateAfterGame(
 				isWin,  // 이겼는지 졌는지
 				gameStat.getLongestSurvived(),
-				memberStat.getThiefGame() // MemberStat에서 가져온 총 도둑 판수 전달
+				memberStat.getThiefGame(), // MemberStat에서 가져온 총 도둑 판수 전달
+				missionCount
 			);
 
 			// 3. 등급 변경 계산
