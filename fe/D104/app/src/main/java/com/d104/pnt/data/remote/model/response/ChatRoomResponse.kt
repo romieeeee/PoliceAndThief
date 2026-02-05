@@ -1,5 +1,6 @@
 package com.d104.pnt.data.remote.model.response
 
+import com.d104.pnt.data.remote.model.request.Location
 import com.google.gson.annotations.SerializedName
 
 /**
@@ -35,4 +36,15 @@ data class ChatRoomResponse(
 
     @SerializedName("updatedAt")
     val updatedAt: String
+)
+
+data class MapData(
+    @SerializedName("mapId")
+    val mapId: Long,
+    @SerializedName("mapName")
+    val mapName: String,
+    @SerializedName("polyPoints")
+    val polyPoint: List<Location>,
+    @SerializedName("prisonLocation")
+    val prisonLocation: Location
 )

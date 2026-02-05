@@ -75,6 +75,7 @@ class GamePlayViewModel @Inject constructor(
     val remainingTime = gameSessionRepository.remainingTime
     val myMemberId = gameSessionRepository.myMemberId
     val myRole = gameSessionRepository.myRole
+    val myState = gameSessionRepository.myState
     val members = gameSessionRepository.members
     val memberLocation = gameSessionRepository.memberLocation
     val missions = gameSessionRepository.missions
