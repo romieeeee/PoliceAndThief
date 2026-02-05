@@ -88,6 +88,9 @@ public enum ErrorCode {
 	// 미션
 	MISSION_NOT_FOUND(HttpStatus.NOT_FOUND, 4, "대상 미션을 찾을 수 없습니다."),
 
+	//map
+	MAP_NOT_FOUND(HttpStatus.NOT_FOUND, 4, "맵을 찾을 수 없습니다."),
+
 	// =========================
 	// CHAT (5xxx)
 	// =========================
