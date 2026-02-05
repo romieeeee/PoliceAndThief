@@ -51,7 +51,7 @@ public class MemberStatThief extends BaseEntity {
 			.build();
 	}
 
-	public void updateAfterGame(boolean isWin, Integer survivalSec, Integer totalThiefGames) {
+	public void updateAfterGame(boolean isWin, Integer survivalSec, Integer totalThiefGames, Integer missionCount) {
 		int currentSurvival = (survivalSec == null) ? 0 : survivalSec;
 		int totalGames = (totalThiefGames == null || totalThiefGames == 0) ? 1 : totalThiefGames; // 0으로 나누기 방지
 
@@ -68,6 +68,9 @@ public class MemberStatThief extends BaseEntity {
 		if (this.longestSurvivalSec == null || currentSurvival > this.longestSurvivalSec) {
 			this.longestSurvivalSec = currentSurvival;
 		}
+
+		int currentMissions = (missionCount == null) ? 0 : missionCount;
+		this.totalMissionCount = (this.totalMissionCount == null ? 0 : this.totalMissionCount) + currentMissions;
 	}
 
 	public void changeGrade(GradeThief newGrade) {

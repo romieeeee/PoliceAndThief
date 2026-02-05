@@ -46,6 +46,9 @@ public class GameMemberStat extends BaseEntity {
 	@Column(name = "longest_survived")
 	private Integer longestSurvived = 0;
 
+	@Column(name = "mission_count")
+	private Integer missionCount = 0;
+
 	// Service에서 사용할 생성자 추가
 	public GameMemberStat(GameMember gameMember) {
 		this.gameMember = gameMember;
@@ -101,8 +104,9 @@ public class GameMemberStat extends BaseEntity {
 	}
 
 	// 결과 업데이트
-	public void updateResultStats(Integer walk, Integer longestSurvived) {
+	public void updateResultStats(Integer walk, Integer longestSurvived, Integer missionCount) {
 		this.walk = walk;
 		this.longestSurvived = longestSurvived;
+		this.missionCount = (missionCount == null) ? 0 : missionCount;
 	}
 }
