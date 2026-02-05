@@ -3,8 +3,14 @@ package com.d104.pnt.util.socket
 import com.d104.pnt.base.Constants
 import io.socket.client.IO
 import io.socket.client.Socket
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import timber.log.Timber
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 모든 소켓 매니저의 기본 클래스
@@ -16,11 +22,28 @@ abstract class BaseSocketManager(
     protected var socket: Socket? = null
     private var isManualDisconnect = false
 
+
+    private val retryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private val recentEmits = ConcurrentHashMap<String, EmitRecord>()
+
+    private var lastErrorTime = 0L
+
     companion object {
         const val EVENT_RECONNECT = "reconnect"
         const val EVENT_ERROR = "error"
+
+        const val MAX_RETRY_ATTEMPTS = 3
+        const val RETRY_DELAY_MS = 1500L
+        const val EMIT_TRACKING_DURATION_MS = 5000L
     }
 
+    data class EmitRecord(
+        val event: String,
+        val data: JSONObject,
+        val timestamp: Long,
+        var retryCount: Int = 0
+    )
     /**
      * 소켓 연결
      */
@@ -48,6 +71,7 @@ abstract class BaseSocketManager(
                 reconnectionAttempts = 5
                 reconnectionDelay = 1000
                 forceNew = true
+//                transports = arrayOf("websocket")
             }
 
             socket = IO.socket(socketUrl, options)
@@ -99,10 +123,53 @@ abstract class BaseSocketManager(
                     val message = error.getString("message")
                     val code = error.getInt("code")
                     Timber.e("[$namespace] Socket Error: $message (code: $code)")
-                    onError("$message (code: $code)")
+
+                    if (code == 500) {
+                        lastErrorTime = System.currentTimeMillis()
+                        retryRecentEmits()
+                    } else {
+                        onError("$message (code: $code)")
+                    }
                 } catch (e: Exception) {
                     Timber.e(e, "[$namespace] 에러 파싱 실패")
                 }
+            }
+        }
+    }
+
+    /**
+     * 최근 전송한 이벤트들 재시도
+     */
+    private fun retryRecentEmits() {
+        val now = System.currentTimeMillis()
+
+        // 5초 이내에 전송한 이벤트만 재시도
+        val recentEvents = recentEmits.values.filter {
+            now - it.timestamp < EMIT_TRACKING_DURATION_MS
+        }
+
+        if (recentEvents.isEmpty()) {
+            Timber.w("[$namespace] ⚠️ 재시도할 최근 이벤트 없음")
+            return
+        }
+
+        Timber.d("[$namespace] 🔄 최근 ${recentEvents.size}개 이벤트 재시도 예약")
+
+        recentEvents.forEach { record ->
+            if (record.retryCount < MAX_RETRY_ATTEMPTS) {
+                retryScope.launch {
+                    delay(RETRY_DELAY_MS * (record.retryCount + 1)) // 점진적 지연
+
+                    if (isConnected()) {
+                        record.retryCount++
+                        Timber.d("[$namespace] 🔄 재시도 ${record.retryCount}/$MAX_RETRY_ATTEMPTS: ${record.event}")
+                        socket?.emit(record.event, record.data)
+                    } else {
+                        Timber.e("[$namespace] ❌ 재시도 실패: 소켓 연결 끊김")
+                    }
+                }
+            } else {
+                Timber.e("[$namespace] ❌ 최대 재시도 횟수 초과: ${record.event}")
             }
         }
     }
@@ -187,7 +254,43 @@ abstract class BaseSocketManager(
         }
         socket?.emit(event, data)
         Timber.d("[$namespace] 이벤트 전송: $event - $data")
+        if (isRetryableEvent(event)) {
+            val record = EmitRecord(
+                event = event,
+                data = data,
+                timestamp = System.currentTimeMillis()
+            )
+            recentEmits[event] = record
+
+            // 오래된 기록 정리
+            cleanupOldEmits()
+        }
     }
+
+
+    /**
+     * 재시도 가능한 이벤트인지 확인
+     */
+    private fun isRetryableEvent(event: String): Boolean {
+        return when {
+            event.contains("post now room info") -> true
+            event.contains("post now ready info") -> true
+            event.contains("post join room") -> true
+            event.contains("post game info sync") -> true
+            else -> false
+        }
+    }
+
+    /**
+     * 오래된 emit 기록 정리
+     */
+    private fun cleanupOldEmits() {
+        val now = System.currentTimeMillis()
+        recentEmits.entries.removeIf {
+            now - it.value.timestamp > EMIT_TRACKING_DURATION_MS
+        }
+    }
+
 
     /**
      * 이벤트 리스너 등록

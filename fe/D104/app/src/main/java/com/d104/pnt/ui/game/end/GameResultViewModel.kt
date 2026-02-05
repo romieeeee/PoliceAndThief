@@ -10,15 +10,19 @@ import com.d104.pnt.R
 import com.d104.pnt.data.remote.model.response.GameResultResponse
 import com.d104.pnt.data.repository.GameRepository
 import com.d104.pnt.data.repository.GameRoomRepository
+import com.d104.pnt.data.repository.GameSessionRepository
 import com.d104.pnt.data.repository.ReportRepository
+import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.util.socket.GameSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.Locale
@@ -29,6 +33,7 @@ class GameResultViewModel @Inject constructor(
     private val reportRepository: ReportRepository,
     private val roomRepository: GameRoomRepository,
     private val gameRepository: GameRepository,
+    private val gameSessionRepository: GameSessionRepository,
     private val gameSocketManager: GameSocketManager,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -37,6 +42,12 @@ class GameResultViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<UiState<GameResultUiData>>(UiState.Loading)
     val uiState: StateFlow<UiState<GameResultUiData>> = _uiState.asStateFlow()
+
+    private val _rejoinState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
+    val rejoinState: StateFlow<UiState<Unit>> = _rejoinState.asStateFlow()
+
+    private val _remainingSeconds = MutableStateFlow(60)
+    val remainingSeconds: StateFlow<Int> = _remainingSeconds.asStateFlow()
 
     // 신고 관련 상태
     var reportStep by mutableStateOf(ReportStep.NONE)
@@ -50,6 +61,17 @@ class GameResultViewModel @Inject constructor(
 
     init {
         fetchGameResult()
+        startCountdown()
+    }
+
+    private fun startCountdown() {
+        viewModelScope.launch {
+            // 30초부터 0초까지 1초씩 감소
+            while (_remainingSeconds.value > 0) {
+                delay(1000L)
+                _remainingSeconds.value -= 1
+            }
+        }
     }
 
     // fetch
@@ -193,16 +215,104 @@ class GameResultViewModel @Inject constructor(
             else        -> "ETC"
         }
 
-    // 네비게이션
+    fun backToLobby(onSuccess: (Long) -> Unit) {
+        // 카운트다운 완료 체크
+        if (_remainingSeconds.value > 0) {
+            Timber.w("⚠️ 아직 대기방 입장 불가 (${_remainingSeconds.value}초 남음)")
+            return
+        }
 
-    fun backToLobby(roomId: Long, onSuccess: () -> Unit) {
+        if (_rejoinState.value is UiState.Loading) {
+            Timber.w("⚠️ 이미 대기방 입장 처리 중")
+            return
+        }
+
         viewModelScope.launch {
-            val result = roomRepository.changePosition(roomId, "ANY")
-            if (result is BaseResult.Success) {
+            try {
+                _rejoinState.value = UiState.Loading
+                Timber.d("📍 대기방 재입장 시도 시작 (gameId: $gameId)")
+
+                // 1. 게임 소켓 정리
                 cleanupGameSocket()
-                onSuccess()
-            } else {
-                Timber.e("역할 리셋 실패: 대기방 진입 중단")
+                delay(500) // 소켓 완전히 끊기까지 대기
+
+                // 2. roomCode 가져오기
+                val roomCode = gameSessionRepository.roomCode.first()
+                if (roomCode.isBlank()) {
+                    _rejoinState.value = UiState.Error("방 코드를 찾을 수 없습니다")
+                    Timber.e("❌ roomCode 없음 - 대기방 입장 불가")
+                    return@launch
+                }
+
+                Timber.d("✅ roomCode 확인: $roomCode")
+
+                // 3. 서버에 재입장 요청 (최대 3번 재시도)
+                var retryCount = 0
+                var joinResult: BaseResult<*>? = null
+
+                while (retryCount < 3) {
+                    joinResult = roomRepository.joinGameRoom(roomCode)
+
+                    when (joinResult) {
+                        is BaseResult.Success -> {
+                            Timber.d("✅ 방 재입장 성공 (시도 ${retryCount + 1})")
+                            break
+                        }
+                        is BaseResult.Error -> {
+                            retryCount++
+                            val errorMsg = joinResult.error.message ?: "알 수 없는 오류"
+
+                            if (errorMsg.contains("아직 초기화되지 않았습니다") ||
+                                errorMsg.contains("not ready") ||
+                                errorMsg.contains("waiting")) {
+                                Timber.w("⏳ 서버 초기화 대기 중... (${retryCount}/3)")
+                                delay(2000) // 2초 대기 후 재시도
+                            } else {
+                                // 다른 에러는 즉시 실패 처리
+                                Timber.e("❌ 재입장 실패: $errorMsg")
+                                _rejoinState.value = UiState.Error(errorMsg)
+                                return@launch
+                            }
+                        }
+                    }
+                }
+
+                // 4. 최종 결과 확인
+                when (joinResult) {
+                    is BaseResult.Success -> {
+                        val roomId = (joinResult as BaseResult.Success<*>).data
+                        val actualRoomId = when (roomId) {
+                            is Long -> roomId
+                            is Map<*, *> -> (roomId["roomId"] as? Number)?.toLong() ?: gameId
+                            else -> gameId
+                        }
+
+                        // 5. 역할 초기화
+                        when (val positionResult = roomRepository.changePosition(actualRoomId, GameRole.ANY.roleNameEn)) {
+                            is BaseResult.Success -> {
+                                Timber.d("✅ 역할 ANY로 초기화 완료")
+                                _rejoinState.value = UiState.Success(Unit)
+                                onSuccess(actualRoomId)
+                            }
+                            is BaseResult.Error -> {
+                                Timber.e("❌ 역할 초기화 실패: ${positionResult.error.message}")
+                                _rejoinState.value = UiState.Error("역할 초기화 실패")
+                            }
+                        }
+                    }
+                    is BaseResult.Error -> {
+                        val errorMsg = (joinResult as BaseResult.Error).error.message ?: "재입장 실패"
+                        Timber.e("❌ 최종 재입장 실패: $errorMsg")
+                        _rejoinState.value = UiState.Error("방이 아직 준비되지 않았습니다.\n잠시 후 다시 시도해주세요.")
+                    }
+                    null -> {
+                        _rejoinState.value = UiState.Error("알 수 없는 오류")
+                    }
+                }
+
+            } catch (e: Exception) {
+                Timber.e(e, "❌ 대기방 입장 중 예외 발생")
+                _rejoinState.value = UiState.Error("오류가 발생했습니다: ${e.message}")
             }
         }
     }

@@ -37,7 +37,8 @@ fun PixelButtonCode(
     fontSize: Int = 0,
     pixelSize: Dp = 4.dp,
     blockHeight: Int = 16,
-    blockWidth: Int? = null
+    blockWidth: Int? = null,
+    enabled: Boolean = true,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -58,8 +59,9 @@ fun PixelButtonCode(
     Box(
         modifier = sizeModifier
             .clickable(
+                enabled = enabled,
                 interactionSource = interactionSource,
-                indication = null
+                indication = null,
             ) { onClick() }
     ) {
         FiveLayerPixelShape(

@@ -1,5 +1,6 @@
 package com.d104.pnt.ui.game.end
 
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -28,11 +29,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +44,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -65,6 +69,7 @@ import com.d104.pnt.ui.theme.RoomContainer
 import com.d104.pnt.ui.theme.TextPrimary
 import com.d104.pnt.ui.theme.TextSecondary
 import com.d104.pnt.ui.theme.WinColor
+import androidx.compose.runtime.collectAsState
 
 data class MvpData(
     val type: String,
@@ -86,7 +91,24 @@ fun GameResultScreen(
     viewModel: GameResultViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val rejoinState by viewModel.rejoinState.collectAsStateWithLifecycle()
+    val remainingSeconds by viewModel.remainingSeconds.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
+    // 재입장 상태 처리
+    LaunchedEffect(rejoinState) {
+        when (rejoinState) {
+            is UiState.Error -> {
+                Toast.makeText(
+                    context,
+                    (rejoinState as UiState.Error).message,
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+            else -> {  }
+        }
+    }
     DisposableEffect(Unit) {
         onDispose { viewModel.cleanupGameSocket() }
     }
@@ -129,6 +151,30 @@ fun GameResultScreen(
                 onBackToWaitingRoom = onBackToWaitingRoom,
                 viewModel = viewModel
             )
+
+            // 재입장 로딩 오버레이
+            if (rejoinState is UiState.Loading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.7f))
+                        .zIndex(999f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        CircularProgressIndicator(color = AccentYellow)
+                        Text(
+                            text = "대기방 입장 중...",
+                            color = Color.White,
+                            fontFamily = PixelFont,
+                            fontSize = 18.sp
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -167,6 +213,9 @@ private fun GameResultContent(
         !data.isPolice && data.isWin -> R.drawable.img_thief_win
         else -> R.drawable.img_thief_lose
     }
+
+    val isRejoinReady = viewModel.remainingSeconds.collectAsStateWithLifecycle().value <= 0
+    val isRejoinLoading = viewModel.rejoinState.collectAsStateWithLifecycle().value is UiState.Loading
 
     Box(
         modifier = Modifier
@@ -215,6 +264,7 @@ private fun GameResultContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Spacer(Modifier.height(10.dp))
 
             Text(
                 text = "결과 리포트",
@@ -250,7 +300,7 @@ private fun GameResultContent(
                     contentDescription = "Character",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .height(190.dp)
+                        .height(180.dp)
                         .align(Alignment.Center)
                         .offset(y = 30.dp)
                         .zIndex(2f)
@@ -365,14 +415,13 @@ private fun GameResultContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp)
-                    .systemBarsPadding(),
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 PixelButtonCode(
                     modifier = Modifier.weight(1f),
@@ -387,19 +436,25 @@ private fun GameResultContent(
                     blockHeight = 12
                 )
 
+                Spacer(Modifier.width(24.dp))
                 PixelButtonCode(
                     modifier = Modifier.weight(1f),
-                    text = "대기방",
+                    text = when {
+                        isRejoinLoading -> "입장 중..."
+                        !isRejoinReady -> "대기방 (${viewModel.remainingSeconds.collectAsStateWithLifecycle().value})"
+                        else -> "대기방"
+                    },
                     onClick = {
-                        viewModel.backToLobby(gameId) {
-                            onBackToWaitingRoom(gameId)
+                        viewModel.backToLobby { roomId ->
+                            onBackToWaitingRoom(roomId)
                         }
                     },
-                    mainColor = CustomBlue,
+                    mainColor = if (isRejoinReady && !isRejoinLoading) CustomBlue else Color.Gray,
                     borderColor = BorderDefault,
                     textColor = Color.White,
                     fontSize = 16,
-                    blockHeight = 12
+                    blockHeight = 12,
+                    enabled = isRejoinReady && !isRejoinLoading
                 )
             }
         }

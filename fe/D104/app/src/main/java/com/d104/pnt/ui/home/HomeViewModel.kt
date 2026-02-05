@@ -52,7 +52,7 @@ class HomeViewModel @Inject constructor(
             try {
                 roomSocketManager.disconnect()
                 chatSocketManager.disconnect()
-                delay(200) // 완전히 끊길 때까지 대기
+                delay(200)
             } catch (e: Exception) {
                 Timber.e(e, "소켓 정리 중 오류 (무시)")
             }

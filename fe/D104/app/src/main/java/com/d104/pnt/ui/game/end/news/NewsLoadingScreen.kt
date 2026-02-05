@@ -39,7 +39,7 @@ import kotlinx.coroutines.delay
 fun NewsLoadingScreen(
     gameId: Long,
     onNewsReady: (Long, Long) -> Unit,
-    viewModel: AiNewsLoadingViewModel = hiltViewModel()
+    viewModel: NewsLoadingViewModel = hiltViewModel()
 ) {
 
     LaunchedEffect(Unit) {
@@ -91,10 +91,10 @@ fun NewsLoadingScreen(
                 contentDescription = "방송 준비 중인 아나운서",
                 placeholder = painterResource(R.drawable.example_anchor),    // 프리뷰용 임시 이미지
                 error = painterResource(R.drawable.example_anchor),       // 에러 시 보여줄 이미지
-                modifier = Modifier.size(265.dp)
+                modifier = Modifier.size(280.dp)
             )
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             TypewriterText(
                 texts = listOf(

@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.ui.component.ContDownUI
+import com.d104.pnt.ui.component.GifImage
 
 @Composable
 fun GameLoadingScreen(
@@ -43,7 +44,10 @@ fun GameLoadingScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
+//        GifImage(
+//            modifier = Modifier.fillMaxSize(),
+//            imageRes = R.drawable.gif_running
+//        )
         // 배경
         Image(
             painter = painterResource(id = R.drawable.bg_night),
