@@ -1,6 +1,5 @@
 import Game from "../../../global/db/sequelize/entity/Game.js"
 import GameSetting from "../../../global/db/sequelize/entity/GameSetting.js";
-import db from "../../../global/db/sequelize/SequelizeDB.js";
 import { GameMemberService } from "./GameMemberService.js";
 import { GameMemberStatService } from "./GameMemberStatService.js";
 import { GameMemberStatus } from "../../../global/db/sequelize/status/GameMemberStatus.js";
@@ -75,7 +74,7 @@ export class GameService {
 
             return true;
         } catch (error) {
-            console.error("processArrest Error", error);
+            logger.error("processArrest Error", error);
             throw error;
         }
     }
@@ -83,9 +82,9 @@ export class GameService {
     // 게임 종료 조건 확인 => 모든 도둑이 잡혔을때 종료.
     // 게임 승리팀 상태를 비관적 락으로 처리해야할 수도 있음.
     checkGameHaveToFinish = async (gameId) => {
-        const game = await this.findGame(gameId, GameStatus.IN_GAME);
+        const game = await this.redisClient.getGameTimer(gameId);
 
-        if (!game || game.status === GameStatus.ENDED) {
+        if (!game) {
             return false;
         }
 
@@ -124,7 +123,7 @@ export class GameService {
                 },
             });
         } catch (error) {
-            console.error("updateGame Error", error);
+            logger.error("updateGame Error", error);
             throw error;
         }
     }
@@ -145,7 +144,7 @@ export class GameService {
 
             return true;
         } catch (error) {
-            console.error("endGame Error", error);
+            logger.error("endGame Error", error);
             throw error;
         }
     }

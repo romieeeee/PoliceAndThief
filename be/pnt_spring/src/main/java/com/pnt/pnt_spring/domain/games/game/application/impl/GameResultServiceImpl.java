@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.games.game.application.impl;
 
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,6 +69,9 @@ public class GameResultServiceImpl implements GameResultService {
 	@Override
 	public void saveGameResult(GameResultRequest request) {
 
+		log.info("request = {}", request.toString());
+		System.out.println(request);
+
 		Game game = gameRepository.findById(request.getGameId())
 			.orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
@@ -80,13 +84,12 @@ public class GameResultServiceImpl implements GameResultService {
 		List<GameMember> allMembers = gameMemberRepository.findAllByGameId(request.getGameId());
 		Map<Long, GameMember> memberMap = allMembers.stream()
 			.collect(Collectors.toMap(gm -> gm.getMember().getId(), Function.identity()));
-
 		// 요청된 멤버 스탯 정보를 순회하며 처리
 		for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
-			GameMember gameMember = memberMap.get(statReq.getGameMemberId());
+			GameMember gameMember = memberMap.get(statReq.getMemberId());
 
 			if (gameMember == null) {
-				log.warn("GameMember not found for id: {}", statReq.getGameMemberId());
+				log.warn("GameMember not found for id: {}", statReq.getMemberId());
 				continue;
 			}
 
@@ -166,7 +169,12 @@ public class GameResultServiceImpl implements GameResultService {
 		GameMemberStat winningSecondStat = (winnerStats.size() > 1) ? winnerStats.get(1) : null;
 		GameMemberStat losingFirstStat = loserStats.isEmpty() ? null : loserStats.get(0);
 
-		int durationSec = (int)Duration.between(game.getStartTime(), game.getEndTime()).toSeconds();
+		int durationSec = 0;
+		OffsetDateTime endGame = game.getEndTime();
+		if(game.getEndTime() == null){
+			endGame = OffsetDateTime.now();
+		}
+		durationSec = (int)Duration.between(game.getStartTime(), endGame).toSeconds();
 
 		// 내 스탯 + 등급/최고기록 조회 로직 추가
 		GameMemberStat myGameStat = allStats.stream()
@@ -299,11 +307,40 @@ public class GameResultServiceImpl implements GameResultService {
 		if (stat == null)
 			return null;
 
+		Member member = stat.getGameMember().getMember();
+		String rankName = "Unknown";
+		Integer maxArrest = null;
+		Integer maxSurvival = null;
+
+		// DB에서 등급 및 최고 기록 조회
+		if (stat.getPosition() == Position.POLICE) {
+			MemberStatPolice policeInfo = memberStatPoliceRepository.findById(member.getId())
+				.orElse(null);
+			if (policeInfo != null) {
+				rankName = policeInfo.getGradePolice().getName();
+				maxArrest = policeInfo.getMostArrestsInGame();
+			}
+		} else if (stat.getPosition() == Position.THIEF) {
+			MemberStatThief thiefInfo = memberStatThiefRepository.findById(member.getId())
+				.orElse(null);
+			if (thiefInfo != null) {
+				rankName = thiefInfo.getGradeThief().getName();
+				maxSurvival = thiefInfo.getLongestSurvivalSec();
+			}
+		}
+
 		return GameResultResponse.MvpResponse.builder()
-			.memberId(stat.getGameMember().getMember().getId())
+			.memberId(member.getId())
 			.nickname(getNickname(stat))
 			.role(stat.getPosition().name())
 			.description(description)
+			// 추가된 스탯 필드 매핑
+			.walk(stat.getWalk())
+			.arrestCount(stat.getArrestCount())
+			.longestSurvived(stat.getLongestSurvived())
+			.rank(rankName)
+			.maxArrestCount(maxArrest)
+			.maxSurvivalTime(maxSurvival)
 			.build();
 	}
 
