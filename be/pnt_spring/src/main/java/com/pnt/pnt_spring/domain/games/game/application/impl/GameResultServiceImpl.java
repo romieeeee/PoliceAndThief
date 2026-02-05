@@ -86,10 +86,10 @@ public class GameResultServiceImpl implements GameResultService {
 			.collect(Collectors.toMap(gm -> gm.getMember().getId(), Function.identity()));
 		// 요청된 멤버 스탯 정보를 순회하며 처리
 		for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
-			GameMember gameMember = memberMap.get(statReq.getGameMemberId());
+			GameMember gameMember = memberMap.get(statReq.getMemberId());
 
 			if (gameMember == null) {
-				log.warn("GameMember not found for id: {}", statReq.getGameMemberId());
+				log.warn("GameMember not found for id: {}", statReq.getMemberId());
 				continue;
 			}
 
