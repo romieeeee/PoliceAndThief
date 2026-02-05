@@ -126,6 +126,8 @@ fun GameRoomScreen(
         it.isReady && !it.isChangingRole
     }
 
+    val canChangeRole = isHost || !isMeReady
+
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.bg_playground),
@@ -200,6 +202,7 @@ fun GameRoomScreen(
                     viewModel.resetToUndecided()
                     onChangeRole()
                 },
+                canChangeRole = canChangeRole,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)

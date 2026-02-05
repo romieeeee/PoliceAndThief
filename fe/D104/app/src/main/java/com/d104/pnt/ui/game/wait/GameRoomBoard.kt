@@ -62,6 +62,7 @@ fun GameRoomBoard(
     selectedPlayerId: Long?,
     prisonLocation: LatLng,
     polygonPoints: List<LatLng>,
+    canChangeRole: Boolean,
     onPlayerClick: (WaitingPlayer) -> Unit,
     onMenuDismiss: () -> Unit,
     onInfoClick: (WaitingPlayer) -> Unit,
@@ -135,9 +136,14 @@ fun GameRoomBoard(
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
+                val buttonColor = if (canChangeRole) Color.White else Color.Gray
+                val textColor = if (canChangeRole) Color.Black else Color.White
+
                 PixelIconButton(
-                    onClick = onChangeRole,
+                    onClick = { if (canChangeRole) onChangeRole() },
                     modifier = Modifier.width(90.dp),
+                    mainColor = buttonColor,
+                    borderColor = Color.Black,
                     pixelSize = 2.dp,
                     blockHeight = 16,
                     content = {
@@ -148,7 +154,7 @@ fun GameRoomBoard(
                             Text(
                                 text = "역할 변경",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.Black
+                                color = textColor
                             )
                         }
                     }
