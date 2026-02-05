@@ -78,7 +78,7 @@ fun GoogleMaps(
             polygonPoints.forEach { builder.include(it.position) }
             try {
                 val bounds = builder.build()
-                cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 20))
+                cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 50))
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -154,10 +154,22 @@ fun GoogleMaps(
                         location = LatLng(player.lat, player.lng),
                         position = "POLICE"
                     )
-                    else if (player.status != "FREE"){
+                    else if (player.status == "TRANSFER"){
                         PixelMarker(
                             location = LatLng(player.lat, player.lng),
-                            position = player.status
+                            position = "TRANSFER"
+                        )
+                    }
+                    else if (player.status == "PRISON"){
+                        PixelMarker(
+                            location = LatLng(player.lat, player.lng),
+                            position = "PRISON"
+                        )
+                    }
+                    else if (player.status == "CCTV"){
+                        PixelMarker(
+                            location = LatLng(player.lat, player.lng),
+                            position = "CCTV"
                         )
                     }
                 }

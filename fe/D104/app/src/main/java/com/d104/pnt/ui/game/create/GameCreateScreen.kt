@@ -1,6 +1,5 @@
 package com.d104.pnt.ui.game.create
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,10 +39,16 @@ import com.d104.pnt.data.remote.model.request.Location
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.GoogleMaps
+import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
-import com.d104.pnt.ui.component.RoundedButton
+import com.d104.pnt.ui.theme.BorderDefault
+import com.d104.pnt.ui.theme.CancelGray
+import com.d104.pnt.ui.theme.CustomBlue
 import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.DialogBorderColor
+import com.d104.pnt.ui.theme.RoomBorder
+import com.d104.pnt.ui.theme.RoomContainer
+import com.d104.pnt.ui.theme.TextPrimary
 import com.google.android.gms.maps.model.LatLng
 
 
@@ -104,15 +109,15 @@ fun GameCreateScreen(
                 // 게임 생성 컨테이너
                 PixelContainer(
                     modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = DarkSurface,
-                    borderColor = DialogBorderColor,
+                    backgroundColor = RoomContainer,
+                    borderColor = RoomBorder,
                     borderWidth = 8f,
                     cornerSize = 16f
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(10.dp)
+                            .padding(horizontal = 12.dp, vertical = 16.dp)
                     ) {
                         Text(
                             text = "게임 생성하기",
@@ -121,7 +126,7 @@ fun GameCreateScreen(
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(30.dp))
 
                         SectionTitle(text = "맵 설정 & 감옥 설정")
                         Spacer(modifier = Modifier.height(8.dp))
@@ -216,23 +221,28 @@ fun GameCreateScreen(
                             onPoliceCountChange = { newCount -> viewModel.updatePoliceCount(newCount) }
                         )
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(30.dp))
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
-                            RoundedButton(
+                            PixelButtonCode(
                                 text = "취소",
                                 onClick = {
                                     viewModel.dismissCreateGame()
                                     onCancel()
                                 },
-                                containerColor = Color.White,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
+                                mainColor = Color.Gray,
+                                borderColor = BorderDefault,
+                                textColor = Color.White,
+                                fontSize = 16,
+                                blockHeight = 10
                             )
 
-                            RoundedButton(
+                            PixelButtonCode(
                                 text = "확인",
                                 onClick = {
                                     val polyPoint = polygonPoints.map {
@@ -273,10 +283,14 @@ fun GameCreateScreen(
                                     } else {
 
                                     }
-                                },
 
-                                containerColor = Color.White,
-                                modifier = Modifier.weight(1f)
+                                },
+                                modifier = Modifier.weight(1f),
+                                mainColor = CustomBlue,
+                                borderColor = BorderDefault,
+                                textColor = Color.White,
+                                fontSize = 16,
+                                blockHeight = 10
                             )
                         }
                     }

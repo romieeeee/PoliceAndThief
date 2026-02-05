@@ -4,14 +4,16 @@ import com.d104.pnt.domain.model.GameRole
 import org.json.JSONObject
 
 // 도둑 상태
-enum class ThiefStatus(val key: String, val uiText: String) {
+enum class ThiefStatus(val key: String?, val uiText: String) {
     FREE("FREE", "수배"),
     TRANSFER("TRANSFER", "이송"),
     PRISON("PRISON", "검거"),
-    UNKNOWN("UNKNOWN", "-");
+    UNKNOWN(null, "-");
 
     companion object {
         fun fromKey(key: String?): ThiefStatus {
+            if (key.isNullOrBlank()) return FREE
+
             return entries.find { it.key == key } ?: UNKNOWN
         }
     }
@@ -71,7 +73,7 @@ data class MemberLocationSocketDto(
                 walk = json.optInt("walk"),
                 longestSurvived = json.optInt("longestSurvived"),
                 position = json.optString("position"),
-                status = json.optString("status"),
+                status = json.optString("status").ifEmpty { "FREE" },
                 penalty = json.optInt("penalty"),
                 missionCompleted = json.optBoolean("missionCompleted"),
                 timestamp = json.optString("timestamp")

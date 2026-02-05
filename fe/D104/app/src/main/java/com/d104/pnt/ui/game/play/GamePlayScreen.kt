@@ -51,12 +51,16 @@ import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
+import com.d104.pnt.data.repository.ArrestStatus
+import com.d104.pnt.data.repository.CctvPhase
 import com.d104.pnt.data.repository.GameSessionEvent
+import com.d104.pnt.data.repository.HelicopterPhase
 import com.d104.pnt.data.repository.MissionStatus
 import com.d104.pnt.data.repository.WalkieConnectionState
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.Mission
 import com.d104.pnt.service.location.LocationService
+import com.d104.pnt.ui.component.AlertOverlay
 import com.d104.pnt.ui.component.ContDownUI
 import com.d104.pnt.ui.component.ExpandableCard
 import com.d104.pnt.ui.component.GameEndOverlay
@@ -65,13 +69,16 @@ import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.PixelLoading
+import com.d104.pnt.ui.component.WarningOverlay
 import com.d104.pnt.ui.game.play.PhoneScreen.THIEF_LIST
 import com.d104.pnt.ui.game.play.mission.MissionBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieContent
 import com.d104.pnt.ui.theme.ButtonDisabled
+import com.d104.pnt.ui.theme.LoseColor
 import com.d104.pnt.ui.theme.MissionYellow
 import com.d104.pnt.ui.theme.PixelFont
+import com.d104.pnt.ui.theme.WinColor
 import com.d104.pnt.util.GameFeedbackManager
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.delay
@@ -96,12 +103,13 @@ fun GamePlayScreen(
     var showGameOverOverlay by remember { mutableStateOf(false) }
     var showThiefEscaped by remember { mutableStateOf(false) }
     var escapedThiefNickname by remember { mutableStateOf("") }
-
+    val feedbackManager = remember { GameFeedbackManager(context.applicationContext) }
 
     val currentLocation = viewModel.userLocation.collectAsStateWithLifecycle().value
     val areaPoints = viewModel.polygonPoints.collectAsStateWithLifecycle().value
     val prisonLocation = viewModel.prisonLocation.collectAsStateWithLifecycle().value
-    val isOutOfBoundary by viewModel.isOutOfBoundary.collectAsStateWithLifecycle()
+    val remainingTime = viewModel.remainingTime.collectAsStateWithLifecycle()
+    val onBoundaryWarning = viewModel.onBoundaryWarning.collectAsStateWithLifecycle()
     val thiefMembers by viewModel.thiefMembers.collectAsStateWithLifecycle()
     val memberLocation by viewModel.memberLocation.collectAsStateWithLifecycle()
     val escapeQueue by viewModel.escapeQueue.collectAsStateWithLifecycle()
@@ -117,9 +125,11 @@ fun GamePlayScreen(
     val walkieMicEnabled by viewModel.walkieMicEnabled.collectAsStateWithLifecycle()
     val walkieParticipantCount by viewModel.walkieParticipantCount.collectAsStateWithLifecycle()
     val isSomeoneTalking by viewModel.isSomeoneTalking.collectAsStateWithLifecycle()
+    val cctvPhase by viewModel.cctvPhase.collectAsStateWithLifecycle()
+    val arrestStatus by viewModel.arrestStatus.collectAsStateWithLifecycle()
+    val arrestFailReason by viewModel.arrestFailReason.collectAsStateWithLifecycle()
 
     // ✅ 경고음/진동 매니저 (1번만 선언)
-    val feedbackManager = remember { GameFeedbackManager(context.applicationContext) }
 
     // ✅ 테스트 플래그 (1번만 선언)
     val TEST_FORCE_BEEP = false
@@ -191,9 +201,10 @@ fun GamePlayScreen(
 
         viewModel.beepEvent.collect { beep ->
             Timber.d("🚨 beepEvent: policeId=${beep.policeId}, thiefId=${beep.thiefId}, distance=${beep.distance}")
-
-            // distance 기반 난이도 패턴 적용
-            feedbackManager.playBeepAlert(distance = beep.distance)
+            if (viewModel.myMemberId.value == beep.thiefId) {
+                // distance 기반 난이도 패턴 적용
+                feedbackManager.playBeepAlert(distance = beep.distance)
+            }
         }
     }
 
@@ -335,7 +346,7 @@ fun GamePlayScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                ContDownUI(remainingSeconds = 180)
+                ContDownUI(remainingSeconds = remainingTime.value)
                 Spacer(modifier = Modifier.height(30.dp))
 
                 FlipImage(
@@ -449,6 +460,51 @@ fun GamePlayScreen(
 
     }
 
+    // 경찰 헬기 안내 오버레이
+    if (helicopterState == HelicopterPhase.NOTIFY && role == GameRole.POLICE) {
+        WarningOverlay(
+            onWarning = false,
+            warningTitle = "경찰 헬기 지원!",
+            warningMessage = "곧 공중 지원이\n도착합니다!"
+        )
+    }
+    if (helicopterState == HelicopterPhase.REVEAL && role == GameRole.POLICE) {
+        WarningOverlay(
+            onWarning = false,
+            warningTitle = "경찰 헬기 도착!",
+            warningMessage = "모든 도둑의 위치가\n잠시동안 노출 됩니다!"
+        )
+    }
+
+    // 경찰 CCTV 안내 오버레이
+    if (cctvPhase == CctvPhase.NOTIFY && role == GameRole.POLICE) {
+        WarningOverlay(
+            onWarning = false,
+            warningTitle = "영상 분석실에서 긴급연락 도착!",
+            warningMessage = "CCTV 영상 분석중\n이상 징후를 포착했습니다!"
+        )
+    }
+    if (cctvPhase == CctvPhase.REVEAL && role == GameRole.POLICE) {
+        WarningOverlay(
+            onWarning = false,
+            warningTitle = "현상 수배범 포착!",
+            warningMessage = "CCTV에 수배범이 찍혔습니다!\n수배범의 위치가 노출됩니다!"
+        )
+    }
+    if (arrestStatus != ArrestStatus.IDLE) {
+        AlertOverlay(
+            title = if (arrestStatus == ArrestStatus.SUCCESS) "체포 성공!" else "체포 실패",
+            message = if (arrestStatus == ArrestStatus.SUCCESS) "" else when(arrestFailReason) {
+                "NOT_THIEF" -> "도둑이 아닙니다"
+                "ARRESTER_NOT_POLICE" -> "경찰만 체포할 수 있습니다"
+                "ALREADY_CAUGHT" -> "이미 체포된 도둑입니다"
+                else -> ""
+            },
+            color = if (arrestStatus == ArrestStatus.SUCCESS) WinColor else LoseColor,
+        )
+    }
+
+
     // PhoneFrame (NPE 방지)
     if (clicked && currentLocation != null && prisonLocation != null) {
         Box(
@@ -459,8 +515,9 @@ fun GamePlayScreen(
         ) {
             PhoneFrame(
                 screen = phoneScreen,
-                onScanSuccess = {
-                    phoneScreen = PhoneScreen.THIEF_LIST
+                onScanSuccess = { thiefId ->
+                    viewModel.arrestThief(thiefId.toLong())
+                    clicked = false
                 },
                 role = role,
                 currentLocation = LatLng(currentLocation.latitude, currentLocation.longitude),
@@ -473,49 +530,21 @@ fun GamePlayScreen(
     }
 
     // 경기구역이탈 오버레이
-    if (isOutOfBoundary) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .zIndex(99f)
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.warning_overlay),
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillBounds
-            )
+    if (myMemberId in onBoundaryWarning.value) {
+        WarningOverlay(
+            onWarning = true,
+            warningTitle = "경기구역이탈!",
+            warningMessage = "경기 구역으로\n복귀하세요"
+        )
+    }
 
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.fillMaxHeight(0.22f))
-
-                Text(
-                    text = "경기구역이탈!",
-                    fontFamily = PixelFont,
-                    color = Color.Red,
-                    fontSize = 40.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Text(
-                    text = "경기 구역으로\n복귀하세요",
-                    fontFamily = PixelFont,
-                    color = Color.Red,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 32.sp
-                )
-
-                Spacer(modifier = Modifier.height(130.dp))
-            }
-        }
+    // 도둑 CCTV 발각 경고 오버레이
+    if (cctvPhase == CctvPhase.REVEAL && role == GameRole.THIEF && viewModel.myMemberId == viewModel.cctvThief) {
+        WarningOverlay(
+            onWarning = true,
+            warningTitle = "위치 노출!",
+            warningMessage = "CCTV에 당신이 찍혔습니다!\n잠시동안 위치가 노출됩니다!"
+        )
     }
 
     // 도둑 탈출 알림
@@ -571,6 +600,7 @@ fun GamePlayScreen(
                     ) {
                         PixelButtonCode(
                             text = "확인",
+                            fontSize = 20,
                             onClick = { viewModel.missionInit() }
                         )
                     }

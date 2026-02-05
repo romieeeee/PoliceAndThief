@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,6 +44,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.common.UiState
+import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.theme.BorderDefault
@@ -144,25 +145,28 @@ fun SignupScreen(
                 LabeledInputField(
                     label = "아이디",
                     value = id,
+                    backgroundColor = Color.White.copy(alpha = 0.9f),
                     onValueChange = { viewModel.updateId(it) },
                     placeholder = "아이디 (5~12자 이내)",
                     errorMessage = idErrorMessage,
                     trailingContent = {
-                        PixelIconButton(
-                            onClick = {
-                                Timber.d("Duplicate check button clicked - ID: $id, isValid: $isIdValid")
-                                viewModel.checkDuplicate()
-                            },
-                            mainColor = when {
+                        PixelContainer(
+                            modifier = Modifier.size(45.dp).clickable(
+                                onClick = {
+                                    Timber.d("Duplicate check button clicked - ID: $id, isValid: $isIdValid")
+                                    viewModel.checkDuplicate()
+                                }
+                            ),
+                            innerHorizontalPadding = 12,
+                            innerVerticalPadding = 12,
+                            backgroundColor = when {
                                 isDuplicateChecked && !isDuplicated -> CheckGreen  // 체크 완료
                                 !isIdValid -> Color.Gray  // 비활성화
                                 else -> Color.White  // 체크 전 또는 중복
                             },
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .aspectRatio(1f)
                         ) {
                             Icon(
+                                modifier = Modifier.fillMaxSize(),
                                 painter = painterResource(R.drawable.check),
                                 contentDescription = "중복 확인",
                                 tint = when {
@@ -182,6 +186,7 @@ fun SignupScreen(
                     label = "비밀번호",
                     value = pw,
                     onValueChange = { viewModel.updatePw(it) },
+                    backgroundColor = Color.White.copy(alpha = 0.9f),
                     placeholder = "비밀번호 (8~16자)",
                     errorMessage = pwErrorMessage,
                     isPassword = true
@@ -194,6 +199,7 @@ fun SignupScreen(
                     label = "비밀번호 확인",
                     value = pwConfirm,
                     onValueChange = { viewModel.updatePwConfirm(it) },
+                    backgroundColor = Color.White.copy(alpha = 0.9f),
                     placeholder = "비밀번호 확인",
                     errorMessage = pwConfirmErrorMessage,
                     isPassword = true
@@ -207,7 +213,9 @@ fun SignupScreen(
                     value = nickname,
                     onValueChange = { viewModel.updateNickname(it) },
                     placeholder = "닉네임 (2~10자)",
-                    errorMessage = nicknameErrorMessage
+                    errorMessage = nicknameErrorMessage,
+                    backgroundColor = Color.White.copy(alpha = 0.9f)
+
                 )
 
                 Spacer(Modifier.height(16.dp))
@@ -216,7 +224,8 @@ fun SignupScreen(
                 BirthDatePicker(
                     label = "생년월일",
                     value = birth,
-                    onValueChange = { viewModel.updateBirth(it) }
+                    onValueChange = { viewModel.updateBirth(it) },
+                    backgroundColor = Color.White.copy(alpha = 0.9f)
                 )
             }
 
@@ -226,14 +235,13 @@ fun SignupScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 // 이전 버튼
                 PixelIconButton(
                     onClick = { onBack() },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp)
+                    modifier = Modifier.weight(1f),
+                    blockHeight = 11
                 ) {
                     Text(
                         text = "이전",
@@ -248,9 +256,8 @@ fun SignupScreen(
                         Timber.d("Signup button clicked - isEnabled: ${viewModel.isSignupEnabled()}")
                         viewModel.signup()
                     },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(40.dp)
+                    modifier = Modifier.weight(1f),
+                    blockHeight = 11
                 ) {
                     if (signupState is UiState.Loading) {
                         CircularProgressIndicator(
@@ -274,6 +281,7 @@ fun SignupScreen(
 @Composable
 fun LabeledInputField(
     modifier: Modifier = Modifier,
+    backgroundColor: Color = Color.White,
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
@@ -309,7 +317,8 @@ fun LabeledInputField(
                     modifier = modifier
                         .weight(1f)
                         .fillMaxHeight(),
-                    borderColor = BorderDefault
+                    borderColor = BorderDefault,
+                    backgroundColor = backgroundColor
                 )
 
                 trailingContent()
@@ -323,7 +332,8 @@ fun LabeledInputField(
                 errorMessage = errorMessage,
                 isPassword = isPassword,
                 keyboardType = keyboardType,
-                borderColor = BorderDefault
+                borderColor = BorderDefault,
+                backgroundColor = backgroundColor
             )
         }
     }

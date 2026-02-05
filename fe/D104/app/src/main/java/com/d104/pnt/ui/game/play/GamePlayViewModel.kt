@@ -41,10 +41,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import java.time.Instant
 import javax.inject.Inject
 
-@RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
 class GamePlayViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -74,23 +72,26 @@ class GamePlayViewModel @Inject constructor(
 
     // 게임 스탯 정보
     val gameId = gameSessionRepository.gameId
+    val remainingTime = gameSessionRepository.remainingTime
     val myMemberId = gameSessionRepository.myMemberId
     val myRole = gameSessionRepository.myRole
-    // raw GPS -> repo 저장값
     val members = gameSessionRepository.members
     val memberLocation = gameSessionRepository.memberLocation
-    val gameStatus = gameSessionRepository.gameStatus
     val missions = gameSessionRepository.missions
-    val missionState = gameSessionRepository.missionState
     val missionFailReason = gameSessionRepository.missionFailReason
-    val isOutOfBoundary = gameSessionRepository.isOutOfBoundary
     val thiefMembers = gameSessionRepository.thiefMembers
     val escapeQueue = gameSessionRepository.escapeQueue
     val isChief = gameSessionRepository.isChief
+    val cctvThief = gameSessionRepository.cctvThiefId
 
-    private var warningJob: Job? = null
-    private var pttHeartbeatJob: Job? = null
-    private var radioTimeoutJob: Job? = null
+    // 게임 상태(Flow) 정보
+    val gameStatus = gameSessionRepository.gameStatus
+    val missionState = gameSessionRepository.missionState
+    val helicopterPhase = gameSessionRepository.helicopterState
+    val cctvPhase = gameSessionRepository.cctvPhase
+    val arrestStatus = gameSessionRepository.arrestState
+    val arrestFailReason = gameSessionRepository.arrestFailReason
+    val onBoundaryWarning = gameSessionRepository.onBoundaryWarning
 
     // ===== 무전기 =====
     val walkieConnected = walkieRepository.isConnected
@@ -175,6 +176,12 @@ class GamePlayViewModel @Inject constructor(
                     context.startService(intent)
                 }
             }
+        }
+    }
+
+    fun arrestThief(thiefId: Long) {
+        viewModelScope.launch {
+            gameSessionRepository.arrestThief(thiefId)
         }
     }
 
