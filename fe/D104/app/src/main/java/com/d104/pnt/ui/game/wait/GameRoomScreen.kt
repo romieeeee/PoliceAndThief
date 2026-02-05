@@ -120,9 +120,13 @@ fun GameRoomScreen(
 
     val anyCount = players.count { it.role == GameRole.ANY && !it.isChangingRole }
 
-    val isAllReady = players.isNotEmpty() && players.filter { it.id != myMemberId }.all {
-        it.isReady && !it.isChangingRole && it.role != GameRole.ANY && it.role != GameRole.UNDECIDED
+    val isAllReady = players.isNotEmpty()
+            && players.size == roomInfo.maxCount
+            && players.filter { it.id != myMemberId }.all {
+        it.isReady && !it.isChangingRole
     }
+
+    val canChangeRole = isHost || !isMeReady
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -198,6 +202,7 @@ fun GameRoomScreen(
                     viewModel.resetToUndecided()
                     onChangeRole()
                 },
+                canChangeRole = canChangeRole,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
