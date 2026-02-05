@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.d104.pnt.ui.theme.BorderDefault
 import com.d104.pnt.ui.theme.PixelFont
 import com.d104.pnt.ui.theme.PoliceBlue
 import com.d104.pnt.ui.theme.ThiefRed
@@ -66,7 +67,8 @@ fun AlertOverlay(
                         .fillMaxWidth(),
                     text = title,
                     fontSize = 40.sp,
-                    success = success
+                    success = success,
+                    outlineColor = BorderDefault
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -76,7 +78,8 @@ fun AlertOverlay(
                         .fillMaxWidth(),
                     text = message,
                     fontSize = 32.sp,
-                    success = success
+                    success = success,
+                    outlineColor = BorderDefault
                 )
             }
         }

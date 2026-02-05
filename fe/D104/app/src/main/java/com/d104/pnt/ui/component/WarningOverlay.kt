@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.d104.pnt.R
+import com.d104.pnt.ui.theme.BorderDefault
 import com.d104.pnt.ui.theme.MissionYellow
 import com.d104.pnt.ui.theme.PixelFont
 import com.d104.pnt.ui.theme.PoliceBlue
@@ -78,7 +79,8 @@ fun WarningOverlay(
                         .fillMaxWidth(),
                     text = warningTitle,
                     fontSize = 40.sp,
-                    success = false
+                    success = false,
+                    outlineColor = BorderDefault
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -89,7 +91,8 @@ fun WarningOverlay(
                         .fillMaxWidth(),
                     text = warningMessage,
                     fontSize = 32.sp,
-                    success = false
+                    success = false,
+                    outlineColor = BorderDefault
                 )
             }
         }
@@ -110,7 +113,8 @@ fun WarningOverlay(
                         .fillMaxWidth(),
                     text = warningTitle,
                     fontSize = 40.sp,
-                    success = success
+                    success = success,
+                    outlineColor = BorderDefault
                 )
 
                 Spacer(modifier = Modifier.height(50.dp))
@@ -121,7 +125,8 @@ fun WarningOverlay(
                         .fillMaxWidth(),
                     text = warningMessage,
                     fontSize = 40.sp,
-                    success = success
+                    success = success,
+                    outlineColor = BorderDefault
                 )
             }
         }
