@@ -65,10 +65,9 @@ const expiredChannel = withFunctionLogging("ExpiredChannel", async (message, pub
             logger.info(`[CCTV] Game ${gameId}: No free thieves found.`);
         }
 
-        const gameTimer = await redisClient.getGameTimer(gameId);
         const gameSetting = await redisClient.getGameSetting(gameId);
 
-        if (gameTimer && gameSetting) {
+        if (gameSetting) {
             const cctvInterval = gameSetting.cctvInterval || 60;
             await redisClient.setCctvTimer(gameId, cctvInterval);
         }
