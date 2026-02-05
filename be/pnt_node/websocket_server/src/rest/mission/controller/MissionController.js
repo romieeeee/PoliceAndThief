@@ -30,6 +30,7 @@ export class MissionController {
             const payload = req.body;
             const { gameId, missionId, memberId, success } = payload;
             const gameMission = await this.gameMissionService.findOne(missionId);
+            logger.info("missionComplete", { gameId, missionId, memberId, success });
             
             const gameMember = await this.redisClient.getLocation(memberId, gameId);
 
@@ -70,6 +71,7 @@ export class MissionController {
 
                 gameMember.missionCompleted = true;
                 await this.redisClient.setLocation(gameId, memberId, gameMember);
+                logger.info("missionComplete", { gameId, missionId, memberId, success });
             }
 
             res.status(200).json({ message: "GameMission updated" });

@@ -4,6 +4,7 @@ import { RedisClient } from "../client/RedisClient.js";
 import { GameController } from "../../games/controller/GameController.js";
 import axios from "axios";
 import { withFunctionLogging } from "../../../global/util/genericWrapper.js";
+import { generateMemberAccessToken } from "../../../global/auth/JwtProvider.js";
 
 
 export class WebSocketReconnect {
@@ -63,7 +64,7 @@ export class WebSocketReconnect {
     });
 
     roomDisconnect = withFunctionLogging("roomDisconnect", async (memberId, roomId) => {
-        const accessToken = await this.redisClient.getAccessToken(memberId);
+        const accessToken = generateMemberAccessToken(parseInt(memberId), -3);
 
         await this.redisClient.deleteKeys("room", roomId, memberId);
 
@@ -73,8 +74,6 @@ export class WebSocketReconnect {
                 "Authorization": `Bearer ${accessToken}`
             }
         });
-
-        await this.redisClient.deleteAccessToken(memberId);
 
         console.log("user_left", { memberId, roomId });
         this.roomIo.to(roomId).emit("get user left", { roomId, memberId });
