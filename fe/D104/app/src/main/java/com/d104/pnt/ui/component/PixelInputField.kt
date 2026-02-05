@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -15,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -29,6 +31,8 @@ fun PixelInputField(
     errorMessage: String = "",
     isPassword: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
+    imeAction: ImeAction = ImeAction.Default,
+    onAction: () -> Unit = {},
     backgroundColor: Color = Color.White,
     borderColor: Color = Color.White,
     singleLine: Boolean = true,
@@ -43,7 +47,10 @@ fun PixelInputField(
             borderColor = borderColor
         ) {
             Box(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(if (singleLine) 20.dp else 40.dp),
+                contentAlignment = Alignment.CenterStart
             ) {
                 BasicTextField(
                     value = value,
@@ -56,23 +63,32 @@ fun PixelInputField(
                     textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.Black),
                     cursorBrush = SolidColor(Color.Black),
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = keyboardType
+                        keyboardType = keyboardType,
+                        imeAction = imeAction // 이 부분이 버튼 모양을 결정합니다.
+                    ),
+                    // 버튼 클릭 시 동작 정의
+                    keyboardActions = KeyboardActions(
+                        onSearch = { onAction() },
+                        onDone = { onAction() },
+                        onSend = { onAction() },
+                        onGo = { onAction() }
                     ),
                     visualTransformation = if (isPassword) {
                         PasswordVisualTransformation()
                     } else {
                         VisualTransformation.None
+                    },
+                    decorationBox = { innerTextField ->
+                        if (value.isEmpty()) {
+                            Text(
+                                text = placeholder,
+                                color = Color.Gray,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                        innerTextField()
                     }
                 )
-
-                if (value.isEmpty()) {
-                    Text(
-                        text = placeholder,
-                        color = Color.Gray,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.align(Alignment.CenterStart)
-                    )
-                }
             }
         }
 

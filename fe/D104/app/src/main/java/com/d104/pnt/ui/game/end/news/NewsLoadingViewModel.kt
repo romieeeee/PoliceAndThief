@@ -17,7 +17,7 @@ import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
-class AiNewsLoadingViewModel @Inject constructor(
+class NewsLoadingViewModel @Inject constructor(
     private val gameSessionRepository: GameSessionRepository,
     private val gameRepository: GameRepository,
     savedStateHandle: SavedStateHandle
@@ -35,7 +35,6 @@ class AiNewsLoadingViewModel @Inject constructor(
             gameSessionRepository.eventFlow.collect { event ->
                 if (event is GameSessionEvent.NavigateToNews) {
                     Timber.d("📺 뉴스 생성 신호 수신! (gameId: ${event.gameId})")
-                    // 소켓으로 받은 gameId가 0이라면 세이프하게 현재 들고있는 gameId 사용
                     val targetGameId = if (event.gameId != 0L) event.gameId else gameId
                     fetchNewsContent(targetGameId, event.newsId)
                 }
@@ -44,17 +43,15 @@ class AiNewsLoadingViewModel @Inject constructor(
     }
 
     private suspend fun fetchNewsContent(gId: Long, nId: Long) {
-        // 서버 DB 반영 시간을 위해 최대 3번 재시도
-        repeat(3) { attempt ->
+        repeat(5) { attempt ->
             when (val result = gameRepository.getGameNews(gId)) {
                 is BaseResult.Success -> {
-                    Timber.d("✅ 뉴스 데이터 가져오기 성공!")
                     _uiEvent.emit(NewsLoadingUiEvent.NavigateToActualNews(gId, nId))
-                    return@fetchNewsContent // 성공 시 탈출
+                    return@fetchNewsContent
                 }
                 is BaseResult.Error -> {
                     Timber.e("❌ 뉴스 호출 실패 (시도 ${attempt + 1}): ${result.error.message}")
-                    delay(1000) // 1초 대기 후 재시도
+                    delay(2000)
                 }
             }
         }

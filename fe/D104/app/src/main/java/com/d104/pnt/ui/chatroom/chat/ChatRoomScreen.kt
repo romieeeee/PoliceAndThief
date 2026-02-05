@@ -1,6 +1,6 @@
 package com.d104.pnt.ui.chatroom.chat
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,26 +8,26 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.d104.pnt.R
 import com.d104.pnt.domain.model.ChatsData
 import com.d104.pnt.domain.model.common.UiState
-import com.d104.pnt.ui.theme.DarkBackground
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import timber.log.Timber
 
 @Composable
 fun ChatRoomScreen(
@@ -52,6 +52,7 @@ fun ChatRoomScreen(
                     showKickedDialog = true
                 }
             }
+
             else -> {}
         }
     }
@@ -61,79 +62,84 @@ fun ChatRoomScreen(
     val members by viewModel.members.collectAsStateWithLifecycle()
 
     DisposableEffect(Unit) {
-        onDispose {
-            Timber.d("👋 사용자가 채팅방 화면을 떠납니다. 정리 시작!")
-            // 주의: 여기서도 비동기 작업(API)을 하려면 ViewModel의 헬퍼 함수를 불러야 해
-            viewModel.disconnectRoom()
-        }
+        onDispose { viewModel.disconnectRoom() }
     }
 
-    Scaffold(
-        modifier = modifier
-            .fillMaxSize()
-            .background(DarkBackground)
-            .statusBarsPadding()
-            .navigationBarsPadding(),
-        topBar = {
-            roomInfo?.let { info ->
-                ChatRoomHeader(
-                    modifier = Modifier.fillMaxWidth(),
-                    roomData = ChatsData(
-                        id = info.chatRoomId,
-                        title = info.title,
-                        description = info.description,
-                        maxMember = info.maxMembers,
-                        currentMember = info.currentMembers
-                    ),
-                    onLeaveClick = { onBackPressed() },
-                    onMenuClick = {
-                        drawerOpen = true
-                        viewModel.loadMembers()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.background),
+            contentDescription = "배경 화면",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        Scaffold(
+            modifier = modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+            containerColor = Color.Transparent,
+            topBar = {
+                roomInfo?.let { info ->
+                    ChatRoomHeader(
+                        modifier = Modifier.fillMaxWidth(),
+                        roomData = ChatsData(
+                            id = info.chatRoomId,
+                            title = info.title,
+                            description = info.description,
+                            maxMember = info.maxMembers,
+                            currentMember = info.currentMembers
+                        ),
+                        onLeaveClick = { onBackPressed() },
+                        onMenuClick = {
+                            drawerOpen = !drawerOpen
+                            viewModel.loadMembers()
+                        }
+                    )
+                }
+            },
+            bottomBar = {
+                ChatRoomFooter(
+                    modifier = Modifier.imePadding(),
+                    onSendMessage = { viewModel.sendMessage() },
+                    onValueChange = { viewModel.writeMessage(it) },
+                    message = message
+                )
+            }
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                Chats(
+                    modifier = Modifier.fillMaxSize(),
+                    chatMessages = chatMessages,
+                    myMemberId = myMemberId,
+                    isLoading = isLoading,
+                    onLoadMore = { viewModel.loadMoreMessages() }
+                )
+
+                // 우측 멤버 드로어 오버레이
+                ChatRoomMemberDrawer(
+                    visible = drawerOpen,
+                    members = members,
+                    myMemberId = myMemberId,
+                    onDismiss = { drawerOpen = false },
+                    onLeaveRoom = {
+                        drawerOpen = false
+                        viewModel.leaveRoom {
+                            onBackPressed()
+                        }
+                    },
+                    onDelegate = { targetId ->
+                        viewModel.delegateHost(targetId)
+                    },
+                    onKick = { targetId, reason ->
+                        viewModel.kickMember(targetId, reason)
                     }
                 )
             }
-        },
-        bottomBar = {
-            ChatRoomFooter(
-                modifier = Modifier.imePadding(),
-                onSendMessage = { viewModel.sendMessage() },
-                onValueChange = { viewModel.writeMessage(it) },
-                message = message
-            )
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            Chats(
-                modifier = Modifier.fillMaxSize(),
-                chatMessages = chatMessages,
-                myMemberId = myMemberId,
-                isLoading = isLoading,
-                onLoadMore = { viewModel.loadMoreMessages() }
-            )
-
-            // 우측 멤버 드로어 오버레이
-            ChatRoomMemberDrawer(
-                visible = drawerOpen,
-                members = members,
-                myMemberId = myMemberId,
-                onDismiss = { drawerOpen = false },
-                onLeaveRoom = {
-                    drawerOpen = false
-                    viewModel.leaveRoom {
-                        onBackPressed()
-                    }
-                },
-                onDelegate = { targetId ->
-                    viewModel.delegateHost(targetId)
-                },
-                onKick = { targetId, reason ->
-                    viewModel.kickMember(targetId, reason)
-                }
-            )
         }
     }
 
@@ -147,6 +153,7 @@ fun ChatRoomScreen(
         )
     }
 }
+
 
 @Composable
 private fun KickedDialog(

@@ -8,7 +8,18 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -41,6 +52,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.ui.chatroom.chat.ChatRoomViewModel
 import com.d104.pnt.ui.chatroom.chat.ProfileData
+import com.d104.pnt.ui.theme.ChatBg
+import com.d104.pnt.ui.theme.DarkBackground
+import com.d104.pnt.ui.theme.DarkCard
+import com.d104.pnt.ui.theme.TextPrimary
+import com.d104.pnt.ui.theme.TextSecondary
 
 @Composable
 fun ChatRoomMemberDrawer(
@@ -72,7 +88,7 @@ fun ChatRoomMemberDrawer(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(Color(0x99000000))
+                .background(Color.Transparent)
                 .clickable { onDismiss() }
         )
     }
@@ -95,15 +111,12 @@ fun ChatRoomMemberDrawer(
         ) {
             PixelContainer(
                 modifier = Modifier
-                    .width(280.dp)
+                    .width(260.dp)
                     .fillMaxHeight()
-                    .padding(vertical = 16.dp, horizontal = 12.dp)
                     .clickable(enabled = false) {},
                 cornerSize = 10f,
-                backgroundColor = DarkCard,
-                borderColor = TextSecondary,
-                innerVerticalPadding = 16,
-                innerHorizontalPadding = 16
+                backgroundColor = ChatBg,
+                borderColor = Color.Transparent,
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),

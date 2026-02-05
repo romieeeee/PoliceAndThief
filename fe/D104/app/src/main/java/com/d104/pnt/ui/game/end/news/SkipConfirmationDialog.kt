@@ -59,6 +59,16 @@ fun SkipConfirmationDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     PixelButtonCode(
+                        text = "아니요",
+                        onClick = onDismiss,
+                        mainColor = Color.White,
+                        textColor = Color.Black,
+                        blockWidth = 30,
+                        blockHeight = 12,
+                        fontSize = 16
+                    )
+
+                    PixelButtonCode(
                         text = "네",
                         onClick = onConfirm,
                         mainColor = Color.White,
@@ -68,15 +78,6 @@ fun SkipConfirmationDialog(
                         fontSize = 16
                     )
 
-                    PixelButtonCode(
-                        text = "아니요",
-                        onClick = onDismiss,
-                        mainColor = Color.White,
-                        textColor = Color.Black,
-                        blockWidth = 30,
-                        blockHeight = 12,
-                        fontSize = 16
-                    )
                 }
             }
         }

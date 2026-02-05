@@ -37,7 +37,8 @@ fun PixelButtonCode(
     fontSize: Int = 0,
     pixelSize: Dp = 4.dp,
     blockHeight: Int = 16,
-    blockWidth: Int? = null
+    blockWidth: Int? = null,
+    enabled: Boolean = true,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -58,8 +59,9 @@ fun PixelButtonCode(
     Box(
         modifier = sizeModifier
             .clickable(
+                enabled = enabled,
                 interactionSource = interactionSource,
-                indication = null
+                indication = null,
             ) { onClick() }
     ) {
         FiveLayerPixelShape(
@@ -148,36 +150,3 @@ fun FiveLayerPixelShape(
         )
     }
 }
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewWidthControl() {
-//    Column(modifier = Modifier.padding(20.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-//
-//        Text("기본 (blockWidth = null)")
-//        PixelButtonCode(
-//            text = "꽉 찬 버튼",
-//            onClick = {},
-//            modifier = Modifier.fillMaxWidth()
-//        )
-//
-//        Box(Modifier.height(20.dp))
-//
-//        Text("고정 크기 (blockWidth = 40)")
-//        PixelButtonCode(
-//            text = "40칸",
-//            onClick = {},
-//            blockWidth = 40
-//        )
-//
-//        Box(Modifier.height(20.dp))
-//
-//        Text("정사각형 (16x16)")
-//        PixelButtonCode(
-//            text = "OK",
-//            onClick = {},
-//            blockWidth = 16,
-//            blockHeight = 16
-//        )
-//    }
-//}

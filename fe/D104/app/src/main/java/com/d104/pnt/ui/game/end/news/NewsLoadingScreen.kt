@@ -39,14 +39,13 @@ import kotlinx.coroutines.delay
 fun NewsLoadingScreen(
     gameId: Long,
     onNewsReady: (Long, Long) -> Unit,
-    viewModel: AiNewsLoadingViewModel = hiltViewModel()
+    viewModel: NewsLoadingViewModel = hiltViewModel()
 ) {
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is NewsLoadingUiEvent.NavigateToActualNews -> {
-                    // 소켓 OK + HTTP OK인 상태! 이제 진짜 뉴스로 이동
                     onNewsReady(event.gameId, event.newsId)
                 }
             }
@@ -92,10 +91,10 @@ fun NewsLoadingScreen(
                 contentDescription = "방송 준비 중인 아나운서",
                 placeholder = painterResource(R.drawable.example_anchor),    // 프리뷰용 임시 이미지
                 error = painterResource(R.drawable.example_anchor),       // 에러 시 보여줄 이미지
-                modifier = Modifier.size(265.dp)
+                modifier = Modifier.size(280.dp)
             )
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             TypewriterText(
                 texts = listOf(
@@ -139,7 +138,7 @@ fun TypewriterText(texts: List<String>) {
         text = textToDisplay,
         color = Color.White,
         fontFamily = PixelFont,
-        fontSize = 20.sp,
+        fontSize = 18.sp,
         lineHeight = 30.sp
     )
 }

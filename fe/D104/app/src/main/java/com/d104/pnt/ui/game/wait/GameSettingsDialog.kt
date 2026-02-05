@@ -38,11 +38,14 @@ import com.d104.pnt.data.remote.model.request.Location
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRoomInfoState
 import com.d104.pnt.ui.component.GoogleMaps
+import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.RoundedButton
 import com.d104.pnt.ui.game.create.CounterControl
 import com.d104.pnt.ui.game.create.FactionRatioBar
 import com.d104.pnt.ui.game.create.SectionTitle
+import com.d104.pnt.ui.theme.BorderDefault
+import com.d104.pnt.ui.theme.CustomBlue
 import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.DialogBorderColor
 import com.d104.pnt.ui.theme.PixelFont
@@ -214,32 +217,40 @@ fun GameSettingsDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 취소 / 변경 완료
+
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    RoundedButton(
+                    PixelButtonCode(
                         text = "취소",
-                        onClick = onDismiss,
-                        containerColor = Color.White,
-                        textColor = Color.Black,
-                        modifier = Modifier.weight(1f)
+                        onClick = { onDismiss() },
+                        modifier = Modifier.weight(1f),
+                        mainColor = Color.Gray,
+                        borderColor = BorderDefault,
+                        textColor = Color.White,
+                        fontSize = 16,
+                        blockHeight = 10
                     )
 
-                    RoundedButton(
-                        text = "변경 완료",
+                    PixelButtonCode(
+                        text = "확인",
                         onClick = {
                             onUpdateSettings(
                                 totalPlayers, gameTime, missionCount, cctvCycle, policeCount,
                                 Location(prisonLocation!!.lat, prisonLocation!!.lng),
                                 polygonPoints!!.map { Location(it.lat, it.lng) }
                             )
+
                             onDismiss()
                         },
-                        containerColor = Color.White,
-                        textColor = Color.Black,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        mainColor = CustomBlue,
+                        borderColor = BorderDefault,
+                        textColor = Color.White,
+                        fontSize = 16,
+                        blockHeight = 10
                     )
                 }
             }

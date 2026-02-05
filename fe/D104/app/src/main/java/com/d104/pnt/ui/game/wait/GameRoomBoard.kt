@@ -180,7 +180,9 @@ fun PlayerSlotCard(
     val roleIcon =
         if (player.isChangingRole) "?" else if (player.role == GameRole.POLICE) "👮" else "🕵️"
 
-    Box {
+    Box(
+        modifier = Modifier.padding(vertical = 10.dp)
+    ) {
         PixelContainer(
             modifier = Modifier
                 .fillMaxWidth()
