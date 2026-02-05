@@ -8,6 +8,6 @@ RUN npm install -g pm2 && npm install
 
 COPY . .
 
-EXPOSE 8090 8091 8092 8093
+EXPOSE 8090 8091
 
 CMD ["pm2-runtime", "start", "ecosystem.config.js"]
