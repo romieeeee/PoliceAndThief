@@ -69,17 +69,6 @@ fun ReportDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = "신고하기",
-                    fontFamily = PixelFont,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp,
-                    color = AccentYellow
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // 유저명
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically

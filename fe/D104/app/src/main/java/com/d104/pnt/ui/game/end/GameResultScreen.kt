@@ -1,5 +1,6 @@
 package com.d104.pnt.ui.game.end
 
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -23,15 +24,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +44,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -54,12 +59,17 @@ import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.theme.AccentYellow
+import com.d104.pnt.ui.theme.BorderDefault
+import com.d104.pnt.ui.theme.CustomBlue
 import com.d104.pnt.ui.theme.DarkBackground
 import com.d104.pnt.ui.theme.LoseColor
 import com.d104.pnt.ui.theme.PixelFont
+import com.d104.pnt.ui.theme.RoomBorder
+import com.d104.pnt.ui.theme.RoomContainer
 import com.d104.pnt.ui.theme.TextPrimary
 import com.d104.pnt.ui.theme.TextSecondary
 import com.d104.pnt.ui.theme.WinColor
+import androidx.compose.runtime.collectAsState
 
 data class MvpData(
     val type: String,
@@ -81,7 +91,24 @@ fun GameResultScreen(
     viewModel: GameResultViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val rejoinState by viewModel.rejoinState.collectAsStateWithLifecycle()
+    val remainingSeconds by viewModel.remainingSeconds.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
+    // 재입장 상태 처리
+    LaunchedEffect(rejoinState) {
+        when (rejoinState) {
+            is UiState.Error -> {
+                Toast.makeText(
+                    context,
+                    (rejoinState as UiState.Error).message,
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+            else -> {  }
+        }
+    }
     DisposableEffect(Unit) {
         onDispose { viewModel.cleanupGameSocket() }
     }
@@ -118,12 +145,36 @@ fun GameResultScreen(
         is UiState.Success<GameResultUiData> -> {
             val data = (uiState as UiState.Success<GameResultUiData>).data
             GameResultContent(
-                gameId            = gameId,
-                data              = data,
-                onBackToHome      = onBackToHome,
+                gameId = gameId,
+                data = data,
+                onBackToHome = onBackToHome,
                 onBackToWaitingRoom = onBackToWaitingRoom,
-                viewModel         = viewModel
+                viewModel = viewModel
             )
+
+            // 재입장 로딩 오버레이
+            if (rejoinState is UiState.Loading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.7f))
+                        .zIndex(999f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        CircularProgressIndicator(color = AccentYellow)
+                        Text(
+                            text = "대기방 입장 중...",
+                            color = Color.White,
+                            fontFamily = PixelFont,
+                            fontSize = 18.sp
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -151,17 +202,20 @@ private fun GameResultContent(
     val pagerState = rememberPagerState(pageCount = { data.mvpList.size })
 
     val titleColor = if (data.isWin) WinColor else LoseColor
-    val titleText  = if (data.isWin) "WIN!" else "LOSE"
+    val titleText = if (data.isWin) "WIN!" else "LOSE"
     val statsLabel = if (data.isPolice) "검거한 도둑 수" else "최장 생존 시간"
     val mvpBoxBgColor = Color(0xFF35384F)
     val participantNames = data.mvpList.map { it.nickname }
 
     val characterImageRes = when {
-        data.isPolice &&  data.isWin -> R.drawable.img_police_win
+        data.isPolice && data.isWin -> R.drawable.img_police_win
         data.isPolice && !data.isWin -> R.drawable.img_police_lose
-        !data.isPolice &&  data.isWin -> R.drawable.img_thief_win
-        else                         -> R.drawable.img_thief_lose
+        !data.isPolice && data.isWin -> R.drawable.img_thief_win
+        else -> R.drawable.img_thief_lose
     }
+
+    val isRejoinReady = viewModel.remainingSeconds.collectAsStateWithLifecycle().value <= 0
+    val isRejoinLoading = viewModel.rejoinState.collectAsStateWithLifecycle().value is UiState.Loading
 
     Box(
         modifier = Modifier
@@ -184,33 +238,33 @@ private fun GameResultContent(
 
         Column(
             modifier = Modifier
+                .clickable { viewModel.openReportDialog() }
+                .align(Alignment.TopEnd)
+                .padding(20.dp)
+                .systemBarsPadding(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                modifier = Modifier.size(25.dp),
+                painter = painterResource(id = R.drawable.report_siren),
+                contentDescription = "report button",
+            )
+            Text(
+                text = "신고하기",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.8f),
+            )
+        }
+
+        Column(
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // 신고 버튼
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Box(
-                    modifier = Modifier.clickable { viewModel.openReportDialog() },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Image(
-                        modifier = Modifier.size(25.dp),
-                        painter = painterResource(id = R.drawable.report_siren),
-                        contentDescription = "report button",
-                    )
-                    Text(
-                        modifier = Modifier.offset(y = 18.dp),
-                        text = "신고하기",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextPrimary,
-                    )
-                }
-            }
+            Spacer(Modifier.height(10.dp))
 
             Text(
                 text = "결과 리포트",
@@ -223,6 +277,7 @@ private fun GameResultContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .zIndex(2f)
                     .height(200.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -245,17 +300,17 @@ private fun GameResultContent(
                     contentDescription = "Character",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .width(190.dp)
+                        .height(180.dp)
                         .align(Alignment.Center)
-                        .offset(y = 40.dp)
+                        .offset(y = 30.dp)
                         .zIndex(2f)
                 )
             }
 
             // Rank / Stat
             PixelContainer(
-                backgroundColor = Color.Black.copy(alpha = 0.45f),
-                borderColor = AccentYellow,
+                backgroundColor = RoomContainer.copy(alpha = 0.7f),
+                borderColor = RoomBorder,
                 borderWidth = 3f,
                 cornerSize = 12f,
                 innerVerticalPadding = 20,
@@ -340,7 +395,7 @@ private fun GameResultContent(
             Spacer(modifier = Modifier.height(24.dp))
 
             val isFirst = pagerState.currentPage == 0
-            val isLast  = pagerState.currentPage == pagerState.pageCount - 1
+            val isLast = pagerState.currentPage == pagerState.pageCount - 1
 
             // MVP 카드
             Box(modifier = Modifier.fillMaxWidth()) {
@@ -360,41 +415,50 @@ private fun GameResultContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 PixelButtonCode(
-                    text = "대기방",
-                    onClick = {
-                        viewModel.backToLobby(gameId) {
-                            onBackToWaitingRoom(gameId)
-                        }
-                    },
-                    mainColor = Color(0xFF6B728E),
-                    textColor = Color.White,
-                    blockHeight = 14,
-                    blockWidth = 20,
-                    fontSize = 18,
-                    modifier = Modifier.weight(1f)
-                )
-
-                PixelButtonCode(
+                    modifier = Modifier.weight(1f),
                     text = "홈으로",
                     onClick = {
                         onBackToHome()
                     },
-                    mainColor = TextPrimary,
-                    textColor = Color.Black,
-                    blockHeight = 14,
-                    blockWidth = 20,
-                    fontSize = 18,
-                    modifier = Modifier.weight(1f)
+                    mainColor = Color.Gray,
+                    borderColor = BorderDefault,
+                    textColor = Color.White,
+                    fontSize = 16,
+                    blockHeight = 12
+                )
+
+                Spacer(Modifier.width(24.dp))
+                PixelButtonCode(
+                    modifier = Modifier.weight(1f),
+                    text = when {
+                        isRejoinLoading -> "입장 중..."
+                        !isRejoinReady -> "대기방 (${viewModel.remainingSeconds.collectAsStateWithLifecycle().value})"
+                        else -> "대기방"
+                    },
+                    onClick = {
+                        viewModel.backToLobby { roomId ->
+                            onBackToWaitingRoom(roomId)
+                        }
+                    },
+                    mainColor = if (isRejoinReady && !isRejoinLoading) CustomBlue else Color.Gray,
+                    borderColor = BorderDefault,
+                    textColor = Color.White,
+                    fontSize = 16,
+                    blockHeight = 12,
+                    enabled = isRejoinReady && !isRejoinLoading
                 )
             }
         }
+
 
         // 신고 다이얼로그
         when (viewModel.reportStep) {
@@ -492,7 +556,7 @@ fun MvpCard(
                     )
                     Text(
                         text = mvpData.nickname,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         color = TextPrimary
                     )
                 }
@@ -508,7 +572,7 @@ fun MvpCard(
                     )
                     Text(
                         text = mvpData.statValue,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         color = TextPrimary
                     )
                 }
