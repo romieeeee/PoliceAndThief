@@ -23,28 +23,6 @@ module.exports = {
             error: path.resolve(__dirname, '../../../logs/pm2/error.log'),
             merge_logs: true,
             log_date_format: "YYYY-MM-DD HH:mm:ss"
-        },
-        {
-            name: "websocket-server-3",
-            script: "./src/server-register.js",
-            env: {
-                PORT: 8092
-            },
-            output: path.resolve(__dirname, '../../../logs/pm2/access.log'),
-            error: path.resolve(__dirname, '../../../logs/pm2/error.log'),
-            merge_logs: true,
-            log_date_format: "YYYY-MM-DD HH:mm:ss"
-        },
-        {
-            name: "websocket-server-4",
-            script: "./src/server-register.js",
-            env: {
-                PORT: 8093
-            },
-            output: path.resolve(__dirname, '../../../logs/pm2/access.log'),
-            error: path.resolve(__dirname, '../../../logs/pm2/error.log'),
-            merge_logs: true,
-            log_date_format: "YYYY-MM-DD HH:mm:ss"
         }
     ]
 }
