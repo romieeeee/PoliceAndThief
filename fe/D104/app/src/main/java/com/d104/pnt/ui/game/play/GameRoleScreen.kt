@@ -1,11 +1,13 @@
 package com.d104.pnt.ui.game.play
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,6 +37,9 @@ fun GameRoleScreen(
     val status by viewModel.flowStatus.collectAsStateWithLifecycle()
     val connectionStatus by viewModel.connectionStatus.collectAsStateWithLifecycle()
 
+    val memberCount by viewModel.memberCount.collectAsStateWithLifecycle()
+    val connectedCount by viewModel.connectedCount.collectAsStateWithLifecycle()
+
     // Countdown 상태가 되면 다음 화면으로 이동
     LaunchedEffect(status) {
         if (status is GameFlowStatus.CountDown) {
@@ -43,7 +48,6 @@ fun GameRoleScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 배경 이미지
         Image(
             painter = painterResource(id = R.drawable.bg_night),
             contentDescription = null,
@@ -51,69 +55,39 @@ fun GameRoleScreen(
             contentScale = ContentScale.Crop
         )
 
-        // 항상 역할 보여주기
-        when (val currentStatus = status) {
-            is GameFlowStatus.RoleReveal -> {
-                RoleRevealContent(role = currentStatus.role)
-            }
-            is GameFlowStatus.CountDown -> {
-                // 다음 화면으로 이동 중 (잠깐만 보임)
-                RoleRevealContent(role = role)
-            }
-        }
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // 역할 정보
+            RoleRevealContent(role = role)
 
-        when (val connStatus = connectionStatus) {
-            is ConnectionStatus.Connecting -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    Text(
-                        text = "서버 연결 중...",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
-                }
-            }
-            is ConnectionStatus.Error -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "⚠️ 연결 오류",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.Red
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = connStatus.message,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.7f)
-                        )
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                when (val connStatus = connectionStatus) {
+                    is ConnectionStatus.Connecting -> {
+                        "접속 중... $connectedCount / $memberCount"
                     }
+
+                    is ConnectionStatus.Error -> {
+                        Text("⚠️ ${connStatus.message}", color = Color.Red)
+                    }
+
+                    is ConnectionStatus.WillStart -> {
+                        Text("곧 게임이 시작됩니다...", color = Color.White)
+                    }
+
+                    else -> {}
                 }
+
+                Spacer(modifier = Modifier.height(40.dp))
             }
-            is ConnectionStatus.WillStart -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    Text(
-                        text = "곧 게임이 시작됩니다...",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
-                }
-            }
-            else -> { /* 정상 상태 - 아무것도 표시 안함 */ }
+
         }
     }
 }
@@ -122,7 +96,8 @@ fun GameRoleScreen(
 private fun RoleRevealContent(role: GameRole) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
+            .background(Color.Transparent)
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center

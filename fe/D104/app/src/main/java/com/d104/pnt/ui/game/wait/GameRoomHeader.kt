@@ -19,10 +19,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.d104.pnt.R
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.theme.AccentYellow
 import com.d104.pnt.ui.theme.PixelFont
@@ -55,11 +57,11 @@ fun GameRoomHeader(
             // 뒤로가기 및 방 코드
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    painter = painterResource(R.drawable.ic_back),
                     contentDescription = "방 나가기",
                     tint = Color.White,
                     modifier = Modifier
-                        .size(22.dp)
+                        .size(16.dp)
                         .clickable { onLeaveClick() }
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -89,7 +91,7 @@ fun GameRoomHeader(
                         contentDescription = "설정",
                         tint = Color(0xFF6591E9),
                         modifier = Modifier
-                            .size(24.dp)
+                            .size(20.dp)
                             .clickable { onSettingsClick() }
                     )
                 }

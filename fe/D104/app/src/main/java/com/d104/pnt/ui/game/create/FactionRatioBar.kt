@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
@@ -57,10 +60,8 @@ fun FactionRatioBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(44.dp)
-                // 너비 측정
+                .height(36.dp)
                 .onSizeChanged { barWidth = it.width.toFloat() }
-                // 탭 인식
                 .pointerInput(totalCount) {
                     detectTapGestures { offset ->
                         val newCount = calculateCountFromX(offset.x)
@@ -74,7 +75,7 @@ fun FactionRatioBar(
                         onPoliceCountChange(newCount)
                     }
                 }
-                .background(AccentRed)
+                .background(Color(0xFFC94A4A))
         ) {
             // 경찰 비율 계산
             val policeRatio =
@@ -85,7 +86,7 @@ fun FactionRatioBar(
                 modifier = Modifier
                     .fillMaxHeight()
                     .fillMaxWidth(policeRatio)
-                    .background(ButtonPrimary)
+                    .background(Color(0xFF4A76C9))
             ) {
                 // 흰색 구분선
                 Box(
@@ -118,9 +119,7 @@ fun FactionRatioBar(
                         text = "$policeCount",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        style = TextStyle(
-                            shadow = Shadow(color = Color.Black, blurRadius = 2f)
-                        ),
+                        style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(start = 4.dp)
                     )
                 }
@@ -131,9 +130,7 @@ fun FactionRatioBar(
                         text = "$thiefCount",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        style = TextStyle(
-                            shadow = Shadow(color = Color.Black, blurRadius = 2f)
-                        ),
+                        style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(end = 4.dp)
                     )
 

@@ -88,47 +88,27 @@ class ChatRoomListViewModel @Inject constructor(
 
     // 시/도 선택 시 호출
     fun selectMajor(major: String) {
-        initRegion()
         _selectedMajor.value = major
-        if (_viewMode.value == ViewMode.Region) _viewMode.value = ViewMode.Title
 
-        // 시/도가 바뀌었으니 시/군/구 목록 갱신 & 기존 선택 초기화
         _middleList.value = regionManager.getMiddleRegions(major)
         _selectedMiddle.value = ""
+
     }
 
     // 시/군/구 선택 시 호출
     fun selectMiddle(middle: String) {
         _selectedMiddle.value = middle
-        _viewMode.value = ViewMode.Region
+        _viewMode.value = ViewMode.Region // 이제 지역 탭 활성화
 
-        // 최종적으로 코드 찾기 등 수행
         val code = locationRepository.getRegionCode(_selectedMajor.value, middle)
-        Timber.d("Selected Code: $code")
         _searchRegionQuery.value = code
 
-        // 쿼리 보내기
-        viewModelScope.launch {
-            _listState.value = UiState.Loading
-            when (val result = chatRepository.searchChatRoom(title = null, regionCode = code)) {
-                is BaseResult.Success -> {
-                    _listState.value = UiState.Success(result.data)
-                    Timber.d("chatList: ${result.data}")
-                }
-
-                is BaseResult.Error -> {
-                    _listState.value = UiState.Error(result.error.message)
-                    Timber.d("error: ${result.error.message}")
-                }
-            }
-        }
+        // 지역 기반 검색 실행
+        fetchChatRoomsByRegion(code)
     }
 
-    fun initRegion() {
-        _selectedMajor.value = ""
-        _selectedMiddle.value = ""
-        _middleList.value = emptyList()
-        _searchRegionQuery.value = -1
+    private fun clearSearchState() {
+        _searchQuery.value = ""
     }
 
     fun searchChatRoom(
@@ -136,6 +116,7 @@ class ChatRoomListViewModel @Inject constructor(
         regionCode: Int?
     ) {
         if (_viewMode.value == ViewMode.Me) _viewMode.value = ViewMode.Title
+
         viewModelScope.launch {
             _listState.value = UiState.Loading
             when (val result = chatRepository.searchChatRoom(title, regionCode)) {
@@ -153,22 +134,85 @@ class ChatRoomListViewModel @Inject constructor(
     }
 
     fun getJoinedChatRoom() {
+        clearSearchState() // 검색어 초기화
+
         _viewMode.value = ViewMode.Me
-        initRegion()
         viewModelScope.launch {
             _listState.value = UiState.Loading
             when (val result = chatRepository.getJoinedChatRoom()) {
-                is BaseResult.Success -> {
-                    _listState.value = UiState.Success(result.data)
-                    Timber.d("chatList: ${result.data}")
+                is BaseResult.Success -> _listState.value = UiState.Success(result.data)
+                is BaseResult.Error -> _listState.value = UiState.Error(result.error.message)
+            }
+        }
+    }
+
+    fun switchToRegionMode() {
+        val code = _searchRegionQuery.value
+        if (code != -1) {
+            clearSearchState()
+            _viewMode.value = ViewMode.Region // 지역 모드로 복귀
+            fetchChatRoomsByRegion(code)
+        }
+    }
+
+    private fun fetchChatRoomsByRegion(code: Int) {
+        _viewMode.value = ViewMode.Region // 명시적으로 지역 모드 설정
+        viewModelScope.launch {
+            _listState.value = UiState.Loading
+            when (val result = chatRepository.searchChatRoom(title = null, regionCode = code)) {
+                is BaseResult.Success -> _listState.value = UiState.Success(result.data)
+                is BaseResult.Error -> _listState.value = UiState.Error(result.error.message)
+            }
+        }
+
+    }
+
+    fun searchByTitle(title: String) {
+        if (title.isBlank()) {
+            if (_viewMode.value == ViewMode.Me) getJoinedChatRoom()
+            else switchToRegionMode()
+            return
+        }
+
+        // 현재 모드 저장 (검색 직전의 모드)
+        val currentMode = _viewMode.value
+
+        viewModelScope.launch {
+            _listState.value = UiState.Loading
+
+            when (currentMode) {
+                ViewMode.Me -> {
+                    when (val result = chatRepository.getJoinedChatRoom()) {
+                        is BaseResult.Success -> {
+                            val filtered = result.data.chats.filter {
+                                it.title.contains(
+                                    title,
+                                    ignoreCase = true
+                                )
+                            }
+                            _listState.value = UiState.Success(result.data.copy(chats = filtered))
+                        }
+
+                        is BaseResult.Error -> _listState.value =
+                            UiState.Error(result.error.message)
+                    }
                 }
 
-                is BaseResult.Error -> {
-                    _listState.value = UiState.Error(result.error.message)
-                    Timber.d("error: ${result.error.message}")
+                else -> {
+                    val code =
+                        if (currentMode == ViewMode.Region || _selectedMiddle.value.isNotEmpty()) {
+                            _searchRegionQuery.value.takeIf { it != -1 }
+                        } else {
+                            null
+                        }
+
+                    when (val result = chatRepository.searchChatRoom(title, code)) {
+                        is BaseResult.Success -> _listState.value = UiState.Success(result.data)
+                        is BaseResult.Error -> _listState.value =
+                            UiState.Error(result.error.message)
+                    }
                 }
             }
-
         }
     }
 

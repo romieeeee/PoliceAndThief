@@ -25,13 +25,14 @@ import com.d104.pnt.ui.theme.TextPrimary
 fun PixelAlertDialog(
     title: String,
     message: String,
+    borderColor: Color = Color.Gray,
     spacerHeight: Dp = 16.dp,
     buttonContent: @Composable ColumnScope.() -> Unit
 ) {
     PixelContainer(
         modifier = Modifier.fillMaxWidth(0.85f),
         backgroundColor = Color(0xFF374151),
-        borderColor = Color.Gray
+        borderColor = borderColor
     ) {
         Column(
             modifier = Modifier

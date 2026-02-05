@@ -78,9 +78,17 @@ class GameSessionRepositoryImpl @Inject constructor(
 
     private val _missions = MutableStateFlow<List<MissionSocketDto>>(emptyList())
     override val missions = _missions.asStateFlow()
+
     private val _members = MutableStateFlow<List<GameMemberSocketDto>>(emptyList())
     override val members = _members.asStateFlow()
 
+    override val memberCount: StateFlow<Int> = _members
+        .map { it.size }
+        .stateIn(
+            scope = repositoryScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0
+        )
     private val _memberLocation = MutableStateFlow<List<MemberLocationSocketDto>>(emptyList())
     override val memberLocation = _memberLocation.asStateFlow()
 
@@ -146,6 +154,7 @@ class GameSessionRepositoryImpl @Inject constructor(
 
     private val _helicopterUsed = MutableStateFlow(false)
     override val helicopterUsed: StateFlow<Boolean> = _helicopterUsed.asStateFlow()
+
     override val isChief: StateFlow<Boolean> =
         combine(myMemberId, chiefMemberId) { myId, chiefId ->
             chiefId != null && myId != 0L && myId == chiefId
@@ -158,6 +167,9 @@ class GameSessionRepositoryImpl @Inject constructor(
         }.stateIn(repositoryScope, SharingStarted.WhileSubscribed(5000), false)
     private val _helicopterState = MutableStateFlow(HelicopterPhase.IDLE)
     override val helicopterState = _helicopterState.asStateFlow()
+
+    private val _connectedCount = MutableStateFlow(1)
+    override val connectedCount: StateFlow<Int> = _connectedCount
 
     // ===== 무전기 =====
     private val _walkieState = MutableStateFlow<WalkieConnectionState>(WalkieConnectionState.Idle)
@@ -305,7 +317,6 @@ class GameSessionRepositoryImpl @Inject constructor(
                         newMemberLocation.add(MemberLocationSocketDto.fromJson(locationJson))
                     }
                     _memberLocation.value = newMemberLocation
-                    Timber.d("멤버 위치 파싱 완료: ${newMemberLocation}")
                 }
             }
             catch (e:Exception) {
@@ -313,9 +324,11 @@ class GameSessionRepositoryImpl @Inject constructor(
             }
         }
 
-        gameSocketManager.setOnJoinedRoom { gameId, memberId, message ->
+        gameSocketManager.setOnJoinedRoom { gameId, memberId, message, count ->
             _gameId.value = gameId
+            _connectedCount.value = count
         }
+
         gameSocketManager.setOnWillStartGame { gameId, willStartAt ->
             Timber.d("socket ⏰ get will start game 수신 - gameId: $gameId, willStartAt: $willStartAt")
         }
@@ -324,7 +337,7 @@ class GameSessionRepositoryImpl @Inject constructor(
         gameSocketManager.setOnGameInfoSynced { data ->
             try {
                 val gameId = data.optLong("gameId")
-                if (gameId != 0L) _gameId.value = gameId // ⭐ 저장
+                if (gameId != 0L) _gameId.value = gameId
 
                 val gameStatus = data.optString("gameStatus")
                 if (gameStatus != "") _gameStatus.value = gameStatus
