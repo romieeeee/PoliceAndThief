@@ -71,3 +71,5 @@ val RoomContainer = Color(0xFF2D3242)
 val RoomBorder = Color(0xFF6591E9)
 
 val CancelGray = Color(0xFF3B4049)
+
+val ChatBg = Color(0xFF0F1322)

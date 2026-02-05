@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,9 +15,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -35,20 +31,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.common.UiState
-import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.component.RoomList
 import com.d104.pnt.ui.theme.BorderDefault
 import com.d104.pnt.ui.theme.ButtonHighlight
 import com.d104.pnt.ui.theme.ButtonPrimary
-import com.d104.pnt.ui.theme.CustomBlue
-import com.d104.pnt.ui.theme.TextPrimary
 
 @Composable
 fun ChatRoomListScreen(
@@ -62,17 +56,16 @@ fun ChatRoomListScreen(
     val selectedMajor by viewModel.selectedMajor.collectAsStateWithLifecycle()
     val selectedMiddle by viewModel.selectedMiddle.collectAsStateWithLifecycle()
 
-    var searchMode by remember { mutableStateOf(false) }
-
     val uiState by viewModel.listState.collectAsStateWithLifecycle()
     val viewMode by viewModel.viewMode.collectAsStateWithLifecycle()
     val searchText by viewModel.searchQuery.collectAsStateWithLifecycle()
 
+    var showRegionDialog by remember { mutableStateOf(false) }
+
+
     LaunchedEffect(Unit) {
         viewModel.getJoinedChatRoom()
     }
-
-
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -117,27 +110,26 @@ fun ChatRoomListScreen(
                     .padding(16.dp)
                     .statusBarsPadding() // 상태바 겹침 방지
             ) {
-                // 1. 상단 버튼 영역 (Header)
                 ChatRoomListHeader(
-                    majors = majors,
-                    middles = middles,
                     viewMode = viewMode,
-                    selectedMajor = selectedMajor,
-                    selectedMiddle = selectedMiddle,
+                    regionText = if (selectedMajor.isEmpty()) "지역 선택" else "$selectedMajor $selectedMiddle",
                     onJoinedRoomClicked = {
                         viewModel.getJoinedChatRoom()
                     },
-                    onMajorSelected = { newMajor ->
-                        viewModel.selectMajor(newMajor)
+                    onRegionTabClick = {
+                        if (selectedMajor.isEmpty()) {
+                            showRegionDialog = true
+                        } else {
+                            viewModel.switchToRegionMode()
+                        }
                     },
-                    onMiddleSelected = { newMiddle ->
-                        viewModel.selectMiddle(newMiddle)
+                    onPinClick = {
+                        showRegionDialog = true
                     }
                 )
 
                 Spacer(modifier = Modifier.height(5.dp))
 
-                // 2. 검색 아이콘 영역
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -151,56 +143,17 @@ fun ChatRoomListScreen(
                         value = searchText,
                         onValueChange = { viewModel.updateSearchQuery(it) },
                         placeholder = "검색어를 입력해주세요",
+                        imeAction = ImeAction.Search,
+                        onAction = {
+                            if (searchText.isNotBlank()) {
+                                viewModel.searchByTitle(searchText)
+                            }
+                        },
                         borderColor = BorderDefault,
                         backgroundColor = Color.White.copy(alpha = 0.8f),
                     )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "검색",
-                        tint = Color.White,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clickable(
-                                onClick = {
-                                    val code =
-                                        if (viewModel.searchRegionQuery.value != -1) viewModel.searchRegionQuery.value else null
-                                    if (searchMode && searchText != "") {
-                                        viewModel.searchChatRoom(viewModel.searchQuery.value, code)
-                                    }
-                                    viewModel.updateSearchQuery("")
-                                    searchMode = !searchMode
-                                }
-                            )
-                    )
-
-
-//            PixelIconButton(
-//                modifier = Modifier.size(48.dp),
-//                mainColor = ButtonPrimary,
-//                borderColor = ButtonHighlight,
-//                onClick = {
-//                    val code =
-//                        if (viewModel.searchRegionQuery.value != -1) viewModel.searchRegionQuery.value else null
-//                    if (searchMode && searchText != "") {
-//                        viewModel.searchChatRoom(viewModel.searchQuery.value, code)
-//                    }
-//                    viewModel.updateSearchQuery("")
-//                    searchMode = !searchMode
-//                }
-//            ) {
-//                Icon(
-//                    imageVector = Icons.Default.Search,
-//                    contentDescription = "검색",
-//                    tint = Color.White,
-//                    modifier = Modifier.size(32.dp)
-//                )
-//            }
                 }
 
-                // 3. 리스트 영역
                 when (uiState) {
                     is UiState.Idle -> {}
                     is UiState.Loading -> {}
@@ -238,86 +191,29 @@ fun ChatRoomListScreen(
 
                     is UiState.Error -> {}
                 }
+
+                Spacer(Modifier.height(60.dp))
             }
         }
     }
-}
 
-@Composable
-fun ChatRoomListHeader(
-    majors: List<String>,
-    middles: List<String>,
-    viewMode: ChatRoomListViewModel.ViewMode,
-    selectedMajor: String,
-    selectedMiddle: String,
-    onJoinedRoomClicked: () -> Unit,
-    onMajorSelected: (String) -> Unit,
-    onMiddleSelected: (String) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min)
-            .padding(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // 왼쪽 버튼
-        PixelButtonCode(
-            modifier = Modifier.weight(4f),
-            text = "내 채팅방",
-            fontSize = 14,
-            onClick = onJoinedRoomClicked,
-            mainColor = if (viewMode == ChatRoomListViewModel.ViewMode.Me) CustomBlue else TextPrimary,
-            pixelSize = 3.dp,
-            blockHeight = 14,
-            textColor = if (viewMode == ChatRoomListViewModel.ViewMode.Me) TextPrimary else BorderDefault
+    // 다이얼로그 표시 로직
+    if (showRegionDialog) {
+        RegionSelectionDialog(
+            majors = majors,
+            middles = middles,
+            selectedMajor = selectedMajor,
+            selectedMiddle = selectedMiddle,
+            onMajorSelected = { viewModel.selectMajor(it) },
+            onMiddleSelected = {
+                viewModel.selectMiddle(it)
+            },
+            onSearch = {
+                val code =
+                    if (viewModel.searchRegionQuery.value != -1) viewModel.searchRegionQuery.value else null
+                viewModel.searchChatRoom(searchText, code)
+            },
+            onDismiss = { showRegionDialog = false }
         )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        PixelButtonCode(
-            modifier = Modifier.weight(6f),
-            text = "포항시 남구",
-            fontSize = 14,
-            onClick = onJoinedRoomClicked,
-            mainColor = if (viewMode == ChatRoomListViewModel.ViewMode.Me) CustomBlue else TextPrimary,
-            pixelSize = 3.dp,
-            blockHeight = 14,
-            textColor = if (viewMode == ChatRoomListViewModel.ViewMode.Me) TextPrimary else BorderDefault
-        )
-
-//        Spacer(modifier = Modifier.width(6.dp))
-//
-//        Icon(
-//            imageVector = Icons.Default.LocationOn,
-//            contentDescription = "채팅방 만들기",
-//            tint = Color.White,
-//            modifier = Modifier.size(28.dp)
-//        )
-
-        // 시/도 드롭다운
-//        PixelDropdown(
-//            items = majors,
-//            highlighted = viewMode == ChatRoomListViewModel.ViewMode.Region,
-//            selectedItem = selectedMajor,
-//            onItemSelected = onMajorSelected,
-//            modifier = Modifier
-//                .weight(1f)
-//                .height(40.dp),
-//            label = "시|도"
-//        )
-//        Spacer(modifier = Modifier.width(4.dp))
-//        // 시/군/구 드롭다운
-//        PixelDropdown(
-//            items = middles,
-//            highlighted = viewMode == ChatRoomListViewModel.ViewMode.Region,
-//            selectedItem = selectedMiddle,
-//            onItemSelected = onMiddleSelected,
-//            modifier = Modifier
-//                .weight(1f)
-//                .height(40.dp),
-//            label = "시|군|구"
-//        )
     }
 }

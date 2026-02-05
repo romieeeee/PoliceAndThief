@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.ui.component.PixelContainer
+import com.d104.pnt.ui.theme.ChatBg
 import com.d104.pnt.ui.theme.DarkBackground
 import com.d104.pnt.ui.theme.DarkCard
 import com.d104.pnt.ui.theme.TextPrimary
@@ -51,7 +52,7 @@ fun ChatRoomMemberDrawer(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(Color(0x99000000))
+                .background(Color.Transparent)
                 .clickable { onDismiss() }
         )
     }
@@ -74,16 +75,12 @@ fun ChatRoomMemberDrawer(
         ) {
             PixelContainer(
                 modifier = Modifier
-                    .width(280.dp)
+                    .width(260.dp)
                     .fillMaxHeight()
-                    .padding(vertical = 16.dp, horizontal = 12.dp)
-                    // 패널 내부 클릭이 바깥 dismiss로 전파되는 거 방지
                     .clickable(enabled = false) {},
                 cornerSize = 10f,
-                backgroundColor = DarkCard,
-                borderColor = TextSecondary,
-                innerVerticalPadding = 16,
-                innerHorizontalPadding = 16
+                backgroundColor = ChatBg,
+                borderColor = Color.Transparent,
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -122,8 +119,8 @@ fun ChatRoomMemberDrawer(
                                 .fillMaxWidth()
                                 .height(48.dp)
                                 .clickable { onLeaveRoom() },
-                            backgroundColor = DarkBackground,
-                            borderColor = TextSecondary,
+                            backgroundColor = ChatBg,
+                            borderColor = TextSecondary.copy(alpha = 0.6f),
                             innerVerticalPadding = 12,
                             innerHorizontalPadding = 12
                         ) {

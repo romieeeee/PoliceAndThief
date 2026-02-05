@@ -42,11 +42,7 @@ fun ChatRoomScreen(
     val members by viewModel.members.collectAsStateWithLifecycle()
 
     DisposableEffect(Unit) {
-        onDispose {
-            Timber.d("👋 사용자가 채팅방 화면을 떠납니다. 정리 시작!")
-            // 주의: 여기서도 비동기 작업(API)을 하려면 ViewModel의 헬퍼 함수를 불러야 해
-            viewModel.disconnectRoom()
-        }
+        onDispose { viewModel.disconnectRoom() }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -76,7 +72,7 @@ fun ChatRoomScreen(
                         ),
                         onLeaveClick = { onBackPressed() },
                         onMenuClick = {
-                            drawerOpen = true
+                            drawerOpen = !drawerOpen
                             viewModel.loadMembers()
                         }
                     )
