@@ -17,6 +17,7 @@ val DarkSurface = Color(0xFF2D3242)
 //val DarkSurface = Color(0xFF233342)
 val DarkCard = Color(0xFF1E3445)
 val DeepDark = Color(0xFF1D1F24)
+val Blinds = Color(0x55000000)
 
 // Text
 val TextPrimary = Color(0xFFFFFFFF)
