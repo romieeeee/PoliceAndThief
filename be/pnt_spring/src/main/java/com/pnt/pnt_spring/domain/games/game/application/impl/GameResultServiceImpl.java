@@ -79,7 +79,7 @@ public class GameResultServiceImpl implements GameResultService {
 
 		List<GameMember> allMembers = gameMemberRepository.findAllByGameId(request.getGameId());
 		Map<Long, GameMember> memberMap = allMembers.stream()
-			.collect(Collectors.toMap(GameMember::getId, Function.identity()));
+			.collect(Collectors.toMap(gm -> gm.getMember().getId(), Function.identity()));
 
 		// 요청된 멤버 스탯 정보를 순회하며 처리
 		for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
