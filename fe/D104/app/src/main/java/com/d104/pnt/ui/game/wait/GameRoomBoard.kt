@@ -62,6 +62,7 @@ fun GameRoomBoard(
     selectedPlayerId: Long?,
     prisonLocation: LatLng,
     polygonPoints: List<LatLng>,
+    canChangeRole: Boolean,
     onPlayerClick: (WaitingPlayer) -> Unit,
     onMenuDismiss: () -> Unit,
     onInfoClick: (WaitingPlayer) -> Unit,
@@ -135,9 +136,14 @@ fun GameRoomBoard(
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
+                val buttonColor = if (canChangeRole) Color.White else Color.Gray
+                val textColor = if (canChangeRole) Color.Black else Color.White
+
                 PixelIconButton(
-                    onClick = onChangeRole,
+                    onClick = { if (canChangeRole) onChangeRole() },
                     modifier = Modifier.width(90.dp),
+                    mainColor = buttonColor,
+                    borderColor = Color.Black,
                     pixelSize = 2.dp,
                     blockHeight = 16,
                     content = {
@@ -148,7 +154,7 @@ fun GameRoomBoard(
                             Text(
                                 text = "역할 변경",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.Black
+                                color = textColor
                             )
                         }
                     }
@@ -177,8 +183,12 @@ fun PlayerSlotCard(
         else -> Color(0xFF8D90B3)
     }
     val cardBackgroundColor = if (isMe) Color(0xFFE3F2FD) else Color.White
-    val roleIcon =
-        if (player.isChangingRole) "?" else if (player.role == GameRole.POLICE) "👮" else "🕵️"
+    val roleIcon = when {
+        player.isChangingRole -> "?"
+        player.role == GameRole.POLICE -> "👮"
+        player.role == GameRole.THIEF -> "🕵️"
+        else -> "❓"
+    }
 
     Box(
         modifier = Modifier.padding(vertical = 10.dp)
