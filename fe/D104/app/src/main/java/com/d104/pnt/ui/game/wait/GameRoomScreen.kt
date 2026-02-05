@@ -122,7 +122,9 @@ fun GameRoomScreen(
 
     val anyCount = players.count { it.role == GameRole.ANY && !it.isChangingRole }
 
-    val isAllReady = players.isNotEmpty() && players.filter { it.id != myMemberId }.all {
+    val isAllReady = players.isNotEmpty()
+            && players.size == roomInfo.maxCount
+            && players.filter { it.id != myMemberId }.all {
         it.isReady && !it.isChangingRole
     }
 
