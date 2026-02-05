@@ -2,6 +2,8 @@ package com.d104.pnt.domain.model
 
 import androidx.compose.ui.graphics.Color
 import com.d104.pnt.R
+import com.d104.pnt.ui.theme.CustomBlue
+import com.d104.pnt.ui.theme.CustomRed
 import com.d104.pnt.ui.theme.PoliceBlue
 import com.d104.pnt.ui.theme.ThiefRed
 
@@ -21,7 +23,7 @@ enum class GameRole(
         roleName = "경찰",
         roleNameEn = "POLICE",
         description = "제한 시간 내에 모든 도둑을 검거하세요",
-        color = PoliceBlue,
+        color = CustomBlue,
         emoji = R.drawable.ic_police,
         badge = R.drawable.ic_police_badge
     ),
@@ -30,7 +32,7 @@ enum class GameRole(
         roleName = "도둑",
         roleNameEn = "THIEF",
         description = "제한 시간동안 경찰로부터 생존하세요",
-        color = ThiefRed,
+        color = CustomRed,
         emoji = R.drawable.ic_thief,
         badge = R.drawable.ic_thief_badge
     ),

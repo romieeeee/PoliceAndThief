@@ -36,13 +36,10 @@ fun RoleSelectScreen(
 ) {
 
     BackHandler {
-        viewModel.leaveRoom() // 소켓/DB 정리
-        onBackPressed()       // 홈 화면으로 이동
-    }
+        viewModel.leaveRoom()
+        onBackPressed()           }
 
     Surface(modifier = Modifier.fillMaxSize()) {
-
-        // 배경 이미지
         Image(
             modifier = Modifier.fillMaxSize(),
             painter = painterResource(R.drawable.img_game_bg_1),
@@ -65,7 +62,7 @@ fun RoleSelectScreen(
                 color = Color.White
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(32.dp))
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
@@ -102,7 +99,7 @@ fun RoleSelectScreen(
                         }
                     },
                 backgroundColor = DarkBackground,
-                borderColor = Color.White,
+                borderColor = Color.White.copy(0.8f),
             ) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -110,8 +107,8 @@ fun RoleSelectScreen(
                 ) {
                     Text(
                         text = "상관없음",
+                        modifier = Modifier.padding(vertical = 4.dp),
                         style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier,
                         color = Color.White
                     )
                 }

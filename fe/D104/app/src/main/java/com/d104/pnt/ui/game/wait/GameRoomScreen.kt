@@ -87,8 +87,6 @@ fun GameRoomScreen(
 
                 is GameRoomUiEvent.NavigateToGame -> {
                     onNavigateRole(event.roomId, GameRole.fromName((event.role)))
-
-//                    onStartGame(event.roomId, GameRole.fromName(event.role))
                 }
             }
         }

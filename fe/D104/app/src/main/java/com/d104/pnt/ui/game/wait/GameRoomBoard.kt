@@ -190,7 +190,9 @@ fun PlayerSlotCard(
         else -> "❓"
     }
 
-    Box {
+    Box(
+        modifier = Modifier.padding(vertical = 10.dp)
+    ) {
         PixelContainer(
             modifier = Modifier
                 .fillMaxWidth()

@@ -62,12 +62,22 @@ abstract class BaseRepository {
                     }
                 }
             } else {
-                // HTTP 오류 (4xx, 5xx)
+                val errorBodyString = response.errorBody()?.string()
+                val errorResponse = try {
+                    // 서버가 보낸 에러 JSON을 BaseResponse 형태로 파싱
+                    Gson().fromJson(errorBodyString, BaseResponse::class.java)
+                } catch (e: Exception) {
+                    null
+                }
+
+                val serverMessage = errorResponse?.message ?: "서버 오류가 발생했습니다"
+                val serverCode = errorResponse?.code ?: response.code()
+
                 BaseResult.Error(
                     ApiError(
-                        message = "서버 오류: ${response.message()}",
-                        code = response.code(),
-                        type = ApiError.getErrorType(response.code())
+                        message = serverMessage,
+                        code = serverCode,
+                        type = ApiError.getErrorType(serverCode)
                     )
                 )
             }

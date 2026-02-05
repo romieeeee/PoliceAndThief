@@ -41,7 +41,7 @@ interface GameApiService {
         @Path("gameId") gameId: Long
     ): Response<BaseResponse<GameResultResponse>>
 
-    @POST("api/livekit/token")
+    @POST("livekit/token")
     suspend fun getLiveKitToken(
         @Body request: LiveKitTokenRequest
     ): Response<BaseResponse<LiveKitTokenResponse>>
