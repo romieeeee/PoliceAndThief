@@ -44,6 +44,12 @@ import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.theme.AccentYellow
 import com.d104.pnt.ui.theme.PixelFont
 import com.google.android.gms.maps.model.LatLng
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import coil.compose.rememberAsyncImagePainter
+import com.d104.pnt.R
 
 @Composable
 fun GameRoomBoard(
@@ -56,6 +62,7 @@ fun GameRoomBoard(
     selectedPlayerId: Long?,
     prisonLocation: LatLng,
     polygonPoints: List<LatLng>,
+    canChangeRole: Boolean,
     onPlayerClick: (WaitingPlayer) -> Unit,
     onMenuDismiss: () -> Unit,
     onInfoClick: (WaitingPlayer) -> Unit,
@@ -129,9 +136,14 @@ fun GameRoomBoard(
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
+                val buttonColor = if (canChangeRole) Color.White else Color.Gray
+                val textColor = if (canChangeRole) Color.Black else Color.White
+
                 PixelIconButton(
-                    onClick = onChangeRole,
+                    onClick = { if (canChangeRole) onChangeRole() },
                     modifier = Modifier.width(90.dp),
+                    mainColor = buttonColor,
+                    borderColor = Color.Black,
                     pixelSize = 2.dp,
                     blockHeight = 16,
                     content = {
@@ -142,7 +154,7 @@ fun GameRoomBoard(
                             Text(
                                 text = "역할 변경",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = Color.Black
+                                color = textColor
                             )
                         }
                     }
@@ -171,10 +183,16 @@ fun PlayerSlotCard(
         else -> Color(0xFF8D90B3)
     }
     val cardBackgroundColor = if (isMe) Color(0xFFE3F2FD) else Color.White
-    val roleIcon =
-        if (player.isChangingRole) "?" else if (player.role == GameRole.POLICE) "👮" else "🕵️"
+    val roleIcon = when {
+        player.isChangingRole -> "?"
+        player.role == GameRole.POLICE -> "👮"
+        player.role == GameRole.THIEF -> "🕵️"
+        else -> "❓"
+    }
 
-    Box {
+    Box(
+        modifier = Modifier.padding(vertical = 10.dp)
+    ) {
         PixelContainer(
             modifier = Modifier
                 .fillMaxWidth()
@@ -190,11 +208,71 @@ fun PlayerSlotCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Box(modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFFFF59D)))
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .border(1.dp, Color.Black, CircleShape)
+                        .background(Color.White)
+                ) {
+                    android.util.Log.d("PlayerProfile", "=== 프로필 이미지 로딩 ===")
+                    android.util.Log.d("PlayerProfile", "ID: ${player.id}")
+                    android.util.Log.d("PlayerProfile", "Nickname: ${player.nickname}")
+                    android.util.Log.d("PlayerProfile", "Original profileUrl: ${player.profileUrl}")
+
+                    // when 블록 수정 - 각 케이스마다 로그 추가
+                    val fullImageUrl = when {
+                        player.profileUrl.isNullOrEmpty() -> {
+                            android.util.Log.d("PlayerProfile", "❌ profileUrl is null or empty")
+                            null
+                        }
+                        player.profileUrl.startsWith("http") -> {
+                            android.util.Log.d("PlayerProfile", "✅ Already full URL: ${player.profileUrl}")
+                            player.profileUrl
+                        }
+                        else -> {
+                            val url = "https://i14d104.p.ssafy.io/spring/${player.profileUrl}"
+                            android.util.Log.d("PlayerProfile", "🔗 Constructed URL: $url")
+                            url
+                        }
+                    }
+
+                    android.util.Log.d("PlayerProfile", "📍 Final fullImageUrl: $fullImageUrl")
+
+                    val painter = when (fullImageUrl) {
+                        "POLICE_1" -> {
+                            android.util.Log.d("PlayerProfile", "🎨 Using POLICE_1")
+                            painterResource(id = R.drawable.profile_img_police_1)
+                        }
+                        "POLICE_2" -> painterResource(id = R.drawable.profile_img_police_2)
+                        "THIEF_1" -> painterResource(id = R.drawable.profile_img_thief_1)
+                        "THIEF_2" -> painterResource(id = R.drawable.profile_img_thief_2)
+                        "DEFAULT", null, "" -> {
+                            android.util.Log.d("PlayerProfile", "🖼️ Using DEFAULT image")
+                            painterResource(id = R.drawable.profile_img_default)
+                        }
+                        else -> {
+                            android.util.Log.d("PlayerProfile", "🌐 Loading from network: $fullImageUrl")
+                            rememberAsyncImagePainter(
+                                model = fullImageUrl,
+                                error = painterResource(id = R.drawable.profile_img_default),
+                                placeholder = painterResource(id = R.drawable.profile_img_default)
+                            )
+                        }
+                    }
+
+                    Image(
+                        painter = painter,
+                        contentDescription = "프로필 이미지",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
                 Spacer(modifier = Modifier.width(12.dp))
+
                 Text(
                     text = player.nickname,
                     style = MaterialTheme.typography.bodySmall,

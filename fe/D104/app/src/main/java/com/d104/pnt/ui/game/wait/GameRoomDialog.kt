@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,9 +31,16 @@ import com.d104.pnt.ui.component.UserProfileCard
 import com.d104.pnt.ui.theme.AccentYellow
 import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.PixelFont
+import com.d104.pnt.ui.theme.RoomBorder
+import com.d104.pnt.ui.theme.RoomContainer
+import com.d104.pnt.ui.chatroom.chat.ProfileData
 
 @Composable
-fun PlayerInfoDialog(player: WaitingPlayer, onDismiss: () -> Unit) {
+fun PlayerInfoDialog(
+    profile: ProfileData,
+    isLoading: Boolean = false,
+    onDismiss: () -> Unit
+) {
     Dialog(onDismissRequest = onDismiss) {
         Box(
             contentAlignment = Alignment.Center,
@@ -40,11 +48,17 @@ fun PlayerInfoDialog(player: WaitingPlayer, onDismiss: () -> Unit) {
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
         ) {
-            UserProfileCard(
-                nickname = player.nickname, avatarUrl = player.profileUrl,
-                policeGrade = "순경", thiefGrade = "바늘도둑", // TODO: 실제 데이터 연동
-                modifier = Modifier.fillMaxWidth()
-            )
+            if (isLoading) {
+                CircularProgressIndicator(color = Color.White)
+            } else {
+                UserProfileCard(
+                    nickname = profile.nickname,
+                    avatarUrl = profile.avatarUrl,
+                    policeGrade = profile.policeGrade,
+                    thiefGrade = profile.thiefGrade,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }
@@ -272,8 +286,8 @@ fun LeaveRoomConfirmDialog(
 ) {
     Dialog(onDismissRequest = onDismissRequest) {
         PixelContainer(
-            backgroundColor = DarkSurface,
-            borderColor = Color.White,
+            backgroundColor = RoomContainer,
+            borderColor = RoomBorder,
             borderWidth = 3f,
             cornerSize = 8f,
             innerVerticalPadding = 30,

@@ -78,6 +78,7 @@ import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.LoseColor
 import com.d104.pnt.ui.theme.MissionYellow
 import com.d104.pnt.ui.theme.PixelFont
+import com.d104.pnt.ui.theme.ThiefRed
 import com.d104.pnt.ui.theme.WinColor
 import com.d104.pnt.util.GameFeedbackManager
 import com.google.android.gms.maps.model.LatLng
@@ -589,41 +590,19 @@ fun GamePlayScreen(
             }
 
             MissionStatus.SUCCESS -> {
-                Box(
-                    modifier = Modifier
-                        .height(200.dp)
-                        .width(400.dp)
-                ) {
-                    PixelAlertDialog(
-                        title = "미션 성공!",
-                        message = "감시망을 교묘하게 피하는데 성공했습니다! \n 이제 더이상 CCTV에 노출되지 않습니다.",
-                    ) {
-                        PixelButtonCode(
-                            text = "확인",
-                            fontSize = 20,
-                            onClick = { viewModel.missionInit() }
-                        )
-                    }
-                }
+                AlertOverlay(
+                    title = "미션 수행 성공!",
+                    message = "더이상 CCTV에 노출되지 않습니다",
+                    color = ThiefRed
+                )
             }
 
             MissionStatus.FAIL -> {
-                Box(
-                    modifier = Modifier
-                        .height(200.dp)
-                        .width(400.dp)
-                ) {
-                    PixelAlertDialog(
-                        title = "미션 실패",
-                        message = missionFailReason,
-                    ) {
-                        PixelButtonCode(
-                            text = "확인",
-                            fontSize = 20,
-                            onClick = { viewModel.missionInit() }
-                        )
-                    }
-                }
+                AlertOverlay(
+                    title = "미션 실패!!",
+                    message = missionFailReason,
+                    color = ThiefRed
+                )
             }
         }
     }

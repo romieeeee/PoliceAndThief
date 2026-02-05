@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d104.pnt.ui.chatroom.chat.ProfileData
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.GameRoomUiEvent
@@ -61,6 +62,9 @@ fun GameRoomScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
 
+    val selectedProfile by viewModel.selectedProfile.collectAsStateWithLifecycle()
+    val isProfileLoading by viewModel.isProfileLoading.collectAsStateWithLifecycle()
+
     var selectedPlayerId by remember { mutableStateOf<Long?>(null) }
     var dismissedPlayerId by remember { mutableStateOf<Long?>(null) }
     var lastDismissTime by remember { mutableLongStateOf(0L) }
@@ -83,8 +87,6 @@ fun GameRoomScreen(
 
                 is GameRoomUiEvent.NavigateToGame -> {
                     onNavigateRole(event.roomId, GameRole.fromName((event.role)))
-
-//                    onStartGame(event.roomId, GameRole.fromName(event.role))
                 }
             }
         }
@@ -118,9 +120,13 @@ fun GameRoomScreen(
 
     val anyCount = players.count { it.role == GameRole.ANY && !it.isChangingRole }
 
-    val isAllReady = players.isNotEmpty() && players.filter { it.id != myMemberId }.all {
-        it.isReady && !it.isChangingRole && it.role != GameRole.ANY && it.role != GameRole.UNDECIDED
+    val isAllReady = players.isNotEmpty()
+            && players.size == roomInfo.maxCount
+            && players.filter { it.id != myMemberId }.all {
+        it.isReady && !it.isChangingRole
     }
+
+    val canChangeRole = isHost || !isMeReady
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -178,6 +184,7 @@ fun GameRoomScreen(
                     dismissedPlayerId = selectedPlayerId
                     lastDismissTime = System.currentTimeMillis()
                     selectedPlayerId = null
+                    viewModel.loadUserProfile(player.id)
                     infoDialogTarget = player
                 },
                 onDelegateHostClick = { player ->
@@ -195,6 +202,7 @@ fun GameRoomScreen(
                     viewModel.resetToUndecided()
                     onChangeRole()
                 },
+                canChangeRole = canChangeRole,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
@@ -241,9 +249,16 @@ fun GameRoomScreen(
         }
 
         // ========== 다이얼로그 ==========
-        if (infoDialogTarget != null) PlayerInfoDialog(
-            player = infoDialogTarget!!,
-            onDismiss = { infoDialogTarget = null })
+        if (infoDialogTarget != null && selectedProfile != null) {
+            PlayerInfoDialog(
+                profile = selectedProfile!!,
+                isLoading = isProfileLoading,
+                onDismiss = {
+                    infoDialogTarget = null
+                    viewModel.clearSelectedProfile()
+                }
+            )
+        }
 
         if (kickDialogTarget != null) KickConfirmDialog(
             player = kickDialogTarget!!,

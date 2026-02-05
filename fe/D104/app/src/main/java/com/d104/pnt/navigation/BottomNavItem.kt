@@ -8,9 +8,9 @@ sealed class BottomNavItem(
     val icon: Int,
     val label: String
 ) {
-    data object Chat : BottomNavItem("chat", R.drawable.ic_chat, "chat")
+    data object Chat : BottomNavItem("chat", R.drawable.ic_chat, "채팅방")
     data object Home : BottomNavItem("home", R.drawable.ic_logo, "home")
-    data object Profile : BottomNavItem("profile", R.drawable.ic_user, "profile")
+    data object Profile : BottomNavItem("profile", R.drawable.ic_user, "프로필")
 
     companion object {
         val items = listOf(Chat, Home, Profile)
