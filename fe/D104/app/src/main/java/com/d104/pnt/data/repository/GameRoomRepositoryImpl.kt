@@ -36,7 +36,10 @@ class GameRoomRepositoryImpl @Inject constructor(
         thiefCount: Int,
         prison: Location,
         polygon: List<Location>,
+        mapId: Long?,
         saveMap: Boolean,
+        mapName: String?,
+        mapDescription: String?
     ): BaseResult<CreateGameRoomResponse> {
         Timber.d("GameCreateRequest: 인원=$playerCount, 미션=$missionCount, 감옥=${prison.lat},${prison.lng}")
         return safeApiCall(
@@ -58,7 +61,10 @@ class GameRoomRepositoryImpl @Inject constructor(
                     missionCount,
                     policeCount,
                     thiefCount,
+                    mapId,
                     saveMap,
+                    mapName,
+                    mapDescription,
                     prison,
                     polygon
                 )
