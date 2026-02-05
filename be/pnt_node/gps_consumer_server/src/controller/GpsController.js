@@ -15,13 +15,14 @@ export class GpsController {
 
     postGps = async (payload) => {
         try {
-            console.log(payload);
             const memberId = parseInt(payload.memberId);
             const gameId = parseInt(payload.gameId);
             const lat = parseFloat(payload.lat);
             const lng = parseFloat(payload.lng);
             const walk = parseInt(payload.walk);
-            const longestSurvived = parseInt(payload.longestSurvived); 
+            const longestSurvived = parseInt(payload.longestSurvived);
+            
+            console.log(`[POSTGPS] Game ${gameId}: Received GPS data ${JSON.stringify(payload)}`);
 
             const gameMember = await this.gameMemberService.findMemberGame(gameId, memberId);
             if (!gameMember) return; // Member not found in game, ignore

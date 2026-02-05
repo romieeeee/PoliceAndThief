@@ -5,7 +5,7 @@ module.exports = {
             script: "./src/app.js",
             exec_mode: "cluster",
             watch: false,
-            instances: 4
+            instances: 6
         }
     ]
 }
