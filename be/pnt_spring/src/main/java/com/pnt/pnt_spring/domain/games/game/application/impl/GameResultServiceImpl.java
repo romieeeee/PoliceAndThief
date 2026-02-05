@@ -1,6 +1,7 @@
 package com.pnt.pnt_spring.domain.games.game.application.impl;
 
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -165,7 +166,12 @@ public class GameResultServiceImpl implements GameResultService {
 		GameMemberStat winningSecondStat = (winnerStats.size() > 1) ? winnerStats.get(1) : null;
 		GameMemberStat losingFirstStat = loserStats.isEmpty() ? null : loserStats.get(0);
 
-		int durationSec = (int)Duration.between(game.getStartTime(), game.getEndTime()).toSeconds();
+		int durationSec = 0;
+		OffsetDateTime endGame = game.getEndTime();
+		if(game.getEndTime() == null){
+			endGame = OffsetDateTime.now();
+		}
+		durationSec = (int)Duration.between(game.getStartTime(), endGame).toSeconds();
 
 		// 내 스탯 + 등급/최고기록 조회 로직 추가
 		GameMemberStat myGameStat = allStats.stream()
