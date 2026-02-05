@@ -7,6 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -61,6 +62,7 @@ import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.Mission
 import com.d104.pnt.service.location.LocationService
 import com.d104.pnt.ui.component.AlertOverlay
+import com.d104.pnt.ui.component.ArrestOverlay
 import com.d104.pnt.ui.component.ContDownUI
 import com.d104.pnt.ui.component.ExpandableCard
 import com.d104.pnt.ui.component.GameEndOverlay
@@ -119,6 +121,7 @@ fun GamePlayScreen(
     val missionState by viewModel.missionState.collectAsStateWithLifecycle()
     val missionFailReason by viewModel.missionFailReason.collectAsStateWithLifecycle()
     val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
+    val myState by viewModel.myState.collectAsStateWithLifecycle()
     val helicopterState by viewModel.helicopterState.collectAsStateWithLifecycle()
     val isChief by viewModel.isChief.collectAsStateWithLifecycle()
     val helicopterEnabled by viewModel.helicopterButtonEnabled.collectAsStateWithLifecycle()
@@ -282,7 +285,9 @@ fun GamePlayScreen(
             ) {
                 // 왼쪽: 지도
                 PixelIconButton(
-                    modifier = Modifier.size(50.dp),
+                    modifier = Modifier
+                        .size(50.dp)
+                        .zIndex(100f),
                     borderColor = ButtonDisabled,
                     pixelSize = 3.dp,
                     onClick = {
@@ -601,9 +606,15 @@ fun GamePlayScreen(
         }
     }
 
+    ArrestOverlay(
+        modifier = Modifier.zIndex(50f),
+        isVisible = myState == "TRANSFER" || myState == "PRISON"
+    )
+
     AnimatedVisibility(
+        modifier = Modifier.zIndex(100f),
         visible = showGameOverOverlay,
-        enter = slideInHorizontally() + fadeIn()
+        enter = slideInVertically() + fadeIn()
     ) {
         GameEndOverlay()
     }
