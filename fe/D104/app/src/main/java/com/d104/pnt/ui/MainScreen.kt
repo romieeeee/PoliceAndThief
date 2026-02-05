@@ -221,7 +221,8 @@ fun MainScreen(
                         }
                     },
                     onChangeRole = {
-                        navController.navigate(Routes.buildRoleSelect(roomId))
+                        val route = Routes.buildRoleSelect(roomId) + "?isEditMode=true"
+                        navController.navigate(route)
                     },
                     onBackPressed = { navController.popBackStack() },
                     onNavigateRole = { roomId, role ->
@@ -242,12 +243,20 @@ fun MainScreen(
 
             // 역할 선택 (대기방 내에서)
             composable(
-                route = "${Routes.ROLE_SELECT}/{${NavArgs.ROOM_ID}}",
+                route = "${Routes.ROLE_SELECT}/{${NavArgs.ROOM_ID}}?isEditMode={isEditMode}",
+
                 arguments = listOf(
-                    navArgument(NavArgs.ROOM_ID) { type = NavType.LongType }
+                    navArgument(NavArgs.ROOM_ID) { type = NavType.LongType },
+
+                    navArgument("isEditMode") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    }
                 )
             ) { backStackEntry ->
                 val roomId = backStackEntry.arguments?.getLong(NavArgs.ROOM_ID) ?: 0L
+
+                val isEditMode = backStackEntry.arguments?.getBoolean("isEditMode") ?: false
 
                 RoleSelectScreen(
                     onRoleSelected = { role: GameRole ->
@@ -256,6 +265,7 @@ fun MainScreen(
                         }
                     },
                     onBackPressed = { navController.popBackStack() },
+                    isEditMode = isEditMode
                 )
             }
 
