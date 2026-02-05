@@ -49,8 +49,8 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     }
 
     // Callbacks
-    private var onJoinedRoom: ((Long, Long, String) -> Unit)? = null
-    private var onGpsReceived: ((Long?, String? ,Int, JSONArray) -> Unit)? = null
+    private var onJoinedRoom: ((Long, Long, String, Int) -> Unit)? = null
+    private var onGpsReceived: ((Long?, String?, Int, JSONArray) -> Unit)? = null
     private var onWillStartGame: ((Long, String) -> Unit)? = null
     private var onGameStarted: ((Long, String) -> Unit)? = null
     private var onThiefEscaped: ((gameId: Long, thiefId: Long, escapedAt: String) -> Unit)? = null
@@ -66,10 +66,11 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     private var onNewsReceived: ((Long, Long) -> Unit)? = null
     private var onReconnected: ((Long) -> Unit)? = null
 
-    private var onBeepUse: ((org.json.JSONObject) -> Unit)? = null
+    private var onBeepUse: ((JSONObject) -> Unit)? = null
     private var onMissionResult: ((Long, Long, Long, Boolean, String, String) -> Unit)? = null
     private var onHelicopterSkillReceived:
-            ((gameId: Long, policeId: Long, result: String, reason: String?, startedAt: String?, usedAt: String?) -> Unit)? = null
+            ((gameId: Long, policeId: Long, result: String, reason: String?, startedAt: String?, usedAt: String?) -> Unit)? =
+        null
 
     override fun setupCustomListeners() {
         // 게임 입장 확인
@@ -79,8 +80,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val gameId = data.getLong("gameId")
                 val memberId = data.getLong("memberId")
                 val message = data.getString("message")
-                Timber.d("🎮 게임 입장 성공: $data")
-                onJoinedRoom?.invoke(gameId, memberId, message)
+                val connectedMembers = data.getInt("connectedMembers")
+
+                onJoinedRoom?.invoke(gameId, memberId, message, connectedMembers)
             } catch (e: Exception) {
                 Timber.e(e, "게임 입장 응답 파싱 실패")
             }
@@ -104,10 +106,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val skillUsedAtRaw = data.optString("skillUsedAt", null)
                 val skillUsedAt = skillUsedAtRaw
                     ?.takeIf { it.isNotBlank() && it.lowercase() != "null" }
-
-                Timber.d(
-                    "GPS 수신: gameId=$gameId sec=$sec, cctvThiefId=$cctvThiefId, skillUsedAt=$skillUsedAt, 참여자=${locations.length()}"
-                )
 
                 onGpsReceived?.invoke(cctvThiefId, skillUsedAt, sec, locations)
             } catch (e: Exception) {
@@ -484,8 +482,8 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     }
 
     /**
-    * ✅ Radio 송신 (PTT 눌렀을 때)
-    */
+     * ✅ Radio 송신 (PTT 눌렀을 때)
+     */
     fun sendRadio() {
         val gameId = currentGameId ?: run {
             Timber.e("gameId가 없어서 Radio 전송 불가")
@@ -516,9 +514,10 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
     // ==================== Callback Setters ====================
 
-    fun setOnJoinedRoom(callback: (gameId: Long, memberId: Long, message: String) -> Unit) {
+    fun setOnJoinedRoom(callback: (gameId: Long, memberId: Long, message: String, connectedMembers: Int) -> Unit) {
         onJoinedRoom = callback
     }
+
     fun setOnGpsReceived(callback: (cctvThiefId: Long?, skillUsedAt: String?, sec: Int, locations: JSONArray) -> Unit) {
         onGpsReceived = callback
     }

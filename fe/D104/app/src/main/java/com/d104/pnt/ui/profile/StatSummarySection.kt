@@ -41,7 +41,7 @@ fun StatSummarySection(
 
     PixelContainer(
         modifier = modifier,
-        backgroundColor = Color(0xFF3F3F68),
+        backgroundColor = Color(0xFF3F3F68).copy(alpha = 0.5f),
         borderColor = Color(0xFF8D90B3),
         borderWidth = 6f,
         cornerSize = 20f
@@ -49,7 +49,7 @@ fun StatSummarySection(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 20.dp, horizontal = 24.dp)
+                .padding(vertical = 12.dp, horizontal = 16.dp)
         ) {
             // 타이틀
             Text(

@@ -1,7 +1,8 @@
-    package com.d104.pnt.ui.chatroom.create
+package com.d104.pnt.ui.chatroom.create
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,14 +30,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
+import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelInputField
-import com.d104.pnt.ui.component.RoundedButton
 import com.d104.pnt.ui.game.create.CounterControl
 import com.d104.pnt.ui.game.create.SectionTitle
 import com.d104.pnt.ui.theme.BorderDefault
-import com.d104.pnt.ui.theme.DarkSurface
+import com.d104.pnt.ui.theme.CustomBlue
 import com.d104.pnt.ui.theme.DialogBorderColor
+import com.d104.pnt.ui.theme.RoomBorder
+import com.d104.pnt.ui.theme.RoomContainer
 import com.d104.pnt.ui.theme.TextPrimary
 import timber.log.Timber
 
@@ -81,11 +84,15 @@ fun ChatRoomCreateScreen(
         }
     }
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+    ) {
 
         Image(
             modifier = Modifier.fillMaxSize(),
-            painter = painterResource(R.drawable.img_main_bg),
+            painter = painterResource(R.drawable.img_background2),
             contentDescription = null,
             contentScale = ContentScale.Crop
         )
@@ -103,8 +110,8 @@ fun ChatRoomCreateScreen(
                 // 게임 생성 컨테이너
                 PixelContainer(
                     modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = DarkSurface,
-                    borderColor = DialogBorderColor,
+                    backgroundColor = RoomContainer,
+                    borderColor = RoomBorder,
                     borderWidth = 8f,
                     cornerSize = 16f
                 ) {
@@ -206,34 +213,38 @@ fun ChatRoomCreateScreen(
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(30.dp))
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
-                            RoundedButton(
+                            PixelButtonCode(
+                                modifier = Modifier.weight(1f),
                                 text = "취소",
-                                onClick = {
-                                    onCancel()
-                                },
-                                containerColor = Color.White,
-                                modifier = Modifier.weight(1f)
+                                onClick = { onCancel() },
+                                mainColor = Color.Gray,
+                                borderColor = BorderDefault,
+                                textColor = Color.White,
+                                fontSize = 16,
+                                blockHeight = 10
                             )
 
-                            RoundedButton(
-                                text = "생성",
+                            PixelButtonCode(
+                                modifier = Modifier.weight(1f),
+                                text = "확인",
                                 onClick = {
-                                    Timber.d("Create Clicked")
                                     if (viewModel.isValid()) {
                                         Timber.d("Valid")
                                         viewModel.createChatRoom()
-                                    } else {
-                                        Timber.d("Not Valid")
                                     }
                                 },
-                                containerColor = Color.White,
-                                modifier = Modifier.weight(1f)
+                                mainColor = CustomBlue,
+                                borderColor = BorderDefault,
+                                textColor = Color.White,
+                                fontSize = 16,
+                                blockHeight = 10
                             )
                         }
                     }

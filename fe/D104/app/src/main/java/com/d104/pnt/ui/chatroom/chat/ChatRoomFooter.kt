@@ -4,12 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,39 +38,38 @@ fun ChatRoomFooter(
     // 메시지가 비어있는지 확인 (버튼 활성화 여부)
     val isMessageEmpty = message.isBlank()
 
-    Box(
+    Column(
         modifier = Modifier
-            .background(DarkBackground)
             .fillMaxWidth()
-            .padding(top = 1.dp),
-        contentAlignment = Alignment.Center
+            .padding(bottom = 4.dp)
+            .background(Color.Transparent),
+        verticalArrangement = Arrangement.Center
     ) {
-
         Row(
             modifier = modifier
                 .fillMaxWidth()
                 .height(64.dp)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             PixelInputField(
                 modifier = Modifier
                     .weight(1f),
                 placeholder = "메시지를 입력하세요...",
-                backgroundColor = TextPrimary,
+                backgroundColor = Color.White,
+                borderColor = Color.White,
                 value = message,
                 onValueChange = onValueChange
             )
-
+            Spacer(Modifier.width(16.dp))
             PixelContainer(
                 modifier = Modifier
                     .size(44.dp)
                     .clickable(enabled = !isMessageEmpty) {
                         onSendMessage(message)
                     },
-                backgroundColor = if (isMessageEmpty) TextSecondary else ButtonPrimary,
-                borderColor = if (isMessageEmpty) TextSecondary else ButtonPrimary,
+                backgroundColor = Color.White,
+                borderColor = Color.White,
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -76,11 +78,12 @@ fun ChatRoomFooter(
                     Icon(
                         painter = painterResource(R.drawable.ic_send),
                         contentDescription = "전송",
-                        modifier = Modifier.size(24.dp),
-                        tint = if (isMessageEmpty) Color.Gray else Color.Unspecified
+                        modifier = Modifier.size(32.dp),
+                        tint = if (isMessageEmpty) Color.Gray else DarkBackground
                     )
                 }
             }
         }
+
     }
 }

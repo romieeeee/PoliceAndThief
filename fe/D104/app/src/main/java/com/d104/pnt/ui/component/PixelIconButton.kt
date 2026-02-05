@@ -51,7 +51,7 @@ fun PixelIconButton(
             .clickable(
                 interactionSource = interactionSource,
                 indication = null // 리플 제거
-            ) { onClick() }
+            ) { onClick() },
     ) {
         // 그림자 레이어
         FiveLayerPixelShape(
