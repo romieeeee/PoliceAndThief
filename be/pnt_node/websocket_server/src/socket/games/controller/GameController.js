@@ -442,7 +442,9 @@ export class GameController {
 
         const gameToken = await this.redisClient.getGameToken(integerGameId);
 
-        let res = await axios.post(`${process.env.SPRING_BOOT_URL}/api/games/result`, {
+        logger.info(`[GameController] gameId: ${integerGameId}, winTeam: ${winTeam}, memberStats: ${JSON.stringify(memberStats)}`);
+
+        let res = await axios.post(`${process.env.SPRING_BOOT_URL}/games/result`, {
             gameId: integerGameId,
             winTeam: winTeam,
             memberStats: memberStats
@@ -516,7 +518,7 @@ export class GameController {
         const gameId = this.socket.data.gameId;
         const memberId = this.socket.data.memberId;
 
-        const res = await axios.get(`${process.env.SPRING_BOOT_URL}/api/games/${gameId}/result`, {
+        const res = await axios.get(`${process.env.SPRING_BOOT_URL}/games/${gameId}/result`, {
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${await this.redisClient.getAccessToken(memberId)}`

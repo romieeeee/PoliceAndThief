@@ -79,7 +79,7 @@ public class GameResultServiceImpl implements GameResultService {
 
 		List<GameMember> allMembers = gameMemberRepository.findAllByGameId(request.getGameId());
 		Map<Long, GameMember> memberMap = allMembers.stream()
-			.collect(Collectors.toMap(GameMember::getId, Function.identity()));
+			.collect(Collectors.toMap(gm -> gm.getMember().getId(), Function.identity()));
 
 		// 요청된 멤버 스탯 정보를 순회하며 처리
 		for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
@@ -104,6 +104,8 @@ public class GameResultServiceImpl implements GameResultService {
 				.orElseGet(() -> gameMemberStatRepository.save(GameMemberStat.createInitialStat(gameMember)));
 
 			stat.updateResultStats(statReq.getWalk(), statReq.getLongestSurvived());
+
+			gameMemberStatRepository.save(stat);
 
 			// 2-3. 누적 스탯 및 등급 업데이트
 			updateMemberGradeAndStats(stat, request.getWinTeam(), statReq.getPosition());
@@ -166,7 +168,7 @@ public class GameResultServiceImpl implements GameResultService {
 
 		int durationSec = (int)Duration.between(game.getStartTime(), game.getEndTime()).toSeconds();
 
-		// [수정] 내 스탯 + 등급/최고기록 조회 로직 추가
+		// 내 스탯 + 등급/최고기록 조회 로직 추가
 		GameMemberStat myGameStat = allStats.stream()
 			.filter(stat -> stat.getGameMember().getMember().getId().equals(memberId))
 			.findFirst()
@@ -325,12 +327,14 @@ public class GameResultServiceImpl implements GameResultService {
 		boolean isWin = (position == Position.POLICE && winTeam == WinTeam.POLICE) ||
 			(position == Position.THIEF && winTeam == WinTeam.THIEF);
 
-		// 1. [공통] MemberStat (전체 통계) 먼저 업데이트
+		// 1. MemberStat (전체 통계) 먼저 업데이트
 		MemberStat memberStat = memberStatRepository.findById(member.getId())
 			.orElseGet(() -> memberStatRepository.save(MemberStat.createInitial(member)));
 
 		// 여기서 totalGames, thiefGame 등이 +1 됨
 		memberStat.updateGameStats(isWin, position);
+
+		memberStatRepository.save(memberStat);
 
 		if (position == Position.POLICE) {
 			// 1. 경찰 누적 스탯 조회 (없으면 초기 생성)
@@ -353,6 +357,8 @@ public class GameResultServiceImpl implements GameResultService {
 					.orElse(policeStat.getGradePolice()); // 없으면 유지
 				policeStat.changeGrade(nextGrade);
 			}
+
+			memberStatPoliceRepository.save(policeStat);
 
 		} else if (position == Position.THIEF) {
 			// 1. 도둑 누적 스탯 조회
@@ -379,6 +385,8 @@ public class GameResultServiceImpl implements GameResultService {
 					.orElse(thiefStat.getGradeThief());
 				thiefStat.changeGrade(nextGrade);
 			}
+
+			memberStatThiefRepository.save(thiefStat);
 		}
 	}
 

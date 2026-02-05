@@ -153,6 +153,9 @@ public class GameRoomServiceImpl implements GameRoomService {
 		// 포지션 확정(PreferPosition 반영)
 		assignPositions(setting, members);
 
+		// 확정된 포지션을 DB에 즉시 저장(포지션 믹스업 방지)
+		gameMemberRepository.saveAll(members);
+
 		// 경찰 중 랜덤 1명(=경찰청장) 선정 + 스킬 생성 (givenPosition은 POLICE 유지)
 		Long chiefMemberId = assignChiefSkill(game, members);
 

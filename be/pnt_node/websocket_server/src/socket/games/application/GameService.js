@@ -64,15 +64,17 @@ export class GameService {
 
     processArrest = async (gameId, thiefId, policeId) => {
         try {
+
+            const police = await this.gameMemberService.findMemberGameInDB(policeId, gameId);
             // thief 상태 변경 (TRANSFER)
             // police 스탯 업데이트 (체포 횟수 증가)
-            await this.gameMemberStatService.updateArrestCount(policeId);
+            await this.gameMemberStatService.updateArrestCount(police.id);
 
             await this.gameMemberService.updateMemberStatus(gameId, thiefId, GameMemberStatus.TRANSFER);
 
             return true;
         } catch (error) {
-            console.error("processArrest Error", error);
+            logger.error("processArrest Error", error);
             throw error;
         }
     }
@@ -121,7 +123,7 @@ export class GameService {
                 },
             });
         } catch (error) {
-            console.error("updateGame Error", error);
+            logger.error("updateGame Error", error);
             throw error;
         }
     }
@@ -142,7 +144,7 @@ export class GameService {
 
             return true;
         } catch (error) {
-            console.error("endGame Error", error);
+            logger.error("endGame Error", error);
             throw error;
         }
     }
