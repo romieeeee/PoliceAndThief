@@ -108,11 +108,24 @@ export class ChatService {
     }
 
     parseChat = async (chat) => {
+
         let avatarUrl = chat.member && chat.member.avatarUrl ? chat.member.avatarUrl : chat.avatarUrl;
 
         if (avatarUrl) {
             avatarUrl = await getPresignedUrl(avatarUrl);
         }
+
+        // S3 Presigned URL 생성 실패 또는 유효하지 않은 키(string 등)일 경우 기본 이미지 사용
+        if (!avatarUrl) {
+            // S3에 default.png가 있다고 가정하고 다시 시도하거나, 그냥 클라이언트가 처리하게 null로 둘 수도 있음.
+            // 여기서는 유저 요청 맥락상 "이미지가 안 뜬다"를 해결해야 하므로 유효한 URL이 없으면 null보다는 기본값이나 처리가 필요.
+            // 하지만 default.png도 S3에 있다면 signed url이 필요할 수 있음.
+            // 일단 null일 경우 null로 반환하여 프론트에서 기본 이미지를 띄우도록 유도하거나, 
+            // "default.png" 문자열을 반환하여 프론트가 assets에서 찾도록 할 수 있음.
+            // 기존 코드 라인 15에서 "default.png"를 할당하는 로직이 있으므로, 여기서도 null이면 "default.png"로 복구하는게 안전.
+            avatarUrl = "default.png";
+        }
+
 
         return {
             id: chat._id,
