@@ -34,7 +34,6 @@ class ChatRoomViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val chatRoomId: Long = savedStateHandle.get<Long>(NavArgs.CHAT_ID) ?: 0
-
     private val _roomInfo = MutableStateFlow<ChatRoomResponse?>(null)
     val roomInfo: StateFlow<ChatRoomResponse?> = _roomInfo.asStateFlow()
 
@@ -228,7 +227,7 @@ class ChatRoomViewModel @Inject constructor(
                 chatRoomId = chatRoomId,
                 memberId = data.optLong("senderId", data.optLong("memberId", 0)),
                 senderNickname = data.optString("senderNickname", "익명"),
-                avataUrl = data.optString("avataUrl", ""),
+                avatarUrl = data.optString("avatarUrl", ""),
                 content = data.getString("content"),
             )
         } catch (e: Exception) {
