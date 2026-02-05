@@ -103,6 +103,7 @@ public class MemberServiceImpl implements MemberService {
 			.orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_FOUND));
 		// Mongo에도 null이 들어가는 것을 방지하기 위해 effectiveAvatarKey 사용
 		memberDoc.update(request.getNickname(), effectiveAvatarKey);
+		memberMongoRepository.save(memberDoc);
 
 		// 3. S3 파일 삭제 로직
 		// newAvatarKey가 존재하고(null이 아니고), 기존 키와 다를 때만 삭제 수행
