@@ -21,7 +21,13 @@ data class PlayerResult(
     val memberId: Long,
     val nickname: String,
     val role: String,
-    val description: String
+    val description: String,
+    val walk: Int,
+    val arrestCount: Int,
+    val longestSurvived: Int,
+    val rank: String,
+    val maxArrestCount: Int,
+    val maxSurvivalTime: Int
 )
 
 data class GameResultMyStat(

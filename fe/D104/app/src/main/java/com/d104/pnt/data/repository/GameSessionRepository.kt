@@ -25,6 +25,7 @@ interface GameSessionRepository {
     val eventFlow: SharedFlow<GameSessionEvent>
     val myMemberId: StateFlow<Long>
     val myRole: StateFlow<String>
+    val myState: StateFlow<String?>
     val thiefMembers: StateFlow<List<GameMemberSocketDto>>
     val escapeQueue: StateFlow<List<String>>
     val beepEvent: SharedFlow<BeepUseResponse>
@@ -56,7 +57,6 @@ interface GameSessionRepository {
     fun connectAndJoin(gameId: Long)
     fun gameInit()
     fun uploadMissionImage(image: File, missionId: Long)
-    fun missionInit()
     fun dequeEscape()
     fun arrestThief(thiefId: Long)
     fun startGameSession()
