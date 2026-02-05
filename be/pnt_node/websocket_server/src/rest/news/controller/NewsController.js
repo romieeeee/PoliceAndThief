@@ -31,7 +31,7 @@ export class NewController {
                 this.emitter.of(GAME_NAMESPACE).to(gameId).emit("get news", { gameId, newsId });
                 await this.redisClient.setNews(gameId, newsId);
             }
-
+            logger.info("News sent successfully", payload);
             res.status(200).json({ message: "News sent successfully" });
         } catch (error) {
             res.status(error.code || 500).json({ message: error.message });
