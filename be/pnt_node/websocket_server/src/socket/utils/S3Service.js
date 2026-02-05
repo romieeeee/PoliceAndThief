@@ -4,13 +4,29 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    }
-});
+const region = process.env.AWS_REGION;
+const accessKeyId = process.env.AWS_ACCESS_KEY;
+const secretAccessKey = process.env.AWS_SECRET_KEY;
+
+if (!region || !accessKeyId || !secretAccessKey) {
+    console.error("⚠️ AWS Configuration missing!");
+    console.error("AWS_REGION:", region);
+    console.error("AWS_ACCESS_KEY_ID exists:", !!accessKeyId);
+    console.error("AWS_SECRET_ACCESS_KEY exists:", !!secretAccessKey);
+}
+
+const clientConfig = {
+    region: region,
+};
+
+if (accessKeyId && secretAccessKey) {
+    clientConfig.credentials = {
+        accessKeyId: accessKeyId,
+        secretAccessKey: secretAccessKey,
+    };
+}
+
+const s3Client = new S3Client(clientConfig);
 
 export const getPresignedUrl = async (key) => {
     if (!key) return null;
