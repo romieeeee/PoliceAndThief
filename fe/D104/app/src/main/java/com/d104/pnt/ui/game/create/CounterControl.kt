@@ -1,6 +1,7 @@
 package com.d104.pnt.ui.game.create
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -32,10 +34,14 @@ fun CounterControl(
     value: String,
     unit: String,
     onDecrease: () -> Unit,
-    onIncrease: () -> Unit
+    onIncrease: () -> Unit,
+    onHelpClick: (() -> Unit)? = null
 ) {
     Column(modifier = modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
@@ -43,7 +49,22 @@ fun CounterControl(
                 modifier = Modifier.size(14.dp)
             )
             Spacer(modifier = Modifier.width(4.dp))
+
             Text(text = label, color = Color.Gray, fontSize = 12.sp)
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            if (onHelpClick != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Outlined.HelpOutline,
+                    contentDescription = "도움말",
+                    tint = Color(0xFFC4C4C4),
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clickable { onHelpClick() }
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(4.dp))
