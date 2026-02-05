@@ -14,8 +14,6 @@ public final class GeoConverter {
 
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory(new PrecisionModel(), 4326);
 
-    private GeoConverter() {}
-
     /**
      * GeoConverter가 받을 수 있는 "위경도" 타입용 인터페이스
      * - Request DTO의 LatLng 내부 클래스가 이 인터페이스를 implements 하게 만들면

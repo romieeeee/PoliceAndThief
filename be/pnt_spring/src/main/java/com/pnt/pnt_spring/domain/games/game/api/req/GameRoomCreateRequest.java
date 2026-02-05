@@ -2,6 +2,7 @@ package com.pnt.pnt_spring.domain.games.game.api.req;
 
 import java.util.List;
 
+import com.pnt.pnt_spring.domain.games.utils.GeoConverter;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -35,11 +36,17 @@ public class GameRoomCreateRequest {
 	@Min(0)
 	private Integer missionCount;
 
+	private Long mapId;
+
+	private Boolean saveMap;
+	private String mapName;
+	private String mapDescription;
+
 	@NotNull
 	@Valid
 	private Prison prison;
 
-	@NotNull
+//	@NotNull
 	@Size(min = 3, message = "polygon은 최소 3개 좌표가 필요합니다.")
 	@Valid
 	private List<LatLng> polygon;
@@ -53,8 +60,9 @@ public class GameRoomCreateRequest {
 		private Double lng;
 	}
 
+
 	@Getter
-	public static class LatLng {
+	public static class LatLng implements GeoConverter.LatLngLike {
 		@NotNull
 		private Double lat;
 
