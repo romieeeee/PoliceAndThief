@@ -7,6 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -615,7 +616,7 @@ fun GamePlayScreen(
     AnimatedVisibility(
         modifier = Modifier.zIndex(100f),
         visible = showGameOverOverlay,
-        enter = slideInHorizontally() + fadeIn()
+        enter = slideInVertically() + fadeIn()
     ) {
         GameEndOverlay()
     }
