@@ -171,8 +171,12 @@ fun PlayerSlotCard(
         else -> Color(0xFF8D90B3)
     }
     val cardBackgroundColor = if (isMe) Color(0xFFE3F2FD) else Color.White
-    val roleIcon =
-        if (player.isChangingRole) "?" else if (player.role == GameRole.POLICE) "👮" else "🕵️"
+    val roleIcon = when {
+        player.isChangingRole -> "?"
+        player.role == GameRole.POLICE -> "👮"
+        player.role == GameRole.THIEF -> "🕵️"
+        else -> "❓"
+    }
 
     Box {
         PixelContainer(
