@@ -7,8 +7,9 @@ dotenv.config();
 const region = process.env.AWS_REGION;
 const accessKeyId = process.env.AWS_ACCESS_KEY;
 const secretAccessKey = process.env.AWS_SECRET_KEY;
+const bucketName = process.env.AWS_S3_BUCKET_NAME;
 
-if (!region || !accessKeyId || !secretAccessKey) {
+if (!region || !accessKeyId || !secretAccessKey || !bucketName) {
     console.error("⚠️ AWS Configuration missing!");
     console.error("AWS_REGION:", region);
     console.error("AWS_ACCESS_KEY_ID exists:", !!accessKeyId);
@@ -29,22 +30,27 @@ if (accessKeyId && secretAccessKey) {
 const s3Client = new S3Client(clientConfig);
 
 export const getPresignedUrl = async (key) => {
-    if (!key) return null;
+    // 1. 유효성 검사: key가 없거나, 'string'인 경우, 또는 'string'으로 끝나는 경우 처리
+    if (!key || key === "string" || key.endsWith("/string")) {
+        return null;
+    }
 
-    // 이미 http로 시작하는 URL이면 그대로 반환 (혹시 모를 예외 처리)
+    // 2. 이미 http로 시작하는 URL이면 그대로 반환
     if (key.startsWith("http")) return key;
 
     try {
         const command = new GetObjectCommand({
-            Bucket: process.env.AWS_BUCKET_NAME,
+            Bucket: bucketName,
             Key: key,
         });
 
-        // 1시간(3600초) 유효한 URL 생성
+        // 3. Presigned URL 생성 (1시간 유효)
+        // AWS SDK v3는 기본적으로 가상 호스팅 스타일(Virtual Hosted-Style)을 사용하므로
+        // https://<bucket-name>.s3.<region>.amazonaws.com/<key> 형태가 되어야 함.
         const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
         return url;
     } catch (error) {
         console.error("Presigned URL 생성 실패:", error);
-        return key;
+        return key; // 실패 시 원본 키 반환 (또는 null)
     }
 };

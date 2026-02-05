@@ -68,6 +68,7 @@ const loop = async () => {
         }
     } catch (error) {
         console.error("Error in GPS Worker Loop:", error);
+    } finally {
     }
 };
 
