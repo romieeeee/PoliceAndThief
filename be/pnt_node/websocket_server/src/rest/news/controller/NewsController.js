@@ -30,7 +30,7 @@ export class NewController {
 
             if (success) {
                 logger.info(`[NewsController] emitting get news to ${gameId}`);
-                this.emitter.of(GAME_NAMESPACE).to(String(gameId)).emit("get news", { gameId, newsId });
+                this.emitter.of(GAME_NAMESPACE).to(gameId).emit("get news", { gameId, newsId });
                 await this.redisClient.setNews(gameId, newsId);
             } else {
                 logger.info(`[NewsController] success is false/missing. payload success: ${success}`);
