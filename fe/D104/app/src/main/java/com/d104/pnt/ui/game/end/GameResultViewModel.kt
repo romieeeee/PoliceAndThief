@@ -141,7 +141,7 @@ class GameResultViewModel @Inject constructor(
             "경정", "금고털이"   -> if (amIPolice) R.drawable.police_lv6  else R.drawable.thief_lv6
             "총경", "은행털이"   -> if (amIPolice) R.drawable.police_lv7  else R.drawable.thief_lv7
             "경무관", "홍길동"   -> if (amIPolice) R.drawable.police_lv8  else R.drawable.thief_lv8
-            "치안감", "인비저블"  -> if (amIPolice) R.drawable.police_lv9  else R.drawable.thief_lv9
+            "치안감", "인비져블"  -> if (amIPolice) R.drawable.police_lv9  else R.drawable.thief_lv9
             "치안정감", "괴도"   -> if (amIPolice) R.drawable.police_lv10 else R.drawable.thief_lv10
             "치안총감", "대도"   -> if (amIPolice) R.drawable.police_lv11 else R.drawable.thief_lv11
             else               -> if (amIPolice) R.drawable.police_lv1  else R.drawable.thief_lv1

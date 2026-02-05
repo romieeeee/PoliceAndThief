@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.d104.pnt.ui.theme.PixelFont
+import com.d104.pnt.ui.theme.PoliceBlue
+import com.d104.pnt.ui.theme.ThiefRed
 import com.d104.pnt.ui.theme.WinColor
 import kotlinx.coroutines.delay
 
@@ -32,7 +34,7 @@ import kotlinx.coroutines.delay
 fun AlertOverlay(
     title: String = "",
     message: String = "",
-    color: Color = WinColor
+    success: Boolean = true,
 ) {
     // 애니메이션 제어용 내부 상태
     var isVisible by remember { mutableStateOf(false) }
@@ -59,31 +61,23 @@ fun AlertOverlay(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
+                OutlinedText(
                     modifier = Modifier
                         .fillMaxWidth(),
                     text = title,
-                    fontFamily = PixelFont,
-                    color = color,
                     fontSize = 40.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    success = success
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Text(
+                OutlinedText(
                     modifier = Modifier
                         .fillMaxWidth(),
                     text = message,
-                    fontFamily = PixelFont,
-                    color = color,
                     fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 32.sp
+                    success = success
                 )
-
             }
         }
     }

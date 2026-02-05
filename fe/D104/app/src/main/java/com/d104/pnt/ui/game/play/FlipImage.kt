@@ -151,7 +151,7 @@ fun FlipImage(
                         .scale(-1f, 1f)
                 )
                 Box(
-                    modifier = Modifier.padding(top = 70.dp, bottom = 32.dp, start = 47.dp, end = 47.dp)
+                    modifier = Modifier.padding(top = 45.dp, bottom = 70.dp, start = 55.dp, end = 55.dp)
                 ) {
                     QRcodeContainer(
                         modifier = Modifier.fillMaxSize(),
