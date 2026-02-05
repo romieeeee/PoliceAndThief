@@ -4,8 +4,8 @@ import { GameSettingService } from "../../games/application/GameSettingService.j
 import { RedisClient } from "../../utils/client/RedisClient.js";
 import axios from "axios";
 import { sendError } from "../../../global/util/SocketError.js";
-import { JwtResolver, resolveInSocket, resolveInController } from "../../../global/auth/JwtResolver.js";
-import { generateToken, generateMemberAccessToken } from "../../../global/auth/JwtProvider.js";
+import { resolveInController } from "../../../global/auth/JwtResolver.js";
+import { generateMemberAccessToken } from "../../../global/auth/JwtProvider.js";
 import { GameSkillService } from "../../games/application/GameSkillService.js";
 
 
@@ -54,20 +54,14 @@ export class RoomController {
         this.socket.data.roomId = roomId;
         this.socket.join(roomId);
 
-        const accessToken = generateMemberAccessToken(this.socket.data.memberId);
-        this.redisClient.setAccessToken(this.socket.data.memberId, accessToken);
-        this.socket.data.accessToken = accessToken;
-
         this.io.to(roomId).emit("get join room", { roomId });
     }
 
     updateRoomInfo = async (data) => {
         const roomId = this.socket.data.roomId;
 
-        console.log("updateRoomInfo", data);
-
         try {
-            const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+            const accessToken = generateMemberAccessToken(this.socket.data.memberId, -3);
 
             const response = await axios.patch(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/settings`, data, {
                 headers: {
@@ -88,7 +82,7 @@ export class RoomController {
     updateReady = async (data) => {
         const roomId = this.socket.data.roomId;
 
-        const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+        const accessToken = generateMemberAccessToken(this.socket.data.memberId, -3);
 
         try {
             const response = await axios.patch(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/ready`, data, {
@@ -112,7 +106,7 @@ export class RoomController {
     updatePreferPosition = async (data) => {
         const roomId = this.socket.data.roomId;
         try {
-            const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+            const accessToken = generateMemberAccessToken(this.socket.data.memberId, -3);
 
             const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/position`, data, {
                 headers: {
@@ -160,9 +154,7 @@ export class RoomController {
         const roomId = this.socket.data.roomId;
 
         try {
-
-            const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
-
+            const accessToken = generateMemberAccessToken(this.socket.data.memberId, -3);
 
             const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/members/kick`, data, {
                 headers: {
@@ -183,9 +175,7 @@ export class RoomController {
     delegateOwner = async (data) => {
         const roomId = this.socket.data.roomId;
         try {
-            console.log(roomId);
-
-            const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+            const accessToken = generateMemberAccessToken(this.socket.data.memberId, -3);
 
             const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/delegate-host`, {
                 "targetMemberId": parseInt(data.targetMemberId)
@@ -213,15 +203,13 @@ export class RoomController {
         this.redisClient.setAccessToken(this.socket.data.memberId, accessToken);
         this.socket.data.accessToken = accessToken;
 
-        console.log("update access token", this.socket.data.accessToken);
-
-        this.socket.emit("get update access token", { "accessToken": data.accessToken });
+        this.socket.emit("get update access token", { "accessToken": data.accessToken, "refreshToken": data.refreshToken });
     }
 
     updateRoomMap = async (data) => {
         const roomId = this.socket.data.roomId;
 
-        const accessToken = await this.redisClient.getAccessToken(this.socket.data.memberId);
+        const accessToken = generateMemberAccessToken(this.socket.data.memberId, -3);
 
         try {
             const response = await axios.post(`${process.env.SPRING_BOOT_URL}/rooms/${roomId}/map`, data, {
