@@ -69,6 +69,9 @@ public class GameResultServiceImpl implements GameResultService {
 	@Override
 	public void saveGameResult(GameResultRequest request) {
 
+		log.info("request = {}", request.toString());
+		System.out.println(request);
+
 		Game game = gameRepository.findById(request.getGameId())
 			.orElseThrow(() -> new BusinessException(ErrorCode.GAME_NOT_FOUND));
 
