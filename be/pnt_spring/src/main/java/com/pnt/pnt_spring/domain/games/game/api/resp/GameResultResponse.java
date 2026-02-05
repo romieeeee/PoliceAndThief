@@ -33,6 +33,14 @@ public class GameResultResponse {
 		private String nickname;
 		private String role;
 		private String description;
+
+		private Integer walk;
+		private Integer arrestCount;
+		private Integer longestSurvived;
+
+		private String rank;
+		private Integer maxArrestCount;
+		private Integer maxSurvivalTime;
 	}
 
 	@Getter

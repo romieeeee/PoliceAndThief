@@ -80,7 +80,6 @@ public class GameResultServiceImpl implements GameResultService {
 		List<GameMember> allMembers = gameMemberRepository.findAllByGameId(request.getGameId());
 		Map<Long, GameMember> memberMap = allMembers.stream()
 			.collect(Collectors.toMap(gm -> gm.getMember().getId(), Function.identity()));
-
 		// 요청된 멤버 스탯 정보를 순회하며 처리
 		for (GameResultRequest.MemberStat statReq : request.getMemberStats()) {
 			GameMember gameMember = memberMap.get(statReq.getGameMemberId());
@@ -299,11 +298,40 @@ public class GameResultServiceImpl implements GameResultService {
 		if (stat == null)
 			return null;
 
+		Member member = stat.getGameMember().getMember();
+		String rankName = "Unknown";
+		Integer maxArrest = null;
+		Integer maxSurvival = null;
+
+		// DB에서 등급 및 최고 기록 조회
+		if (stat.getPosition() == Position.POLICE) {
+			MemberStatPolice policeInfo = memberStatPoliceRepository.findById(member.getId())
+				.orElse(null);
+			if (policeInfo != null) {
+				rankName = policeInfo.getGradePolice().getName();
+				maxArrest = policeInfo.getMostArrestsInGame();
+			}
+		} else if (stat.getPosition() == Position.THIEF) {
+			MemberStatThief thiefInfo = memberStatThiefRepository.findById(member.getId())
+				.orElse(null);
+			if (thiefInfo != null) {
+				rankName = thiefInfo.getGradeThief().getName();
+				maxSurvival = thiefInfo.getLongestSurvivalSec();
+			}
+		}
+
 		return GameResultResponse.MvpResponse.builder()
-			.memberId(stat.getGameMember().getMember().getId())
+			.memberId(member.getId())
 			.nickname(getNickname(stat))
 			.role(stat.getPosition().name())
 			.description(description)
+			// 추가된 스탯 필드 매핑
+			.walk(stat.getWalk())
+			.arrestCount(stat.getArrestCount())
+			.longestSurvived(stat.getLongestSurvived())
+			.rank(rankName)
+			.maxArrestCount(maxArrest)
+			.maxSurvivalTime(maxSurvival)
 			.build();
 	}
 
