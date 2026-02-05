@@ -23,7 +23,7 @@ fun ContDownUI(
     val timeText = String.format("%02d:%02d", minutes, seconds)
 
     val isWarning = remainingSeconds in 4..10
-    val isDanger = remainingSeconds in 0..3
+    val isDanger = remainingSeconds in 0..5
 
     // 실제 진동 객체
     val haptic = LocalHapticFeedback.current
@@ -62,7 +62,7 @@ fun ContDownUI(
         },
         text = timeText,
         color = textColor,
-        fontSize = 50.sp,
+        fontSize = 60.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 2.sp,
     )

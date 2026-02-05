@@ -72,7 +72,7 @@ fun NewsScreen(
                 Column(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 380.dp)
+                        .padding(top = 280.dp)
                         .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {

@@ -31,6 +31,8 @@ import com.d104.pnt.ui.component.UserProfileCard
 import com.d104.pnt.ui.theme.AccentYellow
 import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.PixelFont
+import com.d104.pnt.ui.theme.RoomBorder
+import com.d104.pnt.ui.theme.RoomContainer
 import com.d104.pnt.ui.chatroom.chat.ProfileData
 
 @Composable
@@ -284,8 +286,8 @@ fun LeaveRoomConfirmDialog(
 ) {
     Dialog(onDismissRequest = onDismissRequest) {
         PixelContainer(
-            backgroundColor = DarkSurface,
-            borderColor = Color.White,
+            backgroundColor = RoomContainer,
+            borderColor = RoomBorder,
             borderWidth = 3f,
             cornerSize = 8f,
             innerVerticalPadding = 30,

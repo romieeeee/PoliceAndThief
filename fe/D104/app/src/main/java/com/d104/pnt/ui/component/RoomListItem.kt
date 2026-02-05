@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.domain.model.ChatRoomData
@@ -40,7 +41,7 @@ fun RoomListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { isExpanded = !isExpanded },
-        backgroundColor = TextPrimary,
+        backgroundColor = Color.White.copy(0.85f),
         borderColor = BorderDefault
     ) {
         Column(

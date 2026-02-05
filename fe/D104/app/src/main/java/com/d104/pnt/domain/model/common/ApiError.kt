@@ -1,5 +1,7 @@
 package com.d104.pnt.domain.model.common
 
+import com.d104.pnt.data.remote.model.response.ErrorResponse
+
 /**
  * API 에러 정보를 담는 클래스
  *
@@ -60,6 +62,16 @@ data class ApiError(
          */
         fun unknownError(message: String = "알 수 없는 오류가 발생했습니다"): ApiError {
             return ApiError(message = message, type = ErrorType.UNKNOWN)
+        }
+    }
+
+    fun fromErrorBody(errorBody: String?): String {
+        return try {
+            val gson = com.google.gson.Gson()
+            val errorResponse = gson.fromJson(errorBody, ErrorResponse::class.java)
+            errorResponse.message
+        } catch (e: Exception) {
+            "알 수 없는 오류가 발생했습니다"
         }
     }
 }

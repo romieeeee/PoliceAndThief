@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.domain.model.ChatMessage
@@ -90,7 +91,7 @@ fun Chats(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(DarkBackground),
+                .background(Color.Transparent),
             state = listState,
             contentPadding = PaddingValues(
                 horizontal = 16.dp,
