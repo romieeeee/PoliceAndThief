@@ -32,12 +32,16 @@ import com.d104.pnt.ui.theme.DarkBackground
 fun RoleSelectScreen(
     onRoleSelected: (GameRole) -> Unit,
     onBackPressed: () -> Boolean,
-    viewModel: RoleSelectViewModel = hiltViewModel()
+    viewModel: RoleSelectViewModel = hiltViewModel(),
+    isEditMode: Boolean = false
 ) {
 
     BackHandler {
-        viewModel.leaveRoom()
-        onBackPressed()           }
+        if (!isEditMode) {
+            viewModel.leaveRoom()
+        }
+        onBackPressed()
+    }
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Image(
