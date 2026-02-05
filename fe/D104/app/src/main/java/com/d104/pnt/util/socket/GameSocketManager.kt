@@ -79,7 +79,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val gameId = data.getLong("gameId")
                 val memberId = data.getLong("memberId")
                 val message = data.getString("message")
-                Timber.d("🎮 게임 입장 성공: gameId=$gameId, memberId=$memberId")
+                Timber.d("🎮 게임 입장 성공: $data")
                 onJoinedRoom?.invoke(gameId, memberId, message)
             } catch (e: Exception) {
                 Timber.e(e, "게임 입장 응답 파싱 실패")

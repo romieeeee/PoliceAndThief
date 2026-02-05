@@ -157,11 +157,6 @@ class GamePlayViewModel @Inject constructor(
         }
     }
 
-    fun missionInit() {
-        viewModelScope.launch {
-            gameSessionRepository.missionInit()
-        }
-    }
 
     private fun startService(action: String) {
         Intent(context, GameActiveService::class.java).also { intent ->
