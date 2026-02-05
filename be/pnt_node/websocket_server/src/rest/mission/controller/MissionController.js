@@ -52,6 +52,7 @@ export class MissionController {
                     completedAt: gameMission.completedAt // 기존 완료 시간 사용
                 }
                 this.emitter.of(GAME_NAMESPACE).to(gameId).emit("get mission result", resData);
+                logger.info("missionCompleted already completed", { gameId, missionId, memberId, success });
                 res.status(200).json({ message: "GameMission already completed" });
                 return;
             }
@@ -71,7 +72,7 @@ export class MissionController {
 
                 gameMember.missionCompleted = true;
                 await this.redisClient.setLocation(gameId, memberId, gameMember);
-                logger.info("missionComplete", { gameId, missionId, memberId, success });
+                logger.info("missionCompleted", { gameId, missionId, memberId, success });
             }
 
             res.status(200).json({ message: "GameMission updated" });
