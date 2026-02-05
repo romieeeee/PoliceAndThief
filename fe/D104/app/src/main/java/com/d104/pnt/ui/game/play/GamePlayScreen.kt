@@ -64,6 +64,7 @@ import com.d104.pnt.ui.component.AlertOverlay
 import com.d104.pnt.ui.component.ContDownUI
 import com.d104.pnt.ui.component.ExpandableCard
 import com.d104.pnt.ui.component.GameEndOverlay
+import com.d104.pnt.ui.component.OutlinedText
 import com.d104.pnt.ui.component.PixelAlertDialog
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
@@ -465,6 +466,7 @@ fun GamePlayScreen(
     if (helicopterState == HelicopterPhase.NOTIFY && role == GameRole.POLICE) {
         WarningOverlay(
             onWarning = false,
+            success = true,
             warningTitle = "경찰 헬기 지원!",
             warningMessage = "곧 공중 지원이\n도착합니다!"
         )
@@ -472,6 +474,7 @@ fun GamePlayScreen(
     if (helicopterState == HelicopterPhase.REVEAL && role == GameRole.POLICE) {
         WarningOverlay(
             onWarning = false,
+            success = true,
             warningTitle = "경찰 헬기 도착!",
             warningMessage = "모든 도둑의 위치가\n잠시동안 노출 됩니다!"
         )
@@ -481,15 +484,15 @@ fun GamePlayScreen(
     if (cctvPhase == CctvPhase.NOTIFY && role == GameRole.POLICE) {
         WarningOverlay(
             onWarning = false,
-            warningTitle = "영상 분석실에서 긴급연락 도착!",
-            warningMessage = "CCTV 영상 분석중\n이상 징후를 포착했습니다!"
+            warningTitle = "CCTV 이상징후 포착!",
+            warningMessage = "잠시 후 도둑의\n위치가 공개 됩니다"
         )
     }
     if (cctvPhase == CctvPhase.REVEAL && role == GameRole.POLICE) {
         WarningOverlay(
             onWarning = false,
-            warningTitle = "현상 수배범 포착!",
-            warningMessage = "CCTV에 수배범이 찍혔습니다!\n수배범의 위치가 노출됩니다!"
+            warningTitle = "수배범 포착!",
+            warningMessage = "지도에 위치가\n표시 됩니다"
         )
     }
     if (arrestStatus != ArrestStatus.IDLE) {
@@ -497,11 +500,11 @@ fun GamePlayScreen(
             title = if (arrestStatus == ArrestStatus.SUCCESS) "체포 성공!" else "체포 실패",
             message = if (arrestStatus == ArrestStatus.SUCCESS) "" else when(arrestFailReason) {
                 "NOT_THIEF" -> "도둑이 아닙니다"
-                "ARRESTER_NOT_POLICE" -> "경찰만 체포할 수 있습니다"
-                "ALREADY_CAUGHT" -> "이미 체포된 도둑입니다"
+                "ARRESTER_NOT_POLICE" -> "경찰만 체포할 수\n있습니다"
+                "ALREADY_CAUGHT" -> "이미 체포된\n도둑입니다"
                 else -> ""
             },
-            color = if (arrestStatus == ArrestStatus.SUCCESS) WinColor else LoseColor,
+            success = arrestStatus == ArrestStatus.SUCCESS
         )
     }
 
@@ -544,7 +547,7 @@ fun GamePlayScreen(
         WarningOverlay(
             onWarning = true,
             warningTitle = "위치 노출!",
-            warningMessage = "CCTV에 당신이 찍혔습니다!\n잠시동안 위치가 노출됩니다!"
+            warningMessage = "CCTV에 찍혔습니다!\n위치가 노출 됩니다!"
         )
     }
 
@@ -558,25 +561,18 @@ fun GamePlayScreen(
         ) {
             Spacer(modifier = Modifier.fillMaxHeight(0.75f))
 
-            Text(
+            OutlinedText(
                 text = "도둑이 탈출에\n성공했습니다!",
-                fontFamily = PixelFont,
-                color = Color.Yellow,
                 fontSize = 40.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                lineHeight = 45.sp
+                success = false
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
+            OutlinedText(
                 text = escapedThiefNickname,
-                fontFamily = PixelFont,
-                color = Color.White,
                 fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                success = false
             )
         }
     }
@@ -592,8 +588,8 @@ fun GamePlayScreen(
             MissionStatus.SUCCESS -> {
                 AlertOverlay(
                     title = "미션 수행 성공!",
-                    message = "더이상 CCTV에 노출되지 않습니다",
-                    color = ThiefRed
+                    message = "CCTV에 노출되지 않습니다",
+                    success = true
                 )
             }
 
@@ -601,7 +597,7 @@ fun GamePlayScreen(
                 AlertOverlay(
                     title = "미션 실패!!",
                     message = missionFailReason,
-                    color = ThiefRed
+                    success = false
                 )
             }
         }
