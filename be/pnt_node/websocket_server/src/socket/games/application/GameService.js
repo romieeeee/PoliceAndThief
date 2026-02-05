@@ -75,7 +75,7 @@ export class GameService {
 
             return true;
         } catch (error) {
-            console.error("processArrest Error", error);
+            logger.error("processArrest Error", error);
             throw error;
         }
     }
@@ -124,7 +124,7 @@ export class GameService {
                 },
             });
         } catch (error) {
-            console.error("updateGame Error", error);
+            logger.error("updateGame Error", error);
             throw error;
         }
     }
@@ -145,7 +145,7 @@ export class GameService {
 
             return true;
         } catch (error) {
-            console.error("endGame Error", error);
+            logger.error("endGame Error", error);
             throw error;
         }
     }
