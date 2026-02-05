@@ -171,11 +171,12 @@ export class GameController {
             willStartAt: new Date(Date.now() + 5000).toISOString(),
         });
 
-        setTimeout(async () => {
-            // cctv 작동
-            const cctvInterval = gameSetting.cctvInterval || 60;
-            await this.redisClient.setCctvTimer(gameId, cctvInterval);
-        }, 4000);
+        if (gameSetting && gameSetting.cctvInterval > 0) {
+            setTimeout(async () => {
+                // cctv 작동
+                await this.redisClient.setCctvTimer(gameId, gameSetting.cctvInterval);
+            }, 4000);
+        }
 
         setTimeout(async () => {
             await this.redisClient.setGameTimer(gameId, gameSetting.timeLimit);

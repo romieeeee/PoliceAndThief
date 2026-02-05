@@ -1,50 +1,38 @@
 package com.pnt.pnt_spring.domain.games.game.application.impl;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.LinearRing;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.PrecisionModel;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.pnt.pnt_spring.domain.games.game.api.req.GameRoomCreateRequest;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomCreateResponse;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameRoomStartableResponse;
 import com.pnt.pnt_spring.domain.games.game.api.resp.GameStartResponse;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomCodeGenerator;
 import com.pnt.pnt_spring.domain.games.game.application.GameRoomService;
-import com.pnt.pnt_spring.domain.games.game.entity.Game;
-import com.pnt.pnt_spring.domain.games.game.entity.GameMember;
-import com.pnt.pnt_spring.domain.games.game.entity.GameMemberStat;
-import com.pnt.pnt_spring.domain.games.game.entity.GameSetting;
-import com.pnt.pnt_spring.domain.games.game.entity.GameSkill;
+import com.pnt.pnt_spring.domain.games.game.entity.*;
 import com.pnt.pnt_spring.domain.games.game.enums.GameStatus;
 import com.pnt.pnt_spring.domain.games.game.enums.Position;
 import com.pnt.pnt_spring.domain.games.game.enums.PreferPosition;
-import com.pnt.pnt_spring.domain.games.game.repository.GameMemberRepository;
-import com.pnt.pnt_spring.domain.games.game.repository.GameMemberStatRepository;
-import com.pnt.pnt_spring.domain.games.game.repository.GameRepository;
-import com.pnt.pnt_spring.domain.games.game.repository.GameSettingRepository;
-import com.pnt.pnt_spring.domain.games.game.repository.GameSkillRepository;
+import com.pnt.pnt_spring.domain.games.game.repository.*;
+import com.pnt.pnt_spring.domain.games.maps.entity.GameMap;
+import com.pnt.pnt_spring.domain.games.maps.repository.GameMapRepository;
 import com.pnt.pnt_spring.domain.games.mission.entity.GameMission;
 import com.pnt.pnt_spring.domain.games.mission.entity.Mission;
 import com.pnt.pnt_spring.domain.games.mission.repository.GameMissionRepository;
 import com.pnt.pnt_spring.domain.games.mission.repository.MissionRepository;
 import com.pnt.pnt_spring.domain.games.news.repository.GameNewsRepository;
+import com.pnt.pnt_spring.domain.games.utils.GeoConverter;
 import com.pnt.pnt_spring.domain.members.member.entity.Member;
 import com.pnt.pnt_spring.domain.members.member.repository.jpa.MemberRepository;
 import com.pnt.pnt_spring.global.api.code.ErrorCode;
 import com.pnt.pnt_spring.global.exception.BusinessException;
-
 import lombok.RequiredArgsConstructor;
+import org.locationtech.jts.geom.Polygon;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -61,35 +49,69 @@ public class GameRoomServiceImpl implements GameRoomService {
 	private final GameMissionRepository gameMissionRepository;
 	private final GameNewsRepository gameNewsRepository;
 	private final MissionRepository missionRepository;
-
-	private static final GeometryFactory GF = new GeometryFactory(new PrecisionModel(), 4326);
+	private final GameMapRepository gameMapRepository;
 
 	@Override
 	public GameRoomCreateResponse createRoom(Long hostMemberId, GameRoomCreateRequest req) {
-		// 이미 다른 방에 참여 중이면 방 생성 불가
 		if (gameMemberRepository.existsByMemberIdAndIsDeletedFalse(hostMemberId)) {
 			throw new BusinessException(ErrorCode.ROOM_ALREADY_JOINED);
 		}
-
-		if (req == null)
+		if (req == null) {
 			throw new IllegalArgumentException("방 생성 요청 바디가 필요합니다.");
-		if (req.getPlayerCount() == null || req.getTimeLimit() == null
-			|| req.getPoliceCount() == null || req.getThiefCount() == null
-			|| req.getPrison() == null || req.getPolygon() == null) {
-			throw new IllegalArgumentException("방 생성에 필요한 세팅 값이 누락되었습니다.");
-		}
-
-		Double prisonLat = req.getPrison().getLat();
-		Double prisonLng = req.getPrison().getLng();
-		if (prisonLat == null || prisonLng == null) {
-			throw new IllegalArgumentException("감옥 좌표(prison.lat/lng)가 필요합니다.");
 		}
 
 		if (!req.getPlayerCount().equals(req.getPoliceCount() + req.getThiefCount())) {
 			throw new IllegalArgumentException("playerCount는 policeCount + thiefCount와 같아야 합니다.");
 		}
 
-		Geometry boundary = toPolygon(req.getPolygon());
+		Double prisonLat;
+		Double prisonLng;
+		Polygon boundary;
+
+		if (req.getMapId() != null) {
+			GameMap map = gameMapRepository.findByIdAndOwnerIdAndIsDeletedFalse(req.getMapId(), hostMemberId)
+					.orElseThrow(() -> new BusinessException(ErrorCode.MAP_NOT_FOUND));
+
+			prisonLat = map.getPrisonLat();
+			prisonLng = map.getPrisonLng();
+			boundary = map.getPolygon();
+
+		} else {
+			if (req.getPrison() == null || req.getPolygon() == null) {
+				throw new IllegalArgumentException("방 생성에 필요한 세팅 값(prison/polygon)이 누락되었습니다.");
+			}
+
+			prisonLat = req.getPrison().getLat();
+			prisonLng = req.getPrison().getLng();
+			if (prisonLat == null || prisonLng == null) {
+				throw new IllegalArgumentException("감옥 좌표(prison.lat/lng)가 필요합니다.");
+			}
+
+			boundary = GeoConverter.toPolygon(req.getPolygon());
+
+			if (Boolean.TRUE.equals(req.getSaveMap())) {
+				String name = req.getMapName();
+
+				// mapName이 null/blank면 서버에서 기본 이름 생성
+				if (name == null || name.trim().isEmpty()) {
+					name = "저장 맵 " + java.time.LocalDateTime.now()
+							.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+				} else {
+					name = name.trim();
+				}
+
+				GameMap saved = GameMap.create(
+						hostMemberId,
+						name,
+						req.getMapDescription(), // null OK
+						boundary,
+						prisonLat,
+						prisonLng
+				);
+				gameMapRepository.save(saved);
+			}
+
+		}
 
 		Member hostRef = memberRepository.getReferenceById(hostMemberId);
 		String roomCode = gameRoomCodeGenerator.generateUniqueCode();
@@ -98,16 +120,16 @@ public class GameRoomServiceImpl implements GameRoomService {
 		gameRepository.save(game);
 
 		GameSetting setting = GameSetting.create(
-			game,
-			req.getTimeLimit(),
-			req.getPlayerCount(),
-			req.getPoliceCount(),
-			req.getThiefCount(),
-			req.getCctvInterval(),
-			boundary,
-			prisonLat,
-			prisonLng,
-			req.getMissionCount()
+				game,
+				req.getTimeLimit(),
+				req.getPlayerCount(),
+				req.getPoliceCount(),
+				req.getThiefCount(),
+				req.getCctvInterval(),
+				boundary, // Polygon은 Geometry로 자동 업캐스팅됨
+				prisonLat,
+				prisonLng,
+				req.getMissionCount()
 		);
 		gameSettingRepository.save(setting);
 
@@ -116,6 +138,8 @@ public class GameRoomServiceImpl implements GameRoomService {
 
 		return new GameRoomCreateResponse(game.getId(), game.getRoomCode(), GameStatus.WAITING);
 	}
+
+
 
 	@Override
 	public GameStartResponse start(Long actorMemberId, Long roomId) {
@@ -256,44 +280,44 @@ public class GameRoomServiceImpl implements GameRoomService {
 		return joined == playerCount.longValue();
 	}
 
-	private Polygon toPolygon(List<GameRoomCreateRequest.LatLng> polygon) {
-		if (polygon == null || polygon.size() < 3) {
-			throw new IllegalArgumentException("polygon은 최소 3개 좌표가 필요합니다.");
-		}
-
-		Coordinate[] raw = new Coordinate[polygon.size()];
-		for (int i = 0; i < polygon.size(); i++) {
-			GameRoomCreateRequest.LatLng p = polygon.get(i);
-			if (p == null || p.getLat() == null || p.getLng() == null) {
-				throw new IllegalArgumentException("polygon 좌표에 null이 포함되어 있습니다.");
-			}
-			raw[i] = new Coordinate(p.getLng(), p.getLat()); // x=lng, y=lat
-		}
-
-		Coordinate first = raw[0];
-		Coordinate last = raw[raw.length - 1];
-		boolean alreadyClosed = first.equals2D(last);
-
-		Coordinate[] coords;
-		if (alreadyClosed) {
-			coords = raw;
-		} else {
-			coords = new Coordinate[raw.length + 1];
-			System.arraycopy(raw, 0, coords, 0, raw.length);
-			coords[raw.length] = new Coordinate(first.x, first.y);
-		}
-
-		if (coords.length < 4)
-			throw new IllegalArgumentException("polygon 좌표가 올바르지 않습니다.");
-
-		LinearRing shell = GF.createLinearRing(coords);
-		Polygon poly = GF.createPolygon(shell);
-
-		if (!poly.isValid())
-			throw new IllegalArgumentException("polygon 형태가 유효하지 않습니다.");
-
-		return poly;
-	}
+//	private Polygon toPolygon(List<GameRoomCreateRequest.LatLng> polygon) {
+//		if (polygon == null || polygon.size() < 3) {
+//			throw new IllegalArgumentException("polygon은 최소 3개 좌표가 필요합니다.");
+//		}
+//
+//		Coordinate[] raw = new Coordinate[polygon.size()];
+//		for (int i = 0; i < polygon.size(); i++) {
+//			GameRoomCreateRequest.LatLng p = polygon.get(i);
+//			if (p == null || p.getLat() == null || p.getLng() == null) {
+//				throw new IllegalArgumentException("polygon 좌표에 null이 포함되어 있습니다.");
+//			}
+//			raw[i] = new Coordinate(p.getLng(), p.getLat()); // x=lng, y=lat
+//		}
+//
+//		Coordinate first = raw[0];
+//		Coordinate last = raw[raw.length - 1];
+//		boolean alreadyClosed = first.equals2D(last);
+//
+//		Coordinate[] coords;
+//		if (alreadyClosed) {
+//			coords = raw;
+//		} else {
+//			coords = new Coordinate[raw.length + 1];
+//			System.arraycopy(raw, 0, coords, 0, raw.length);
+//			coords[raw.length] = new Coordinate(first.x, first.y);
+//		}
+//
+//		if (coords.length < 4)
+//			throw new IllegalArgumentException("polygon 좌표가 올바르지 않습니다.");
+//
+//		LinearRing shell = GF.createLinearRing(coords);
+//		Polygon poly = GF.createPolygon(shell);
+//
+//		if (!poly.isValid())
+//			throw new IllegalArgumentException("polygon 형태가 유효하지 않습니다.");
+//
+//		return poly;
+//	}
 
 	private void assignPositions(GameSetting setting, List<GameMember> members) {
 		int thiefNeed = setting.getThiefCount();
