@@ -569,6 +569,8 @@ export class GameController {
 
         const gameToken = await this.redisClient.getGameToken(integerGameId);
 
+        logger.info(`[GameController] gameId: ${integerGameId}, winTeam: ${winTeam}, memberStats: ${JSON.stringify(memberStats)}`);
+
         let res = await axios.post(`${process.env.SPRING_BOOT_URL}/games/result`, {
             gameId: integerGameId,
             winTeam: winTeam,
