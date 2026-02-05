@@ -73,17 +73,29 @@ class GameCreateViewModel @Inject constructor(
         if (plus && _gameTime.value < 60) _gameTime.value += 5
         else if (!plus && _gameTime.value > 5) {
             _gameTime.value -= 5
-            if (_cctvCycle.value > _gameTime.value) _cctvCycle.value = _gameTime.value
+            if (_cctvCycle.value >= _gameTime.value) {
+                _cctvCycle.value = (_gameTime.value - 1).coerceAtLeast(0)
+            }
         }
     }
     fun updateMissionCount(plus: Boolean) {
-        if (plus && _missionCount.value < _thiefCount.value) _missionCount.value += 1
-        else if (!plus && _missionCount.value > 0) _missionCount.value -= 1
+        if (plus && _missionCount.value < _thiefCount.value) {
+            _missionCount.value += 1
+        }
+
+        else if (!plus && _missionCount.value > 0) {
+            _missionCount.value -= 1
+        }
     }
     fun updateCctvCycle(plus: Boolean) {
-        if (plus && _cctvCycle.value < _gameTime.value) _cctvCycle.value += 1
-        else if (!plus && _cctvCycle.value > 0) _cctvCycle.value -= 1
+        if (plus && _cctvCycle.value < _gameTime.value - 1) {
+            _cctvCycle.value += 1
+        }
+        else if (!plus && _cctvCycle.value > 0) {
+            _cctvCycle.value -= 1
+        }
     }
+
     fun updatePoliceCount(newCount: Int) {
         _policeCount.value = newCount
         _thiefCount.value = _totalPlayers.value - _policeCount.value
@@ -97,10 +109,8 @@ class GameCreateViewModel @Inject constructor(
     // 화면 진입 시 호출할 함수
     fun setDefaultSettings(context: Context) {
         viewModelScope.launch {
-            // 1. 1회성 위치 가져오기 (만들어둔 확장 함수 사용)
             val location = context.getSingleLocation()
             if (location != null) {
-                // 2. [핵심] 가져온 위치를 Repository에 저장!
                 locationRepository.updateCurrentLocation(location)
                 locationRepository.createDefaultPolygon(location)
                 locationRepository.setPrisonLocation(

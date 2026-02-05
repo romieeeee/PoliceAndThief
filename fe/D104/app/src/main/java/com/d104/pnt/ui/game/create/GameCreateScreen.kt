@@ -193,8 +193,8 @@ fun GameCreateScreen(
                                 modifier = Modifier.weight(1f),
                                 label = "미션 갯수",
                                 icon = Icons.Default.List,
-                                value = missionCount.toString(),
-                                unit = "개",
+                                value = if (missionCount == 0) "없음" else missionCount.toString(),
+                                unit = if (missionCount == 0) "" else "개",
                                 onDecrease = { viewModel.updateMissionCount(false) },
                                 onIncrease = { viewModel.updateMissionCount(true) }
                             )
@@ -202,8 +202,8 @@ fun GameCreateScreen(
                                 modifier = Modifier.weight(1f),
                                 label = "CCTV 주기",
                                 icon = Icons.Default.Videocam,
-                                value = cctvCycle.toString(),
-                                unit = "분",
+                                value = if (cctvCycle == 0) "없음" else cctvCycle.toString(),
+                                unit = if (cctvCycle == 0) "" else "분",
                                 onDecrease = { viewModel.updateCctvCycle(false) },
                                 onIncrease = { viewModel.updateCctvCycle(true) }
                             )
