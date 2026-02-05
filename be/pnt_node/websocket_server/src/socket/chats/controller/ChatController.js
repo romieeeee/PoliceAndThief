@@ -107,7 +107,7 @@ export class ChatController {
         const memberId = parseInt(this.socket.data.memberId);
 
         try {
-            const accessToken = generateMemberAccessToken(memberId, 0);
+            const accessToken = generateMemberAccessToken(memberId, -3);
             const response = await axios.post(`${process.env.SPRING_BOOT_URL}/chats/${chatRoomId}/owner`, { targetMemberId: targetMemberId }, {
                 headers: {
                     "Content-Type": "application/json",
