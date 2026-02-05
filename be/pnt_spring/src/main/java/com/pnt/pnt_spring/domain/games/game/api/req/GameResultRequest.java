@@ -22,7 +22,7 @@ public class GameResultRequest {
 	@NoArgsConstructor
 	@ToString
 	public static class MemberStat {
-		private Long gameMemberId;
+		private Long memberId;
 		private Position position;
 		private Integer walk;
 		private Integer longestSurvived;
