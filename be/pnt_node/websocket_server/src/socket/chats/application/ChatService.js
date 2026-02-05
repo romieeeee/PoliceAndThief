@@ -1,6 +1,7 @@
 import chatEntity from "../../../global/db/mongo/entity/chat.js";
 import members from "../../../global/db/mongo/entity/member.js";
 import moment from "moment-timezone";
+import { getPresignedUrl } from "../../utils/S3Service.js";
 
 export class ChatService {
     async save(chat) {
@@ -22,7 +23,7 @@ export class ChatService {
 
         data.member = member;
 
-        return this.parseChat(data);
+        return await this.parseChat(data);
     }
 
     getAggregationPipeline(matchStage, sortVariable, limit) {
@@ -83,7 +84,7 @@ export class ChatService {
         const pipeline = this.getAggregationPipeline(matchStage, -1, payload.limit);
         const chats = await chatEntity.aggregate(pipeline);
 
-        return { items: this.parseChats(chats), count: chats.length };
+        return { items: await this.parseChats(chats), count: chats.length };
     }
 
     // {chatRoomId, cursor, limit}
@@ -103,22 +104,28 @@ export class ChatService {
         const pipeline = this.getAggregationPipeline(matchStage, 1, payload.limit);
         const chats = await chatEntity.aggregate(pipeline);
 
-        return { items: this.parseChats(chats), count: chats.length };
+        return { items: await this.parseChats(chats), count: chats.length };
     }
 
-    parseChat = (chat) => {
+    parseChat = async (chat) => {
+        let avatarUrl = chat.member && chat.member.avatarUrl ? chat.member.avatarUrl : chat.avatarUrl;
+
+        if (avatarUrl) {
+            avatarUrl = await getPresignedUrl(avatarUrl);
+        }
+
         return {
             id: chat._id,
             memberId: chat.memberId,
-            avatarUrl: chat.member.avatarUrl,
-            senderNickname: chat.member.nickname,
+            avatarUrl: avatarUrl,
+            senderNickname: chat.member ? chat.member.nickname : "Unknown", // 안전한 접근
             chatRoomId: chat.chatRoomId,
             content: chat.content,
             createdAt: chat.createdAt,
         }
     }
 
-    parseChats = (chats) => {
-        return chats.map(this.parseChat);
+    parseChats = async (chats) => {
+        return await Promise.all(chats.map(this.parseChat));
     }
 }

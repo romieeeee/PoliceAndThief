@@ -260,5 +260,4 @@ export class RoomController {
         this.io.to(roomId).emit("get user left", { roomId: roomId, memberId: memberId });
         await this.redisClient.deleteAccessToken(memberId);
     }
-
 }

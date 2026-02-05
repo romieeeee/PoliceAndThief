@@ -3,6 +3,7 @@ import { Emitter } from "@socket.io/redis-emitter";
 import { GameMissionService } from "../application/GameMissionService";
 import { MissionStatus } from "../../../global/db/sequelize/status/MissionStatus";
 import { RedisClient } from "../../../socket/utils/client/RedisClient";
+import logger from "../../../global/config/logger.js";
 
 
 const GAME_NAMESPACE = "/game";
@@ -88,7 +89,7 @@ export class MissionController {
 
             this.emitter.of(GAME_NAMESPACE).to(gameId).emit("get mission result", resData);
         } catch (error) {
-            console.error("missionComplete error", error);
+            logger.error("missionComplete error", error);
             res.status(error.code || 500).json({ message: error.message });
         }
     }
