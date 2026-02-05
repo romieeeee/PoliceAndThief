@@ -29,7 +29,6 @@ fun GameEndOverlay() {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // 빨간색 띠 연출 (선택 사항)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -39,22 +38,13 @@ fun GameEndOverlay() {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "GAME OVER",
+                    text = "게임 종료",
                     color = Color.White,
                     fontFamily = PixelFont,
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "게임 종료",
-                color = Color.White.copy(alpha = 0.8f),
-                fontFamily = PixelFont,
-                fontSize = 24.sp
-            )
         }
     }
 }
