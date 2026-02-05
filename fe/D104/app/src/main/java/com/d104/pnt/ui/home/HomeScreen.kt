@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -56,6 +57,7 @@ import com.d104.pnt.ui.theme.CustomBlue
 import com.d104.pnt.ui.theme.CustomRed
 import com.d104.pnt.ui.theme.DarkGray
 import com.d104.pnt.ui.theme.PixelFont
+import com.d104.pnt.ui.theme.PoliceBlue
 import com.d104.pnt.ui.theme.RoomBorder
 import com.d104.pnt.ui.theme.RoomContainer
 
@@ -135,7 +137,7 @@ fun HomeScreen(
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
-            // --- 상단 GAME & 안내 문구 ---
+//             --- 상단 GAME & 안내 문구 ---
             Column(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -143,9 +145,9 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "GAME",
+                    text = "경찰과\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t 도둑",
                     fontFamily = PixelFont,
-                    fontSize = 100.sp,
+                    fontSize = 80.sp,
                     fontWeight = FontWeight.ExtraBold,
                     style = TextStyle(
                         brush = Brush.verticalGradient(arcadeColors),
@@ -159,18 +161,148 @@ fun HomeScreen(
                         .graphicsLayer(alpha = neonAlpha)
                         .zIndex(1f)
                 )
-
-                Text(
-                    text = "INSERT COIN",
-                    color = amberLight, // 호박색 통일
-                    fontSize = 18.sp,
-                    fontFamily = PixelFont,
-                    modifier = Modifier
-                        .graphicsLayer(alpha = if (neonAlpha > 0.8f) 1f else 0.2f)
-                        .padding(top = 12.dp)
-                )
+//                Text(
+//                    text = "INSERT COIN",
+//                    color = amberLight, // 호박색 통일
+//                    fontSize = 18.sp,
+//                    fontFamily = PixelFont,
+//                    modifier = Modifier
+//                        .graphicsLayer(alpha = if (neonAlpha > 0.8f) 1f else 0.2f)
+//                        .padding(top = 12.dp)
+//                )
             }
 
+//            // --- 상단 타이틀 (옵션 D + 경찰 스캔 → 도둑 지직) ---
+//            Column(
+//                modifier = Modifier
+//                    .align(Alignment.TopCenter)
+//                    .padding(top = 100.dp),
+//                horizontalAlignment = Alignment.CenterHorizontally
+//            ) {
+//                var policeTextWidthPx by remember { mutableStateOf(0) }
+//
+//                // 전체 타임라인 (0f ~ 1f)
+//                val timeline by rememberInfiniteTransition(label = "title-timeline")
+//                    .animateFloat(
+//                        initialValue = 0f,
+//                        targetValue = 1f,
+//                        animationSpec = infiniteRepeatable(
+//                            animation = keyframes {
+//                                durationMillis = 2800
+//                                0.0f at 0        // 스캔 시작
+//                                0.6f at 1700     // 스캔 종료
+//                                0.6f at 2000     // 잠깐 텀
+//                                1.0f at 2100     // 도둑 지직 구간
+//                            },
+//                            repeatMode = RepeatMode.Restart
+//                        ),
+//                        label = "timeline"
+//                    )
+//
+//                // ===== 경찰 스캔 진행도 (0 ~ 1) =====
+//                val scanT = (timeline / 0.6f).coerceIn(0f, 1f)
+//
+//                // ===== 도둑 지직 알파 =====
+//                val thiefAlpha = when {
+//                    timeline < 0.6f -> 1f                 // 스캔 중엔 안정
+//                    timeline < 0.75f -> 0.3f              // 첫 지직
+//                    timeline < 0.85f -> 1f
+//                    timeline < 0.92f -> 0.2f              // 두 번째 지직
+//                    else -> 1f
+//                }
+//
+//                // ===== 1) 경찰과 (왼쪽 + 스캔) =====
+//                Box(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .padding(start = 18.dp)
+//                ) {
+//                    // 베이스
+//                    Text(
+//                        text = "경찰과",
+//                        fontFamily = PixelFont,
+//                        fontSize = 100.sp,
+//                        fontWeight = FontWeight.ExtraBold,
+//                        style = TextStyle(
+//                            brush = Brush.verticalGradient(listOf(amberLight, policeRed)),
+//                            shadow = Shadow(
+//                                color = Color.Black.copy(alpha = 0.85f),
+//                                offset = Offset.Zero,
+//                                blurRadius = 12f
+//                            )
+//                        ),
+//                        modifier = Modifier
+//                            .align(Alignment.CenterStart)
+//                            .onSizeChanged { policeTextWidthPx = it.width }
+//                    )
+//
+//                    // 스캔 하이라이트
+//                    if (policeTextWidthPx > 0) {
+//                        val w = policeTextWidthPx.toFloat()
+//                        val band = w * 0.18f
+//                        val x = (-band) + (w + band * 2f) * scanT
+//
+//                        Text(
+//                            text = "경찰과",
+//                            fontFamily = PixelFont,
+//                            fontSize = 100.sp,
+//                            fontWeight = FontWeight.ExtraBold,
+//                            style = TextStyle(
+//                                brush = Brush.linearGradient(
+//                                    colorStops = arrayOf(
+//                                        0.0f to Color.Transparent,
+//                                        0.45f to Color.Transparent,
+//                                        0.5f to Color.White.copy(alpha = 0.95f),
+//                                        0.55f to Color.Transparent,
+//                                        1.0f to Color.Transparent
+//                                    ),
+//                                    start = Offset(x - band, 0f),
+//                                    end = Offset(x + band, 0f)
+//                                ),
+//                                shadow = Shadow(
+//                                    color = Color.White.copy(alpha = 0.35f),
+//                                    offset = Offset.Zero,
+//                                    blurRadius = 10f
+//                                )
+//                            ),
+//                            modifier = Modifier
+//                                .align(Alignment.CenterStart)
+//                                .graphicsLayer(alpha = if (timeline <= 0.6f) 0.6f else 0f)
+//                        )
+//                    }
+//                }
+//
+//                Spacer(modifier = Modifier.height(6.dp))
+//
+//                // ===== 2) 도둑 (오른쪽 + 지직) =====
+//                Box(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .padding(end = 18.dp)
+//                ) {
+//                    Text(
+//                        text = "도둑",
+//                        fontFamily = PixelFont,
+//                        fontSize = 100.sp,
+//                        fontWeight = FontWeight.ExtraBold,
+//                        style = TextStyle(
+//                            brush = Brush.verticalGradient(
+//                                listOf(policeRed, Color(0xFF880E4F))
+//                            ),
+//                            shadow = Shadow(
+//                                color = Color.Black.copy(alpha = 0.85f),
+//                                offset = Offset.Zero,
+//                                blurRadius = 12f
+//                            )
+//                        ),
+//                        modifier = Modifier
+//                            .align(Alignment.CenterEnd)
+//                            .graphicsLayer(alpha = thiefAlpha)
+//                    )
+//                }
+//            }
+//
+//
             // --- 중앙 버튼부 (원래 사각형 버튼 복구) ---
             Row(
                 modifier = Modifier
@@ -184,12 +316,12 @@ fun HomeScreen(
                     modifier = Modifier
                         .weight(1f)
                         .aspectRatio(1f),
-                    text = "HOST",
+                    text = "생성하기",
                     textColor = Color.White,
-                    fontSize = 30,
+                    fontSize = 26,
                     onClick = { goToGameCreate() },
-                    mainColor = CustomRed,
-                    borderColor = DarkGray
+                    mainColor = policeRed.copy(alpha = 0.675f),
+                    borderColor = Color.Black
                 )
 
                 // JOIN 버튼 (남색)
@@ -197,12 +329,12 @@ fun HomeScreen(
                     modifier = Modifier
                         .weight(1f)
                         .aspectRatio(1f),
-                    text = "JOIN",
+                    text = "참여하기",
                     textColor = Color.White,
-                    fontSize = 30,
+                    fontSize = 26,
                     onClick = { showJoinDialog = true },
-                    mainColor = CustomBlue,
-                    borderColor = DarkGray
+                    mainColor = policeNavy.copy(alpha = 0.675f),
+                    borderColor = Color.Black
                 )
             }
         }

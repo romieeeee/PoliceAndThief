@@ -13,11 +13,16 @@ interface GameSessionRepository {
     val members: StateFlow<List<GameMemberSocketDto>>
     val gameStatus: StateFlow<String>
     val gameId: StateFlow<Long>
+    val TotalTime: StateFlow<Int>
+    val remainingTime: StateFlow<Int>
     val gameTime: StateFlow<Int>
+    val cctvInterval: StateFlow<Int>
+    val cctvPhase: StateFlow<CctvPhase>
+    val cctvThiefId: StateFlow<Long?>
+    val onBoundaryWarning: StateFlow<List<Long>>
     val missions: StateFlow<List<MissionSocketDto>>
     val memberLocation: StateFlow<List<MemberLocationSocketDto>>
     val eventFlow: SharedFlow<GameSessionEvent>
-    val isOutOfBoundary: StateFlow<Boolean>
     val myMemberId: StateFlow<Long>
     val myRole: StateFlow<String>
     val thiefMembers: StateFlow<List<GameMemberSocketDto>>
@@ -28,6 +33,8 @@ interface GameSessionRepository {
     val survivalTime: StateFlow<Int>
     val missionState: StateFlow<MissionStatus>
     val missionFailReason: StateFlow<String>
+    val arrestState: StateFlow<ArrestStatus>
+    val arrestFailReason: StateFlow<String>
     val roomCode: StateFlow<String>
     val chiefMemberId: StateFlow<Long?>
     val isChief: StateFlow<Boolean>
@@ -43,12 +50,15 @@ interface GameSessionRepository {
 
     fun setMemberId(memberId: Long)
     fun setFinalRole(role: String)
+    fun setTotalTime(minutes: Int)
+    fun setCctvInterval(interval: Int)
     fun setRoomCode(code: String)
     fun connectAndJoin(gameId: Long)
     fun gameInit()
     fun uploadMissionImage(image: File, missionId: Long)
     fun missionInit()
     fun dequeEscape()
+    fun arrestThief(thiefId: Long)
     fun startGameSession()
     fun stopGameSession()
     fun leaveGame()

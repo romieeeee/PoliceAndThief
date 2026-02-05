@@ -54,12 +54,14 @@ interface AuthRepository {
         accessToken: String,
         refreshToken: String,
         userId: String,
-        memberId: Long
+        memberId: Long,
+        lastRefresh: Long = System.currentTimeMillis()
     )
 
     suspend fun refreshTokens(
         accessToken: String,
-        refreshToken: String
+        refreshToken: String,
+        lastRepository: Long = System.currentTimeMillis()
     )
 
     /**

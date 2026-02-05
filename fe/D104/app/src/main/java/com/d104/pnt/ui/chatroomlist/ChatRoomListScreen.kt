@@ -62,7 +62,6 @@ fun ChatRoomListScreen(
 
     var showRegionDialog by remember { mutableStateOf(false) }
 
-
     LaunchedEffect(Unit) {
         viewModel.getJoinedChatRoom()
     }

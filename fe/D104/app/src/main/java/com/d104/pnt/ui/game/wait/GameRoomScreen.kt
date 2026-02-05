@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.d104.pnt.ui.chatroom.chat.ProfileData
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.GameRoomUiEvent
@@ -60,6 +61,9 @@ fun GameRoomScreen(
     val isMeReady by viewModel.isMeReady.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val myMemberId by viewModel.myMemberId.collectAsStateWithLifecycle()
+
+    val selectedProfile by viewModel.selectedProfile.collectAsStateWithLifecycle()
+    val isProfileLoading by viewModel.isProfileLoading.collectAsStateWithLifecycle()
 
     var selectedPlayerId by remember { mutableStateOf<Long?>(null) }
     var dismissedPlayerId by remember { mutableStateOf<Long?>(null) }
@@ -176,6 +180,7 @@ fun GameRoomScreen(
                     dismissedPlayerId = selectedPlayerId
                     lastDismissTime = System.currentTimeMillis()
                     selectedPlayerId = null
+                    viewModel.loadUserProfile(player.id)
                     infoDialogTarget = player
                 },
                 onDelegateHostClick = { player ->
@@ -239,9 +244,16 @@ fun GameRoomScreen(
         }
 
         // ========== 다이얼로그 ==========
-        if (infoDialogTarget != null) PlayerInfoDialog(
-            player = infoDialogTarget!!,
-            onDismiss = { infoDialogTarget = null })
+        if (infoDialogTarget != null && selectedProfile != null) {
+            PlayerInfoDialog(
+                profile = selectedProfile!!,
+                isLoading = isProfileLoading,
+                onDismiss = {
+                    infoDialogTarget = null
+                    viewModel.clearSelectedProfile()
+                }
+            )
+        }
 
         if (kickDialogTarget != null) KickConfirmDialog(
             player = kickDialogTarget!!,

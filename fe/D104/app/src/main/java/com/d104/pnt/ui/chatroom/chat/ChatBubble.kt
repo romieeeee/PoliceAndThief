@@ -29,6 +29,12 @@ import com.d104.pnt.ui.theme.NeutralColor
 import com.d104.pnt.ui.theme.TextDisabled
 import com.d104.pnt.ui.theme.TextPrimary
 import com.d104.pnt.ui.theme.TextSecondary
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import coil.compose.AsyncImage
+import com.d104.pnt.R
 
 @Composable
 fun ChatBubble(
@@ -44,16 +50,25 @@ fun ChatBubble(
     ) {
         // 내 메시지가 아닐 때만 프로필 + 닉네임 표시
         if (!isMe) {
-            // 프로필 이미지
             Box(
                 modifier = Modifier
                     .size(40.dp)
+//                    .clip(CircleShape) // 원형으로 자르기
                     .background(TextSecondary)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(TextDisabled)
+                AsyncImage(
+                    model = if (message.avatarUrl.isNullOrEmpty() || message.avatarUrl == "string") {
+                        R.drawable.profile_img_default // URL이 없거나 "string"이면 기본 이미지
+                    } else {
+                        // 만약 상대경로라면 앞부분 붙여주기
+                        if (message.avatarUrl.startsWith("http")) message.avatarUrl
+                        else "https://i14d104.p.ssafy.io/spring/${message.avatarUrl}"
+                    },
+                    contentDescription = "프로필 이미지",
+                    placeholder = painterResource(R.drawable.profile_img_default),
+                    error = painterResource(R.drawable.profile_img_default),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
 
