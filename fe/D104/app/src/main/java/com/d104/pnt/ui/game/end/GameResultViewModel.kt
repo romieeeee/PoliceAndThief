@@ -86,6 +86,7 @@ class GameResultViewModel @Inject constructor(
                     return@launch
                 }
             }
+            Timber.d("data: $data")
 
             val myStat   = data.myStat
             val myRole   = myStat.role
@@ -127,9 +128,9 @@ class GameResultViewModel @Inject constructor(
 
         fun getStatLabel(role: String) = if (role == "POLICE") "체포한 도둑 수" else "최장 생존 시간"
 
-        data.mvp?.let            { mvpList.add(MvpData("MVP",   if (it.role == "POLICE") "경찰" else "도둑", it.nickname, getStatLabel(it.role), it.description, android.R.drawable.star_on)) }
-        data.winningSecond?.let  { mvpList.add(MvpData("조력자", if (it.role == "POLICE") "경찰" else "도둑", it.nickname, getStatLabel(it.role), it.description, android.R.drawable.ic_menu_myplaces)) }
-        data.losingFirst?.let    { mvpList.add(MvpData("ACE",   if (it.role == "POLICE") "경찰" else "도둑", it.nickname, getStatLabel(it.role), it.description, android.R.drawable.ic_menu_mylocation)) }
+        data.mvp?.let            { mvpList.add(MvpData("MVP",   if (it.role == "POLICE") "경찰" else "도둑", it.nickname, getStatLabel(it.role), if (it.role == "POLICE") it.arrestCount.toString() else formatSeconds(it.longestSurvived), android.R.drawable.star_on)) }
+        data.winningSecond?.let  { mvpList.add(MvpData("조력자", if (it.role == "POLICE") "경찰" else "도둑", it.nickname, getStatLabel(it.role), if (it.role == "POLICE") it.arrestCount.toString() else formatSeconds(it.longestSurvived), android.R.drawable.ic_menu_myplaces)) }
+        data.losingFirst?.let    { mvpList.add(MvpData("ACE",   if (it.role == "POLICE") "경찰" else "도둑", it.nickname, getStatLabel(it.role), if (it.role == "POLICE") it.arrestCount.toString() else formatSeconds(it.longestSurvived), android.R.drawable.ic_menu_mylocation)) }
 
         val tierIcon = when (myTierName) {
             "순경", "바늘도둑"   -> if (amIPolice) R.drawable.police_lv1  else R.drawable.thief_lv1
@@ -145,6 +146,7 @@ class GameResultViewModel @Inject constructor(
             "치안총감", "대도"   -> if (amIPolice) R.drawable.police_lv11 else R.drawable.thief_lv11
             else               -> if (amIPolice) R.drawable.police_lv1  else R.drawable.thief_lv1
         }
+        Timber.d("mvpList: $mvpList")
 
         return GameResultUiData(
             isPolice      = amIPolice,
