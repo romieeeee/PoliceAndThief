@@ -21,8 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
@@ -32,6 +37,7 @@ import com.d104.pnt.domain.model.GameRole
 fun GameRoleScreen(
     viewModel: GameRoleViewModel = hiltViewModel(),
     role: GameRole,
+    isChief: Boolean = false,
     onIntroFinished: () -> Unit,
 ) {
     val status by viewModel.flowStatus.collectAsStateWithLifecycle()
@@ -61,7 +67,7 @@ fun GameRoleScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // 역할 정보
-            RoleRevealContent(role = role)
+            RoleRevealContent(role = role, isChief = isChief)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -70,10 +76,6 @@ fun GameRoleScreen(
                 contentAlignment = Alignment.BottomCenter
             ) {
                 when (val connStatus = connectionStatus) {
-                    is ConnectionStatus.Connecting -> {
-                        "접속 중... $connectedCount / $memberCount"
-                    }
-
                     is ConnectionStatus.Error -> {
                         Text("⚠️ ${connStatus.message}", color = Color.Red)
                     }
@@ -93,7 +95,7 @@ fun GameRoleScreen(
 }
 
 @Composable
-private fun RoleRevealContent(role: GameRole) {
+private fun RoleRevealContent(role: GameRole, isChief: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -110,20 +112,66 @@ private fun RoleRevealContent(role: GameRole) {
 
         Spacer(Modifier.height(24.dp))
 
-        Text(
-            text = "당신은 ${role.roleName}입니다",
-            style = MaterialTheme.typography.titleMedium,
-            color = Color.White,
-            textAlign = TextAlign.Center
-        )
+        val goldColor = Color(0xFFFFD700)
+
+        if (isChief) {
+            val styledText = buildAnnotatedString {
+                withStyle(style = SpanStyle(color = Color.White)) {
+                    append("당신은 ")
+                }
+                withStyle(style = SpanStyle(color = goldColor, fontWeight = FontWeight.Bold)) {
+                    append("경찰청장")
+                }
+                withStyle(style = SpanStyle(color = Color.White)) {
+                    append("입니다")
+                }
+            }
+
+            Text(
+                text = styledText,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
+        } else {
+            Text(
+                text = "당신은 ${role.roleName}입니다",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+        }
 
         Spacer(Modifier.height(16.dp))
 
+        val baseTextColor = Color.White.copy(alpha = 0.9f)
+
+        val finalDescription = if (isChief) {
+            buildAnnotatedString {
+                withStyle(style = SpanStyle(color = baseTextColor)) {
+                    append(role.description)
+                    append("\n\n\n\n")
+                }
+                withStyle(style = SpanStyle(color = goldColor, fontWeight = FontWeight.Bold)) {
+                    append("경찰청장 특권")
+                }
+                append("\n")
+                withStyle(style = SpanStyle(color = baseTextColor)) {
+                    append("단 한 번, 경찰 헬기를 호출해\n모든 도둑의 위치를 확인할 수 있습니다.\n경찰 뱃지를 뒤집어 헬기를 호출하세요!")
+                }
+            }
+        } else {
+            buildAnnotatedString {
+                withStyle(style = SpanStyle(color = baseTextColor)) {
+                    append(role.description)
+                }
+            }
+        }
+
         Text(
-            text = role.description,
+            text = finalDescription,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.White.copy(alpha = 0.9f),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            lineHeight = 24.sp
         )
     }
 }

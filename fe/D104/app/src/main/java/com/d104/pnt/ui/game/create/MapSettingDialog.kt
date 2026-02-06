@@ -33,6 +33,9 @@ import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.DialogBorderColor
 import com.d104.pnt.ui.theme.TextPrimary
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.PolyUtil
+import com.google.maps.android.SphericalUtil
+import timber.log.Timber
 
 @Composable
 fun MapSettingDialog(
@@ -54,6 +57,8 @@ fun MapSettingDialog(
             originPrisonLocation ?: userLocation?.let { LatLng(it.latitude, it.longitude) }
         )
     }
+    var isNotValid by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf(null as String?) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -79,8 +84,6 @@ fun MapSettingDialog(
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimary,
                 )
-
-                Spacer(Modifier.height(2.dp))
 
                 userLocation?.let { loc ->
                     GoogleMaps(
@@ -113,16 +116,25 @@ fun MapSettingDialog(
                         }
                     )
                 }
+
+                if (isNotValid) {
+                    Text(
+                        text = errorMessage ?: "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Red,
+                    )
+                }
+
                 Text(
                     modifier = Modifier.fillMaxWidth(),
-                    text = "- 마커를 꾹 눌러 드래그로 경기구역을 수정할 수 있습니다.",
+                    text = "- 지도를 클릭하여 마커를 추가하거나 제거할 수 있습니다.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextPrimary,
                 )
 
                 Text(
                     modifier = Modifier.fillMaxWidth(),
-                    text = "- 감옥을 드래그하여 이동시킬 수 있습니다.",
+                    text = "- 마커와 감옥을 꾹 눌러 드래그할 수 있습니다.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextPrimary,
                 )
@@ -149,9 +161,15 @@ fun MapSettingDialog(
                         modifier = Modifier.weight(1f),
                         text = "확인",
                         onClick = {
-                            viewModel.setPolygonPoints(tempPolygonPoints.map { it.position })
-                            viewModel.setPrisonLocation(prisonLocation)
-                            onConfirm()
+                            errorMessage = isValid(prisonLocation, tempPolygonPoints.map{it.position})
+                            if (errorMessage == null) {
+                                viewModel.setPolygonPoints(tempPolygonPoints.map { it.position })
+                                viewModel.setPrisonLocation(prisonLocation)
+                                onConfirm()
+                            }
+                            else {
+                                isNotValid = true
+                            }
                         },
                         mainColor = CustomBlue,
                         borderColor = BorderDefault,
@@ -163,4 +181,14 @@ fun MapSettingDialog(
             }
         }
     }
+}
+
+private fun isValid(
+    prison: LatLng?,
+    polygon: List<LatLng>
+): String? {
+    if (!PolyUtil.containsLocation(prison, polygon, false)) return "감옥은 반드시 영역 안에 있어야 합니다."
+    if (SphericalUtil.computeArea(polygon) < 5000f) return "설정한 영역이 너무 작습니다"
+    Timber.d(SphericalUtil.computeArea(polygon).toString())
+    return null
 }

@@ -205,7 +205,7 @@ private fun GameResultContent(
     val titleText = if (data.isWin) "WIN!" else "LOSE"
     val statsLabel = if (data.isPolice) "검거한 도둑 수" else "최장 생존 시간"
     val mvpBoxBgColor = Color(0xFF35384F)
-    val participantNames = data.mvpList.map { it.nickname }
+    val participantNames = data.allPlayerNicknames
 
     val characterImageRes = when {
         data.isPolice && data.isWin -> R.drawable.img_police_win
@@ -264,8 +264,6 @@ private fun GameResultContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Spacer(Modifier.height(10.dp))
-
             Text(
                 text = "결과 리포트",
                 fontSize = 24.sp,
@@ -313,7 +311,7 @@ private fun GameResultContent(
                 borderColor = RoomBorder,
                 borderWidth = 3f,
                 cornerSize = 12f,
-                innerVerticalPadding = 20,
+                innerVerticalPadding = 14,
                 innerHorizontalPadding = 0,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -333,11 +331,11 @@ private fun GameResultContent(
                             fontSize = 14.sp,
                             color = Color.LightGray
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         Box(
                             modifier = Modifier
-                                .size(80.dp)
+                                .size(90.dp)
                                 .clip(CircleShape)
                         ) {
                             Image(
@@ -415,7 +413,7 @@ private fun GameResultContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Row(
                 modifier = Modifier
@@ -429,9 +427,9 @@ private fun GameResultContent(
                     onClick = {
                         onBackToHome()
                     },
-                    mainColor = Color.Gray,
+                    mainColor = Color.White,
                     borderColor = BorderDefault,
-                    textColor = Color.White,
+                    textColor = Color.Black,
                     fontSize = 16,
                     blockHeight = 12
                 )
@@ -587,5 +585,6 @@ data class GameResultUiData(
     val mvpList: List<MvpData>,
     val myTierIconRes: Int,
     val myGameStat: String,
-    val myBestStat: String
+    val myBestStat: String,
+    val allPlayerNicknames: List<String> = emptyList()
 )

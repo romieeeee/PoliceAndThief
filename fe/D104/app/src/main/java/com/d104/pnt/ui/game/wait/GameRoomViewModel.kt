@@ -224,6 +224,10 @@ class GameRoomViewModel @Inject constructor(
                     val currentCode = _roomInfo.value.roomCode
                     gameSessionRepository.setRoomCode(currentCode)
 
+                    val currentNicknames = _players.value.map { it.nickname }
+                    gameSessionRepository.setPlayerNicknames(currentNicknames)
+                    Timber.d("📋 게임 시작 멤버 저장 완료: $currentNicknames")
+
                     // 경찰청장(chiefMemberId) 저장 (0이면 null 처리)
                     val chiefId = data.optLong("chiefMemberId", 0L).let { if (it == 0L) null else it }
                     gameSessionRepository.setChiefMemberId(chiefId)
@@ -231,7 +235,7 @@ class GameRoomViewModel @Inject constructor(
 
                     val membersArray = data.optJSONArray("members") ?: return@launch
                     val myId = _myMemberId.value
-                    var myFinalRole = "ANY" // 기본값
+                    var myFinalRole = "ANY"
 
                     for (i in 0 until membersArray.length()) {
                         val member = membersArray.getJSONObject(i)
@@ -242,6 +246,8 @@ class GameRoomViewModel @Inject constructor(
                     }
 
                     Timber.d("🎮 최종 역할 확정: $myFinalRole (ID: $myId)")
+
+                    val amIChief = (chiefId != null && chiefId == myId)
 
                     // 결정된 정보 저장
                     gameSessionRepository.setFinalRole(myFinalRole)
@@ -255,8 +261,13 @@ class GameRoomViewModel @Inject constructor(
                     delay(300)
                     roomSocketManager.disconnect()
 
-                    _uiEvent.emit(GameRoomUiEvent.NavigateToGame(roomId, myFinalRole))
-
+                    _uiEvent.emit(
+                        GameRoomUiEvent.NavigateToGame(
+                            roomId = roomId,
+                            role = myFinalRole,
+                            isChief = amIChief
+                        )
+                    )
                 } catch (e: Exception) {
                     Timber.e(e, "❌ 게임 시작 데이터 파싱 실패")
                 }

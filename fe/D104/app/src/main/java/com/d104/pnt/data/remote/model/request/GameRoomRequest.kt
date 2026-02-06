@@ -18,8 +18,14 @@ data class CreateGameRoomRequest(
     val policeCount: Int,
     @SerializedName("thiefCount")
     val thiefCount: Int,
+    @SerializedName("mapId")
+    val mapId: Long?,
     @SerializedName("saveMap")
     val saveMap: Boolean,
+    @SerializedName("mapName")
+    val mapName: String?,
+    @SerializedName("mapDescription")
+    val mapDescription: String?,
     @SerializedName("prison")
     val prison: Location?,
     @SerializedName("polygon")
