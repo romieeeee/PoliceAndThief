@@ -67,6 +67,11 @@ public class AuthServiceImpl implements AuthService {
 	@Transactional
 	public SignupResponse signup(SignupRequest request) {
 
+		// 닉네임 중복 체크
+		if (checkNicknameDuplicate(request.getNickname())) {
+			throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME, "이미 사용 중인 닉네임입니다.");
+		}
+
 		// 비밀번호 일치 확인
 		if (!request.getPassword().equals(request.getPasswordConfirm())) {
 			throw new BusinessException(ErrorCode.VALIDATION_ERROR, "비밀번호가 일치하지 않습니다.");
@@ -121,6 +126,11 @@ public class AuthServiceImpl implements AuthService {
 	// 아이디 중복 체크
 	public boolean checkIdDuplicate(String loginId) {
 		return memberRepository.existsByLoginId(loginId);
+	}
+
+	// 닉네임 중복 체크
+	public boolean checkNicknameDuplicate(String nickname) {
+		return memberRepository.existsByMemberProfile_Nickname(nickname);
 	}
 
 	public LoginResponse login(LoginRequest request) {

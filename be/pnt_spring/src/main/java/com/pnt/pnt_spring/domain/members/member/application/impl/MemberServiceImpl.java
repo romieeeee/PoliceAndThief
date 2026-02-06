@@ -92,6 +92,13 @@ public class MemberServiceImpl implements MemberService {
 			throw new BusinessException(ErrorCode.PROFILE_NOT_FOUND);
 		}
 
+		// 닉네임 중복 체크 추가
+		if (request.getNickname() != null && !request.getNickname().equals(member.getMemberProfile().getNickname())) {
+			if (memberRepository.existsByMemberProfile_Nickname(request.getNickname())) {
+				throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME, "이미 사용 중인 닉네임입니다.");
+			}
+		}
+
 		String oldAvatarKey = member.getMemberProfile().getAvatarUrl();
 		String newAvatarKey = request.getAvatarUrl();
 
