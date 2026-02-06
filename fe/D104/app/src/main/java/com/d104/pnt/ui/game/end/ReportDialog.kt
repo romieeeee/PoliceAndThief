@@ -1,6 +1,7 @@
 package com.d104.pnt.ui.game.end
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,9 +11,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +39,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.theme.AccentRed
@@ -54,6 +64,8 @@ fun ReportDialog(
     var reportDescription by remember { mutableStateOf(initialDescription) }
     var errorText by remember { mutableStateOf("") }
     val selectedColor = Color(0xFFD35400)
+
+    var isDropdownExpanded by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismissRequest) {
         PixelContainer(
@@ -82,54 +94,94 @@ fun ReportDialog(
                     )
                     Spacer(modifier = Modifier.width(24.dp))
 
-                    Column(modifier = Modifier.width(160.dp)) {
-                        BasicTextField(
-                            value = targetUser,
-                            onValueChange = {
-                                targetUser = it
-                                errorText = ""
-                            },
-                            textStyle = TextStyle(
-                                fontFamily = PixelFont,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                textAlign = TextAlign.Center
-                            ),
-                            singleLine = true,
-                            decorationBox = { innerTextField ->
-                                Box(contentAlignment = Alignment.Center) {
-                                    if (targetUser.isEmpty()) {
-                                        Text(
-                                            text = "신고하려는 닉네임",
-                                            style = TextStyle(
-                                                fontFamily = PixelFont,
-                                                fontSize = 14.sp,
-                                                color = Color.Gray,
-                                                textAlign = TextAlign.Center
-                                            )
-                                        )
-                                    }
-                                    innerTextField()
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Canvas(
+                    Box(modifier = Modifier.width(160.dp)) {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(2.dp)
+                                .clickable { isDropdownExpanded = !isDropdownExpanded }
                         ) {
-                            drawLine(
-                                color = Color.White,
-                                start = Offset(0f, 0f),
-                                end = Offset(size.width, 0f),
-                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f),
-                                strokeWidth = 3f
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = if (targetUser.isEmpty()) "닉네임 선택" else targetUser,
+                                    fontFamily = PixelFont,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (targetUser.isEmpty()) Color.Gray else Color.White,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "유저 선택",
+                                    tint = Color.White,
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Canvas(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(2.dp)
+                            ) {
+                                drawLine(
+                                    color = Color.White,
+                                    start = Offset(0f, 0f),
+                                    end = Offset(size.width, 0f),
+                                    pathEffect = PathEffect.dashPathEffect(
+                                        floatArrayOf(10f, 10f),
+                                        0f
+                                    ),
+                                    strokeWidth = 3f
+                                )
+                            }
+                        }
+
+                        if (isDropdownExpanded) {
+                            Popup(
+                                alignment = Alignment.TopStart,
+                                offset = androidx.compose.ui.unit.IntOffset(0, 100),
+                                onDismissRequest = { isDropdownExpanded = false },
+                                properties = PopupProperties(focusable = true)
+                            ) {
+                                PixelContainer(
+                                    backgroundColor = Color(0xFF2D3242),
+                                    borderColor = Color.Gray,
+                                    borderWidth = 2f,
+                                    cornerSize = 4f,
+                                    modifier = Modifier
+                                        .width(160.dp)
+                                        .heightIn(max = 200.dp)
+                                ) {
+                                    LazyColumn(
+                                        modifier = Modifier.padding(4.dp)
+                                    ) {
+                                        items(validNicknames) { name ->
+                                            Text(
+                                                text = name,
+                                                fontFamily = PixelFont,
+                                                color = Color.White,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        targetUser = name
+                                                        errorText = ""
+                                                        isDropdownExpanded = false
+                                                    }
+                                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                                textAlign = TextAlign.Center
+                                            )
+                                            Spacer(modifier = Modifier.height(1.dp).background(Color.Gray.copy(alpha=0.3f)).fillMaxWidth())
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
