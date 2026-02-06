@@ -5,11 +5,13 @@ import com.d104.pnt.data.remote.model.request.ChangePositionRequest
 import com.d104.pnt.data.remote.model.request.CreateGameRoomRequest
 import com.d104.pnt.data.remote.model.request.JoinGameRoomRequest
 import com.d104.pnt.data.remote.model.request.Location
+import com.d104.pnt.data.remote.model.request.SaveMapRequest
 import com.d104.pnt.data.remote.model.request.ToggleReadyRequest
 import com.d104.pnt.data.remote.model.request.UpdateRoomSettingsRequest
 import com.d104.pnt.data.remote.model.response.CreateGameRoomResponse
 import com.d104.pnt.data.remote.model.response.GameMemberListResponse
 import com.d104.pnt.data.remote.model.response.GameRoomSettingsResponse
+import com.d104.pnt.data.remote.model.response.MapData
 import com.d104.pnt.domain.model.CurrentGameRoomData
 import com.d104.pnt.domain.model.common.BaseResult
 import com.google.android.gms.maps.model.LatLng
@@ -185,6 +187,42 @@ class GameRoomRepositoryImpl @Inject constructor(
                 roomId,
                 com.d104.pnt.data.remote.model.request.KickRequest(targetMemberId, reason)
             )
+        }
+    }
+
+    /**
+     * 새로운 맵을 저장합니다.
+     */
+    override suspend fun saveMap(request: SaveMapRequest): BaseResult<Long> {
+        return safeApiCall {
+            apiService.saveMap(request)
+        }
+    }
+
+    /**
+     * 내가 생성한 맵 목록을 조회합니다.
+     */
+    override suspend fun getMyMaps(): BaseResult<List<MapData>> {
+        return safeApiCall {
+            apiService.getMyMaps()
+        }
+    }
+
+    /**
+     * 특정 ID의 맵 상세 정보를 조회합니다.
+     */
+    override suspend fun getMap(mapId: Long): BaseResult<MapData> {
+        return safeApiCall {
+            apiService.getMap(mapId)
+        }
+    }
+
+    /**
+     * 특정 맵을 삭제합니다.
+     */
+    override suspend fun deleteMap(mapId: Long): BaseResult<Unit> {
+        return safeApiCall {
+            apiService.deleteMap(mapId)
         }
     }
 }
