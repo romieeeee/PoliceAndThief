@@ -2,6 +2,7 @@ package com.d104.pnt.ui.component
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -44,6 +45,7 @@ import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
+import timber.log.Timber
 
 @Composable
 fun GoogleMaps(
@@ -74,11 +76,15 @@ fun GoogleMaps(
 
     LaunchedEffect(polygonPoints) {
         if (polygonPoints.isNotEmpty()) {
+            Timber.d("패딩 설정 완료")
             val builder = LatLngBounds.builder()
             polygonPoints.forEach { builder.include(it.position) }
             try {
                 val bounds = builder.build()
-                cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 50))
+                if (!isPreview){
+                    cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 100))
+                } else cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 50))
+                Timber.d("패딩 50설정")
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -191,7 +197,7 @@ fun GoogleMaps(
 
                 Circle(
                     center = prisonLocation,
-                    radius = 20.0,
+                    radius = 10.0,
                     fillColor = PrisonArea,
                     strokeColor = PrisonBoundary,
                     strokeWidth = 5f
@@ -223,11 +229,16 @@ fun GoogleMaps(
                                 true
                             }
                         ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.map_marker_white),
-                                contentDescription = "픽셀 커스텀 마커",
-                                modifier = Modifier.size(25.dp)
-                            )
+                            Box(
+                                modifier = Modifier.size(30.dp), // 터치 영역 48dp 권장
+                                contentAlignment = androidx.compose.ui.Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.map_marker_white),
+                                    contentDescription = "픽셀 커스텀 마커",
+                                    modifier = Modifier.size(25.dp)
+                                )
+                            }
                         }
 
                         LaunchedEffect(markerState.dragState) {
@@ -299,7 +310,7 @@ fun GoogleMaps(
                 )
                 Circle(
                     center = prisonLocation,
-                    radius = 20.0,
+                    radius = 10.0,
                     fillColor = PrisonArea,
                     strokeColor = PrisonBoundary,
                     strokeWidth = 5f

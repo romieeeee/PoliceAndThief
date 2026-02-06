@@ -224,6 +224,10 @@ class GameRoomViewModel @Inject constructor(
                     val currentCode = _roomInfo.value.roomCode
                     gameSessionRepository.setRoomCode(currentCode)
 
+                    val currentNicknames = _players.value.map { it.nickname }
+                    gameSessionRepository.setPlayerNicknames(currentNicknames)
+                    Timber.d("📋 게임 시작 멤버 저장 완료: $currentNicknames")
+
                     // 경찰청장(chiefMemberId) 저장 (0이면 null 처리)
                     val chiefId = data.optLong("chiefMemberId", 0L).let { if (it == 0L) null else it }
                     gameSessionRepository.setChiefMemberId(chiefId)
