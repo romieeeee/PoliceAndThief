@@ -64,10 +64,6 @@ class GamePlayViewModel @Inject constructor(
     )
     val uiEvent = _uiEvent.asSharedFlow()
 
-    // Beep 이벤트 (도둑 쪽에서만 화면이 소리 재생하도록 Screen에서 필터)
-    private val _beepEvent = MutableSharedFlow<BeepUseResponse>(extraBufferCapacity = 16)
-    val beepEvent = _beepEvent.asSharedFlow()
-
     // 게임 위치정보
     val userLocation = locationRepository.currentLocation
     val polygonPoints = locationRepository.polygonPoints
@@ -96,6 +92,7 @@ class GamePlayViewModel @Inject constructor(
     val arrestStatus = gameSessionRepository.arrestState
     val arrestFailReason = gameSessionRepository.arrestFailReason
     val onBoundaryWarning = gameSessionRepository.onBoundaryWarning
+    val beepEvent = gameSessionRepository.beepEvent
 
     // ===== 무전기 =====
     val walkieConnected = walkieRepository.isConnected
