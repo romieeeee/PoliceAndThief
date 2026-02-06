@@ -264,8 +264,6 @@ private fun GameResultContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Spacer(Modifier.height(10.dp))
-
             Text(
                 text = "결과 리포트",
                 fontSize = 24.sp,
@@ -313,7 +311,7 @@ private fun GameResultContent(
                 borderColor = RoomBorder,
                 borderWidth = 3f,
                 cornerSize = 12f,
-                innerVerticalPadding = 20,
+                innerVerticalPadding = 14,
                 innerHorizontalPadding = 0,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -333,11 +331,11 @@ private fun GameResultContent(
                             fontSize = 14.sp,
                             color = Color.LightGray
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         Box(
                             modifier = Modifier
-                                .size(80.dp)
+                                .size(90.dp)
                                 .clip(CircleShape)
                         ) {
                             Image(
@@ -415,7 +413,7 @@ private fun GameResultContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Row(
                 modifier = Modifier

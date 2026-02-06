@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,10 +29,9 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
-import com.d104.pnt.domain.model.common.UiState
-import com.d104.pnt.ui.game.end.GameResultViewModel
-import com.d104.pnt.ui.theme.PixelFont
 import com.d104.pnt.data.remote.model.response.GameNewsResponse
+import com.d104.pnt.domain.model.common.UiState
+import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
 fun NewsScreen(
@@ -41,8 +40,7 @@ fun NewsScreen(
     viewModel: GameNewsViewModel = hiltViewModel(),
     onNextClick: () -> Unit
 ) {
-    // 이제 newsState가 GameNewsViewModel 안에 있으므로 에러가 사라집니다.
-    val newsState by viewModel.newsState.collectAsStateWithLifecycle() // compose lifecycle 의존성이 있다면 사용, 아니면 viewModel.newsState.collectAsState()
+    val newsState by viewModel.newsState.collectAsStateWithLifecycle()
     var showSkipDialog by remember { mutableStateOf(false) }
 
     // 뒤로가기 시 스킵 다이얼로그 표시
@@ -68,23 +66,32 @@ fun NewsScreen(
                         .background(Color.Black.copy(alpha = 0.2f))
                 )
 
-                // 아나운서 + 스크립트
                 Column(
                     modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 280.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .fillMaxSize()
+                        .background(Color.Transparent)
                 ) {
-                    NewsAnchor(modifier = Modifier.size(240.dp), isSpeaking = true)
+                    Spacer(Modifier.weight(0.4f))
 
-                    // 타이핑 효과가 적용된 뉴스 본문
-                    NewsScriptBox(
-                        content = news.content,
-                        onFinish = { onNextClick() }
-                    )
+                    // 아나운서 + 스크립트
+                    Column(
+                        modifier = Modifier
+                            .weight(0.6f)
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.Top,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        NewsAnchor(modifier = Modifier.size(240.dp), isSpeaking = true)
+
+                        Spacer(Modifier.height(10.dp))
+
+                        // 타이핑 효과가 적용된 뉴스 본문
+                        NewsScriptBox(
+                            content = news.content,
+                            onFinish = { onNextClick() }
+                        )
+                    }
                 }
-
                 // 하단 뉴스 티커
                 val tickerText = news.title
 
@@ -99,21 +106,21 @@ fun NewsScreen(
                         .padding(top = 48.dp, end = 24.dp),
                     onClick = { showSkipDialog = true }
                 )
-
-                // 스킵 확인 다이얼로그
-                if (showSkipDialog) {
-                    SkipConfirmationDialog(
-                        onConfirm = {
-                            showSkipDialog = false
-                            onNextClick()
-                        },
-                        onDismiss = { showSkipDialog = false }
-                    )
-                }
+            }
+            // 스킵 확인 다이얼로그
+            if (showSkipDialog) {
+                SkipConfirmationDialog(
+                    onConfirm = {
+                        showSkipDialog = false
+                        onNextClick()
+                    },
+                    onDismiss = { showSkipDialog = false }
+                )
             }
         }
 
         is UiState.Error -> {
+
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = "⚠️ 뉴스를 불러오지 못했습니다.", color = Color.White, fontFamily = PixelFont)
@@ -136,6 +143,7 @@ fun NewsScreen(
             /* Idle 상태 처리 */
         }
     }
+
 }
 
 @Composable
