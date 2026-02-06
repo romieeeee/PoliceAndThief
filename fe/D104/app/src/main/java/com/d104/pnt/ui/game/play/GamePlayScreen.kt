@@ -141,7 +141,7 @@ fun GamePlayScreen(
 
         // 무전기 연결
         if (role == GameRole.POLICE) {
-            delay(500) // 게임 정보 동기화 대기
+            delay(500)
             viewModel.connectWalkie()
         }
 
@@ -489,6 +489,7 @@ fun GamePlayScreen(
     if (helicopterState == HelicopterPhase.NOTIFY && role == GameRole.POLICE) {
         WarningOverlay(
             onWarning = false,
+            success = true,
             warningTitle = "경찰 헬기 지원!",
             warningMessage = "곧 공중 지원이\n도착합니다!"
         )
@@ -496,6 +497,7 @@ fun GamePlayScreen(
     if (helicopterState == HelicopterPhase.REVEAL && role == GameRole.POLICE) {
         WarningOverlay(
             onWarning = false,
+            success = true,
             warningTitle = "경찰 헬기 도착!",
             warningMessage = "모든 도둑의 위치가\n잠시동안 노출 됩니다!"
         )

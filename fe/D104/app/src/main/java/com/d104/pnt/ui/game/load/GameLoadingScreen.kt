@@ -18,12 +18,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.ui.component.ContDownUI
+import com.d104.pnt.ui.theme.PixelFont
 import com.d104.pnt.ui.component.GifImage
 
 @Composable
@@ -36,11 +40,18 @@ fun GameLoadingScreen(
     val remainingTime by viewModel.remainingTime.collectAsStateWithLifecycle()
     val isFinished by viewModel.isFinished.collectAsStateWithLifecycle()
 
+    val message by viewModel.message.collectAsStateWithLifecycle()
 
     LaunchedEffect(isFinished) {
         if (isFinished) {
             onLoadingComplete(roomId)
         }
+    }
+
+    val timerLabel = when (role) {
+        GameRole.POLICE -> "작전 투입까지"
+        GameRole.THIEF -> "경찰 출동까지"
+        else -> "게임 시작까지"
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -55,29 +66,35 @@ fun GameLoadingScreen(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = role.description,
-                color = Color.White
+                text = timerLabel,
+                fontFamily = PixelFont,
+                color = Color.White,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             ContDownUI(
                 remainingSeconds = remainingTime
             )
 
-            Spacer(Modifier.height(50.dp))
+            Spacer(Modifier.height(24.dp))
 
+            Image(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(30.dp),
+                painter = painterResource(R.drawable.img_pnt_run),
+                contentDescription = null,
+                contentScale = ContentScale.Crop
+            )
 
-
-//            Image(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(30.dp),
-//                painter = painterResource(R.drawable.img_pnt_run),
-//                contentDescription = null,
-//                contentScale = ContentScale.Crop
-//            )
-
+            Text(
+                text = role.description,
+                color = Color.White
+            )
         }
     }
 }
