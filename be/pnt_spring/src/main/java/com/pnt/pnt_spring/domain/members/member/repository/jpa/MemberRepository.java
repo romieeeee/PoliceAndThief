@@ -12,6 +12,8 @@ import com.pnt.pnt_spring.domain.members.member.entity.Member;
 public interface MemberRepository extends JpaRepository<Member, Long> {
 	boolean existsByLoginId(String loginId);
 
+	boolean existsByMemberProfile_Nickname(String nickname);
+
 	Optional<Member> findByLoginId(String loginId);
 
 	boolean existsByEmail(String email);
