@@ -419,6 +419,19 @@ class GameSessionRepositoryImpl @Inject constructor(
 
         // 게임 종료
         gameSocketManager.setOnGameEnded { winnerPosition, _ ->
+            repositoryScope.launch {
+                // PTT heartbeat 즉시 중지
+                pttHeartbeatJob?.cancel()
+                pttHeartbeatJob = null
+
+                walkieRepository.disableMic()
+
+                _isTransmitting.value = false
+                _isSomeoneTalking.value = false
+
+                Timber.d("📻 무전기 강제 중지 완료")
+            }
+
             stopGameSession()
             gameSocketManager.postAfterGameEnd(_gameId.value)
         }
@@ -540,7 +553,6 @@ class GameSessionRepositoryImpl @Inject constructor(
                         walk = steps,
                         longestSurvived = _longestSurvivalTime.value
                     )
-                    Timber.d("socket sendGPS: ${_myMemberId.value}, ${_myRole.value}, ${_myState.value} , $location, $steps, $_longestSurvivalTime")
                 }
                 delay(1000L)
             }
@@ -700,11 +712,13 @@ class GameSessionRepositoryImpl @Inject constructor(
         }
     }
     private fun handleRadioSignal(memberId: Long) {
+        // 내가 송신 중이면 수신 신호 무시
         if (_isTransmitting.value) {
             Timber.d("📻 Radio : [필터] 내가 송신 중이므로 수신 신호 무시")
             return
         }
 
+        // 내 자신의 신호는 무시
         if (memberId == myMemberId.value || myMemberId.value == 0L) {
             return
         }
@@ -725,39 +739,33 @@ class GameSessionRepositoryImpl @Inject constructor(
                 Timber.d("📻 Radio: [수신] 무전 신호 종료 (Timeout)")
             }
         }
-
-        repositoryScope.launch {
-            // 남이 말하고 있음 표시
-            _isSomeoneTalking.value = true
-            _talkingMemberId.value = memberId
-
-            // 1초 동안 다음 신호가 안 오면 종료로 간주
-            radioTimeoutJob?.cancel()
-            radioTimeoutJob = launch {
-                delay(1000)
-                _isSomeoneTalking.value = false
-                _talkingMemberId.value = null
-                Timber.d("📻 Radio: [수신] 무전 신호 종료 (Timeout)")
-            }
-        }
     }
 
     override fun startTalking() {
         if (_myRole.value != "POLICE") return
 
+        // 다른 사람이 말하고 있으면 송신 불가
+        if (_isSomeoneTalking.value) {
+            Timber.d("📻 [PTT] 다른 경찰이 송신 중이므로 송신 불가")
+            return
+        }
+
         repositoryScope.launch {
             try {
-                launch { walkieRepository.enableMic() }
+                _isTransmitting.value = true
+
+                walkieRepository.enableMic()
 
                 pttHeartbeatJob?.cancel()
                 pttHeartbeatJob = launch {
                     while (isActive) {
                         gameSocketManager.sendRadio()
                         Timber.d("📻 [PTT] Heartbeat 송신 중...")
-                        delay(1000) // 서버 전송 주기
+                        delay(1000) // 1초마다 post radio
                     }
                 }
             } catch (e: Exception) {
+                _isTransmitting.value = false
                 Timber.e(e, "🎙️ PTT 시작 실패")
             }
         }
@@ -768,10 +776,18 @@ class GameSessionRepositoryImpl @Inject constructor(
 
         repositoryScope.launch {
             try {
+                // ⭐ 이미 중지되었다면 스킵
+                if (pttHeartbeatJob == null && !_isTransmitting.value) {
+                    Timber.d("🎙️ [PTT] 이미 중지됨")
+                    return@launch
+                }
+
                 pttHeartbeatJob?.cancel()
                 pttHeartbeatJob = null
 
                 walkieRepository.disableMic()
+
+                _isTransmitting.value = false
 
                 Timber.d("🎙️ [PTT] 송신 중지")
             } catch (e: Exception) {

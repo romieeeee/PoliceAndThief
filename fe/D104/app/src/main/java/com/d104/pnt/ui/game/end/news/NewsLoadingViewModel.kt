@@ -26,8 +26,11 @@ class NewsLoadingViewModel @Inject constructor(
     private val _uiEvent = MutableSharedFlow<NewsLoadingUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
 
+    private var newsReceived = false
+
     init {
         observeNewsSignal()
+        startFallbackTimer()
     }
 
     private fun observeNewsSignal() {
@@ -38,6 +41,17 @@ class NewsLoadingViewModel @Inject constructor(
                     val targetGameId = if (event.gameId != 0L) event.gameId else gameId
                     fetchNewsContent(targetGameId, event.newsId)
                 }
+            }
+        }
+    }
+
+    private fun startFallbackTimer() {
+        viewModelScope.launch {
+            delay(10000)
+            if (!newsReceived) {
+                Timber.w("⚠️ 뉴스 신호 타임아웃 - 강제 이동")
+                newsReceived = true
+                fetchNewsContent(gameId, 0L)
             }
         }
     }
@@ -55,6 +69,7 @@ class NewsLoadingViewModel @Inject constructor(
                 }
             }
         }
+        _uiEvent.emit(NewsLoadingUiEvent.NavigateToActualNews(gId, nId))
     }
 
 }

@@ -159,7 +159,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val data = args[0] as JSONObject
                 val gameId = data.getLong("gameId")
                 val memberId = data.getLong("memberId")
-                Timber.d("경계 이탈: gameId=$gameId, memberId=$memberId")
                 onOutOfBoundary?.invoke(gameId, memberId)
             } catch (e: Exception) {
                 Timber.e(e, "경계 이탈 파싱 실패")
@@ -204,7 +203,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val policeId = data.getLong("policeId")
                 val thiefId = data.getLong("thiefId")
                 val distance = data.getDouble("distance")
-                Timber.d("Beep 알림: policeId=$policeId, distance=$distance")
                 onBeepReceived?.invoke(policeId, thiefId, distance)
             } catch (e: Exception) {
                 Timber.e(e, "Beep 알림 파싱 실패")
