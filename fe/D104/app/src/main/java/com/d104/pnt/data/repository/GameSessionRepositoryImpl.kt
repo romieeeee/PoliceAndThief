@@ -267,11 +267,11 @@ class GameSessionRepositoryImpl @Inject constructor(
             _onBoundaryWarning.value = _boundaryWarningTargets.value.toList() // 경고 목록 업데이트
             _boundaryWarningTargets.value.clear() // 경고 예정 목록 초기화
 
+            Timber.d("datas: $locations")
+
             if (_myRole.value == "THIEF" && (_myState.value == "null" || _myState.value == "FREE")) {
                 _survivalTime.value = sec - _lastEscapeTime.value
-                Timber.d("survivalTime: ${_survivalTime.value}")
                 _longestSurvivalTime.value = max(_longestSurvivalTime.value, _survivalTime.value)
-                Timber.d("longestSurvivalTime: ${_longestSurvivalTime.value}")
             }
 
             // 인게임 시간에 맞춰 cctv 주기 설정
@@ -472,7 +472,7 @@ class GameSessionRepositoryImpl @Inject constructor(
                         }
                     }
                     _missions.value = missionList
-                    Timber.d("미션 목록 업데이트: $_missions.value")
+                    Timber.d("미션 목록 업데이트: ${_missions.value}")
                 } else {
                     if (_myMemberId.value == thiefId) {
                         _missionState.value = MissionStatus.FAIL
