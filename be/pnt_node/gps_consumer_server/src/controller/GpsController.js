@@ -148,6 +148,7 @@ export class GpsController {
 
             // 비프음
             const locationDatas = await this.redisClient.getAllLocations(gameId);
+
             let polices;
             if (locationDatas) {
                 polices = locationDatas

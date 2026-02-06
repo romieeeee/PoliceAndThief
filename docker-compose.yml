@@ -140,6 +140,7 @@ services:
       - .env
     environment:
       - TZ=Asia/Seoul
+      - SPRING_BOOT_URL=http://spring-app:8080/spring
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
