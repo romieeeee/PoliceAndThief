@@ -43,7 +43,12 @@ export class GameController {
     isActiveRoom = async (gameId) => {
         try {
             const integerGameId = parseInt(gameId);
-            await this.gameService.findGame(integerGameId, GameStatus.IN_GAME);
+            const game = await this.gameService.findGame(integerGameId);
+
+            if (game.status === GameStatus.WAITING) {
+                return false;
+            }
+
             return true;
         } catch (error) {
             return false;

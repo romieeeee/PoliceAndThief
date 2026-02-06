@@ -40,6 +40,8 @@ const gameSocketServer = (io) => {
                     logger.error(`[GameSocketServer] Reconnect failed partially for user ${socket.data.memberId}:`, error.message);
                     // 진행을 막지 않음. 소켓은 이미 룸에 조인되어 있음(deleteByCompletedReconnect 내부에서).
                 }
+            } else {
+                logger.info(`[GameSocketServer] Reconnect failed for user ${socket.data.memberId}:`, "Game not found");
             }
 
             console.log("websocket is connected!");
