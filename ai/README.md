@@ -78,23 +78,8 @@ pip install -r requirements.txt --extra-index-url [https://download.pytorch.org/
 # 2. (혹시 에러 발생 시) Pillow 수동 설치
 pip install Pillow
 ⚙️ 3. 환경 변수 설정 (.env)
-ai/ 폴더 내에 .env 파일을 생성하고 아래 내용을 작성하세요. (서버 보안을 위해 실제 비밀번호는 공유되지 않도록 주의하세요.)
+ai/ 폴더 내에 .env 파일을 생성하고 작성하세요.
 
-Ini, TOML
-# RabbitMQ 설정
-MQ_HOST=i14d104.p.ssafy.io
-MQ_PORT=8930
-MQ_USER=root
-MQ_PASS=your_password_here
-
-# 백엔드 서버 URL (결과 전송용)
-SPRING_NEWS_URL=[https://i14d104.p.ssafy.io/spring/games/news/result](https://i14d104.p.ssafy.io/spring/games/news/result)
-NODE_NEWS_URL=[https://i14d104.p.ssafy.io/node/news/complete](https://i14d104.p.ssafy.io/node/news/complete)
-NODE_MISSION_URL=[https://i14d104.p.ssafy.io/node/mission/complete](https://i14d104.p.ssafy.io/node/mission/complete)
-
-# AI 모델 설정 (Local Ollama)
-OLLAMA_BASE_URL=http://localhost:11434/v1
-OLLAMA_API_KEY=ollama
 🧠 4. AI 모델 준비
 4-1. Ollama 모델 다운로드 (NewsService용)
 뉴스 기사 생성을 위해 exaone3.5 모델을 로컬 Ollama에 받아야 합니다. (Ollama가 실행 중이어야 합니다.)
