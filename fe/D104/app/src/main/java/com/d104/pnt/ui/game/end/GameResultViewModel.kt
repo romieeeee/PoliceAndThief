@@ -125,6 +125,7 @@ class GameResultViewModel @Inject constructor(
         val isWin          = (amIPolice && winnerIsPolice) || (!amIPolice && !winnerIsPolice)
 
         val mvpList = mutableListOf<MvpData>()
+        val savedNicknames = gameSessionRepository.getPlayerNicknames()
 
         fun getStatLabel(role: String) = if (role == "POLICE") "체포한 도둑 수" else "최장 생존 시간"
 
@@ -148,13 +149,28 @@ class GameResultViewModel @Inject constructor(
         }
         Timber.d("mvpList: $mvpList")
 
+        val allNicknames = if (savedNicknames.isNotEmpty()) {
+            savedNicknames
+        } else {
+            listOfNotNull(
+                data.mvp?.nickname,
+                data.winningSecond?.nickname,
+                data.losingFirst?.nickname,
+                data.myStat.nickname
+            ).distinct()
+        }
+
+        val myNickname = data.myStat.nickname
+        val reportableNicknames = allNicknames.filter { it != myNickname }
+
         return GameResultUiData(
             isPolice      = amIPolice,
             isWin         = isWin,
             mvpList       = mvpList,
             myTierIconRes = tierIcon,
             myGameStat    = myGameStat,
-            myBestStat    = myBestStat
+            myBestStat    = myBestStat,
+            allPlayerNicknames = reportableNicknames
         )
     }
 
