@@ -128,6 +128,7 @@ fun GamePlayScreen(
     val isSomeoneTalking by viewModel.isSomeoneTalking.collectAsStateWithLifecycle()
 
     val cctvPhase by viewModel.cctvPhase.collectAsStateWithLifecycle()
+    val cctvThief by viewModel.cctvThief.collectAsStateWithLifecycle()
 
     val arrestStatus by viewModel.arrestStatus.collectAsStateWithLifecycle()
     val arrestFailReason by viewModel.arrestFailReason.collectAsStateWithLifecycle()
@@ -566,7 +567,7 @@ fun GamePlayScreen(
     }
 
     // 도둑 CCTV 발각 경고 오버레이
-    if (cctvPhase == CctvPhase.REVEAL && role == GameRole.THIEF && viewModel.myMemberId == viewModel.cctvThief) {
+    if (cctvPhase == CctvPhase.REVEAL && role == GameRole.THIEF && myMemberId == cctvThief) {
         WarningOverlay(
             onWarning = true,
             warningTitle = "위치 노출!",
