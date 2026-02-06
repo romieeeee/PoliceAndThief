@@ -205,7 +205,7 @@ private fun GameResultContent(
     val titleText = if (data.isWin) "WIN!" else "LOSE"
     val statsLabel = if (data.isPolice) "검거한 도둑 수" else "최장 생존 시간"
     val mvpBoxBgColor = Color(0xFF35384F)
-    val participantNames = data.mvpList.map { it.nickname }
+    val participantNames = data.allPlayerNicknames
 
     val characterImageRes = when {
         data.isPolice && data.isWin -> R.drawable.img_police_win
@@ -585,5 +585,6 @@ data class GameResultUiData(
     val mvpList: List<MvpData>,
     val myTierIconRes: Int,
     val myGameStat: String,
-    val myBestStat: String
+    val myBestStat: String,
+    val allPlayerNicknames: List<String> = emptyList()
 )

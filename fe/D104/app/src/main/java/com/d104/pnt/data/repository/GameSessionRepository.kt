@@ -68,4 +68,6 @@ interface GameSessionRepository {
     fun disconnectWalkie()
     fun startTalking()
     fun stopTalking()
+    fun setPlayerNicknames(list: List<String>)
+    fun getPlayerNicknames(): List<String>
 }

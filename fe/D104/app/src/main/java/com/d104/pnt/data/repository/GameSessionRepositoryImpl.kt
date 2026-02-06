@@ -146,7 +146,7 @@ class GameSessionRepositoryImpl @Inject constructor(
     private val _beepEvent = MutableSharedFlow<BeepUseResponse>(extraBufferCapacity = 16)
     override val beepEvent = _beepEvent.asSharedFlow()
 
-    private val _lastEscapeTime = MutableStateFlow(60) // 탈옥 시 해당 시간으로 초기화
+    private val _lastEscapeTime = MutableStateFlow(60)
     private val _survivalTime = MutableStateFlow(0)
     override val survivalTime = _survivalTime.asStateFlow()
 
@@ -559,6 +559,8 @@ class GameSessionRepositoryImpl @Inject constructor(
         }
     }
 
+    private var _cachedPlayerNicknames: List<String> = emptyList()
+
     override fun uploadMissionImage(image: File, missionId: Long) {
         repositoryScope.launch {
             _missionState.value = MissionStatus.IN_ANALYZE
@@ -811,6 +813,14 @@ class GameSessionRepositoryImpl @Inject constructor(
 
         gameSocketManager.useSkill(policeId = _myMemberId.value)
         Timber.d("🚁 post skill use 요청: gameId=$gameId, policeId=${_myMemberId.value}")
+    }
+
+    override fun setPlayerNicknames(list: List<String>) {
+        _cachedPlayerNicknames = list
+    }
+
+    override fun getPlayerNicknames(): List<String> {
+        return _cachedPlayerNicknames
     }
 }
 
