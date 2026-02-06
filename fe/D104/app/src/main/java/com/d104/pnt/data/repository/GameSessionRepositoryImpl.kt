@@ -651,9 +651,15 @@ class GameSessionRepositoryImpl @Inject constructor(
         _chiefMemberId.value = id
     }
 
-    override fun dequeEscape(){
-        _escapeQueue.value = _escapeQueue.value.drop(1)
-        Timber.d("📋 탈출 큐에서 제거 (남은 큐 크기: ${_escapeQueue.value.size})")
+    override fun dequeEscape() {
+        _escapeQueue.update { currentQueue ->
+            if (currentQueue.isNotEmpty()) {
+                currentQueue.drop(1)
+            } else {
+                currentQueue
+            }
+        }
+        Timber.d("📋 탈출 큐에서 제거 완료 (남은 큐 크기: ${_escapeQueue.value.size})")
     }
 
     override fun connectWalkie() {
