@@ -24,7 +24,10 @@ interface GameRoomRepository {
         thiefCount: Int,
         prison: Location,
         polygon: List<Location>,
+        mapId: Long? = null,
         saveMap: Boolean = false,
+        mapName: String? = null,
+        mapDescription: String? = null
     ): BaseResult<CreateGameRoomResponse>
 
     /**

@@ -225,9 +225,12 @@ fun MainScreen(
                         navController.navigate(route)
                     },
                     onBackPressed = { navController.popBackStack() },
-                    onNavigateRole = { roomId, role ->
-                        navController.navigate(Routes.buildGameIntro(roomId, role.name))
+
+                    onNavigateRole = { rId, role, isChief ->
+                        val route = Routes.buildGameIntro(rId, role.name) + "?isChief=$isChief"
+                        navController.navigate(route)
                     },
+
                     onNavigateHome = { message ->
                         if (message != null) {
                             navController.previousBackStackEntry
@@ -271,18 +274,24 @@ fun MainScreen(
 
             // 게임 인트로 (역할 안내)
             composable(
-                route = "${Routes.GAME_ROLE}/{${NavArgs.ROOM_ID}}/{${NavArgs.ROLE}}",
+                route = "${Routes.GAME_ROLE}/{${NavArgs.ROOM_ID}}/{${NavArgs.ROLE}}?isChief={isChief}",
                 arguments = listOf(
                     navArgument(NavArgs.ROOM_ID) { type = NavType.LongType },
-                    navArgument(NavArgs.ROLE) { type = NavType.StringType }
+                    navArgument(NavArgs.ROLE) { type = NavType.StringType },
+                    navArgument("isChief") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    }
                 )
             ) { backStackEntry ->
                 val roomId = backStackEntry.arguments?.getLong(NavArgs.ROOM_ID) ?: 0L
                 val roleName = backStackEntry.arguments?.getString(NavArgs.ROLE) ?: "THIEF"
+                val isChief = backStackEntry.arguments?.getBoolean("isChief") ?: false
                 val role = GameRole.fromName(roleName)
 
                 GameRoleScreen(
                     role = role,
+                    isChief = isChief,
                     onIntroFinished = {
                         navController.navigate(Routes.buildGameLoading(roomId, role.name)) {
                             popUpTo(Routes.HOME) { inclusive = false }
