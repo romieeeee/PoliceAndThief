@@ -134,9 +134,7 @@ fun GamePlayScreen(
     val arrestStatus by viewModel.arrestStatus.collectAsStateWithLifecycle()
     val arrestFailReason by viewModel.arrestFailReason.collectAsStateWithLifecycle()
 
-    // ✅ 경고음/진동 매니저 (1번만 선언)
-
-    // ✅ 테스트 플래그 (1번만 선언)
+    // 테스트 플래그
     val TEST_FORCE_BEEP = false
 
     // 테스트: 화면 진입 후 2초 뒤 1회 비프
@@ -152,7 +150,7 @@ fun GamePlayScreen(
 
         // 무전기 연결
         if (role == GameRole.POLICE) {
-            delay(500) // 게임 정보 동기화 대기
+            delay(500)
             viewModel.connectWalkie()
         }
 

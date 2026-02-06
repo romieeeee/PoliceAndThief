@@ -28,7 +28,8 @@ sealed interface GameRoomUiEvent {
     data class NavigateToHome(val message: String? = null) : GameRoomUiEvent
     data class NavigateToGame(
         val roomId: Long,
-        val role: String
+        val role: String,
+        val isChief: Boolean
     ) : GameRoomUiEvent
 
 }

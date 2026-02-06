@@ -231,7 +231,7 @@ class GameRoomViewModel @Inject constructor(
 
                     val membersArray = data.optJSONArray("members") ?: return@launch
                     val myId = _myMemberId.value
-                    var myFinalRole = "ANY" // 기본값
+                    var myFinalRole = "ANY"
 
                     for (i in 0 until membersArray.length()) {
                         val member = membersArray.getJSONObject(i)
@@ -242,6 +242,8 @@ class GameRoomViewModel @Inject constructor(
                     }
 
                     Timber.d("🎮 최종 역할 확정: $myFinalRole (ID: $myId)")
+
+                    val amIChief = (chiefId != null && chiefId == myId)
 
                     // 결정된 정보 저장
                     gameSessionRepository.setFinalRole(myFinalRole)
@@ -255,8 +257,13 @@ class GameRoomViewModel @Inject constructor(
                     delay(300)
                     roomSocketManager.disconnect()
 
-                    _uiEvent.emit(GameRoomUiEvent.NavigateToGame(roomId, myFinalRole))
-
+                    _uiEvent.emit(
+                        GameRoomUiEvent.NavigateToGame(
+                            roomId = roomId,
+                            role = myFinalRole,
+                            isChief = amIChief
+                        )
+                    )
                 } catch (e: Exception) {
                     Timber.e(e, "❌ 게임 시작 데이터 파싱 실패")
                 }
