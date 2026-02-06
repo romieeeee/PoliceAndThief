@@ -76,13 +76,6 @@ fun GameRoleScreen(
                 contentAlignment = Alignment.BottomCenter
             ) {
                 when (val connStatus = connectionStatus) {
-                    is ConnectionStatus.Connecting -> {
-                        Text(
-                            text = "접속 중... $memberCount / $connectedCount",
-                            color = Color.White
-                        )
-                    }
-
                     is ConnectionStatus.Error -> {
                         Text("⚠️ ${connStatus.message}", color = Color.Red)
                     }
