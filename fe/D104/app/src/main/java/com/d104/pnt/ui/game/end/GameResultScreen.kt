@@ -427,9 +427,9 @@ private fun GameResultContent(
                     onClick = {
                         onBackToHome()
                     },
-                    mainColor = Color.Gray,
+                    mainColor = Color.White,
                     borderColor = BorderDefault,
-                    textColor = Color.White,
+                    textColor = Color.Black,
                     fontSize = 16,
                     blockHeight = 12
                 )
