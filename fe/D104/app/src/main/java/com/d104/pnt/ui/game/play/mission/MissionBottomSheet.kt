@@ -56,7 +56,7 @@ fun MissionBottomSheet(
     val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
 
     // Bottom sheet가 접혔을 때와 펼쳤을 때의 위치
-    val collapsedOffset = screenHeight - 500f // 윗부분만 보이는 높이
+    val collapsedOffset = screenHeight - 600f // 윗부분만 보이는 높이
     val expandedOffset = screenHeight * 0.15f // 전체가 보이는 높이
 
     val targetOffset = when (sheetState) {

@@ -18,6 +18,14 @@ data class CreateGameRoomRequest(
     val policeCount: Int,
     @SerializedName("thiefCount")
     val thiefCount: Int,
+    @SerializedName("mapId")
+    val mapId: Long?,
+    @SerializedName("saveMap")
+    val saveMap: Boolean,
+    @SerializedName("mapName")
+    val mapName: String?,
+    @SerializedName("mapDescription")
+    val mapDescription: String?,
     @SerializedName("prison")
     val prison: Location?,
     @SerializedName("polygon")
@@ -44,4 +52,13 @@ data class ChangePositionRequest(
 data class JoinGameRoomRequest(
     @SerializedName("roomCode")
     val roomCode: String
+)
+
+data class SaveMapRequest(
+    @SerializedName("mapName")
+    val mapName: String,
+    @SerializedName("polyPoints")
+    val polyPoints: List<Location>,
+    @SerializedName("prisonLocaition")
+    val prison: Location
 )

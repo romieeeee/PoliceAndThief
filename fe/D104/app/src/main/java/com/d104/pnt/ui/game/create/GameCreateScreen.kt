@@ -76,6 +76,9 @@ fun GameCreateScreen(
 
     var showMapPopup by remember { mutableStateOf(false) }
 
+    var showMissionHelp by remember { mutableStateOf(false) }
+    var showCCTVHelp by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         viewModel.setDefaultSettings(context)
     }
@@ -85,6 +88,22 @@ fun GameCreateScreen(
             val roomId = (gameRoomState as UiState.Success).data.roomId
             onConfirm(roomId)
         }
+    }
+
+    if (showMissionHelp) {
+        GameGuideDialog(
+            title = "미션이란?",
+            content = "미션을 클리어한 도둑은\n경찰의 능력인 CCTV에\n더 이상 발각되지 않습니다.",
+            onDismissRequest = { showMissionHelp = false }
+        )
+    }
+
+    if (showCCTVHelp) {
+        GameGuideDialog(
+            title = "CCTV란?",
+            content = "일정한 주기마다\n미션을 클리어하지 않은 도둑 중\n무작위로 1명의 위치를\n지도에 10초간 보여줍니다.",
+            onDismissRequest = { showCCTVHelp = false }
+        )
     }
 
     Surface(modifier = Modifier.fillMaxSize()) {
@@ -191,21 +210,23 @@ fun GameCreateScreen(
                         ) {
                             CounterControl(
                                 modifier = Modifier.weight(1f),
-                                label = "미션 갯수",
+                                label = "전체 미션 수",
                                 icon = Icons.Default.List,
-                                value = missionCount.toString(),
-                                unit = "개",
+                                value = if (missionCount == 0) "없음" else missionCount.toString(),
+                                unit = if (missionCount == 0) "" else "개",
                                 onDecrease = { viewModel.updateMissionCount(false) },
-                                onIncrease = { viewModel.updateMissionCount(true) }
+                                onIncrease = { viewModel.updateMissionCount(true) },
+                                onHelpClick = { showMissionHelp = true }
                             )
                             CounterControl(
                                 modifier = Modifier.weight(1f),
                                 label = "CCTV 주기",
                                 icon = Icons.Default.Videocam,
-                                value = cctvCycle.toString(),
-                                unit = "분",
+                                value = if (cctvCycle == 0) "없음" else cctvCycle.toString(),
+                                unit = if (cctvCycle == 0) "" else "분",
                                 onDecrease = { viewModel.updateCctvCycle(false) },
-                                onIncrease = { viewModel.updateCctvCycle(true) }
+                                onIncrease = { viewModel.updateCctvCycle(true) },
+                                onHelpClick = { showCCTVHelp = true }
                             )
                         }
 

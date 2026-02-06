@@ -1,5 +1,6 @@
 package com.d104.pnt.ui.component
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.d104.pnt.R
+import com.d104.pnt.ui.theme.BorderDefault
 import com.d104.pnt.ui.theme.MissionYellow
 import com.d104.pnt.ui.theme.PixelFont
 import com.d104.pnt.ui.theme.PoliceBlue
@@ -38,15 +40,16 @@ import com.d104.pnt.ui.theme.PoliceBlue
 fun WarningOverlay(
     modifier: Modifier = Modifier,
     onWarning: Boolean = false,
+    success: Boolean = true,
     warningTitle: String = "",
     warningMessage: String = ""
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "warning")
     val alphaAnim by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 0.8f,
+        targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = LinearEasing),
+            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "alpha"
@@ -70,33 +73,27 @@ fun WarningOverlay(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
+                OutlinedText(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .alpha(alphaAnim),
+                        .alpha(alphaAnim)
+                        .fillMaxWidth(),
                     text = warningTitle,
-                    fontFamily = PixelFont,
-                    color = Color.Red,
                     fontSize = 40.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    success = false,
+                    outlineColor = BorderDefault
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Text(
+                OutlinedText(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .alpha(alphaAnim),
+                        .alpha(alphaAnim)
+                        .fillMaxWidth(),
                     text = warningMessage,
-                    fontFamily = PixelFont,
-                    color = Color.Red,
                     fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 32.sp
+                    success = false,
+                    outlineColor = BorderDefault
                 )
-
             }
         }
     }
@@ -110,32 +107,26 @@ fun WarningOverlay(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
+                OutlinedText(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .alpha(alphaAnim),
+                        .alpha(alphaAnim)
+                        .fillMaxWidth(),
                     text = warningTitle,
-                    fontFamily = PixelFont,
-                    color = PoliceBlue,
                     fontSize = 40.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 1.3.em
+                    success = success,
+                    outlineColor = BorderDefault
                 )
 
                 Spacer(modifier = Modifier.height(50.dp))
 
-                Text(
+                OutlinedText(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .alpha(alphaAnim),
+                        .alpha(alphaAnim)
+                        .fillMaxWidth(),
                     text = warningMessage,
-                    fontFamily = PixelFont,
-                    color = PoliceBlue,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 1.3.em
+                    fontSize = 40.sp,
+                    success = success,
+                    outlineColor = BorderDefault
                 )
             }
         }

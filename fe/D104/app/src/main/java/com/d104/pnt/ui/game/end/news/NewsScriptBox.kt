@@ -67,8 +67,8 @@ fun NewsScriptBox(
                 text = textToDisplay,
                 color = Color.Black,
                 fontFamily = PixelFont,
-                fontSize = 16.sp,
-                lineHeight = 24.sp,
+                fontSize = 15.sp,
+                lineHeight = 20.sp,
                 modifier = Modifier.fillMaxWidth()
             )
         }
