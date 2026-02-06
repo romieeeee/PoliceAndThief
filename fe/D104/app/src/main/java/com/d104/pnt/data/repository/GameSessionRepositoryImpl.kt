@@ -263,6 +263,7 @@ class GameSessionRepositoryImpl @Inject constructor(
         }
         gameSocketManager.setOnGpsReceived {cctvThiefId, skillUsedAt, sec, locations ->
             _gameTime.value = sec // 인게임 시간 sync
+            _cctvThiefId.value = cctvThiefId
             _remainingTime.value = (_TotalTime.value*60) - sec
             _onBoundaryWarning.value = _boundaryWarningTargets.value.toList() // 경고 목록 업데이트
             _boundaryWarningTargets.value.clear() // 경고 예정 목록 초기화
