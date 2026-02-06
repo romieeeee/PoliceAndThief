@@ -28,7 +28,7 @@ public class GameRoomSettingUpdateRequest {
 	private Integer thiefCount;
 
 	@NotNull
-	@Min(1)
+	@Min(0)
 	private Integer cctvInterval;
 
 	@NotNull
