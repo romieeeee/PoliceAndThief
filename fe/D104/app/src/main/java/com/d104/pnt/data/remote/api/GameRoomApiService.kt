@@ -90,27 +90,42 @@ interface GameRoomApiService {
         @Body request: UpdateRoomSettingsRequest
     ): Response<BaseResponse<Unit>>
 
+    /**
+     * 플레이어 강퇴 API
+     */
     @POST("rooms/{roomId}/members/kick")
     suspend fun kickPlayer(
         @Path("roomId") roomId: Long,
         @Body request: KickRequest
     ): Response<BaseResponse<Unit>>
 
+    /**
+     * 맵 저장 API
+     */
     @POST("maps")
     suspend fun saveMap(
         @Body request: SaveMapRequest
-    ): Response<BaseResponse<Unit>>
+    ): Response<BaseResponse<Long>>
 
+    /**
+     * 내 맵 조회 API
+     */
     @GET("maps")
     suspend fun getMyMaps(): Response<BaseResponse<List<MapData>>>
 
+    /**
+     * 맵 단건 조회 API
+     */
     @GET("maps/{mapId}")
     suspend fun getMap(
         @Path("mapId") mapId: Long
     ): Response<BaseResponse<MapData>>
 
+    /**
+     * 맵 삭제 API
+     */
     @DELETE("maps/{mapId}")
     suspend fun deleteMap(
         @Path("mapId") mapId: Long
-    ): Result<BaseResponse<Unit>>
+    ): Response<BaseResponse<Unit>>
 }
