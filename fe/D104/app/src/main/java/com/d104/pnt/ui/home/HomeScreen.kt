@@ -421,8 +421,9 @@ fun JoinGameDialog(
                     mainColor = Color.Gray,
                     borderColor = BorderDefault,
                     textColor = Color.White,
-                    fontSize = 16,
-                    blockHeight = 10
+                    fontSize = 15,
+                    blockHeight = 15,
+                    pixelSize = 2.8.dp
                 )
 
                 PixelButtonCode(
@@ -434,8 +435,9 @@ fun JoinGameDialog(
                     mainColor = CustomBlue,
                     borderColor = BorderDefault,
                     textColor = Color.White,
-                    fontSize = 16,
-                    blockHeight = 10
+                    fontSize = 15,
+                    blockHeight = 15,
+                    pixelSize = 2.8.dp
                 )
             }
         }

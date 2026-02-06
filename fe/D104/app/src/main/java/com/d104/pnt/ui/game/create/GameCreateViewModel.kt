@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.remote.model.request.Location
+import com.d104.pnt.data.remote.model.request.SaveMapRequest
 import com.d104.pnt.data.remote.model.response.CreateGameRoomResponse
+import com.d104.pnt.data.remote.model.response.MapData
 import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.domain.model.common.BaseResult
@@ -47,9 +49,34 @@ class GameCreateViewModel @Inject constructor(
     val policeCount: StateFlow<Int> = _policeCount.asStateFlow()
     val thiefCount: StateFlow<Int> = _thiefCount.asStateFlow()
 
+    private val _myMaps = MutableStateFlow<UiState<List<MapData>>>(UiState.Idle)
+    val myMaps: StateFlow<UiState<List<MapData>>> = _myMaps.asStateFlow()
+
+    private val _selectedMapId = MutableStateFlow<Long?>(null)
+    val selectedMapId = _selectedMapId.asStateFlow()
+
+    private val _mapDetailState = MutableStateFlow<UiState<MapData>>(UiState.Idle)
+    val mapDetailState = _mapDetailState.asStateFlow()
+
+    private val _saveMap = MutableStateFlow(false)
+    val saveMap = _saveMap.asStateFlow()
+
+    private val _mapName = MutableStateFlow("")
+    val mapName = _mapName.asStateFlow()
+
+
+    fun setSaveMap(value: Boolean) {
+        _saveMap.value = value
+    }
+
+    fun setMapName(value: String) {
+        _mapName.value = value
+    }
+
     fun updateGameName(newName: String) {
         _gameName.value = newName
     }
+
     fun updateTotalPlayers(plus: Boolean) {
         if (plus && _totalPlayers.value < 30) {
             _totalPlayers.value += 1
@@ -69,6 +96,7 @@ class GameCreateViewModel @Inject constructor(
             _missionCount.value = _thiefCount.value
         }
     }
+
     fun updateGameTime(plus: Boolean) {
         if (plus && _gameTime.value < 60) _gameTime.value += 5
         else if (!plus && _gameTime.value > 5) {
@@ -78,20 +106,19 @@ class GameCreateViewModel @Inject constructor(
             }
         }
     }
+
     fun updateMissionCount(plus: Boolean) {
         if (plus && _missionCount.value < _thiefCount.value) {
             _missionCount.value += 1
-        }
-
-        else if (!plus && _missionCount.value > 0) {
+        } else if (!plus && _missionCount.value > 0) {
             _missionCount.value -= 1
         }
     }
+
     fun updateCctvCycle(plus: Boolean) {
         if (plus && _cctvCycle.value < _gameTime.value - 1) {
             _cctvCycle.value += 1
-        }
-        else if (!plus && _cctvCycle.value > 0) {
+        } else if (!plus && _cctvCycle.value > 0) {
             _cctvCycle.value -= 1
         }
     }
@@ -138,12 +165,25 @@ class GameCreateViewModel @Inject constructor(
         prison: Location,
         polygon: List<Location>
     ) {
-        if (_gameRoomState.value is UiState.Loading) {
-            return
-        }
+        if (_gameRoomState.value is UiState.Loading) return
 
         viewModelScope.launch {
             _gameRoomState.value = UiState.Loading
+
+            if (_saveMap.value) {
+                val saveResult = gameRoomRepository.saveMap(
+                    SaveMapRequest(
+                        name = _mapName.value.ifEmpty { "내 커스텀 맵" },
+                        description = "",
+                        prison = prison,
+                        polygon = polygon
+                    )
+                )
+
+                if (saveResult is BaseResult.Error) {
+                    Timber.e("맵 저장 중 오류 발생: ${saveResult.error.message}")
+                }
+            }
 
             roomSocketManager.disconnect()
             delay(100) // 잠시 대기
@@ -161,6 +201,7 @@ class GameCreateViewModel @Inject constructor(
                 is BaseResult.Success -> {
                     _gameRoomState.value = UiState.Success(result.data)
                 }
+
                 is BaseResult.Error -> {
                     _gameRoomState.value = UiState.Error(result.error.message)
                 }
@@ -168,7 +209,7 @@ class GameCreateViewModel @Inject constructor(
         }
     }
 
-    fun isValid (
+    fun isValid(
         playerCount: Int,
         timeLimit: Int,
         policeCount: Int,
@@ -181,5 +222,68 @@ class GameCreateViewModel @Inject constructor(
         if (thiefCount < 1 || thiefCount >= playerCount) return false
         if (polygon.size < 3) return false
         return true
+    }
+
+    // 내 맵 목록 불러오기
+    fun fetchMyMaps() {
+        viewModelScope.launch {
+            _myMaps.value = UiState.Loading
+            when (val result = gameRoomRepository.getMyMaps()) {
+                is BaseResult.Success -> {
+                    _myMaps.value = UiState.Success(result.data)
+                }
+
+                is BaseResult.Error -> {
+                    _myMaps.value = UiState.Error(result.error.message)
+                }
+            }
+        }
+    }
+
+    fun selectMap(mapId: Long) {
+        _selectedMapId.value = mapId
+        viewModelScope.launch {
+            _mapDetailState.value = UiState.Loading
+            when (val result = gameRoomRepository.getMap(mapId)) {
+                is BaseResult.Success -> {
+                    _mapDetailState.value = UiState.Success(result.data)
+                }
+
+                is BaseResult.Error -> {
+                    _mapDetailState.value = UiState.Error(result.error.message)
+                }
+            }
+        }
+    }
+
+    // 선택한 맵 적용 확인
+    fun applySelectedMap() {
+        val uiState = _mapDetailState.value
+        if (uiState !is UiState.Success) {
+            Timber.e("선택된 맵의 상세 정보가 아직 로드되지 않았습니다.")
+            return
+        }
+
+        val mapDetail = uiState.data
+
+        mapDetail.prison?.let { p ->
+            Timber.d("적용할 감옥 위치: ${p.lat}, ${p.lng}")
+            locationRepository.setPrisonLocation(LatLng(p.lat, p.lng))
+        }
+
+        mapDetail.polygon?.let { points ->
+            Timber.d("적용할 폴리곤 포인트 수: ${points.size}")
+            val latLngList = points.map { LatLng(it.lat, it.lng) }
+            locationRepository.setPolygonPoints(latLngList)
+        }
+
+        _selectedMapId.value = null
+        _mapDetailState.value = UiState.Idle
+    }
+
+    // 맵 선택 취소
+    fun clearSelectedMap() {
+        _selectedMapId.value = null
+        _mapDetailState.value = UiState.Idle
     }
 }

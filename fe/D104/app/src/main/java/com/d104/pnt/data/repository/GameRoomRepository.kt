@@ -1,9 +1,11 @@
 package com.d104.pnt.data.repository
 
 import com.d104.pnt.data.remote.model.request.Location
+import com.d104.pnt.data.remote.model.request.SaveMapRequest
 import com.d104.pnt.data.remote.model.response.CreateGameRoomResponse
 import com.d104.pnt.data.remote.model.response.GameMemberListResponse
 import com.d104.pnt.data.remote.model.response.GameRoomSettingsResponse
+import com.d104.pnt.data.remote.model.response.MapData
 import com.d104.pnt.domain.model.CurrentGameRoomData
 import com.d104.pnt.domain.model.common.BaseResult
 import kotlinx.coroutines.flow.StateFlow
@@ -95,4 +97,24 @@ interface GameRoomRepository {
      * 게임방 나가기
      */
     suspend fun leaveRoom(roomId: Long): BaseResult<Unit>
+
+    /**
+     * 맵 저장
+     */
+    suspend fun saveMap(request: SaveMapRequest): BaseResult<Long>
+
+    /**
+     * 내가 저장한 맵 조회
+     */
+    suspend fun getMyMaps(): BaseResult<List<MapData>>
+
+    /**
+     * 맵 상세 조회
+     */
+    suspend fun getMap(mapId: Long): BaseResult<MapData>
+
+    /**
+     * 맵 삭제
+     */
+    suspend fun deleteMap(mapId: Long): BaseResult<Unit>
 }
