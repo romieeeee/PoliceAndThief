@@ -7,6 +7,7 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d104.pnt.R
 import com.d104.pnt.base.Constants
 import com.d104.pnt.data.remote.model.response.BeepUseResponse
 import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
@@ -19,6 +20,7 @@ import com.d104.pnt.domain.model.PlayerData
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.service.game.GameActiveService
+import com.d104.pnt.util.SoundPlayer
 import com.d104.pnt.util.StepSensorManager
 import com.d104.pnt.util.getSingleLocation
 import com.d104.pnt.util.socket.GameSocketManager
@@ -52,7 +54,8 @@ class GamePlayViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val gameSessionRepository: GameSessionRepository,
     private val stepSensorManager: StepSensorManager,
-    private val walkieRepository: WalkieRepository
+    private val walkieRepository: WalkieRepository,
+    private val soundPlayer: SoundPlayer
 ) : ViewModel() {
     // UI 이벤트
     private val _uiEvent = MutableSharedFlow<GameSessionEvent>(
@@ -210,6 +213,14 @@ class GamePlayViewModel @Inject constructor(
         }
     }
 
+    fun playWalkieOpenSound() {
+        soundPlayer.playSound(R.raw.walkie_open)
+    }
+
+    fun playWalkieCloseSound() {
+        soundPlayer.playSound(R.raw.walkie_close)
+    }
+
     fun manualLeaveGame() {
         viewModelScope.launch {
             Timber.d("🚪 유저가 직접 게임 종료를 선택함")
@@ -220,7 +231,12 @@ class GamePlayViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+
+        gameSessionRepository.stopTalking()
         gameSessionRepository.disconnectWalkie()
+
         startService(GameActiveService.ACTION_STOP)
+
+        soundPlayer.release()
     }
 }

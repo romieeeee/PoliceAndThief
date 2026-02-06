@@ -33,9 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import timber.log.Timber
+import kotlin.math.exp
 
 object WalkieColor {
     val Panel = Color(0xFF2A2A2A)
@@ -54,19 +57,37 @@ fun WalkieTalkieContent(
     isSomeoneTalking: Boolean,
     onPttDown: () -> Unit,
     onPttUp: () -> Unit,
-    onChannelDown: () -> Unit,
-    onChannelUp: () -> Unit
 ) {
+    val density = LocalDensity.current
+    val configuration = LocalConfiguration.current
+    val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
+
+    val expandedOffset = screenHeight * 0.15f // 전체가 보이는 높이
+
+
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .height(expandedOffset.dp)
             .padding(horizontal = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.Center
     ) {
-        Spacer(Modifier.height(10.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .background(WalkieColor.Panel, RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = channel,
+                color = WalkieColor.TextPrimary,
+                fontSize = 14.sp,
+                letterSpacing = 1.sp
+            )
+        }
 
-        ChannelHeader(channel)
+        Spacer(Modifier.height(24.dp))
 
         PttCircle(
             isTalking = isTalking,
@@ -75,28 +96,8 @@ fun WalkieTalkieContent(
             onUp = onPttUp
         )
 
-        ChannelButtons(
-            onDown = onChannelDown,
-            onUp = onChannelUp
-        )
-    }
-}
+        Spacer(Modifier.height(24.dp))
 
-@Composable
-private fun ChannelHeader(text: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .background(WalkieColor.Panel, RoundedCornerShape(10.dp)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = WalkieColor.TextPrimary,
-            fontSize = 14.sp,
-            letterSpacing = 1.sp
-        )
     }
 }
 
@@ -137,49 +138,26 @@ private fun PttCircle(
                 scaleY = scale
                 alpha = if (isSomeoneTalking) 0.6f else 1f
             }
-            .pointerInput(Unit) { // ⭐ Key를 Unit으로 해서 GPS나 남의 신호에 제스처가 끊기지 않게 함
-                awaitPointerEventScope {
-                    while (true) {
-                        val down = awaitFirstDown()
+            .then(
+                if (!isSomeoneTalking) {
+                    Modifier.pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                awaitFirstDown()
+                                isPressed = true
+                                onDown()
 
-                        // ❌ 남이 이미 말하고 있으면 터치 무시
-                        if (isSomeoneTalking) {
-                            Timber.d("📻 수신 중에는 송신 불가")
-                            continue
+                                waitForUpOrCancellation()
+
+                                isPressed = false
+                                onUp()
+                            }
                         }
-
-                        // ✅ 송신 시작
-                        isPressed = true
-                        onDown()
-
-                        // 뗄 때까지 대기
-                        waitForUpOrCancellation()
-
-                        // ✅ 송신 종료
-                        isPressed = false
-                        onUp()
                     }
+                } else {
+                    Modifier
                 }
-            }.pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val down = awaitFirstDown()
-
-                        if (isSomeoneTalking) {
-                            Timber.d("📻 수신 중에는 송신 불가")
-                            continue
-                        }
-
-                        isPressed = true
-                        onDown()
-
-                        waitForUpOrCancellation()
-
-                        isPressed = false
-                        onUp()
-                    }
-                }
-            }
+            )
             .background(color = circleColor, shape = CircleShape),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -198,35 +176,5 @@ private fun PttCircle(
             color = WalkieColor.TextPrimary,
             fontSize = 12.sp
         )
-    }
-}
-
-@Composable
-private fun ChannelButtons(
-    onDown: () -> Unit,
-    onUp: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceAround
-    ) {
-        ChannelButton("CH ▼", onDown)
-        ChannelButton("CH ▲", onUp)
-    }
-}
-
-@Composable
-private fun ChannelButton(
-    text: String,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .background(WalkieColor.Button, RoundedCornerShape(10.dp))
-            .padding(vertical = 10.dp, horizontal = 20.dp)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text, color = WalkieColor.TextPrimary)
     }
 }

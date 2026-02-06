@@ -44,16 +44,9 @@ fun GameLoadingScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-//        GifImage(
-//            modifier = Modifier.fillMaxSize(),
-//            imageRes = R.drawable.gif_running
-//        )
-        // 배경
-        Image(
-            painter = painterResource(id = R.drawable.bg_night),
-            contentDescription = null,
+        GifImage(
             modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
+            imageRes = R.drawable.gif_running
         )
 
         Column(
@@ -61,26 +54,30 @@ fun GameLoadingScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Text(
+                text = role.description,
+                color = Color.White
+            )
+
+            Spacer(Modifier.height(12.dp))
 
             ContDownUI(
                 remainingSeconds = remainingTime
             )
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(50.dp))
 
-            Image(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(30.dp),
-                painter = painterResource(R.drawable.img_pnt_run),
-                contentDescription = null,
-                contentScale = ContentScale.Crop
-            )
 
-            Text(
-                text = role.description,
-                color = Color.White
-            )
+
+//            Image(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(30.dp),
+//                painter = painterResource(R.drawable.img_pnt_run),
+//                contentDescription = null,
+//                contentScale = ContentScale.Crop
+//            )
+
         }
     }
 }

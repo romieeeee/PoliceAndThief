@@ -30,7 +30,7 @@ fun IntroScreen(onClick: () -> Unit) {
     ) {
         GifImage(
             modifier = Modifier.fillMaxSize(),
-            imageRes = R.drawable.gif_running
+            imageRes = R.drawable.intro_game
         )
 
         Column(
