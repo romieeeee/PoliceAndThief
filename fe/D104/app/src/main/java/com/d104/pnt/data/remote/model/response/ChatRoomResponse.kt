@@ -39,12 +39,18 @@ data class ChatRoomResponse(
 )
 
 data class MapData(
-    @SerializedName("mapId")
+    @SerializedName("id")
     val mapId: Long,
-    @SerializedName("mapName")
+    @SerializedName("name")
     val mapName: String,
-    @SerializedName("polyPoints")
-    val polyPoint: List<Location>,
-    @SerializedName("prisonLocation")
-    val prisonLocation: Location
+    @SerializedName("description")
+    val description: String? = null,
+    @SerializedName("polygon")
+    val polygon: List<Location>? = null,
+    @SerializedName("prison")
+    val prison: Location? = null,
+    @SerializedName("updatedAt")
+    val updatedAt: String? = null,
+    @SerializedName("createdAt")
+    val createdAt: String? = null,
 )

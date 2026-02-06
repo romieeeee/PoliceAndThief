@@ -70,6 +70,8 @@ import com.d104.pnt.ui.theme.TextPrimary
 import com.d104.pnt.ui.theme.TextSecondary
 import com.d104.pnt.ui.theme.WinColor
 import androidx.compose.runtime.collectAsState
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
 
 data class MvpData(
     val type: String,
@@ -205,7 +207,7 @@ private fun GameResultContent(
     val titleText = if (data.isWin) "WIN!" else "LOSE"
     val statsLabel = if (data.isPolice) "검거한 도둑 수" else "최장 생존 시간"
     val mvpBoxBgColor = Color(0xFF35384F)
-    val participantNames = data.mvpList.map { it.nickname }
+    val participantNames = data.allPlayerNicknames
 
     val characterImageRes = when {
         data.isPolice && data.isWin -> R.drawable.img_police_win
@@ -246,14 +248,18 @@ private fun GameResultContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                modifier = Modifier.size(25.dp),
-                painter = painterResource(id = R.drawable.report_siren),
-                contentDescription = "report button",
+                painter = painterResource(id = R.drawable.ic_siren_end),
+                contentDescription = "신고",
+                modifier = Modifier
+                    .size(32.dp)
+                    .padding(bottom = 4.dp)
             )
+
             Text(
                 text = "신고하기",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.8f),
+                modifier = Modifier.clickable { viewModel.openReportDialog() }
             )
         }
 
@@ -370,15 +376,17 @@ private fun GameResultContent(
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
+
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_best),
-                                contentDescription = null,
-                                tint = Color.Unspecified
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_trophy_end),
+                                contentDescription = "Best Stat Trophy",
+                                modifier = Modifier.size(20.dp)
                             )
+
                             Text(
                                 textAlign = TextAlign.Center,
                                 text = "최고기록 ${data.myBestStat}",
@@ -415,46 +423,27 @@ private fun GameResultContent(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Row(
+            PixelButtonCode(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                PixelButtonCode(
-                    modifier = Modifier.weight(1f),
-                    text = "홈으로",
-                    onClick = {
-                        onBackToHome()
-                    },
-                    mainColor = Color.Gray,
-                    borderColor = BorderDefault,
-                    textColor = Color.White,
-                    fontSize = 16,
-                    blockHeight = 12
-                )
-
-                Spacer(Modifier.width(24.dp))
-                PixelButtonCode(
-                    modifier = Modifier.weight(1f),
-                    text = when {
-                        isRejoinLoading -> "입장 중..."
-                        !isRejoinReady -> "대기방 (${viewModel.remainingSeconds.collectAsStateWithLifecycle().value})"
-                        else -> "대기방"
-                    },
-                    onClick = {
-                        viewModel.backToLobby { roomId ->
-                            onBackToWaitingRoom(roomId)
-                        }
-                    },
-                    mainColor = if (isRejoinReady && !isRejoinLoading) CustomBlue else Color.Gray,
-                    borderColor = BorderDefault,
-                    textColor = Color.White,
-                    fontSize = 16,
-                    blockHeight = 12,
-                    enabled = isRejoinReady && !isRejoinLoading
-                )
-            }
+                text = when {
+                    isRejoinLoading -> "입장 중..."
+                    !isRejoinReady -> "대기방 (${viewModel.remainingSeconds.collectAsStateWithLifecycle().value})"
+                    else -> "대기방"
+                },
+                onClick = {
+                    viewModel.backToLobby { roomId ->
+                        onBackToWaitingRoom(roomId)
+                    }
+                },
+                mainColor = if (isRejoinReady && !isRejoinLoading) CustomBlue else Color.Gray,
+                borderColor = BorderDefault,
+                textColor = Color.White,
+                fontSize = 16,
+                blockHeight = 12,
+                enabled = isRejoinReady && !isRejoinLoading
+            )
         }
 
 
@@ -519,13 +508,19 @@ fun MvpCard(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
+            val iconResId = when (mvpData.type) {
+                "MVP" -> R.drawable.ic_medal_end
+                "ACE" -> R.drawable.ic_passion_end
+                "조력자" -> R.drawable.ic_handshake_end
+                else -> R.drawable.ic_medal_end
+            }
+
+            Image(
                 modifier = Modifier
                     .size(56.dp)
                     .weight(0.3f),
-                painter = painterResource(id = mvpData.iconRes),
-                contentDescription = null,
-                tint = Color.Unspecified
+                painter = painterResource(id = iconResId),
+                contentDescription = mvpData.type
             )
 
             Spacer(modifier = Modifier.width(20.dp))
@@ -585,5 +580,6 @@ data class GameResultUiData(
     val mvpList: List<MvpData>,
     val myTierIconRes: Int,
     val myGameStat: String,
-    val myBestStat: String
+    val myBestStat: String,
+    val allPlayerNicknames: List<String> = emptyList()
 )

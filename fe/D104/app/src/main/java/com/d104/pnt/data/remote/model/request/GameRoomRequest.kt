@@ -55,10 +55,15 @@ data class JoinGameRoomRequest(
 )
 
 data class SaveMapRequest(
-    @SerializedName("mapName")
-    val mapName: String,
-    @SerializedName("polyPoints")
-    val polyPoints: List<Location>,
-    @SerializedName("prisonLocaition")
-    val prison: Location
+    @SerializedName("name")
+    val name: String,
+
+    @SerializedName("description")
+    val description: String,
+
+    @SerializedName("prison")
+    val prison: Location,
+
+    @SerializedName("polygon")
+    val polygon: List<Location>
 )

@@ -32,23 +32,21 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.data.remote.model.request.Location
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.common.UiState
+import com.d104.pnt.ui.component.CustomTextField
 import com.d104.pnt.ui.component.GoogleMaps
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.theme.BorderDefault
-import com.d104.pnt.ui.theme.CancelGray
 import com.d104.pnt.ui.theme.CustomBlue
-import com.d104.pnt.ui.theme.DarkSurface
-import com.d104.pnt.ui.theme.DialogBorderColor
 import com.d104.pnt.ui.theme.RoomBorder
 import com.d104.pnt.ui.theme.RoomContainer
-import com.d104.pnt.ui.theme.TextPrimary
 import com.google.android.gms.maps.model.LatLng
 
 
@@ -78,6 +76,14 @@ fun GameCreateScreen(
 
     var showMissionHelp by remember { mutableStateOf(false) }
     var showCCTVHelp by remember { mutableStateOf(false) }
+
+    val myMapsState by viewModel.myMaps.collectAsStateWithLifecycle()
+    var showMapLoadPopup by remember { mutableStateOf(false) }
+
+    val saveMap by viewModel.saveMap.collectAsStateWithLifecycle()
+    val mapName by viewModel.mapName.collectAsStateWithLifecycle()
+
+    val selectedMapId by viewModel.selectedMapId.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.setDefaultSettings(context)
@@ -122,7 +128,7 @@ fun GameCreateScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // 게임 생성 컨테이너
@@ -170,10 +176,67 @@ fun GameCreateScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clickable { showMapPopup = true })
+                                    .clickable { showMapPopup = true }
+                            )
+
+                            PixelContainer(
+                                modifier = Modifier
+                                    .padding(10.dp)
+                                    .align(Alignment.TopEnd)
+                                    .clickable{
+                                        viewModel.fetchMyMaps()
+                                        showMapLoadPopup = true
+                                    },
+                                borderColor = Color.Gray,
+                                backgroundColor = Color.White,
+                                cornerSize = 10f,
+                                borderWidth = 5f,
+                                innerVerticalPadding = 6,
+                                innerHorizontalPadding = 6
+                            ) {
+                                Text(
+                                    text = "맵 불러오기",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Black
+                                )
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Text(
+                                    text = if (saveMap) "▣" else "□",
+                                    color = if (saveMap) CustomBlue else Color.White,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.clickable{
+                                        viewModel.setSaveMap(!saveMap)
+                                    }
+                                )
+                                Text(
+                                    text = "현재 설정한 맵 구역 저장하기",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White
+                                )
+                            }
+
+                            // 저장하기 체크했을 때만 이름 입력 필드 노출
+                            if (saveMap) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CustomTextField(
+                                    value = mapName,
+                                    onValueChange = { viewModel.setMapName(it) },
+                                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                                    placeholder = "저장할 맵 이름을 입력하세요",
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         SectionTitle(text = "게임 규칙")
                         Spacer(modifier = Modifier.height(12.dp))
@@ -242,7 +305,7 @@ fun GameCreateScreen(
                             onPoliceCountChange = { newCount -> viewModel.updatePoliceCount(newCount) }
                         )
 
-                        Spacer(modifier = Modifier.height(30.dp))
+                        Spacer(modifier = Modifier.height(36.dp))
 
                         Row(
                             modifier = Modifier
@@ -259,18 +322,16 @@ fun GameCreateScreen(
                                 mainColor = Color.Gray,
                                 borderColor = BorderDefault,
                                 textColor = Color.White,
-                                fontSize = 16,
-                                blockHeight = 10
+                                fontSize = 15,
+                                blockHeight = 15,
+                                pixelSize = 2.8.dp
                             )
 
                             PixelButtonCode(
                                 text = "확인",
                                 onClick = {
                                     val polyPoint = polygonPoints.map {
-                                        Location(
-                                            lat = it.latitude,
-                                            lng = it.longitude
-                                        )
+                                        Location(lat = it.latitude, lng = it.longitude)
                                     }
 
                                     val closedPolygon = if (polyPoint.isNotEmpty()) {
@@ -310,8 +371,9 @@ fun GameCreateScreen(
                                 mainColor = CustomBlue,
                                 borderColor = BorderDefault,
                                 textColor = Color.White,
-                                fontSize = 16,
-                                blockHeight = 10
+                                fontSize = 15,
+                                blockHeight = 15,
+                                pixelSize = 2.8.dp
                             )
                         }
                     }
@@ -324,6 +386,24 @@ fun GameCreateScreen(
             modifier = Modifier,
             onDismiss = { showMapPopup = false },
             onConfirm = { showMapPopup = false }
+        )
+    }
+
+    if (showMapLoadPopup) {
+        MapLoadDialog(
+            uiState = myMapsState,
+            selectedMapId = selectedMapId,
+            onDismiss = {
+                viewModel.clearSelectedMap()
+                showMapLoadPopup = false
+            },
+            onMapSelect = { selectedMap ->
+                viewModel.selectMap(selectedMap.mapId)
+            },
+            onConfirm = {
+                viewModel.applySelectedMap()
+                showMapLoadPopup = false
+            }
         )
     }
 }
