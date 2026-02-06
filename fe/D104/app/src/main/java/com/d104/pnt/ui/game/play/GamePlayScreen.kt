@@ -548,6 +548,7 @@ fun GamePlayScreen(
                     clicked = false
                 },
                 role = role,
+                myMemberId = myMemberId,
                 currentLocation = LatLng(currentLocation.latitude, currentLocation.longitude),
                 areaPoints = areaPoints,
                 prisonLocation = LatLng(prisonLocation.latitude, prisonLocation.longitude),

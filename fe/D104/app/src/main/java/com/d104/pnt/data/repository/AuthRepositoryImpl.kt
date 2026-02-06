@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Provider
@@ -48,7 +47,7 @@ class AuthRepositoryImpl @Inject constructor(
     private val KEY_MEMBER_ID = longPreferencesKey(Constants.KEY_MEMBER_ID) // memberId
     private val KEY_IS_LOGGED_IN = booleanPreferencesKey(Constants.KEY_IS_LOGGED_IN)
     private val KEY_LAST_REFRESH = longPreferencesKey(Constants.KEY_LAST_REFRESH)
-    private val _30MINUTE = 1800000L
+    private val _EXPIER_TIME = 14400000L
     private val _5MINUTE = 300000L
 
 
@@ -178,7 +177,7 @@ class AuthRepositoryImpl @Inject constructor(
         return dataStore.data.transform { preferences ->
             val lastRefresh = preferences[KEY_LAST_REFRESH] ?: 0L
             val currentTime = System.currentTimeMillis()
-            val expireTime = lastRefresh + _30MINUTE
+            val expireTime = lastRefresh + _EXPIER_TIME
             if (currentTime + _5MINUTE > expireTime) {
                 try {
                     val refreshCall = authAPiServiceProvider.get().refreshTokenCall(

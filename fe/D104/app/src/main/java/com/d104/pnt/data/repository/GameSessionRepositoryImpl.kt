@@ -321,12 +321,16 @@ class GameSessionRepositoryImpl @Inject constructor(
                         ) {
                             locationJson.put("status", "CCTV")
                         }
-                        if (_helicopterState.value == HelicopterPhase.REVEAL) {
+                        if (_helicopterState.value == HelicopterPhase.REVEAL
+                            && locationJson.optString("position") != "POLICE"
+                            && (locationJson.optString("status") == "null"
+                                    || locationJson.optString("status") == "FREE")) {
                             locationJson.put("status", "CCTV")
                         }
                         newMemberLocation.add(MemberLocationSocketDto.fromJson(locationJson))
                     }
                     _memberLocation.value = newMemberLocation
+                    Timber.d("멤버 데이터: ${_memberLocation.value}")
                 }
             }
             catch (e:Exception) {
