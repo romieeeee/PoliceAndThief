@@ -50,6 +50,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import coil.compose.rememberAsyncImagePainter
 import com.d104.pnt.R
+import com.d104.pnt.domain.model.GameRoomInfoState
 
 @Composable
 fun GameRoomBoard(
@@ -69,7 +70,9 @@ fun GameRoomBoard(
     onDelegateHostClick: (WaitingPlayer) -> Unit,
     onKickClick: (WaitingPlayer) -> Unit,
     modifier: Modifier = Modifier,
-    onChangeRole: () -> Unit
+    onChangeRole: () -> Unit,
+    maxPolice: Int,
+    maxThief: Int
 ) {
     PixelContainer(
         modifier = modifier,
@@ -93,7 +96,15 @@ fun GameRoomBoard(
                     polygonPoints = polygonPoints
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                RoleCountInfo(policeCount, thiefCount, anyCount)
+
+                RoleCountInfo(
+                    policeCount = players.count { it.role == GameRole.POLICE },
+                    thiefCount = players.count { it.role == GameRole.THIEF },
+                    anyCount = players.count { it.role == GameRole.ANY },
+                    maxPolice = maxPolice,
+                    maxThief = maxThief
+                )
+
                 Spacer(modifier = Modifier.height(20.dp))
                 Box(
                     modifier = Modifier
@@ -383,32 +394,49 @@ fun MapPreviewContent(
 }
 
 @Composable
-fun RoleCountInfo(policeCount: Int, thiefCount: Int, anyCount: Int) {
+fun RoleCountInfo(
+    policeCount: Int,
+    thiefCount: Int,
+    anyCount: Int,
+    maxPolice: Int,
+    maxThief: Int
+) {
+    // 🎨 초과 여부에 따라 색상 결정
+    val policeColor = if (policeCount > maxPolice) Color(0xFFFF5252) else Color.White
+    val thiefColor = if (thiefCount > maxThief) Color(0xFFFF5252) else Color.White
+
     Row(
         horizontalArrangement = Arrangement.spacedBy(32.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // 경찰 (현재/최대)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "👮", fontSize = 20.sp); Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "👮", fontSize = 20.sp)
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "$policeCount",
+                text = "$policeCount/$maxPolice",
                 fontFamily = PixelFont,
-                color = Color.White,
-                fontSize = 20.sp
-            )
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "🕵️", fontSize = 20.sp); Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "$thiefCount",
-                fontFamily = PixelFont,
-                color = Color.White,
+                color = policeColor,
                 fontSize = 20.sp
             )
         }
 
+        // 도둑 (현재/최대)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "❓", fontSize = 20.sp); Spacer(modifier = Modifier.width(8.dp))
+            Text(text = "🕵️", fontSize = 20.sp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "$thiefCount/$maxThief",
+                fontFamily = PixelFont,
+                color = thiefColor,
+                fontSize = 20.sp
+            )
+        }
+
+        // 미정 (현재 인원만)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text = "❓", fontSize = 20.sp)
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "$anyCount",
                 fontFamily = PixelFont,
