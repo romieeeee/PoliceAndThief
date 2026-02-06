@@ -157,7 +157,7 @@ class GamePlayViewModel @Inject constructor(
 
     fun dequeEscape() {
         viewModelScope.launch {
-            escapeQueue.value.drop(1)
+            gameSessionRepository.dequeEscape()
         }
     }
 
@@ -180,6 +180,7 @@ class GamePlayViewModel @Inject constructor(
 
     fun arrestThief(thiefId: Long) {
         viewModelScope.launch {
+            delay(1000L)
             gameSessionRepository.arrestThief(thiefId)
         }
     }

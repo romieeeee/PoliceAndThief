@@ -138,7 +138,6 @@ fun CameraScanScreen(
             modifier = Modifier.fillMaxSize(),
             onScan = { result ->
                 onScanSuccess(result)
-                Log.d("QRcodeScanner", "Scanned: $result")
             }
         )
     }
