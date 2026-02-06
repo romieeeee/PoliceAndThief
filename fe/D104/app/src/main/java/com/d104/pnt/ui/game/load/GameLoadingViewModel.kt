@@ -22,7 +22,7 @@ class GameLoadingViewModel @Inject constructor(
 
     companion object {
         private const val KEY_ROLE = "role"
-        private const val TOTAL_SECONDS = 60
+        private const val TOTAL_SECONDS = 5
     }
 
     // Navigation argument에서 role 가져오기

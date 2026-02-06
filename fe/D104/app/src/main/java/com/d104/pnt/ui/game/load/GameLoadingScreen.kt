@@ -55,16 +55,9 @@ fun GameLoadingScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-//        GifImage(
-//            modifier = Modifier.fillMaxSize(),
-//            imageRes = R.drawable.gif_running
-//        )
-        // 배경
-        Image(
-            painter = painterResource(id = R.drawable.bg_night),
-            contentDescription = null,
+        GifImage(
             modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
+            imageRes = R.drawable.gif_running
         )
 
         Column(
@@ -99,12 +92,8 @@ fun GameLoadingScreen(
             )
 
             Text(
-                text = message,
-                fontFamily = PixelFont,
-                color = Color.White,
-                fontSize = 18.sp,
-                textAlign = TextAlign.Center,
-                lineHeight = 24.sp
+                text = role.description,
+                color = Color.White
             )
         }
     }
