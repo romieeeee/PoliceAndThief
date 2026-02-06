@@ -71,7 +71,7 @@ export class GameService {
             await this.gameMemberStatService.updateArrestCount(police.id);
 
             await this.gameMemberService.updateMemberStatus(gameId, thiefId, GameMemberStatus.TRANSFER);
-
+        
             return true;
         } catch (error) {
             logger.error("processArrest Error", error);
