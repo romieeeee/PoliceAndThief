@@ -6,11 +6,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Camera
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,7 +37,8 @@ import java.io.File
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CameraScreen(
-    onPhotoConfirmed: () -> Unit, // 사진 확인 완료 콜백
+    onPhotoConfirmed: () -> Unit,
+    onClose: () -> Unit,
     modifier: Modifier = Modifier,
     compressionQuality: Int = 80, // 압축 품질 (0-100)
     maxWidth: Int = 1280,        // 최대 가로 해상도
@@ -45,8 +49,9 @@ fun CameraScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // ImageCapture 객체 저장
-    var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
+    val cameraExecutor = remember { ContextCompat.getMainExecutor(context) }
+
+    var imageCapture: ImageCapture? by remember { mutableStateOf(null) }
 
     // 촬영된 사진 파일들
     var originalPhotoFile by remember { mutableStateOf<File?>(null) }
@@ -59,10 +64,9 @@ fun CameraScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         if (compressedPhotoFile == null) {
-            // === 촬영 모드 ===
-            // 카메라 프리뷰
+            // 카메라 미리보기
             CameraPreview(
                 modifier = Modifier.fillMaxSize(),
                 onImageCaptureReady = { capture ->
@@ -70,21 +74,37 @@ fun CameraScreen(
                 }
             )
 
-            // 촬영 버튼 (하단 중앙)
+            // 좌측 상단 닫기(X) 버튼
+            IconButton(
+                onClick = onClose,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
+                    .systemBarsPadding()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "닫기",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+
+            // 촬영 버튼
             FloatingActionButton(
                 onClick = {
+                    // imageCapture가 준비되었을 때만 촬영
                     imageCapture?.let { capture ->
                         takePicture(
                             imageCapture = capture,
                             outputDirectory = outputDirectory,
-                            executor = ContextCompat.getMainExecutor(context),
+                            executor = cameraExecutor,
                             onImageCaptured = { photoFile ->
-                                // 촬영 성공 시 백그라운드에서 압축 처리
                                 originalPhotoFile = photoFile
 
                                 coroutineScope.launch {
                                     try {
-                                        // IO 스레드에서 압축 작업
+                                        // 이미지 압축
                                         val compressed = withContext(Dispatchers.IO) {
                                             compressImage(
                                                 originalFile = photoFile,
@@ -94,11 +114,8 @@ fun CameraScreen(
                                             )
                                         }
 
-                                        // UI 업데이트
                                         compressedPhotoFile = compressed
-
-                                        // 원본 파일 삭제 (압축본만 사용)
-                                        originalPhotoFile?.delete()
+                                        originalPhotoFile?.delete() // 원본 삭제
 
                                     } catch (e: Exception) {
                                         Toast.makeText(
@@ -135,16 +152,14 @@ fun CameraScreen(
                 )
             }
         } else {
-            // === 미리보기 모드 ===
+            // 미리보기 모드
             PhotoPreviewScreen(
                 photoFile = compressedPhotoFile!!,
                 onConfirm = {
-                    // 확인 버튼 클릭 시 - 압축된 파일을 서버로 전송
                     viewModel.uploadImage(compressedPhotoFile!!, missionId)
                     onPhotoConfirmed()
                 },
                 onCancel = {
-                    // 취소 버튼 클릭 시 - 파일 삭제하고 다시 촬영
                     compressedPhotoFile?.delete()
                     originalPhotoFile?.delete()
                     compressedPhotoFile = null

@@ -170,6 +170,9 @@ fun GameRoomScreen(
                     roomInfo.prison?.lng ?: 126.97864094105321
                 ),
                 polygonPoints = roomInfo.polygon?.map { LatLng(it.lat, it.lng) } ?: emptyList(),
+                maxPolice = roomInfo.policeCount,
+                maxThief = roomInfo.maxCount - roomInfo.policeCount,
+
                 onPlayerClick = { player ->
                     val now = System.currentTimeMillis()
                     if (!((dismissedPlayerId == player.id) && (now - lastDismissTime < 300))) selectedPlayerId =
@@ -295,6 +298,8 @@ fun GameRoomScreen(
             initialState = roomInfo,
             onDismiss = { showSettingsDialog = false },
             onUpdateSettings = { total, time, mission, cctv, police, prison, polygon ->
+                val calculatedThiefCount = total - police
+
                 viewModel.updateRoomSettings(
                     total,
                     time,
