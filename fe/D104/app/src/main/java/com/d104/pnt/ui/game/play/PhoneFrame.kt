@@ -50,6 +50,7 @@ fun PhoneFrame(
     screen: PhoneScreen,
     onScanSuccess: (String) -> Unit,
     role: GameRole = GameRole.POLICE,
+    myMemberId: Long,
     currentLocation: LatLng,
     areaPoints: List<LatLng> = emptyList(),
     prisonLocation: LatLng,
@@ -79,6 +80,7 @@ fun PhoneFrame(
             when (screen) {
                 NO_SIGNAL, THIEF_LIST -> ThiefListScreen(thiefMembers)
                 MAP -> MiniMapScreen(
+                    myMemberId = myMemberId,
                     role = role,
                     currentLocation = currentLocation,
                     areaPoints = areaPoints,
@@ -110,6 +112,7 @@ fun ThiefListScreen(
 @Composable
 fun MiniMapScreen(
     role: GameRole,
+    myMemberId: Long,
     currentLocation: LatLng,
     areaPoints: List<LatLng>,
     prisonLocation: LatLng,
@@ -118,6 +121,7 @@ fun MiniMapScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         GoogleMaps(
             modifier = Modifier,
+            myMemberId = myMemberId,
             currentLocation = currentLocation,
             polygonPoints = areaPoints.map { DraggableLatLng(position = it) }.toMutableStateList(),
             inGameMinimap = true,

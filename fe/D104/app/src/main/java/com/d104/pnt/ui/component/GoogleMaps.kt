@@ -50,6 +50,7 @@ import timber.log.Timber
 @Composable
 fun GoogleMaps(
     modifier: Modifier,
+    myMemberId: Long = 0L,
     currentLocation: LatLng = LatLng(37.56681969564895, 126.97864094105321),
     playerLocations: List<MemberLocationSocketDto> = emptyList(),
     prisonLocation: LatLng? = null,
@@ -76,7 +77,6 @@ fun GoogleMaps(
 
     LaunchedEffect(polygonPoints) {
         if (polygonPoints.isNotEmpty()) {
-            Timber.d("패딩 설정 완료")
             val builder = LatLngBounds.builder()
             polygonPoints.forEach { builder.include(it.position) }
             try {
@@ -84,7 +84,6 @@ fun GoogleMaps(
                 if (!isPreview){
                     cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 100))
                 } else cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 50))
-                Timber.d("패딩 50설정")
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -155,7 +154,7 @@ fun GoogleMaps(
 
             if (role == GameRole.POLICE) {
                 playerLocations.forEach { player ->
-                    if (player.position == "POLICE")
+                    if (player.position == "POLICE" && player.memberId != myMemberId)
                     PixelMarker(
                         location = LatLng(player.lat, player.lng),
                         position = "POLICE"
