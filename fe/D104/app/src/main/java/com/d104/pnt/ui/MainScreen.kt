@@ -347,6 +347,9 @@ fun MainScreen(
                     onPhotoConfirmed = {
                         navController.popBackStack()
                     },
+                    onClose = {
+                        navController.popBackStack()
+                    },
                     compressionQuality = 80, // 압축 품질 (0-100) - 기본값 80
                     maxWidth = 1280,         // 최대 가로 해상도 - 기본값 1280px
                     maxHeight = 720,         // 최대 세로 해상도 - 기본값 720px
