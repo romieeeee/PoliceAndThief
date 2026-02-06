@@ -43,6 +43,7 @@ import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.RoundedButton
 import com.d104.pnt.ui.game.create.CounterControl
 import com.d104.pnt.ui.game.create.FactionRatioBar
+import com.d104.pnt.ui.game.create.GameGuideDialog
 import com.d104.pnt.ui.game.create.SectionTitle
 import com.d104.pnt.ui.theme.BorderDefault
 import com.d104.pnt.ui.theme.CustomBlue
@@ -73,6 +74,25 @@ fun GameSettingsDialog(
 
     var showMapPopup by remember { mutableStateOf(false) }
 
+    var showMissionHelp by remember { mutableStateOf(false) }
+    var showCCTVHelp by remember { mutableStateOf(false) }
+
+    if (showMissionHelp) {
+        GameGuideDialog(
+            title = "미션이란?",
+            content = "미션을 클리어한 도둑은\n경찰의 능력인 CCTV에\n더 이상 발각되지 않습니다.",
+            onDismissRequest = { showMissionHelp = false }
+        )
+    }
+
+    if (showCCTVHelp) {
+        GameGuideDialog(
+            title = "CCTV란?",
+            content = "특정 주기마다,\n미션을 클리어하지 않은 도둑 중\n무작위로 1명의 위치를\n지도에 10초간 보여줍니다.",
+            onDismissRequest = { showCCTVHelp = false }
+        )
+    }
+
     Dialog(onDismissRequest = onDismiss) {
         PixelContainer(
             modifier = Modifier
@@ -99,7 +119,7 @@ fun GameSettingsDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // --- 1. 맵 설정 & 감옥 설정 ---
+                // 맵 설정 & 감옥 설정
                 SectionTitle(text = "맵 설정 & 감옥 설정")
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -107,7 +127,7 @@ fun GameSettingsDialog(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(150.dp) // 지도 높이도 살짝 조정 (공간 확보)
+                        .height(150.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFFEEEEEE))
                 ) {
@@ -146,7 +166,7 @@ fun GameSettingsDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- 2. 게임 규칙 ---
+                // 게임 규칙
                 SectionTitle(text = "게임 규칙")
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -185,22 +205,38 @@ fun GameSettingsDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     CounterControl(
-                        Modifier.weight(1f), "미션 갯수", Icons.Default.List,
-                        missionCount.toString(), "개",
-                        onDecrease = { if (missionCount > 5) missionCount-- },
-                        onIncrease = { if (missionCount < 20) missionCount++ }
+                        Modifier.weight(1f),
+                        "전체 미션 수",
+                        Icons.Default.List,
+                        value = if (missionCount == 0) "없음" else missionCount.toString(),
+                        unit = if (missionCount == 0) "" else "개",
+                        onDecrease = {
+                            if (missionCount > 0) missionCount--
+                        },
+                        onIncrease = {
+                            if (missionCount < thiefCount) missionCount++
+                        },
+                        onHelpClick = { showMissionHelp = true }
                     )
                     CounterControl(
-                        Modifier.weight(1f), "CCTV 주기", Icons.Default.Videocam,
-                        cctvCycle.toString(), "분",
-                        onDecrease = { if (cctvCycle > 1) cctvCycle-- },
-                        onIncrease = { if (cctvCycle < 20) cctvCycle++ }
+                        Modifier.weight(1f),
+                        "CCTV 주기",
+                        Icons.Default.Videocam,
+                        value = if (cctvCycle == 0) "없음" else cctvCycle.toString(),
+                        unit = if (cctvCycle == 0) "" else "분",
+                        onDecrease = {
+                            if (cctvCycle > 0) cctvCycle--
+                        },
+                        onIncrease = {
+                            if (cctvCycle < gameTime - 1) cctvCycle++
+                        },
+                        onHelpClick = { showCCTVHelp = true }
                     )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- 3. 진영 비율 ---
+                // 진영 비율
                 SectionTitle(text = "진영 인원")
                 Spacer(modifier = Modifier.height(8.dp))
 
