@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -54,10 +54,7 @@ import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.theme.BorderDefault
 import com.d104.pnt.ui.theme.CustomBlue
-import com.d104.pnt.ui.theme.CustomRed
-import com.d104.pnt.ui.theme.DarkGray
 import com.d104.pnt.ui.theme.PixelFont
-import com.d104.pnt.ui.theme.PoliceBlue
 import com.d104.pnt.ui.theme.RoomBorder
 import com.d104.pnt.ui.theme.RoomContainer
 
@@ -79,11 +76,11 @@ fun HomeScreen(
             animation = keyframes {
                 durationMillis = 3000 // 3초 동안 한 주기가 돌아감
                 1.0f at 0
-                1.0f at 2500       // 2.5초까지는 가만히 있다가
-                0.3f at 2600       // 2.6초에 갑자기 지직! (어두워짐)
+                1.0f at 2500
+                0.3f at 2600
                 0.8f at 2700
-                0.2f at 2800       // 또 한 번 지직!
-                1.0f at 2900       // 다시 원래대로
+                0.2f at 2800
+                1.0f at 2900
             },
             repeatMode = RepeatMode.Restart
         ),
@@ -91,6 +88,7 @@ fun HomeScreen(
     )
 
     LaunchedEffect(Unit) {
+
         viewModel.cleanupSocket()
 
         viewModel.uiEvent.collect { event ->
@@ -112,6 +110,12 @@ fun HomeScreen(
                     navigateToGameRoom(event.roomId)
                 }
             }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.soundPlayer.release()
         }
     }
 
@@ -137,7 +141,6 @@ fun HomeScreen(
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
-//             --- 상단 GAME & 안내 문구 ---
             Column(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -152,7 +155,7 @@ fun HomeScreen(
                     style = TextStyle(
                         brush = Brush.verticalGradient(arcadeColors),
                         shadow = Shadow(
-                            color = policeRed.copy(alpha = neonAlpha), // 레드 네온 글로우로 통일
+                            color = policeRed.copy(alpha = neonAlpha),
                             offset = Offset(0f, 0f),
                             blurRadius = 35f
                         )
@@ -161,149 +164,8 @@ fun HomeScreen(
                         .graphicsLayer(alpha = neonAlpha)
                         .zIndex(1f)
                 )
-//                Text(
-//                    text = "INSERT COIN",
-//                    color = amberLight, // 호박색 통일
-//                    fontSize = 18.sp,
-//                    fontFamily = PixelFont,
-//                    modifier = Modifier
-//                        .graphicsLayer(alpha = if (neonAlpha > 0.8f) 1f else 0.2f)
-//                        .padding(top = 12.dp)
-//                )
             }
 
-//            // --- 상단 타이틀 (옵션 D + 경찰 스캔 → 도둑 지직) ---
-//            Column(
-//                modifier = Modifier
-//                    .align(Alignment.TopCenter)
-//                    .padding(top = 100.dp),
-//                horizontalAlignment = Alignment.CenterHorizontally
-//            ) {
-//                var policeTextWidthPx by remember { mutableStateOf(0) }
-//
-//                // 전체 타임라인 (0f ~ 1f)
-//                val timeline by rememberInfiniteTransition(label = "title-timeline")
-//                    .animateFloat(
-//                        initialValue = 0f,
-//                        targetValue = 1f,
-//                        animationSpec = infiniteRepeatable(
-//                            animation = keyframes {
-//                                durationMillis = 2800
-//                                0.0f at 0        // 스캔 시작
-//                                0.6f at 1700     // 스캔 종료
-//                                0.6f at 2000     // 잠깐 텀
-//                                1.0f at 2100     // 도둑 지직 구간
-//                            },
-//                            repeatMode = RepeatMode.Restart
-//                        ),
-//                        label = "timeline"
-//                    )
-//
-//                // ===== 경찰 스캔 진행도 (0 ~ 1) =====
-//                val scanT = (timeline / 0.6f).coerceIn(0f, 1f)
-//
-//                // ===== 도둑 지직 알파 =====
-//                val thiefAlpha = when {
-//                    timeline < 0.6f -> 1f                 // 스캔 중엔 안정
-//                    timeline < 0.75f -> 0.3f              // 첫 지직
-//                    timeline < 0.85f -> 1f
-//                    timeline < 0.92f -> 0.2f              // 두 번째 지직
-//                    else -> 1f
-//                }
-//
-//                // ===== 1) 경찰과 (왼쪽 + 스캔) =====
-//                Box(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .padding(start = 18.dp)
-//                ) {
-//                    // 베이스
-//                    Text(
-//                        text = "경찰과",
-//                        fontFamily = PixelFont,
-//                        fontSize = 100.sp,
-//                        fontWeight = FontWeight.ExtraBold,
-//                        style = TextStyle(
-//                            brush = Brush.verticalGradient(listOf(amberLight, policeRed)),
-//                            shadow = Shadow(
-//                                color = Color.Black.copy(alpha = 0.85f),
-//                                offset = Offset.Zero,
-//                                blurRadius = 12f
-//                            )
-//                        ),
-//                        modifier = Modifier
-//                            .align(Alignment.CenterStart)
-//                            .onSizeChanged { policeTextWidthPx = it.width }
-//                    )
-//
-//                    // 스캔 하이라이트
-//                    if (policeTextWidthPx > 0) {
-//                        val w = policeTextWidthPx.toFloat()
-//                        val band = w * 0.18f
-//                        val x = (-band) + (w + band * 2f) * scanT
-//
-//                        Text(
-//                            text = "경찰과",
-//                            fontFamily = PixelFont,
-//                            fontSize = 100.sp,
-//                            fontWeight = FontWeight.ExtraBold,
-//                            style = TextStyle(
-//                                brush = Brush.linearGradient(
-//                                    colorStops = arrayOf(
-//                                        0.0f to Color.Transparent,
-//                                        0.45f to Color.Transparent,
-//                                        0.5f to Color.White.copy(alpha = 0.95f),
-//                                        0.55f to Color.Transparent,
-//                                        1.0f to Color.Transparent
-//                                    ),
-//                                    start = Offset(x - band, 0f),
-//                                    end = Offset(x + band, 0f)
-//                                ),
-//                                shadow = Shadow(
-//                                    color = Color.White.copy(alpha = 0.35f),
-//                                    offset = Offset.Zero,
-//                                    blurRadius = 10f
-//                                )
-//                            ),
-//                            modifier = Modifier
-//                                .align(Alignment.CenterStart)
-//                                .graphicsLayer(alpha = if (timeline <= 0.6f) 0.6f else 0f)
-//                        )
-//                    }
-//                }
-//
-//                Spacer(modifier = Modifier.height(6.dp))
-//
-//                // ===== 2) 도둑 (오른쪽 + 지직) =====
-//                Box(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .padding(end = 18.dp)
-//                ) {
-//                    Text(
-//                        text = "도둑",
-//                        fontFamily = PixelFont,
-//                        fontSize = 100.sp,
-//                        fontWeight = FontWeight.ExtraBold,
-//                        style = TextStyle(
-//                            brush = Brush.verticalGradient(
-//                                listOf(policeRed, Color(0xFF880E4F))
-//                            ),
-//                            shadow = Shadow(
-//                                color = Color.Black.copy(alpha = 0.85f),
-//                                offset = Offset.Zero,
-//                                blurRadius = 12f
-//                            )
-//                        ),
-//                        modifier = Modifier
-//                            .align(Alignment.CenterEnd)
-//                            .graphicsLayer(alpha = thiefAlpha)
-//                    )
-//                }
-//            }
-//
-//
-            // --- 중앙 버튼부 (원래 사각형 버튼 복구) ---
             Row(
                 modifier = Modifier
                     .fillMaxSize()
@@ -363,7 +225,6 @@ fun HomeScreen(
         }
     }
 }
-
 
 @Composable
 fun JoinGameDialog(

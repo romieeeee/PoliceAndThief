@@ -82,15 +82,6 @@ fun GameLoadingScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            Image(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(30.dp),
-                painter = painterResource(R.drawable.img_pnt_run),
-                contentDescription = null,
-                contentScale = ContentScale.Crop
-            )
-
             Text(
                 text = role.description,
                 color = Color.White

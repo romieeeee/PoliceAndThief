@@ -158,6 +158,15 @@ fun GamePlayScreen(
         }
     }
 
+    // 헬기 알림 소리 재생 로직
+    LaunchedEffect(helicopterState, role) {
+        if (helicopterState == HelicopterPhase.NOTIFY && role == GameRole.POLICE) {
+            viewModel.soundPlayer.playSound(R.raw.helicopter)
+            delay(7000L)
+            viewModel.soundPlayer.playSound(R.raw.helicopter)
+        }
+    }
+
     // 테스트: 화면 진입 후 2초 뒤 1회 비프
     LaunchedEffect(TEST_FORCE_BEEP, role) {
         if (!TEST_FORCE_BEEP) return@LaunchedEffect

@@ -14,7 +14,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -30,6 +29,10 @@ class NewsLoadingViewModel @Inject constructor(
 
     private var newsReceived = false
 
+    // 화면 진입 시점 기록
+    private val screenStartTime = System.currentTimeMillis()
+    private val minimumDisplayTime = 5000L
+
     init {
         observeNewsSignal()
         startFallbackTimer()
@@ -39,7 +42,6 @@ class NewsLoadingViewModel @Inject constructor(
         viewModelScope.launch {
             gameSessionRepository.eventFlow.collect { event ->
                 if (event is GameSessionEvent.NavigateToNews) {
-                    Timber.d("📺 뉴스 생성 신호 수신! (gameId: ${event.gameId})")
                     val targetGameId = if (event.gameId != 0L) event.gameId else gameId
                     fetchNewsContent(targetGameId, event.newsId)
                 }
@@ -51,7 +53,6 @@ class NewsLoadingViewModel @Inject constructor(
         viewModelScope.launch {
             delay(10000)
             if (!newsReceived) {
-                Timber.w("⚠️ 뉴스 신호 타임아웃 - 강제 이동")
                 newsReceived = true
                 fetchNewsContent(gameId, 0L)
             }
@@ -62,18 +63,27 @@ class NewsLoadingViewModel @Inject constructor(
         repeat(5) { attempt ->
             when (val result = gameRepository.getGameNews(gId)) {
                 is BaseResult.Success -> {
+                    ensureMinimumDisplayTime()
+
                     _uiEvent.emit(NewsLoadingUiEvent.NavigateToActualNews(gId, nId))
                     return@fetchNewsContent
                 }
                 is BaseResult.Error -> {
-                    Timber.e("❌ 뉴스 호출 실패 (시도 ${attempt + 1}): ${result.error.message}")
                     delay(2000)
                 }
             }
         }
+        ensureMinimumDisplayTime()
         _uiEvent.emit(NewsLoadingUiEvent.NavigateToActualNews(gId, nId))
     }
 
+    private suspend fun ensureMinimumDisplayTime() {
+        val elapsedTime = System.currentTimeMillis() - screenStartTime
+        val remainingTime = minimumDisplayTime - elapsedTime
+        if (remainingTime > 0) {
+            delay(remainingTime)
+        }
+    }
 }
 
 sealed class NewsLoadingUiEvent {

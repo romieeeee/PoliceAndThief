@@ -106,6 +106,7 @@ fun GameResultScreen(
                     (rejoinState as UiState.Error).message,
                     Toast.LENGTH_LONG
                 ).show()
+                onBackToHome()
             }
 
             else -> {  }

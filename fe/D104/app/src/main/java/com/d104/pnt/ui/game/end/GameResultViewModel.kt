@@ -46,7 +46,7 @@ class GameResultViewModel @Inject constructor(
     private val _rejoinState = MutableStateFlow<UiState<Unit>>(UiState.Idle)
     val rejoinState: StateFlow<UiState<Unit>> = _rejoinState.asStateFlow()
 
-    private val _remainingSeconds = MutableStateFlow(60)
+    private val _remainingSeconds = MutableStateFlow(40)
     val remainingSeconds: StateFlow<Int> = _remainingSeconds.asStateFlow()
 
     // 신고 관련 상태

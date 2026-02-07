@@ -55,7 +55,7 @@ class GamePlayViewModel @Inject constructor(
     private val gameSessionRepository: GameSessionRepository,
     private val stepSensorManager: StepSensorManager,
     private val walkieRepository: WalkieRepository,
-    private val soundPlayer: SoundPlayer
+    val soundPlayer: SoundPlayer
 ) : ViewModel() {
     // UI 이벤트
     private val _uiEvent = MutableSharedFlow<GameSessionEvent>(

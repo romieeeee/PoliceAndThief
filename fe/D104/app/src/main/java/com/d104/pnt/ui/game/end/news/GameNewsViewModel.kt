@@ -8,6 +8,7 @@ import com.d104.pnt.data.repository.GameRepository
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.navigation.NavArgs
+import com.d104.pnt.util.SoundPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class GameNewsViewModel @Inject constructor(
     private val gameRepository: GameRepository,
+    val soundPlayer: SoundPlayer,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 

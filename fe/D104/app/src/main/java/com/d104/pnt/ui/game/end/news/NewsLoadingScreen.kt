@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -51,6 +52,12 @@ fun NewsLoadingScreen(
                     onNewsReady(event.gameId, event.newsId)
                 }
             }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.soundPlayer.release()
         }
     }
 
@@ -140,7 +147,7 @@ fun TypewriterText(texts: List<String>) {
         text = textToDisplay,
         color = Color.White,
         fontFamily = PixelFont,
-        fontSize = 18.sp,
+        fontSize = 17.sp,
         lineHeight = 30.sp
     )
 }
