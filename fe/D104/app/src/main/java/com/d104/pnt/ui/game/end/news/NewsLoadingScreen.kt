@@ -43,6 +43,8 @@ fun NewsLoadingScreen(
 ) {
 
     LaunchedEffect(Unit) {
+        viewModel.soundPlayer.playBgm(R.raw.news)
+
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is NewsLoadingUiEvent.NavigateToActualNews -> {

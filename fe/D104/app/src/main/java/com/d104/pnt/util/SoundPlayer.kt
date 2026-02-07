@@ -17,7 +17,6 @@ class SoundPlayer @Inject constructor(
 
     fun playSound(@RawRes soundResId: Int) {
         try {
-            // 기존 재생 중인 소리 정리
             mediaPlayer?.release()
 
             mediaPlayer = MediaPlayer.create(context, soundResId).apply {
@@ -30,6 +29,14 @@ class SoundPlayer @Inject constructor(
             Timber.d("🔊 효과음 재생: $soundResId")
         } catch (e: Exception) {
             Timber.e(e, "🔊 효과음 재생 실패")
+        }
+    }
+
+    fun playBgm(@RawRes soundResId: Int, isLooping: Boolean = true) {
+        mediaPlayer?.release()
+        mediaPlayer = MediaPlayer.create(context, soundResId).apply {
+            this.isLooping = isLooping
+            start()
         }
     }
 

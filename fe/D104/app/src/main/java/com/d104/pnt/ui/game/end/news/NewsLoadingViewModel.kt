@@ -8,6 +8,7 @@ import com.d104.pnt.data.repository.GameSessionEvent
 import com.d104.pnt.data.repository.GameSessionRepository
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.navigation.NavArgs
+import com.d104.pnt.util.SoundPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -20,6 +21,7 @@ import javax.inject.Inject
 class NewsLoadingViewModel @Inject constructor(
     private val gameSessionRepository: GameSessionRepository,
     private val gameRepository: GameRepository,
+    val soundPlayer: SoundPlayer,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val gameId: Long = savedStateHandle.get<Long>(NavArgs.GAME_ID) ?: 0L

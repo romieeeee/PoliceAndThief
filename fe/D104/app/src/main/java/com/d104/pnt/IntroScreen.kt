@@ -15,14 +15,31 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.ui.component.GifImage
+import com.d104.pnt.util.SoundPlayer
 
 
 @Composable
-fun IntroScreen(onClick: () -> Unit) {
+fun IntroScreen(
+    onClick: () -> Unit,
+    soundPlayer: SoundPlayer
+) {
+
+    LaunchedEffect(Unit) {
+        soundPlayer.playBgm(R.raw.main)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+//            soundPlayer.release()
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
