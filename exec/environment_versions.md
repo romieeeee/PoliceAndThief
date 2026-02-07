@@ -31,8 +31,19 @@
     *   [4.7. docker-compose.yml](#47-docker-composeyml)
 5. [외부서비스](#5-외부서비스)
     *   [5.1. 소셜 로그인 - Kakao](#51-소셜-로그인---kakao)
+        *   [5.1.1. 애플리케이션 생성](#511-애플리케이션-생성)
+        *   [5.1.2. 플랫폼 등록](#512-플랫폼-등록)
+        *   [5.1.3. 키 생성, 로그인 활성화 및 동의 항목 선택](#513-키-생성-로그인-활성화-및-동의-항목-선택)
+        *   [5.1.4. application.yml 작성](#514-applicationyml-작성)
+        *   [5.1.5. 카카오로부터 사용자 정보 받아오기](#515-카카오로부터-사용자-정보-받아오기)
     *   [5.2. AWS S3](#52-aws-s3)
+        *   [5.2.1. 버킷 생성 및 IAM 설정](#521-버킷-생성-및-iam-설정)
+        *   [5.2.2. application.yml 작성](#522-applicationyml-작성)
     *   [5.3. LiveKit Cloud](#53-livekit-cloud)
+        *   [5.3.1. 프로젝트 생성](#531-프로젝트-생성)
+        *   [5.3.2. 키 생성 및 WebSocket URL 확인](#532-키-생성-및-websocket-url-확인)
+        *   [5.3.3. application.yml 작성](#533-applicationyml-작성)
+        *   [5.3.4. Token 발급 로직](#534-token-발급-로직)
 
 ---
 
@@ -710,22 +721,122 @@ docker-compose logs -f
 
 ## 5. 외부서비스
 ### 5.1. 소셜 로그인 - Kakao
+**Android Native App Key를 이용한 SDK 로그인 방식과 REST API를 활용한 사용자 정보 조회를 혼합하여 사용합니다**
+
 #### 5.1.1. 애플리케이션 생성
-*   Kakao Developers 사이트에서 앱 생성
+* **Kakao Developers 접속**: [https://developers.kakao.com/](https://developers.kakao.com/) 로그인 후 `내 애플리케이션 > 애플리케이션 추가하기`를 클릭합니다.
+* **앱 정보 입력**: 앱 이름(예: `PoliceAndThief`), 사업자명(예: `S14P11D104`)을 입력하고 저장합니다.
 
-#### 5.1.2. 키 생성, 동의 항목 선택
-*   REST API 키 발급 및 사용자 정보 동의 항목 설정
+#### 5.1.2. 플랫폼 등록
+* **Android 플랫폼 등록**:
+    * `앱 설정 > 플랫폼 > Android 등록` 메뉴로 이동합니다.
+    * **패키지명**: `com.d104.pnt` (프로젝트 `build.gradle`의 `applicationId`와 반드시 일치해야 함)
+    * **마켓 URL**: 배포 전이라면 임의의 URL을 입력하거나 비워둡니다.
+    * **키 해시(Key Hash) 등록**:
+        * **Debug용**: 개발 PC 터미널에서 생성한 해시 값 (Keytool 이용)
+        * **Release용**: CI/CD 파이프라인 또는 배포용 Keystore의 해시 값 (**필수 등록**)
+* **Web 플랫폼 등록 (Optional)**:
+    * REST API 테스트 및 리다이렉트 URI 설정을 위해 `http://localhost:8080` 등을 등록합니다.
 
-#### 5.1.3. application.yml 작성
-*   Client ID, Redirect URI 등 설정 파일 작성
+#### 5.1.3. 키 생성, 로그인 활성화 및 동의 항목 선택
+* **앱 키 확인**:
+    * `앱 설정 > 요약 정보`에서 **Native App Key** (Android 클라이언트용)와 **REST API Key** (백엔드 서버용)를 확인합니다.
+* **카카오 로그인 활성화**:
+    * `제품 설정 > 카카오 로그인`에서 상태를 `OFF` → `ON`으로 변경합니다.
+    * **Redirect URI**: Spring Security 사용 시 `http://{SERVER_DOMAIN}/login/oauth2/code/kakao` 형태로 등록합니다.
+* **동의 항목 설정**:
+    * `제품 설정 > 카카오 로그인 > 동의항목`으로 이동합니다.
+    * **닉네임 (profile_nickname)**: `필수 동의`로 설정합니다.
+    * **프로필 사진 (profile_image)**: `선택 동의`로 설정합니다 (게임 내 프로필 표시에 사용됨).
 
-#### 5.1.4. 카카오로부터 사용자 정보 얻어오기
-*   OAuth 2.0 흐름을 통한 Access Token 발급 및 사용자 프로필 조회
+#### 5.1.4. application.yml 작성
+```yaml
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_APP_ID}          # REST API Key
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - profile_nickname
+              - profile_image
+            client-name: Kakao
+        provider:
+          kakao:
+            authorization-uri: [https://kauth.kakao.com/oauth/authorize](https://kauth.kakao.com/oauth/authorize)
+            token-uri: [https://kauth.kakao.com/oauth/token](https://kauth.kakao.com/oauth/token)
+            user-info-uri: [https://kapi.kakao.com/v2/user/me](https://kapi.kakao.com/v2/user/me)
+            user-name-attribute: id
+```
+#### 5.1.5. 카카오로부터 사용자 정보 받아오기
+1.  **Client (Android)**: 카카오 SDK를 통해 로그인 성공 시 `Access Token`을 발급받습니다.
+2.  **Request**: Client가 Backend API로 `Access Token`을 헤더(Authorization)에 담아 로그인 요청을 보냅니다.
+3.  **Validation**: Backend는 전달받은 토큰을 사용하여 카카오 User Info API를 호출, 토큰의 유효성을 검증합니다.
+4.  **Response**:
+    * **기존 회원**: 자체 서비스의 **Access Token & Refresh Token (JWT)** 을 발급하여 반환합니다.
+    * **신규 회원**: DB에 사용자 정보(Kakao ID, 닉네임, 프로필 이미지 URL)를 저장(회원가입) 후 JWT를 발급합니다.
 
 ### 5.2. AWS S3
-*   프로필 사진, 게시글 이미지 등 정적 파일 저장소로 활용
-*   Spring Boot (`software.amazon.awssdk:s3`) 및 Node.js (`@aws-sdk/client-s3`)에서 업로드/다운로드 연동
+#### 5.2.1. 버킷 생성 및 IAM 설정
+* **S3 버킷 생성**:
+    * **이름**: `s14p11d104-bucket` (전역적으로 고유한 이름 사용)
+    * **리전**: `ap-northeast-2` (아시아 태평양 - 서울)
+    * **퍼블릭 액세스 차단**: 보안을 위해 **"모든 퍼블릭 액세스 차단"** 을 활성화합니다.
+* **IAM 사용자 생성**:
+    * AWS IAM 콘솔에서 `AmazonS3FullAccess` 권한(또는 특정 버킷에 대한 권한)을 가진 사용자를 생성합니다.
+    * 생성 시 발급되는 **Access Key**와 **Secret Key**를 안전하게 보관합니다. (`.env` 파일에 저장 권장)
+
+#### 5.2.2. application.yml 작성
+`software.amazon.awssdk:s3` 라이브러리 활용을 위한 설정입니다.
+
+```yaml
+cloud:
+  aws:
+    s3:
+      bucket: ${AWS_S3_BUCKET_NAME_SECRET}
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_SECRET}
+      secret-key: ${AWS_SECRET_KEY_SECRET}
+    region:
+      static: ${AWS_REGION_SECRET}      # 예: ap-northeast-2
+      auto: false
+    stack:
+      auto: false
+```
 
 ### 5.3. LiveKit Cloud
-*   실시간 음성/화상 채팅 및 화면 공유 기능 구현
-*   Client SDK (Android, Web) 및 Server SDK (Node.js, Java)를 통한 Room/Participant 관리
+실시간 음성 채팅(Voice Chat) 및 위치 공유 데이터 스트리밍을 위해 자체 호스팅 대신 관리형 서비스인 **LiveKit Cloud**를 사용합니다.
+
+#### 5.3.1. 프로젝트 생성
+* **LiveKit Console 접속**: [https://cloud.livekit.io/](https://cloud.livekit.io/) 에 로그인합니다.
+* **New Project 생성**: 프로젝트 이름(예: `PoliceAndThief_Prd`)을 입력하여 생성합니다.
+
+#### 5.3.2. 키 생성 및 WebSocket URL 확인
+* **API Key 발급**:
+    * `Settings > Keys` 메뉴에서 `Add Standard Key`를 클릭합니다.
+    * **API Key**와 **Secret Key**가 생성됩니다. 이 키는 생성 시점에만 확인 가능하므로 즉시 저장해야 합니다.
+* **WebSocket URL 확인**:
+    * 대시보드 상단에 표시된 `wss://`로 시작하는 URL을 확인합니다. (예: `wss://pnt-project.livekit.cloud`)
+
+#### 5.3.3. application.yml 작성
+```yaml
+livekit:
+  url: ${LIVEKIT_URL}               # wss://...
+  api-key: ${LIVEKIT_API_KEY}       # 발급받은 API Key
+  api-secret: ${LIVEKIT_API_SECRET} # 발급받은 Secret Key
+```
+
+#### 5.3.4. Token 발급 로직
+클라이언트는 직접 LiveKit 서버에 인증하지 않고, **Spring Boot 서버가 발급해 준 Access Token**을 사용하여 Room에 접속합니다.
+
+* **의존성**: `implementation 'io.livekit:livekit-server:0.8.0'`
+* **주요 로직 흐름**:
+    1.  **Client**: 특정 게임 방(Room)에 입장하기 위해 Backend에 요청을 보냅니다.
+    2.  **Server**: `LiveKit URL`, `API Key`, `Secret Key`를 사용하여 JWT 토큰을 생성합니다.
+    3.  **Grant 설정**: 생성할 토큰에 **RoomJoin(방 입장)**, **CanPublish(음성 전송)**, **CanSubscribe(음성 수신)** 권한을 부여합니다.
+    4.  **Return**: 생성된 JWT 토큰을 Client에게 반환합니다.
+    5.  **Connection**: Client는 받은 토큰을 사용하여 LiveKit Cloud WebSocket URL에 연결합니다.
