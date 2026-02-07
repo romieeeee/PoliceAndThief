@@ -127,6 +127,7 @@ fun FlipImage(
                     colorFilter = grayscaleColorFilter(helicopterEnabled),
                     modifier = Modifier
                         .fillMaxSize()
+                        .scale(-1f, 1f)
                         .clickable(enabled = helicopterEnabled) {
                             onHelicopterClick()
                         }
