@@ -252,7 +252,7 @@ private fun GameResultContent(
                 painter = painterResource(id = R.drawable.ic_siren_end),
                 contentDescription = "신고",
                 modifier = Modifier
-                    .size(32.dp)
+                    .size(40.dp)
                     .padding(bottom = 4.dp)
             )
 
@@ -385,7 +385,7 @@ private fun GameResultContent(
                             Image(
                                 painter = painterResource(id = R.drawable.ic_trophy_end),
                                 contentDescription = "Best Stat Trophy",
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(28.dp)
                             )
 
                             Text(
@@ -518,7 +518,7 @@ fun MvpCard(
 
             Image(
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(64.dp)
                     .weight(0.3f),
                 painter = painterResource(id = iconResId),
                 contentDescription = mvpData.type
