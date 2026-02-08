@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.ui.component.ContDownUI
+import com.d104.pnt.ui.theme.BackgroundWhite
 import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
@@ -57,13 +58,7 @@ fun GameLoadingScreen(
     val themeColor = when {
         isDanger -> Color(0xFFFF3B30)  // 빨강
         isWarning -> Color(0xFFFFCC00) // 주황
-        else -> Color.White            // 흰색
-    }
-
-    val color = when {
-        isDanger -> Color(0xFFFF3B30)
-        isWarning -> Color(0xFFFFCC00)
-        else -> Color(0xFF9EE7FF)
+        else -> BackgroundWhite            // 흰색
     }
 
     LaunchedEffect(isFinished) {
