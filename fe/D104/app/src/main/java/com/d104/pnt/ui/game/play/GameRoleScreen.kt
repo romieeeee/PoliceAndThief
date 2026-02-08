@@ -46,7 +46,6 @@ fun GameRoleScreen(
     val memberCount by viewModel.memberCount.collectAsStateWithLifecycle()
     val connectedCount by viewModel.connectedCount.collectAsStateWithLifecycle()
 
-    // Countdown 상태가 되면 다음 화면으로 이동
     LaunchedEffect(status) {
         if (status is GameFlowStatus.CountDown) {
             onIntroFinished()

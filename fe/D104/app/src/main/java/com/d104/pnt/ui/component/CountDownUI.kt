@@ -21,7 +21,6 @@ fun ContDownUI(
 
     val haptic = LocalHapticFeedback.current
 
-    // 10초 전부터는 매 초마다 진동
     LaunchedEffect(remainingSeconds) {
         if (remainingSeconds in 1..10) {
             haptic.performHapticFeedback(HapticFeedbackType.Reject)

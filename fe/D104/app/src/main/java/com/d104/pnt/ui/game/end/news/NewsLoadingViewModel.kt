@@ -30,7 +30,6 @@ class NewsLoadingViewModel @Inject constructor(
 
     private var newsReceived = false
 
-    // 화면 진입 시점 기록
     private val screenStartTime = System.currentTimeMillis()
     private val minimumDisplayTime = 7000L
 
@@ -69,6 +68,7 @@ class NewsLoadingViewModel @Inject constructor(
                     _uiEvent.emit(NewsLoadingUiEvent.NavigateToActualNews(gId, nId))
                     return@fetchNewsContent
                 }
+
                 is BaseResult.Error -> {
                     delay(2000)
                 }

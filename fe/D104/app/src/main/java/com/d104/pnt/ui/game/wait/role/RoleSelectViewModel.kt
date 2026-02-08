@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -42,13 +41,11 @@ class RoleSelectViewModel @Inject constructor(
                     roomSocketManager.currentRoomId = roomId
                     roomSocketManager.connect(token)
 
-                    // 연결될 때까지 대기 후 방 입장 신호(Join) 전송
                     while (!roomSocketManager.isConnected()) {
                         delay(100)
                     }
 
                     roomSocketManager.joinRoom(roomId) { _, _ ->
-                        Timber.d("🌐 역할 선택 화면에서 소켓 선연결 및 Join 완료")
                     }
                 }
             }
@@ -58,10 +55,8 @@ class RoleSelectViewModel @Inject constructor(
     fun selectRole(role: GameRole, onSuccess: (GameRole) -> Unit) {
         viewModelScope.launch {
             val roleName = if (role == GameRole.ANY) "THIEF" else role.name
-            // HTTP로 DB 먼저 수정
             val result = gameRoomRepository.changePosition(roomId, roleName)
             if (result is BaseResult.Success) {
-                // 소켓으로 다른 사람들에게 내 역할 알림
                 roomSocketManager.updatePosition(roleName)
                 onSuccess(role)
             }
@@ -74,9 +69,8 @@ class RoleSelectViewModel @Inject constructor(
                 roomSocketManager.leaveRoom()
                 gameRoomRepository.leaveRoom(roomId)
 
-                Timber.d("✅ [RoleSelect] 방 퇴장 완료")
             } catch (e: Exception) {
-                Timber.e(e, "❌ [RoleSelect] 방 퇴장 실패")
+
             }
         }
     }

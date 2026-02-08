@@ -64,7 +64,7 @@ fun PixelInputField(
                     cursorBrush = SolidColor(Color.Black),
                     keyboardOptions = KeyboardOptions(
                         keyboardType = keyboardType,
-                        imeAction = imeAction // 이 부분이 버튼 모양을 결정합니다.
+                        imeAction = imeAction
                     ),
                     // 버튼 클릭 시 동작 정의
                     keyboardActions = KeyboardActions(

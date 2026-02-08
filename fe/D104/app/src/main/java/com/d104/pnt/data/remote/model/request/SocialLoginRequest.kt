@@ -7,8 +7,8 @@ import com.google.gson.annotations.SerializedName
  */
 data class SocialLoginRequest(
     @SerializedName("provider")
-    val provider: String, // "kakao", "google"
+    val provider: String,
 
     @SerializedName("token")
-    val token: String // 소셜 로그인에서 받은 액세스 토큰
+    val token: String
 )

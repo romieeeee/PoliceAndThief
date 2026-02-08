@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,7 +41,6 @@ import com.d104.pnt.domain.model.GameRoomInfoState
 import com.d104.pnt.ui.component.GoogleMaps
 import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelContainer
-import com.d104.pnt.ui.component.RoundedButton
 import com.d104.pnt.ui.game.create.CounterControl
 import com.d104.pnt.ui.game.create.FactionRatioBar
 import com.d104.pnt.ui.game.create.GameGuideDialog
@@ -76,6 +76,18 @@ fun GameSettingsDialog(
 
     var showMissionHelp by remember { mutableStateOf(false) }
     var showCCTVHelp by remember { mutableStateOf(false) }
+
+    LaunchedEffect(thiefCount) {
+        if (missionCount > thiefCount) {
+            missionCount = thiefCount
+        }
+    }
+
+    LaunchedEffect(gameTime) {
+        if (cctvCycle >= gameTime) {
+            cctvCycle = (gameTime - 1).coerceAtLeast(0)
+        }
+    }
 
     if (showMissionHelp) {
         GameGuideDialog(

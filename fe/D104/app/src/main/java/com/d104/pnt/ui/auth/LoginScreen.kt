@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -68,7 +67,6 @@ fun LoginScreen(
 
     val context = LocalContext.current
 
-    // 로그인 성공 처리
     LaunchedEffect(loginState) {
         if (loginState is UiState.Success) {
             val response = (loginState as UiState.Success<LoginResponse>).data
@@ -143,7 +141,7 @@ fun LoginScreen(
                 color = Color.White.copy(alpha = alpha.coerceAtLeast(0.5f)),
             )
 
-            // Login Section
+            // 로그인 섹션
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -238,7 +236,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(15.dp))
 
 
-            // ----- Divider -----
+            // Divider
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,

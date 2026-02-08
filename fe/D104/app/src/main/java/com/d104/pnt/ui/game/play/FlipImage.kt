@@ -12,11 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,11 +49,9 @@ fun FlipImage(
         modifier = Modifier
             .size(size)
             .clip(if (role == GameRole.POLICE) CircleShape else RectangleShape)
-            //  청장이 아니면 flip 제스처 자체 막기
             .then(
                 if (role == GameRole.POLICE && !canFlip) Modifier
                 else Modifier
-                    // 탭으로 플립
                     .clickable {
                         scope.launch {
                             val target = if (rotation.value > -90f) -180f else 0f
@@ -69,7 +64,6 @@ fun FlipImage(
                             )
                         }
                     }
-                    // 드래그로 회전
                     .pointerInput(Unit) {
                         detectDragGestures(
                             onDrag = { _, dragAmount ->
@@ -118,8 +112,7 @@ fun FlipImage(
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
-                // 뒷면: 헬기 (버튼 역할)
-                //   - helicopterEnabled=false면 눌러도 발동 안 됨
+                // 뒷면: 헬기
                 Image(
                     painter = painterResource(R.drawable.img_helicopter),
                     contentDescription = "헬기 스킬",
@@ -152,7 +145,12 @@ fun FlipImage(
                         .scale(-1f, 1f)
                 )
                 Box(
-                    modifier = Modifier.padding(top = 45.dp, bottom = 70.dp, start = 55.dp, end = 55.dp)
+                    modifier = Modifier.padding(
+                        top = 45.dp,
+                        bottom = 70.dp,
+                        start = 55.dp,
+                        end = 55.dp
+                    )
                 ) {
                     QRcodeContainer(
                         modifier = Modifier.fillMaxSize(),
@@ -168,7 +166,7 @@ fun grayscaleColorFilter(enabled: Boolean): ColorFilter? {
     if (enabled) return null
 
     val matrix = ColorMatrix().apply {
-        setToSaturation(0f) // 0 = 완전 회색
+        setToSaturation(0f)
     }
     return ColorFilter.colorMatrix(matrix)
 }

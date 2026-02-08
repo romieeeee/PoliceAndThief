@@ -6,5 +6,5 @@ data class ChatsData(
     val description: String,
     val maxMember: Int,
     val currentMember: Int,
-//    val createdAt: Instant
+
 )

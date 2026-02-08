@@ -85,7 +85,7 @@ fun RoomListItem(
                         text = data.description,
                         style = MaterialTheme.typography.bodyMedium,
                         color = BorderDefault,
-                        maxLines = if (isExpanded) 5 else 1, // 확장되면 전문 표시
+                        maxLines = if (isExpanded) 5 else 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -108,7 +108,6 @@ fun RoomListItem(
                 }
             }
 
-            // 확장되면 입장 버튼 보이게
             if (isExpanded) {
                 Spacer(
                     modifier = Modifier

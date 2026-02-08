@@ -39,7 +39,7 @@ data class RoomMember(
     val serialCode: String,
     val givenPosition: String?,
     val ready: Boolean,
-    val status: String?, // "null", "PRIZON", "FREE", "TRANSFER"
+    val status: String?,
     val preferPosition: String,
     val inGameConnected: Boolean,
     @SerializedName("Member") val memberDetail: MemberDetail

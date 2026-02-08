@@ -133,7 +133,6 @@ fun ProfileImageSelectionDialog(
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        // 4번째, 5번째 이미지
                         defaultImages.drop(3).forEach { resId ->
                             AvatarItem(
                                 image = AvatarImage.Resource(resId),
@@ -142,7 +141,6 @@ fun ProfileImageSelectionDialog(
                             )
                         }
 
-                        // 갤러리 사진이 선택되어 있다면 '프리뷰', 아니면 '선택 버튼'
                         val isGallerySelected = selectedImage is AvatarImage.Gallery
 
                         if (isGallerySelected) {

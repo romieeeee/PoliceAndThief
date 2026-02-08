@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,19 +25,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.R
-import com.d104.pnt.ui.theme.AccentRed
-import com.d104.pnt.ui.theme.ButtonPrimary
 
 @Composable
 fun FactionRatioBar(
@@ -67,7 +61,7 @@ fun FactionRatioBar(
                         val newCount = calculateCountFromX(offset.x)
                         onPoliceCountChange(newCount)
                     }
-                } // 드래그 인식
+                }
                 .pointerInput(totalCount) {
                     detectHorizontalDragGestures { change, _ ->
                         change.consume()
@@ -77,7 +71,7 @@ fun FactionRatioBar(
                 }
                 .background(Color(0xFFC94A4A))
         ) {
-            // 경찰 비율 계산
+            // 경찰 비율
             val policeRatio =
                 if (totalCount > 0) policeCount.toFloat() / totalCount.toFloat() else 0f
 
@@ -88,7 +82,6 @@ fun FactionRatioBar(
                     .fillMaxWidth(policeRatio)
                     .background(Color(0xFF4A76C9))
             ) {
-                // 흰색 구분선
                 Box(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)

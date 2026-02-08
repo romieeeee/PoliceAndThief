@@ -34,7 +34,6 @@ interface AuthRepository {
 
     /**
      * 로그인 상태 확인
-     * @return Flow<Boolean> (true: 로그인됨, false: 로그아웃됨)
      */
     fun isLoggedIn(): Flow<Boolean>
 

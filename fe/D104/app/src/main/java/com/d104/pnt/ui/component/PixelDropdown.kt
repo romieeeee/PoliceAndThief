@@ -48,13 +48,12 @@ fun PixelDropdown(
     var isExpanded by remember { mutableStateOf(false) }
     val density = LocalDensity.current
     val gapPx = with(density) { 4.dp.roundToPx() }
-    var buttonHeight by remember { mutableIntStateOf(0) } // 드롭다운 박스 높이 (오프셋용)
-    var buttonWidth by remember { mutableIntStateOf(0) } // 드롭다운 박스 너비 (오프셋용)
+    var buttonHeight by remember { mutableIntStateOf(0) }
+    var buttonWidth by remember { mutableIntStateOf(0) }
 
     Box(
         modifier = modifier
             .onGloballyPositioned { coordinates ->
-                // 컴포넌트가 배치될 때 높이와 너비를 측정해서 저장
                 buttonWidth = coordinates.size.width
                 buttonHeight = coordinates.size.height
             }

@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -43,9 +42,7 @@ class WalkieRepositoryImpl @Inject constructor(
             room = LiveKit.create(appContext = context)
             observeRoomEvents()
             room?.connect(url = serverUrl, token = token)
-            Timber.d("Connecting to LiveKit: $serverUrl, room: $roomName")
         } catch (e: Exception) {
-            Timber.e(e, "Failed to connect to LiveKit")
             _isConnected.value = false
             throw e
         }
@@ -56,29 +53,24 @@ class WalkieRepositoryImpl @Inject constructor(
             room?.events?.collect { event ->
                 when (event) {
                     is RoomEvent.Connected -> {
-                        Timber.d("LiveKit connected")
                         _isConnected.value = true
                         updateParticipantCount()
                     }
 
                     is RoomEvent.Disconnected -> {
-                        Timber.d("LiveKit disconnected")
                         _isConnected.value = false
                         _participantCount.value = 0
                     }
 
                     is RoomEvent.ParticipantConnected -> {
-                        Timber.d("Participant joined: ${event.participant.identity?.value}")
                         updateParticipantCount()
                     }
 
                     is RoomEvent.ParticipantDisconnected -> {
-                        Timber.d("Participant left: ${event.participant.identity?.value}")
                         updateParticipantCount()
                     }
 
                     is RoomEvent.FailedToConnect -> {
-                        Timber.e(event.error, "Failed to connect")
                         _isConnected.value = false
                     }
 
@@ -95,9 +87,7 @@ class WalkieRepositoryImpl @Inject constructor(
             _isConnected.value = false
             _isMicEnabled.value = false
             _participantCount.value = 0
-            Timber.d("LiveKit disconnected")
         } catch (e: Exception) {
-            Timber.e(e, "Error disconnecting from LiveKit")
         }
     }
 
@@ -105,9 +95,7 @@ class WalkieRepositoryImpl @Inject constructor(
         try {
             room?.localParticipant?.setMicrophoneEnabled(true)
             _isMicEnabled.value = true
-            Timber.d("Mic enabled")
         } catch (e: Exception) {
-            Timber.e(e, "Failed to enable mic")
         }
     }
 
@@ -115,9 +103,7 @@ class WalkieRepositoryImpl @Inject constructor(
         try {
             room?.localParticipant?.setMicrophoneEnabled(false)
             _isMicEnabled.value = false
-            Timber.d("Mic disabled")
         } catch (e: Exception) {
-            Timber.e(e, "Failed to disable mic")
         }
     }
 

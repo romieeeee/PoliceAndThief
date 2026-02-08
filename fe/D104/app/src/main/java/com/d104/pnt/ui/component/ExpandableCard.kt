@@ -62,7 +62,7 @@ fun ExpandableCard(
                 .clickable { isExpanded = !isExpanded }
                 .padding(12.dp)
         ) {
-            // 헤더 (제목 + 화살표)
+            // 제목 + 화살표
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -78,8 +78,7 @@ fun ExpandableCard(
                             .weight(1f)
                             .padding(vertical = 10.dp)
                     )
-                }
-                else {
+                } else {
                     Text(
                         text = title,
                         style = MaterialTheme.typography.titleMedium,

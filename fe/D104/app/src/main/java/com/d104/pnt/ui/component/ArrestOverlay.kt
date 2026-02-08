@@ -47,7 +47,10 @@ fun ArrestOverlay(
         }
         AnimatedVisibility(
             visible = isVisible,
-            enter = scaleIn(initialScale = 2f, animationSpec = tween(300, delayMillis = 500)) + fadeIn(tween(300, delayMillis = 500)),
+            enter = scaleIn(
+                initialScale = 2f,
+                animationSpec = tween(300, delayMillis = 500)
+            ) + fadeIn(tween(300, delayMillis = 500)),
             modifier = Modifier.align(Alignment.Center)
         ) {
             Text(
@@ -57,7 +60,7 @@ fun ArrestOverlay(
                 fontWeight = FontWeight.Bold,
                 fontFamily = PixelFont,
                 modifier = Modifier
-                    .rotate(-15f) // 약간 기울여서 도장 찍힌 느낌
+                    .rotate(-15f)
                     .border(4.dp, Color.Red, RoundedCornerShape(8.dp))
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )

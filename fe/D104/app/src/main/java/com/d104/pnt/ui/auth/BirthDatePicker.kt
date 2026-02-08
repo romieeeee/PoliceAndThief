@@ -32,7 +32,6 @@ import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.theme.BorderDefault
 import com.d104.pnt.ui.theme.CustomBlue
-import com.d104.pnt.ui.theme.NeutralColor
 import java.time.LocalDate
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -116,7 +115,6 @@ fun BirthDatePicker(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 년도 Picker
                         NumberPickerWrapper(
                             value = selectedYear,
                             minValue = 1900,
@@ -132,14 +130,12 @@ fun BirthDatePicker(
                             modifier = Modifier.padding(horizontal = 4.dp)
                         )
 
-                        // 월 Picker
                         NumberPickerWrapper(
                             value = selectedMonth,
                             minValue = 1,
                             maxValue = 12,
                             onValueChange = {
                                 selectedMonth = it
-                                // 월 변경 시 일자 유효성 검사
                                 val maxDay = getMaxDayOfMonth(selectedYear, it)
                                 if (selectedDay > maxDay) {
                                     selectedDay = maxDay
@@ -155,7 +151,6 @@ fun BirthDatePicker(
                             modifier = Modifier.padding(horizontal = 4.dp)
                         )
 
-                        // 일 Picker
                         NumberPickerWrapper(
                             value = selectedDay,
                             minValue = 1,
