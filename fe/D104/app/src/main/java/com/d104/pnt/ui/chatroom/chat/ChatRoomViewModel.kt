@@ -244,14 +244,24 @@ class ChatRoomViewModel @Inject constructor(
     }
 
     fun loadMoreMessages() {
-        if (_isLoading.value) return
+        Timber.d("🔄 loadMoreMessages 호출됨 - 현재 로딩 상태: ${_isLoading.value}")
+
+        if (_isLoading.value) {
+            Timber.w("⚠️ 이미 로딩 중이므로 스킵")
+            return
+        }
 
         val oldestMessageId = _chatMessages.value.firstOrNull()?.id
-        Timber.d("📜 loadMoreMessages - oldestMessageId: $oldestMessageId, 현재: ${_chatMessages.value.size}개")
+        val messageCount = _chatMessages.value.size
+
+        Timber.d("📜 이전 메시지 로드 시도 - oldest=$oldestMessageId, count=$messageCount")
 
         if (oldestMessageId != null && oldestMessageId > 0) {
             _isLoading.value = true
+            Timber.d("📤 소켓 요청: post prev chat (cursor=$oldestMessageId)")
             chatSocketManager.loadPreviousMessages(cursor = oldestMessageId, limit = 50)
+        } else {
+            Timber.w("❌ 로드 불가: oldestMessageId가 유효하지 않음")
         }
     }
 

@@ -74,8 +74,6 @@ class ChatSocketManager @Inject constructor() : BaseSocketManager("chat") {
         // 이전 메시지 수신
         on(EVENT_GET_PREV_CHAT) { args ->
             try {
-                Timber.d("실제 서버 응답: ${args[0]}")
-
                 val messageList = mutableListOf<JSONObject>()
                 val items = args[0]
 
