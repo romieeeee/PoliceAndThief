@@ -31,6 +31,7 @@ import com.d104.pnt.ui.auth.LoginScreen
 import com.d104.pnt.ui.auth.SignupScreen
 import com.d104.pnt.util.AuthEventBus
 import com.d104.pnt.util.PermissionHelper
+import com.d104.pnt.util.SoundPlayer
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import timber.log.Timber
@@ -44,7 +45,10 @@ import timber.log.Timber
 @Composable
 fun AppNavigation(
     startChatRoomId: Long? = null,
-    viewModel: MainViewModel = hiltViewModel()
+    viewModel: MainViewModel = hiltViewModel(),
+    soundPlayer: SoundPlayer = hiltViewModel<MainViewModel>().let {
+        viewModel.soundPlayer
+    }
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
@@ -74,8 +78,7 @@ fun AppNavigation(
                 PermissionHelper.PermissionType.NOTIFICATION,
                 PermissionHelper.PermissionType.STEP_SENSOR
             ).filter { it.isRequired() }
-        }
-        else {
+        } else {
             listOf(
                 PermissionHelper.PermissionType.CAMERA,
                 PermissionHelper.PermissionType.LOCATION,
@@ -172,7 +175,8 @@ fun AppNavigation(
                 IntroScreen(
                     onClick = {
                         currentScreen = AppScreen.Login
-                    }
+                    },
+                    soundPlayer = soundPlayer
                 )
             }
 

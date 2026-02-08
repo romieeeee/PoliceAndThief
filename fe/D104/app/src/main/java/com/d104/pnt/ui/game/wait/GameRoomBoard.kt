@@ -1,6 +1,8 @@
 package com.d104.pnt.ui.game.wait
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,7 +30,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,6 +40,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
+import coil.compose.rememberAsyncImagePainter
+import com.d104.pnt.R
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.WaitingPlayer
@@ -44,13 +51,6 @@ import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.theme.AccentYellow
 import com.d104.pnt.ui.theme.PixelFont
 import com.google.android.gms.maps.model.LatLng
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import coil.compose.rememberAsyncImagePainter
-import com.d104.pnt.R
-import com.d104.pnt.domain.model.GameRoomInfoState
 
 @Composable
 fun GameRoomBoard(
@@ -195,10 +195,10 @@ fun PlayerSlotCard(
     }
     val cardBackgroundColor = if (isMe) Color(0xFFE3F2FD) else Color.White
     val roleIcon = when {
-        player.isChangingRole -> "?"
-        player.role == GameRole.POLICE -> "👮"
-        player.role == GameRole.THIEF -> "🕵️"
-        else -> "❓"
+        player.isChangingRole -> R.drawable.ic_small_any
+        player.role == GameRole.POLICE -> R.drawable.ic_small_police
+        player.role == GameRole.THIEF -> R.drawable.ic_small_police
+        else -> R.drawable.ic_small_any
     }
 
     Box(
@@ -212,7 +212,8 @@ fun PlayerSlotCard(
             backgroundColor = cardBackgroundColor,
             borderColor = borderColor,
             borderWidth = 5f,
-            cornerSize = 8f
+            cornerSize = 8f,
+            innerHorizontalPadding = 14
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
@@ -226,44 +227,31 @@ fun PlayerSlotCard(
                         .border(1.dp, Color.Black, CircleShape)
                         .background(Color.White)
                 ) {
-                    android.util.Log.d("PlayerProfile", "=== 프로필 이미지 로딩 ===")
-                    android.util.Log.d("PlayerProfile", "ID: ${player.id}")
-                    android.util.Log.d("PlayerProfile", "Nickname: ${player.nickname}")
-                    android.util.Log.d("PlayerProfile", "Original profileUrl: ${player.profileUrl}")
-
-                    // when 블록 수정 - 각 케이스마다 로그 추가
                     val fullImageUrl = when {
                         player.profileUrl.isNullOrEmpty() -> {
-                            android.util.Log.d("PlayerProfile", "❌ profileUrl is null or empty")
                             null
                         }
+
                         player.profileUrl.startsWith("http") -> {
-                            android.util.Log.d("PlayerProfile", "✅ Already full URL: ${player.profileUrl}")
                             player.profileUrl
                         }
+
                         else -> {
                             val url = "https://i14d104.p.ssafy.io/spring/${player.profileUrl}"
-                            android.util.Log.d("PlayerProfile", "🔗 Constructed URL: $url")
                             url
                         }
                     }
 
-                    android.util.Log.d("PlayerProfile", "📍 Final fullImageUrl: $fullImageUrl")
-
                     val painter = when (fullImageUrl) {
-                        "POLICE_1" -> {
-                            android.util.Log.d("PlayerProfile", "🎨 Using POLICE_1")
-                            painterResource(id = R.drawable.profile_img_police_1)
-                        }
+                        "POLICE_1" -> painterResource(id = R.drawable.profile_img_police_1)
                         "POLICE_2" -> painterResource(id = R.drawable.profile_img_police_2)
                         "THIEF_1" -> painterResource(id = R.drawable.profile_img_thief_1)
                         "THIEF_2" -> painterResource(id = R.drawable.profile_img_thief_2)
                         "DEFAULT", null, "" -> {
-                            android.util.Log.d("PlayerProfile", "🖼️ Using DEFAULT image")
                             painterResource(id = R.drawable.profile_img_default)
                         }
+
                         else -> {
-                            android.util.Log.d("PlayerProfile", "🌐 Loading from network: $fullImageUrl")
                             rememberAsyncImagePainter(
                                 model = fullImageUrl,
                                 error = painterResource(id = R.drawable.profile_img_default),
@@ -282,7 +270,7 @@ fun PlayerSlotCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
                 Text(
                     text = player.nickname,
@@ -294,11 +282,12 @@ fun PlayerSlotCard(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f)
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = roleIcon,
-                    fontSize = 18.sp,
-                    color = if (player.isChangingRole) Color.Red else Color.Black
+                Spacer(modifier = Modifier.width(10.dp))
+                Icon(
+                    painter = painterResource(roleIcon),
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = Color.Unspecified
                 )
             }
         }
@@ -401,7 +390,7 @@ fun RoleCountInfo(
     maxPolice: Int,
     maxThief: Int
 ) {
-    // 🎨 초과 여부에 따라 색상 결정
+    // 초과 여부에 따라 색상 결정
     val policeColor = if (policeCount > maxPolice) Color(0xFFFF5252) else Color.White
     val thiefColor = if (thiefCount > maxThief) Color(0xFFFF5252) else Color.White
 
@@ -411,7 +400,12 @@ fun RoleCountInfo(
     ) {
         // 경찰 (현재/최대)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "👮", fontSize = 20.sp)
+            Icon(
+                modifier = Modifier.size(20.dp),
+                painter = painterResource(R.drawable.ic_small_police),
+                contentDescription = null,
+                tint = Color.Unspecified
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "$policeCount/$maxPolice",
@@ -423,7 +417,12 @@ fun RoleCountInfo(
 
         // 도둑 (현재/최대)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "🕵️", fontSize = 20.sp)
+            Icon(
+                modifier = Modifier.size(20.dp),
+                painter = painterResource(R.drawable.ic_small_thief),
+                contentDescription = null,
+                tint = Color.Unspecified
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "$thiefCount/$maxThief",
@@ -435,7 +434,12 @@ fun RoleCountInfo(
 
         // 미정 (현재 인원만)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "❓", fontSize = 20.sp)
+            Icon(
+                modifier = Modifier.size(20.dp),
+                painter = painterResource(R.drawable.ic_small_any),
+                contentDescription = null,
+                tint = Color.Unspecified
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "$anyCount",

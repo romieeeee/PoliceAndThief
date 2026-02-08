@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.util.AuthEventBus
+import com.d104.pnt.util.SoundPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 class MainViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val authEventBus: AuthEventBus,
+    val soundPlayer: SoundPlayer
 ) : ViewModel() {
 
     val isLoggedIn: StateFlow<Boolean> = authRepository.isLoggedIn()
