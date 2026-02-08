@@ -9,11 +9,13 @@ import com.d104.pnt.data.repository.ChatRepository
 import com.d104.pnt.data.repository.ProfileRepository
 import com.d104.pnt.domain.model.ChatMessage
 import com.d104.pnt.domain.model.common.BaseResult
+import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.util.socket.ChatSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +24,6 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import timber.log.Timber
 import javax.inject.Inject
-import com.d104.pnt.domain.model.common.UiState
 
 @HiltViewModel
 class ChatRoomViewModel @Inject constructor(
@@ -40,7 +41,6 @@ class ChatRoomViewModel @Inject constructor(
     private val _message = MutableStateFlow("")
     val message: StateFlow<String> = _message.asStateFlow()
 
-    // 메시지 리스트: id 오름차순 정렬 (1, 2, 3, ... 65)
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages.asStateFlow()
 
@@ -62,15 +62,12 @@ class ChatRoomViewModel @Inject constructor(
     val isProfileLoading: StateFlow<Boolean> = _isProfileLoading.asStateFlow()
 
     init {
-        Timber.d("ChatRoomViewModel 초기화 - chatRoomId: $chatRoomId")
-
         setupChatCallbacks()
         fetchRoomInfo()
 
         viewModelScope.launch {
             authRepository.getMemberId().collect { id ->
                 myMemberId.value = id
-                Timber.d("내 멤버 ID: $id")
             }
         }
 
@@ -90,21 +87,45 @@ class ChatRoomViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.getAccessToken().collect { token ->
                 if (token.isNotEmpty()) {
-                    chatSocketManager.connect(token)
+                    if (!chatSocketManager.isConnected()) {
+                        chatSocketManager.connect(token)
+
+                        var attempts = 0
+                        val maxAttempts = 30
+
+                        while (!chatSocketManager.isConnected() && attempts < maxAttempts) {
+                            delay(100)
+                            attempts++
+                        }
+
+                        if (!chatSocketManager.isConnected()) {
+                            _uiState.value = UiState.Error("채팅 서버 연결 실패")
+                            return@collect
+                        }
+
+                    }
+
+                    when (val result = chatRepository.connectChatRoom(chatRoomId)) {
+                        is BaseResult.Success -> {
+                            _uiState.value = UiState.Success("HTTP 연결 성공")
+                        }
+
+                        is BaseResult.Error -> {
+                            _uiState.value = UiState.Error("HTTP 연결 실패")
+                        }
+                    }
 
                     if (chatSocketManager.getCurrentChatRoomId() == chatRoomId) {
                         loadInitialMessages()
                     } else {
                         chatSocketManager.joinRoom(chatRoomId) { success, message ->
                             if (success) {
-                                Timber.d("채팅방 입장 성공: $message")
                                 viewModelScope.launch {
-                                    // REST join — 백엔드 멤버 등록
                                     chatRepository.joinChatRoom(chatRoomId)
+                                    loadInitialMessages()
                                 }
-                                loadInitialMessages()
                             } else {
-                                Timber.e("채팅방 입장 실패: $message")
+                                _uiState.value = UiState.Error("채팅방 입장 실패: $message")
                             }
                         }
                     }
@@ -121,14 +142,12 @@ class ChatRoomViewModel @Inject constructor(
             viewModelScope.launch {
                 if (_chatMessages.value.none { it.id == newMessage.id }) {
                     _chatMessages.value = (_chatMessages.value + newMessage).sortedBy { it.id }
-                    Timber.d("✅ 새 메시지 추가: id=${newMessage.id}")
                 }
             }
         }
 
         // 이전 메시지 조회 (초기 로드 + 페이징)
         chatSocketManager.setOnPreviousMessages { messages, count ->
-            Timber.d("📥 get prev chat: ${count}개 메시지 수신")
             val parsedMessages = messages.mapNotNull { parseMessage(it) }
 
             viewModelScope.launch {
@@ -137,18 +156,13 @@ class ChatRoomViewModel @Inject constructor(
 
                 if (newMessages.isNotEmpty()) {
                     _chatMessages.value = (_chatMessages.value + newMessages).sortedBy { it.id }
-                    Timber.d("✅ 이전 메시지 추가: ${newMessages.size}개 (전체: ${_chatMessages.value.size}개)")
-                } else {
-                    Timber.d("⚠️ 새로운 메시지 없음")
                 }
-
                 _isLoading.value = false
             }
         }
 
         // 동기화 메시지 (재연결 시)
         chatSocketManager.setOnSyncMessages { messages, count ->
-            Timber.d("📥 get sync chat: ${count}개 메시지 수신")
             val parsedMessages = messages.mapNotNull { parseMessage(it) }
 
             viewModelScope.launch {
@@ -157,23 +171,19 @@ class ChatRoomViewModel @Inject constructor(
 
                 if (newMessages.isNotEmpty()) {
                     _chatMessages.value = (_chatMessages.value + newMessages).sortedBy { it.id }
-                    Timber.d("✅ 동기화 메시지 추가: ${newMessages.size}개")
                 }
             }
         }
 
         // 재연결 처리
         chatSocketManager.setOnReconnected { reconnectedRoomId ->
-            Timber.d("🔄 재입장 완료: chatRoomId=$reconnectedRoomId")
 
             viewModelScope.launch {
                 val lastMessageId = _chatMessages.value.lastOrNull()?.id
 
                 if (lastMessageId != null && lastMessageId > 0) {
-                    Timber.d("📤 post sync chat 요청: cursor=$lastMessageId")
                     chatSocketManager.syncMessages(lastMessageId)
                 } else {
-                    Timber.d("메시지 없음 - 초기 로드")
                     loadInitialMessages()
                 }
             }
@@ -184,13 +194,9 @@ class ChatRoomViewModel @Inject constructor(
             val roomId = data.optLong("roomId")
             val newOwnerId = data.optLong("newOwnerId")
 
-            Timber.d("✅ 방장 위임 완료: roomId=$roomId, newOwnerId=$newOwnerId")
-
             viewModelScope.launch {
-                // 모든 클라이언트가 멤버 목록 갱신
                 loadMembers()
 
-                // 내가 새 방장이 되었다면 알림
                 if (newOwnerId == myMemberId.value) {
                     _uiState.value = UiState.Success("방장이 되었습니다")
                 }
@@ -202,18 +208,15 @@ class ChatRoomViewModel @Inject constructor(
             val chatRoomId = data.optLong("chatRoomId")
             val kickedMemberId = data.optLong("kickMemberId")
 
-            Timber.d("📢 강퇴 이벤트: chatRoomId=$chatRoomId, kickedMemberId=$kickedMemberId")
 
             viewModelScope.launch {
                 if (kickedMemberId == myMemberId.value) {
-                    Timber.e("❌ 본인이 강퇴당함 - 연결 종료")
 
                     chatSocketManager.disconnect()
 
                     _uiState.value = UiState.Error("채팅방에서 강퇴되었습니다")
 
                 } else {
-                    Timber.d("다른 멤버 강퇴됨 - 목록 갱신")
                     loadMembers()
                 }
             }
@@ -231,29 +234,23 @@ class ChatRoomViewModel @Inject constructor(
                 content = data.getString("content"),
             )
         } catch (e: Exception) {
-            Timber.e(e, "메시지 파싱 실패: $data")
             null
         }
     }
 
     private fun loadInitialMessages() {
         _isLoading.value = true
-        Timber.d("📤 post prev chat: cursor=null (초기 로드)")
         chatSocketManager.loadPreviousMessages(cursor = -1, limit = 50)
     }
 
     fun loadMoreMessages() {
-        if (_isLoading.value) {
-            Timber.d("⚠️ 이미 로딩 중")
-            return
-        }
+        if (_isLoading.value) return
 
         val oldestMessageId = _chatMessages.value.firstOrNull()?.id
         Timber.d("📜 loadMoreMessages - oldestMessageId: $oldestMessageId, 현재: ${_chatMessages.value.size}개")
 
         if (oldestMessageId != null && oldestMessageId > 0) {
             _isLoading.value = true
-            Timber.d("📤 post prev chat: cursor=$oldestMessageId")
             chatSocketManager.loadPreviousMessages(cursor = oldestMessageId, limit = 50)
         }
     }
@@ -266,7 +263,6 @@ class ChatRoomViewModel @Inject constructor(
         val messageText = _message.value.trim()
         if (messageText.isEmpty()) return
 
-        Timber.d("메시지 전송: $messageText")
         chatSocketManager.sendMessage(messageText)
         _message.value = ""
     }
@@ -287,8 +283,8 @@ class ChatRoomViewModel @Inject constructor(
                         )
                     }
                 }
+
                 is BaseResult.Error -> {
-                    Timber.e("채팅방 멤버 목록 로드 실패: ${result.error.message}")
                 }
             }
         }
@@ -300,11 +296,10 @@ class ChatRoomViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = chatRepository.leaveChatRoom(chatRoomId)) {
                 is BaseResult.Success -> {
-                    Timber.d("채팅방 나가기 성공")
                     onSuccess()
                 }
+
                 is BaseResult.Error -> {
-                    Timber.e("채팅방 나가기 실패: ${result.error.message}")
                 }
             }
         }
@@ -314,10 +309,8 @@ class ChatRoomViewModel @Inject constructor(
         // viewModelScope가 취소되어도 이 블록은 끝까지 실행됨
         viewModelScope.launch(Dispatchers.IO) {
             withContext(NonCancellable) {
-                Timber.d("🚀 서버에 disconnect 요청 중...")
                 chatRepository.disconnectChatRoom(chatRoomId)
                 chatSocketManager.disconnect() // 소켓도 여기서 같이 끊어줘 행님!
-                Timber.d("✅ 모든 정리 작업 완료")
             }
         }
     }
@@ -326,12 +319,10 @@ class ChatRoomViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         disconnectRoom()
-        Timber.d("ChatRoomViewModel cleared")
     }
 
     // 방장 위임
     fun delegateHost(targetMemberId: Long) {
-        Timber.d("방장 위임 요청: targetMemberId=$targetMemberId")
         chatSocketManager.delegateOwner(targetMemberId)
     }
 
@@ -341,14 +332,14 @@ class ChatRoomViewModel @Inject constructor(
             _isLoading.value = true
 
             // REST API 호출
-            when (val result = chatRepository.kickChatRoomMember(chatRoomId, targetMemberId, reason)) {
+            when (val result =
+                chatRepository.kickChatRoomMember(chatRoomId, targetMemberId, reason)) {
                 is BaseResult.Success -> {
-                    Timber.d("강퇴 API 호출 성공")
 
                     chatSocketManager.notifyKickMember(targetMemberId)
                 }
+
                 is BaseResult.Error -> {
-                    Timber.e("강퇴 실패: ${result.error.message}")
                     _uiState.value = UiState.Error(result.error.message ?: "강퇴 실패")
                 }
             }
@@ -374,8 +365,8 @@ class ChatRoomViewModel @Inject constructor(
                         thiefGrade = profile.stat.thiefGrade
                     )
                 }
+
                 is BaseResult.Error -> {
-                    Timber.e("프로필 조회 실패: ${result.error.message}")
                     _selectedProfile.value = null
                 }
             }
