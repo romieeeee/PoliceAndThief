@@ -104,7 +104,8 @@ fun GoogleMaps(
         ),
         properties = MapProperties(
             maxZoomPreference = 20.0f,
-            minZoomPreference = if (isPreview) 10.0f else 16.0f
+            minZoomPreference = if (isPreview) 10.0f else 16.0f,
+            isMyLocationEnabled = false
         ),
         googleMapOptionsFactory = {
             GoogleMapOptions().mapId(if (inGameMinimap) inGameMapId else settingMapId)

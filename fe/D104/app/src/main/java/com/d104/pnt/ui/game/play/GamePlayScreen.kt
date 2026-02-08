@@ -72,6 +72,7 @@ import com.d104.pnt.ui.game.play.mission.BottomSheetState
 import com.d104.pnt.ui.game.play.mission.MissionBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieBottomSheet
 import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieContent
+import com.d104.pnt.ui.theme.BackgroundWhite
 import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
 import com.d104.pnt.util.GameFeedbackManager
@@ -380,7 +381,7 @@ fun GamePlayScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                ContDownUI(remainingSeconds = remainingTime.value, themeColor = Color.White)
+                ContDownUI(remainingSeconds = remainingTime.value, themeColor = BackgroundWhite)
                 Spacer(modifier = Modifier.height(30.dp))
 
                 FlipImage(
