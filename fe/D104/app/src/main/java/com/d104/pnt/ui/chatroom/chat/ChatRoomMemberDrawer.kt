@@ -323,10 +323,12 @@ private fun ChatMemberActionMenu(
 private fun ChatMenuButton(text: String, textColor: Color, onClick: () -> Unit) {
     PixelContainer(
         modifier = Modifier.width(120.dp),
-        backgroundColor = Color(0xFFD4E3FF),
-        borderColor = Color(0xFF6591E9),
-        borderWidth = 6f,
-        cornerSize = 8f
+        backgroundColor = Color(0xFFC5C5C5),
+        borderColor = Color.Gray,
+        borderWidth = 2f,
+        cornerSize = 8f,
+        innerVerticalPadding = 2,
+        innerHorizontalPadding = 0
     ) {
         Box(
             modifier = Modifier
@@ -340,7 +342,7 @@ private fun ChatMenuButton(text: String, textColor: Color, onClick: () -> Unit) 
                 color = textColor,
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp,
-                modifier = Modifier.padding(vertical = 8.dp)
+                modifier = Modifier.padding(vertical = 4.dp)
             )
         }
     }
