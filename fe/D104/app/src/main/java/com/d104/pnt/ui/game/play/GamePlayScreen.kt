@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -78,6 +79,7 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
 fun GamePlayScreen(
@@ -135,6 +137,11 @@ fun GamePlayScreen(
 
     var previousWalkieState by remember { mutableStateOf(BottomSheetState.COLLAPSED) }
 
+    var showProximityAlert by remember { mutableStateOf(false) }
+    var proximityMessage by remember { mutableStateOf("") }
+    var proximityColor by remember { mutableStateOf(Color.Transparent) }
+    var proximityAlertJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+
     val TEST_FORCE_BEEP = false
 
     LaunchedEffect(Unit) {
@@ -157,6 +164,7 @@ fun GamePlayScreen(
             }
         }
     }
+
 
     // 테스트: 화면 진입 후 2초 뒤 1회 비프
     LaunchedEffect(TEST_FORCE_BEEP, role) {
@@ -204,8 +212,30 @@ fun GamePlayScreen(
 
         viewModel.beepEvent.collect { beep ->
             Timber.d("🚨 beepEvent: policeId=${beep.policeId}, thiefId=${beep.thiefId}, distance=${beep.distance}")
+
             if (viewModel.myMemberId.value == beep.thiefId) {
                 feedbackManager.playBeepAlert(distance = beep.distance)
+
+                val distance = beep.distance ?: 999.0
+
+                if (distance <= 10.0) {
+                    proximityMessage = "인기척이 느껴집니다..."
+                    proximityColor = Color(0xFFFF3D00)
+                    showProximityAlert = true
+                } else if (distance <= 35.0) {
+                    proximityMessage = "누군가 있는 것 같은 기분이 듭니다..."
+                    proximityColor = Color(0xFFFF9800)
+                    showProximityAlert = true
+                }
+
+                // 3. 메시지 타이머 재설정 (연속 수신 시 유지)
+                if (showProximityAlert) {
+                    proximityAlertJob?.cancel()
+                    proximityAlertJob = launch {
+                        delay(3000L)
+                        showProximityAlert = false
+                    }
+                }
             }
         }
     }
@@ -350,7 +380,7 @@ fun GamePlayScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                ContDownUI(remainingSeconds = remainingTime.value)
+                ContDownUI(remainingSeconds = remainingTime.value, themeColor = Color.White)
                 Spacer(modifier = Modifier.height(30.dp))
 
                 FlipImage(
@@ -361,6 +391,39 @@ fun GamePlayScreen(
                     onHelicopterClick = { viewModel.useHelicopterSkill() }
                 )
 
+            }
+
+            // 경찰 근접 경고
+            val isCriticalOverlayActive = (myMemberId in onBoundaryWarning.value) ||
+                    (arrestStatus != ArrestStatus.IDLE) ||
+                    (myState == "PRISON" || myState == "TRANSFER")
+
+            val showWarningUI = showProximityAlert && !clicked && !isCriticalOverlayActive
+
+            AnimatedVisibility(
+                visible = showWarningUI,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 150.dp)
+                    .zIndex(1f)
+            ) {
+                PixelContainer(
+                    backgroundColor = Color.Black.copy(alpha = 0.7f),
+                    borderColor = proximityColor,
+                    borderWidth = 4f,
+                    innerVerticalPadding = 12,
+                    innerHorizontalPadding = 20
+                ) {
+                    Text(
+                        text = proximityMessage,
+                        fontFamily = PixelFont,
+                        color = proximityColor,
+                        fontSize = 18.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
 
@@ -465,7 +528,7 @@ fun GamePlayScreen(
                     channel = when (walkieState) {
                         is WalkieConnectionState.Idle -> "CH 00 · 대기 중"
                         is WalkieConnectionState.Connecting -> "CH 00 · 연결 중..."
-                        is WalkieConnectionState.Connected -> "CH 00 · 전체 (${walkieParticipantCount + 1}명)"
+                        is WalkieConnectionState.Connected -> "CH 00 · 전체 "
                         is WalkieConnectionState.Error -> "CH 00 · 오류 발생"
                     },
                     isTalking = walkieMicEnabled,
@@ -488,6 +551,11 @@ fun GamePlayScreen(
 
     // 경찰 헬기 안내 오버레이
     if (helicopterState == HelicopterPhase.NOTIFY && role == GameRole.POLICE) {
+
+        LaunchedEffect(helicopterState) {
+            viewModel.playHelicopterSound()
+        }
+
         WarningOverlay(
             onWarning = false,
             success = true,
