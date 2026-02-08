@@ -1,7 +1,5 @@
 package com.d104.pnt.ui.auth
 
-import android.content.pm.PackageManager
-import android.util.Base64
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -28,11 +26,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -53,8 +54,6 @@ import com.d104.pnt.ui.component.PixelButtonCode
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.theme.AccentRed
 import com.d104.pnt.ui.theme.BorderDefault
-import timber.log.Timber
-import java.security.MessageDigest
 
 @Composable
 fun LoginScreen(
@@ -74,6 +73,13 @@ fun LoginScreen(
         if (loginState is UiState.Success) {
             val response = (loginState as UiState.Success<LoginResponse>).data
             onLoginSuccess(response.member.id)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.updateId("")
+            viewModel.updatePassword("")
         }
     }
 
@@ -209,45 +215,23 @@ fun LoginScreen(
 
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.SpaceAround
+                    .align(Alignment.End)
+                    .clickable { goToSignup() },
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
+                Text(
+                    textAlign = TextAlign.End,
+                    text = "계정이 없다면?",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White.copy(alpha = 0.9f),
+                )
+                IconButton(
+                    onClick = { goToSignup() }
                 ) {
-                    Text(
-                        text = "회원가입",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White.copy(alpha = 0.9f),
+                    Image(
+                        painter = painterResource(R.drawable.arrow),
+                        contentDescription = null
                     )
-                    IconButton(
-                        onClick = { goToSignup() }
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.arrow),
-                            contentDescription = null
-                        )
-                    }
-                }
-
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "비밀번호 찾기",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White.copy(alpha = 0.9f),
-                    )
-                    IconButton(
-                        onClick = {}
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.arrow),
-                            contentDescription = null
-                        )
-                    }
                 }
             }
 
