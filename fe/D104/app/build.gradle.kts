@@ -141,7 +141,6 @@ dependencies {
     // Gson (JSON 파싱)
     implementation("com.google.code.gson:gson:2.10.1")
     implementation(libs.androidx.foundation.layout)
-    implementation(libs.ui)
 
     // Room (로컬 DB)
     val roomVersion = "2.6.1"
@@ -220,9 +219,6 @@ dependencies {
 
     // EXIF 정보 처리 (이미지 회전 문제 해결용) - 필수 추가!
     implementation("androidx.exifinterface:exifinterface:1.3.7")
-
-    // Wheel Date Picker
-    implementation("com.github.commandiron:WheelPickerCompose:1.1.11")
 
     // KaKao Login
     implementation("com.kakao.sdk:v2-user:2.23.2")
