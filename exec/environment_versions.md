@@ -22,6 +22,10 @@
     *   [4.3. Backend (Spring Boot)](#43-backend-spring-boot)
     *   [4.4. Backend (Node.js)](#44-backend-nodejs)
     *   [4.5. AI Server (Python)](#45-ai-server-python)
+        *   [4.5.1. 사전 준비](#451-사전-준비-nvidia-driver--ollama)
+        *   [4.5.2. Python 환경 설정](#452-python-환경-설정-virtual-environment)
+        *   [4.5.3. 네트워크 및 환경 변수 설정](#453-네트워크-및-환경-변수-설정)
+        *   [4.5.4. 서버 실행](#454-서버-실행-background-execution)
     *   [4.6. DB (EC2 Local)](#46-db)
         *   [4.6.1. Docker Network 생성](#461-docker-network-생성)
         *   [4.6.2. PostgreSQL (PostGIS)](#462-postgresql-postgis)
@@ -361,29 +365,113 @@ docker run -d -p 8095:8095 \
 # (경로 이동 후 동일한 방식으로 빌드 및 실행)
 ```
 
-### 4.5. AI Server (Python)
+### 4.5. AI Server (Python & Ollama)
+**AI 서버는 고성능 GPU 연산 및 LLM(EXAONE 3.5) 구동을 위해 Host OS(Ubuntu) 환경에서 실행합니다.**
+
+#### 4.5.1. 사전 준비 (NVIDIA Driver & Ollama)
+**1. GPU 인식 및 CUDA 확인**
 ```bash
-# 1. 프로젝트 이동
-cd S14P11D104/ai
+# GPU 드라이버 설치 확인 및 CUDA 버전 체크
+nvidia-smi
 
-# 2. Dockerfile 생성
-vi Dockerfile
-##########
-FROM python:3.10-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-##########
-
-# 3. 빌드 및 실행
-docker build -t ai-server .
-docker run -d -p 8000:8000 \
-  --name ai-server \
-  ai-server
+# (참고) Torch와 호환되는지 확인 (CUDA 12.1 권장)
+nvcc --version
 ```
+**2. Ollama 설치 및 모델 준비 LGAI Research의 EXAONE 3.5 모델을 로컬에서 구동하기 위해 Ollama를 설치합니다.**
+
+```bash
+# 1. Ollama 설치 (Linux 자동 설치 스크립트)
+curl -fsSL [https://ollama.com/install.sh](https://ollama.com/install.sh) | sh
+
+# 2. Ollama 서비스 동작 확인
+sudo systemctl status ollama
+
+# 3. EXAONE 3.5 모델 다운로드 (Pull)
+ollama pull exaone3.5
+
+# 4. (선택) 모델 구동 테스트
+# 프롬프트 입력 후 응답이 오는지 확인 ('/bye'로 종료)
+ollama run exaone3.5 "안녕하세요"
+```
+
+#### 4.5.2. Python 환경 설정 (Virtual Environment)
+**1. 프로젝트 경로 이동**
+```bash
+cd S14P11D104/ai
+```
+
+**2. 가상환경 생성 및 활성화**
+```bash
+# 가상환경 생성 (최초 1회 실행)
+python3 -m venv venv
+
+# 가상환경 활성화 (터미널 접속 시마다 실행 필요)
+source venv/bin/activate
+
+# (확인) 프롬프트 앞에 (venv)가 표시되어야 함
+```
+
+**3. 필수 패키지 설치**
+```bash
+# pip 업그레이드
+pip install --upgrade pip
+
+# 의존성 패키지 설치 (FastAPI, PyTorch, LangChain, Pika 등)
+pip install -r requirements.txt
+```
+
+#### 4.5.3. 네트워크 및 환경 변수 설정
+AI 서버는 외부 GPU 서버에 위치하므로, SSAFY 서버(Spring/RabbitMQ) 와 통신하기 위해 ngrok 주소를 설정해야 합니다.
+
+**1. 코드 내 설정 확인 (worker.py)**
+```bash
+# worker.py 예시
+RABBITMQ_HOST = '0.tcp.jp.ngrok.io'  # ngrok 주소 (tcp:// 제외)
+RABBITMQ_PORT = 15243                # ngrok 포트 (8930 아님)
+SPRING_API_URL = "[http://i14d104.p.ssafy.io/api/games/news/result](http://i14d104.p.ssafy.io/api/games/news/result)"
+```
+
+#### 4.5.4. 서버 실행 (Background Execution)
+
+로그 관리와 자동 재시작을 위해 pm2를 사용하여 프로세스를 구동합니다.
+
+**1. PM2 설치 (없는 경우)**
+```bash
+# Node.js 및 NPM 설치 (Ubuntu 기준)
+sudo apt update
+sudo apt install -y nodejs npm
+
+# PM2 전역 설치
+sudo npm install -g pm2
+```
+
+**2. 프로세스 시작 (API & Worker) 가상환경(venv)의 Python 인터프리터를 지정하여 실행합니다.**
+```bash
+# 로그를 worker.log에 남기며 백그라운드 실행
+nohup python worker.py > worker.log 2>&1 &
+
+# 실행 로그 실시간 확인 (RabbitMQ 연결 성공 메시지 확인 필수)
+tail -f worker.log
+```
+
+**3. 관리 및 모니터링**
+```bash
+# 실행 중인 프로세스 목록 확인
+pm2 list
+
+# 실시간 로그 확인
+pm2 monit
+# 또는 특정 프로세스 로그 확인
+pm2 logs ai-worker
+
+# 프로세스 재시작 (코드 수정 후)
+pm2 restart all
+
+# 서버 재부팅 시 자동 실행 등록
+pm2 save
+pm2 startup
+```
+
 
 ### 4.6. DB
 **모든 DB는 Docker 컨테이너로 실행하며, `backend-network`를 통해 서로 통신합니다.**
