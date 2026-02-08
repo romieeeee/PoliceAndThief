@@ -22,7 +22,7 @@ class GameLoadingViewModel @Inject constructor(
 
     companion object {
         private const val KEY_ROLE = "role"
-        private const val TOTAL_SECONDS = 5
+        private const val TOTAL_SECONDS = 10
     }
 
     // Navigation argument에서 role 가져오기
@@ -51,7 +51,6 @@ class GameLoadingViewModel @Inject constructor(
 
     private fun setupGameStartListener() {
         gameSocketManager.setOnGameStarted { gameId, startTime ->
-            Timber.d("🏁 [Loading] 게임 시작 신호 수신: $startTime")
             gameStartTime = System.currentTimeMillis()
             _remainingTime.value = TOTAL_SECONDS
         }
@@ -67,7 +66,6 @@ class GameLoadingViewModel @Inject constructor(
 
             if (remaining > 0) {
                 _remainingTime.value = remaining
-                Timber.d("⏰ 서버와 시간 동기화: 남은 시간 ${remaining}초")
             } else {
                 // 이미 1분이 지났다면 즉시 인게임 진입
                 _isFinished.value = true
@@ -83,7 +81,6 @@ class GameLoadingViewModel @Inject constructor(
                 updateMessage()
             }
             _isFinished.value = true
-            Timber.d("✅ 도둑 도망 시간 종료 - 인게임 진입")
         }
     }
 

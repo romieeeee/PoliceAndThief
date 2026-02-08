@@ -141,6 +141,7 @@ dependencies {
     // Gson (JSON 파싱)
     implementation("com.google.code.gson:gson:2.10.1")
     implementation(libs.androidx.foundation.layout)
+    implementation(libs.ui)
 
     // Room (로컬 DB)
     val roomVersion = "2.6.1"

@@ -70,9 +70,7 @@ fun ChatRoomListScreen(
         Image(
             painter = painterResource(id = R.drawable.img_background2),
             contentDescription = "배경 화면",
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer(alpha = 0.5f),
+            modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
 
