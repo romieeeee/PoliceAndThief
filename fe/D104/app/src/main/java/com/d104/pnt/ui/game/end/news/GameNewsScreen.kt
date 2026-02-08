@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -47,19 +48,13 @@ fun GameNewsScreen(
     // 뒤로가기 시 스킵 다이얼로그 표시
     BackHandler { showSkipDialog = true }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.soundPlayer.release()
-        }
-    }
-
     when (newsState) {
         is UiState.Success -> {
             val news = (newsState as UiState.Success<GameNewsResponse>).data
 
             // 메인 뉴스 화면
             Box(modifier = Modifier.fillMaxSize()) {
-                //  배경
+                // 배경
                 Image(
                     painter = painterResource(id = R.drawable.img_breaking_news),
                     contentDescription = "뉴스 스튜디오",
@@ -88,9 +83,7 @@ fun GameNewsScreen(
                         verticalArrangement = Arrangement.Top,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        NewsAnchor(modifier = Modifier.size(240.dp), isSpeaking = true)
-
-                        Spacer(Modifier.height(10.dp))
+                        NewsAnchor(modifier = Modifier.size(250.dp), isSpeaking = true)
 
                         // 타이핑 효과가 적용된 뉴스 본문
                         NewsScriptBox(

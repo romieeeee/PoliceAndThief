@@ -35,7 +35,8 @@ fun NewsScriptBox(
     LaunchedEffect(content) {
         textToDisplay = ""
 
-        soundPlayer.playBgm(R.raw.news)
+        soundPlayer.playBgm(R.raw.news_speaking, tag = "news_speaking", isLooping = true)
+
         content.forEachIndexed { index, _ ->
             textToDisplay = content.substring(0, index + 1)
             // 유저가 스크롤을 하면 자동스크롤이 취소
@@ -47,7 +48,8 @@ fun NewsScriptBox(
             delay(60)
 
         }
-        soundPlayer.release()
+
+        soundPlayer.stopBgm("news_speaking")
         delay(5000L) // content 끝난 후 5초 대기
 
         onFinish()

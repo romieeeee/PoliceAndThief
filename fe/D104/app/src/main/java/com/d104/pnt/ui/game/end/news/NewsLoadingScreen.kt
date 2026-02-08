@@ -42,22 +42,17 @@ fun NewsLoadingScreen(
     onNewsReady: (Long, Long) -> Unit,
     viewModel: NewsLoadingViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(Unit) {
+        viewModel.playNewsLoadingSound()
+    }
 
     LaunchedEffect(Unit) {
-        viewModel.soundPlayer.playBgm(R.raw.news)
-
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is NewsLoadingUiEvent.NavigateToActualNews -> {
                     onNewsReady(event.gameId, event.newsId)
                 }
             }
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.soundPlayer.release()
         }
     }
 

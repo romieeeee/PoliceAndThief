@@ -16,6 +16,7 @@ import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.navigation.NavArgs
+import com.d104.pnt.util.SoundPlayer
 import com.d104.pnt.util.socket.GameSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -35,6 +36,7 @@ class GameResultViewModel @Inject constructor(
     private val gameRepository: GameRepository,
     private val gameSessionRepository: GameSessionRepository,
     private val gameSocketManager: GameSocketManager,
+    private val soundPlayer: SoundPlayer,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -340,6 +342,11 @@ class GameResultViewModel @Inject constructor(
             Timber.d("📡 결과 화면 종료 - 게임 소켓 정리")
             gameSocketManager.disconnect()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        soundPlayer.release()
     }
 }
 

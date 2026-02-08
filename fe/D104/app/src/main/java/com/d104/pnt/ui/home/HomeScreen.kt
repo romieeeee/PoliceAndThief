@@ -115,7 +115,7 @@ fun HomeScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            viewModel.soundPlayer.release()
+            viewModel.soundPlayer.stopBgm("intro")
         }
     }
 

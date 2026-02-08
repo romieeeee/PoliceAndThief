@@ -3,6 +3,7 @@ package com.d104.pnt.ui.game.end.news
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.d104.pnt.R
 import com.d104.pnt.data.repository.GameRepository
 import com.d104.pnt.data.repository.GameSessionEvent
 import com.d104.pnt.data.repository.GameSessionRepository
@@ -31,7 +32,7 @@ class NewsLoadingViewModel @Inject constructor(
 
     // 화면 진입 시점 기록
     private val screenStartTime = System.currentTimeMillis()
-    private val minimumDisplayTime = 5000L
+    private val minimumDisplayTime = 7000L
 
     init {
         observeNewsSignal()
@@ -83,6 +84,14 @@ class NewsLoadingViewModel @Inject constructor(
         if (remainingTime > 0) {
             delay(remainingTime)
         }
+    }
+
+    fun playNewsLoadingSound() {
+        soundPlayer.playBgm(R.raw.news, tag = "news_loading", isLooping = false)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
     }
 }
 

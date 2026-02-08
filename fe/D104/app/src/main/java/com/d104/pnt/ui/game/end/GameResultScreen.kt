@@ -1,6 +1,7 @@
 package com.d104.pnt.ui.game.end
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -69,9 +70,9 @@ import com.d104.pnt.ui.theme.RoomContainer
 import com.d104.pnt.ui.theme.TextPrimary
 import com.d104.pnt.ui.theme.TextSecondary
 import com.d104.pnt.ui.theme.WinColor
-import androidx.compose.runtime.collectAsState
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 data class MvpData(
     val type: String,
@@ -95,7 +96,22 @@ fun GameResultScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val rejoinState by viewModel.rejoinState.collectAsStateWithLifecycle()
     val remainingSeconds by viewModel.remainingSeconds.collectAsStateWithLifecycle()
+
     val context = LocalContext.current
+    var backPressedTime by remember { mutableLongStateOf(0L) }
+
+    BackHandler {
+        if (System.currentTimeMillis() - backPressedTime <= 1500) {
+            onBackToHome()
+        } else {
+            backPressedTime = System.currentTimeMillis()
+            Toast.makeText(
+                context,
+                "한 번 더 누르면 게임에서 나갑니다",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
 
     // 재입장 상태 처리
     LaunchedEffect(rejoinState) {
@@ -112,6 +128,7 @@ fun GameResultScreen(
             else -> {  }
         }
     }
+
     DisposableEffect(Unit) {
         onDispose { viewModel.cleanupGameSocket() }
     }
@@ -243,7 +260,7 @@ private fun GameResultContent(
             modifier = Modifier
                 .clickable { viewModel.openReportDialog() }
                 .align(Alignment.TopEnd)
-                .padding(20.dp)
+                .padding(16.dp)
                 .systemBarsPadding(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -271,6 +288,7 @@ private fun GameResultContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Spacer(Modifier.height(20.dp))
             Text(
                 text = "결과 리포트",
                 fontSize = 24.sp,
@@ -430,7 +448,6 @@ private fun GameResultContent(
                     .padding(horizontal = 24.dp),
                 text = when {
                     isRejoinLoading -> "입장 중..."
-                    !isRejoinReady -> "대기방 (${viewModel.remainingSeconds.collectAsStateWithLifecycle().value})"
                     else -> "대기방"
                 },
                 onClick = {
@@ -445,6 +462,15 @@ private fun GameResultContent(
                 blockHeight = 12,
                 enabled = isRejoinReady && !isRejoinLoading
             )
+
+            if(viewModel.remainingSeconds.collectAsStateWithLifecycle().value > 0){
+                Text(
+                    modifier = Modifier.padding(top = 10.dp),
+                    text = "${viewModel.remainingSeconds.collectAsStateWithLifecycle().value}초 후에 입장 가능합니다",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
+            }
         }
 
 

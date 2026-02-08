@@ -49,4 +49,9 @@ class GameNewsViewModel @Inject constructor(
             }
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        soundPlayer.stopBgm("news_speaking")
+    }
 }

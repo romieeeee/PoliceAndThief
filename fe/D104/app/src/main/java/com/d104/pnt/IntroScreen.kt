@@ -31,13 +31,7 @@ fun IntroScreen(
 ) {
 
     LaunchedEffect(Unit) {
-        soundPlayer.playBgm(R.raw.main)
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-//            soundPlayer.release()
-        }
+        soundPlayer.playBgm(R.raw.main, tag = "intro", isLooping = true)
     }
 
     Box(
