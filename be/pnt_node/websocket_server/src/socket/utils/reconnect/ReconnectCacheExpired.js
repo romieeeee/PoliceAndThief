@@ -38,8 +38,6 @@ export class WebSocketReconnect {
                     const isMine = await this.redisClient.setReconnectLock(memberId);
 
                     if (isMine) {
-                        console.log(`[Process ${process.pid}] Winner! Handling disconnect for ${memberId}`);
-
                         if (namespace === "chat") {
                             this.chatDisconnect(memberId, roomId);
                         } else if (namespace === "room") {
@@ -47,8 +45,6 @@ export class WebSocketReconnect {
                         } else if (namespace === "game") {
                             this.gameDisconnect(memberId, roomId);
                         }
-                    } else {
-                        // console.log(`[Process ${process.pid}] User ${memberId} expired, but handled by another process.`);
                     }
                 }
             }
@@ -57,8 +53,6 @@ export class WebSocketReconnect {
 
     chatDisconnect = withFunctionLogging("chatDisconnect", async (memberId, roomId) => {
         await this.redisClient.deleteKeys("chat", roomId, memberId);
-
-        console.log("user_left", { memberId, roomId });
 
         this.chatIo.to(roomId).emit("get user left", { roomId, memberId });
     });
@@ -75,7 +69,6 @@ export class WebSocketReconnect {
             }
         });
 
-        console.log("user_left", { memberId, roomId });
         this.roomIo.to(roomId).emit("get user left", { roomId, memberId });
     });
 
@@ -88,7 +81,6 @@ export class WebSocketReconnect {
             await this.gameController.gameEnd(this.gameIo, this.redisClient, roomId, isGameEnd);
         }
 
-        console.log("user_left", { memberId, roomId });
         this.gameIo.to(roomId).emit("get user left", { roomId: roomId, memberId: memberId });
     });
 }

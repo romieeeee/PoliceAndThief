@@ -19,8 +19,6 @@ export const resolveInSocket = (socket, next) => {
         socket.data.memberId = data.memberId;
         socket.data.accessToken = token;
 
-        console.log("data", data);
-
         redisClient.setAccessToken(data.memberId, token);
 
         next();
@@ -43,7 +41,6 @@ export const resolveInSocket = (socket, next) => {
         }
 
         // 3. 기타 오류를 서버 내부 오류로 구분
-        console.log("socket auth err", err);
         data.code = 500;
         data.text = "서버에 문제가 있습니다.";
 
@@ -59,7 +56,6 @@ export const resolveInController = (token) => {
     try {
         const data = jwt.verify(token, secretKey, options);
 
-        console.log("data", data);
     } catch (err) {
         const data = {
             ex: err.name,
@@ -79,7 +75,6 @@ export const resolveInController = (token) => {
         }
 
         // 3. 기타 오류를 서버 내부 오류로 구분
-        console.log("socket auth err", err);
         data.code = 500;
         data.text = "서버에 문제가 있습니다.";
 

@@ -47,7 +47,6 @@ export class RoomController {
         const roomId = parseInt(data.roomId);
 
         if (!await this.isActiveRoom(roomId)) {
-            console.log("room is not active");
             return;
         }
 
@@ -91,10 +90,8 @@ export class RoomController {
                     "Authorization": `Bearer ${accessToken}`
                 }
             });
-            console.log("updateReady", response.data);
             this.io.to(roomId).emit("get update ready", response.data);
         } catch (error) {
-            console.log("updateReady error", error);
             if (error.response) {
                 this.io.to(roomId).emit("get update ready", error.response.data);
             } else {

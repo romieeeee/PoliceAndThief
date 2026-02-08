@@ -22,13 +22,10 @@ export class ChatPushService {
                 isDeleted: false
             }
         });
-        console.log(`[Debug] All members in room ${params.chatRoomId}:`, allMembers.map(m => ({ mid: m.memberId, conn: m.isConnected })));
 
         const resData = [];
 
         joinRoomMembers.forEach((data) => resData.push(data.memberId));
-        console.log("joinRoomMembers", joinRoomMembers);
-
         return resData;
     }
 

@@ -15,7 +15,7 @@ class MessagingQueue {
 
     create = async () => {
         if (this.connection) {
-            console.log("MQ is already connected.");
+            logger.info("MQ is already connected.");
             return this;
         }
 

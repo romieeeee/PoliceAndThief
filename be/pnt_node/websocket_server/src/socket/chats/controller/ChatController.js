@@ -18,9 +18,7 @@ export class ChatController {
 
     joinRoom = async (payload) => {
         // 채팅방 접속 db 처리 => is_connected = true로 처리
-        console.log("payload = ", payload);
         const chatRoomId = parseInt(payload.chatRoomId);
-        console.log("join room = ", chatRoomId, "member = ", this.socket.data.memberId);
         await this.chatRoomService.findChatRoom(chatRoomId);
         await this.chatRoomService.findMemberChatRoom(chatRoomId, this.socket.data.memberId);
         const strChatRoomId = String(chatRoomId);
@@ -72,8 +70,6 @@ export class ChatController {
 
         const strChatRoomId = String(chatRoomId);
 
-        console.log("get prev chat", payload);
-
         // 데이터 로딩 로직
         const data = await this.chatService.getPrevChat({ chatRoomId: strChatRoomId, memberId, ...payload });
 
@@ -93,7 +89,6 @@ export class ChatController {
         }
 
         const strChatRoomId = String(chatRoomId);
-        console.log("sync chat", payload);
 
         // 데이터 로딩 로직
         const data = await this.chatService.syncChat({ chatRoomId: strChatRoomId, memberId, ...payload });
@@ -114,10 +109,8 @@ export class ChatController {
                     "Authorization": `Bearer ${accessToken}`
                 }
             });
-            console.log("delegate ower", response.data);
             this.io.to(chatRoomId).emit("get delegate owner", response.data);
         } catch (error) {
-            console.log("delegate ower", error.response.data);
             if (error.response) {
                 this.io.to(chatRoomId).emit("get delegate owner", error.response.data);
             } else {
@@ -141,7 +134,7 @@ export class ChatController {
     disconnect = async () => {
         const memberId = this.socket.data.memberId;
         const chatRoomId = this.socket.data.chatRoomId;
-        console.log(`${memberId} 님이 소켓 연결을 종료하였습니다.`);
+        logger.info(`${memberId} 님이 소켓 연결을 종료하였습니다.`);
 
         this.socket.data.isIntentionalExit = true;
 

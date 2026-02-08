@@ -44,8 +44,6 @@ const gameSocketServer = (io) => {
                 logger.info(`[GameSocketServer] Reconnect failed for user ${socket.data.memberId}:`, "Game not found");
             }
 
-            console.log("websocket is connected!");
-
             // 게임 관련 이벤트
             socket.on("post join room", withLogging("joinRoom", gameController.joinRoom, socket, "GameError"));
             socket.on("post gps", withLogging("postGps", gameController.postGps, socket, "GameError"));
