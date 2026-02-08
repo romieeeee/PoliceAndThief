@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,7 +36,7 @@ import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
-fun NewsScreen(
+fun GameNewsScreen(
     gameId: Long,
     newsId: Long,
     viewModel: GameNewsViewModel = hiltViewModel(),
@@ -52,7 +54,7 @@ fun NewsScreen(
 
             // 메인 뉴스 화면
             Box(modifier = Modifier.fillMaxSize()) {
-                //  배경
+                // 배경
                 Image(
                     painter = painterResource(id = R.drawable.img_breaking_news),
                     contentDescription = "뉴스 스튜디오",
@@ -81,12 +83,11 @@ fun NewsScreen(
                         verticalArrangement = Arrangement.Top,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        NewsAnchor(modifier = Modifier.size(240.dp), isSpeaking = true)
-
-                        Spacer(Modifier.height(10.dp))
+                        NewsAnchor(modifier = Modifier.size(250.dp), isSpeaking = true)
 
                         // 타이핑 효과가 적용된 뉴스 본문
                         NewsScriptBox(
+                            soundPlayer = viewModel.soundPlayer,
                             content = news.content,
                             onFinish = { onNextClick() }
                         )
@@ -121,7 +122,7 @@ fun NewsScreen(
 
         is UiState.Error -> {
 
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = "⚠️ 뉴스를 불러오지 못했습니다.", color = Color.White, fontFamily = PixelFont)
                     Text(

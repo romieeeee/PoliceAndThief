@@ -2,6 +2,9 @@ package com.d104.pnt.ui.game.create
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,10 +16,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 @Composable
 fun CounterControl(
@@ -77,17 +87,10 @@ fun CounterControl(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // - 버튼
-            IconButton(
-                onClick = onDecrease,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Remove,
-                    contentDescription = "감소",
-                    tint = Color.Gray,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
+            RepeatingIconButton(
+                icon = Icons.Default.Remove,
+                onClick = onDecrease
+            )
 
             Text(
                 text = "$value$unit",
@@ -101,17 +104,54 @@ fun CounterControl(
             )
 
             // + 버튼
-            IconButton(
-                onClick = onIncrease,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "증가",
-                    tint = Color.Gray,
-                    modifier = Modifier.size(16.dp)
-                )
+            RepeatingIconButton(
+                icon = Icons.Default.Add,
+                onClick = onIncrease
+            )
+        }
+    }
+}
+
+@Composable
+fun RepeatingIconButton(
+    icon: ImageVector,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    tint: Color = Color.Gray
+) {
+    val currentOnClick by rememberUpdatedState(onClick)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    // 꾹 누르고 있을 때 실행될 효과
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            currentOnClick()
+            delay(500) // 초기 지연
+            while (isPressed) {
+                currentOnClick()
+                delay(100) // 연사 속도
             }
         }
+    }
+
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clickable(
+                interactionSource = interactionSource,
+                // [수정된 부분] rememberRipple 대신 ripple() 사용
+                indication = ripple(bounded = false, radius = 16.dp),
+                enabled = enabled,
+                onClick = {} // InteractionSource를 통해 롱클릭 감지 중이므로 비워둠
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (enabled) tint else Color.Gray,
+            modifier = Modifier.size(16.dp)
+        )
     }
 }

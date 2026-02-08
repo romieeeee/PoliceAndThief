@@ -55,7 +55,7 @@ class GamePlayViewModel @Inject constructor(
     private val gameSessionRepository: GameSessionRepository,
     private val stepSensorManager: StepSensorManager,
     private val walkieRepository: WalkieRepository,
-    private val soundPlayer: SoundPlayer
+    val soundPlayer: SoundPlayer
 ) : ViewModel() {
     // UI 이벤트
     private val _uiEvent = MutableSharedFlow<GameSessionEvent>(
@@ -220,6 +220,10 @@ class GamePlayViewModel @Inject constructor(
         soundPlayer.playSound(R.raw.walkie_close)
     }
 
+    fun playHelicopterSound() {
+        soundPlayer.playSoundWithRepeat(R.raw.helicopter, 2)
+    }
+
     fun manualLeaveGame() {
         viewModelScope.launch {
             Timber.d("🚪 유저가 직접 게임 종료를 선택함")
@@ -235,7 +239,5 @@ class GamePlayViewModel @Inject constructor(
         gameSessionRepository.disconnectWalkie()
 
         startService(GameActiveService.ACTION_STOP)
-
-        soundPlayer.release()
     }
 }

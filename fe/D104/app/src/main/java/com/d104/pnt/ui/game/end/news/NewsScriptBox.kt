@@ -16,12 +16,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.d104.pnt.R
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.theme.PixelFont
+import com.d104.pnt.util.SoundPlayer
 import kotlinx.coroutines.delay
 
 @Composable
 fun NewsScriptBox(
+    soundPlayer: SoundPlayer,
     content: String,
     modifier: Modifier = Modifier,
     onFinish: () -> Unit
@@ -31,6 +34,9 @@ fun NewsScriptBox(
 
     LaunchedEffect(content) {
         textToDisplay = ""
+
+        soundPlayer.playBgm(R.raw.news_speaking, tag = "news_speaking", isLooping = true)
+
         content.forEachIndexed { index, _ ->
             textToDisplay = content.substring(0, index + 1)
             // 유저가 스크롤을 하면 자동스크롤이 취소
@@ -42,6 +48,8 @@ fun NewsScriptBox(
             delay(60)
 
         }
+
+        soundPlayer.stopBgm("news_speaking")
         delay(5000L) // content 끝난 후 5초 대기
 
         onFinish()
