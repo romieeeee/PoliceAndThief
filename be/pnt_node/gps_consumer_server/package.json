@@ -1,0 +1,13 @@
+{
+  "type": "module",
+  "scripts": {
+    "start": "node src/app.js"
+  },
+  "dependencies": {
+    "@socket.io/redis-emitter": "^5.1.0",
+    "@turf/turf": "^7.3.3",
+    "dotenv": "^17.2.3",
+    "ioredis": "^5.9.2",
+    "redis-streams-nodejs": "^1.1.5"
+  }
+}
