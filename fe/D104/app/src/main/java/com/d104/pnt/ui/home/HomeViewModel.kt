@@ -7,6 +7,7 @@ import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.util.AuthEventBus
+import com.d104.pnt.util.SoundPlayer
 import com.d104.pnt.util.socket.GameSocketManager
 import com.d104.pnt.util.socket.RoomSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +29,7 @@ class HomeViewModel @Inject constructor(
     private val roomSocketManager: RoomSocketManager,
     private val chatSocketManager: RoomSocketManager,
     private val gameSocketManager: GameSocketManager,
+    val soundPlayer: SoundPlayer
 ) : ViewModel() {
 
     private val _joinCode = MutableStateFlow("")

@@ -165,6 +165,7 @@ fun GamePlayScreen(
         }
     }
 
+
     // 테스트: 화면 진입 후 2초 뒤 1회 비프
     LaunchedEffect(TEST_FORCE_BEEP, role) {
         if (!TEST_FORCE_BEEP) return@LaunchedEffect
@@ -379,7 +380,7 @@ fun GamePlayScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                ContDownUI(remainingSeconds = remainingTime.value)
+                ContDownUI(remainingSeconds = remainingTime.value, themeColor = Color.White)
                 Spacer(modifier = Modifier.height(30.dp))
 
                 FlipImage(
@@ -527,7 +528,7 @@ fun GamePlayScreen(
                     channel = when (walkieState) {
                         is WalkieConnectionState.Idle -> "CH 00 · 대기 중"
                         is WalkieConnectionState.Connecting -> "CH 00 · 연결 중..."
-                        is WalkieConnectionState.Connected -> "CH 00 · 전체 (${walkieParticipantCount + 1}명)"
+                        is WalkieConnectionState.Connected -> "CH 00 · 전체 "
                         is WalkieConnectionState.Error -> "CH 00 · 오류 발생"
                     },
                     isTalking = walkieMicEnabled,
@@ -550,6 +551,11 @@ fun GamePlayScreen(
 
     // 경찰 헬기 안내 오버레이
     if (helicopterState == HelicopterPhase.NOTIFY && role == GameRole.POLICE) {
+
+        LaunchedEffect(helicopterState) {
+            viewModel.playHelicopterSound()
+        }
+
         WarningOverlay(
             onWarning = false,
             success = true,

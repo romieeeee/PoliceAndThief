@@ -44,7 +44,7 @@ import com.d104.pnt.ui.component.KickedNoticeDialog
 import com.d104.pnt.ui.game.create.GameCreateScreen
 import com.d104.pnt.ui.game.end.GameResultScreen
 import com.d104.pnt.ui.game.end.news.NewsLoadingScreen
-import com.d104.pnt.ui.game.end.news.NewsScreen
+import com.d104.pnt.ui.game.end.news.GameNewsScreen
 import com.d104.pnt.ui.game.load.GameLoadingScreen
 import com.d104.pnt.ui.game.play.GamePlayScreen
 import com.d104.pnt.ui.game.play.GameRoleScreen
@@ -423,7 +423,7 @@ fun MainScreen(
                 val gameId = backStackEntry.arguments?.getLong(NavArgs.GAME_ID) ?: 0L
                 val newsId = backStackEntry.arguments?.getLong(NavArgs.NEWS_ID) ?: 0L
 
-                NewsScreen(
+                GameNewsScreen(
                     gameId = gameId,
                     newsId = newsId,
                     onNextClick = {
