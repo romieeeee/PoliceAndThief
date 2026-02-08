@@ -30,12 +30,9 @@ const roomSocketServer = (io) => {
             if (isActiveRoom && integerRoomId) {
                 await redisClient.deleteByCompletedReconnect(socket, "room", integerRoomId);
                 socket.data.roomId = integerRoomId;
-                console.log("reconnect", integerRoomId);
 
                 socket.emit("reconnect", { roomId: socket.data.roomId });
             }
-
-            console.log("websocket is connected!");
 
             // 로비 관련 이벤트
             socket.on("post join room", withLogging("joinRoom", roomController.joinRoom, socket, "RoomError"));
@@ -62,20 +59,19 @@ const roomSocketServer = (io) => {
 
             socket.on("disconnect", async () => {
                 if (socket.data.isIntentionalExit) {
-                    console.log("socket의 연결이 정상적으로 끊어졌습니다.");
                     return;
                 } else {
                     // 비정상적인 소켓 종료 => 채팅방 퇴장 db 처리 X
-                    console.log(`socket의 연결이 비정상적으로 끊어졌습니다. (Room: ${socket.data.roomId})`);
+                    logger.info(`socket의 연결이 비정상적으로 끊어졌습니다. (Room: ${socket.data.roomId})`);
 
                     if (socket.data.roomId) {
                         await redisClient.pubReconnectTimer("room", socket, socket.data.roomId);
-                        console.log("reconnect timer published");
+                        logger.info("reconnect timer published");
                     }
                 }
             });
         } catch (error) {
-            console.error("roomSocketServer error", error);
+            logger.error("roomSocketServer error", error);
             sendError(socket, error, "RoomError");
         }
     });

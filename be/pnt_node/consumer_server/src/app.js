@@ -7,7 +7,6 @@ import { database } from "./global/db/database.js";
         await database();
         await mq.create();
         await worker();
-        console.log("start worker");
     } catch (error) {
         console.error(error);
     }

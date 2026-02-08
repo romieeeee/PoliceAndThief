@@ -3,6 +3,7 @@ import { resolveInSocket } from "../../../global/auth/JwtResolver.js";
 import { RedisClient } from "../../utils/client/RedisClient.js";
 import { sendError } from "../../../global/util/SocketError.js";
 import { withLogging } from "../../../global/util/socketWrapper.js";
+import logger from "../../../global/config/logger.js";
 
 const redisClient = new RedisClient();
 
@@ -19,7 +20,7 @@ const chatSocketServer = (io) => {
                 socket.emit("reconnect", { chatRoomId: storedChatRoomId });
             }
 
-            console.log("websocket is connected!");
+            logger.info("websocket is connected!");
 
             socket.data.isIntentionalExit = false; // 사용자의 요청에 의해서 소켓이 종료되었는지 판별하기 위한 변수
             const chatController = new ChatController(io, socket);
@@ -36,20 +37,20 @@ const chatSocketServer = (io) => {
 
             socket.on("disconnect", async () => {
                 if (socket.data.isIntentionalExit) {
-                    console.log("socket의 연결이 정상적으로 끊어졌습니다.");
+                    logger.info("socket의 연결이 정상적으로 끊어졌습니다.");
                     return;
                 } else {
                     // 비정상적인 소켓 종료 => 채팅방 퇴장 db 처리 X
-                    console.log(`socket의 연결이 비정상적으로 끊어졌습니다. (Room: ${socket.data.chatRoomId})`);
+                    logger.info(`socket의 연결이 비정상적으로 끊어졌습니다. (Room: ${socket.data.chatRoomId})`);
 
                     if (socket.data.chatRoomId) {
                         await redisClient.pubReconnectTimer("chat", socket, socket.data.chatRoomId);
-                        console.log("[CHAT] pubReconnectTimer", socket.data.chatRoomId);
+                        logger.info("[CHAT] pubReconnectTimer", socket.data.chatRoomId);
                     }
                 }
             });
         } catch (error) {
-            console.error("chatSocketServer error", error);
+            logger.error("chatSocketServer error", error);
             sendError(socket, error, "ChatError");
         }
     });

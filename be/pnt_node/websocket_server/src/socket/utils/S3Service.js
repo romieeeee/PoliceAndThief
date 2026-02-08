@@ -9,13 +9,6 @@ const accessKeyId = process.env.AWS_ACCESS_KEY;
 const secretAccessKey = process.env.AWS_SECRET_KEY;
 const bucketName = process.env.AWS_S3_BUCKET_NAME;
 
-if (!region || !accessKeyId || !secretAccessKey || !bucketName) {
-    console.error("⚠️ AWS Configuration missing!");
-    console.error("AWS_REGION:", region);
-    console.error("AWS_ACCESS_KEY_ID exists:", !!accessKeyId);
-    console.error("AWS_SECRET_ACCESS_KEY exists:", !!secretAccessKey);
-}
-
 const clientConfig = {
     region: region,
 };
@@ -50,7 +43,6 @@ export const getPresignedUrl = async (key) => {
         const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
         return url;
     } catch (error) {
-        console.error("Presigned URL 생성 실패:", error);
         return key; // 실패 시 원본 키 반환 (또는 null)
     }
 };

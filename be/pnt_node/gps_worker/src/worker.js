@@ -14,8 +14,6 @@ const io = new Emitter(pubClient);
 
 const NAMESPACE = "/game";
 
-console.log("GPS Worker is running...");
-
 const interval = 1000; // 1초
 
 const processGame = async (id) => {
@@ -50,7 +48,6 @@ const processGame = async (id) => {
         // socket.io-emitter를 사용하여 특정 룸(gameId)에 브로드캐스트
         // volatile 플래그 사용: 메시지 유실 허용 (실시간성 보장)
         // 중요: 클라이언트는 "/game" 네임스페이스에 연결되어 있으므로, .of("/game")을 명시해야 함
-        console.log(`Broadcasting GPS data for game ${gameId} : ${JSON.stringify(data)}`);
         io.of(NAMESPACE).to(gameId).volatile.emit("get gps", data);
 
     } catch (error) {
@@ -67,7 +64,6 @@ const loop = async () => {
             await Promise.all(activeGames.map(gameId => processGame(gameId)));
         }
     } catch (error) {
-        console.error("Error in GPS Worker Loop:", error);
     } finally {
     }
 };
