@@ -23,15 +23,12 @@ class ChatPushMq {
         this.channel.consume(MQConfig.MQ_ALARM, async (msg) => {
             try {
                 const data = JSON.parse(msg.content.toString());
-                console.log("data consumed", data);
 
                 const memberIds = await this.chatPushService.getNotConnectedInRoom(data);
 
                 const tokens = await this.chatPushService.getUserTokens(memberIds);
-                console.log("tokens", tokens.length);
 
                 const chatRoom = await this.chatPushService.findChatRoomById(data.chatRoomId);
-                console.log("chatRoom", chatRoom.length);
 
                 data.title = chatRoom.title;
 
@@ -40,7 +37,6 @@ class ChatPushMq {
                     return;
                 }
 
-                console.log("will push data", data);
                 await sendChatPush(tokens, data);
                 this.channel.ack(msg);
 

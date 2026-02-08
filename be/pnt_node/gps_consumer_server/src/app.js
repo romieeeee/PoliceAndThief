@@ -18,10 +18,8 @@ const gpsController = new GpsController();
 // Create Consumer Group (ignore error if exists)
 try {
   await redis.xgroup('CREATE', STREAM_NAME, GROUP_NAME, '$', 'MKSTREAM');
-  console.log(`Created consumer group ${GROUP_NAME}`);
 } catch (e) {
   if (!e.message.includes('BUSYGROUP')) {
-    console.error('Error creating consumer group:', e);
   }
 }
 
@@ -39,7 +37,6 @@ const processMessage = async (message) => {
     const payload = JSON.parse(payloadStr);
     await gpsController.postGps(payload);
   } catch (e) {
-    console.error('Error processing message:', e);
   }
 
   // ACK
@@ -72,5 +69,4 @@ const loop = async () => {
   }
 };
 
-console.log(`Starting GPS Consumer ${CONSUMER_NAME} for group ${GROUP_NAME}`);
 loop();

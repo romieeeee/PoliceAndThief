@@ -22,8 +22,6 @@ export class GpsController {
             const walk = parseInt(payload.walk);
             const longestSurvived = parseInt(payload.longestSurvived);
             
-            console.log(`[POSTGPS] Game ${gameId}: Received GPS data ${JSON.stringify(payload)}`);
-
             const gameMember = await this.gameMemberService.findMemberGame(gameId, memberId);
             if (!gameMember) return; // Member not found in game, ignore
 

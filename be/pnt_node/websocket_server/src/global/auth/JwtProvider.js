@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import logger from '../config/logger';
+
 
 dotenv.config();
 
@@ -22,7 +24,7 @@ export const generateToken = (gameId, time) => {
     try {
         return jwt.sign(payload, secretKey, options);
     } catch (error) {
-        console.error("토큰 생성 실패:", error);
+        logger.error("토큰 생성 실패:", error);
         throw new Error("Token generation failed");
     }
 };
@@ -43,7 +45,7 @@ export const generateMemberAccessToken = (memberId, timeLimit) => {
     try {
         return jwt.sign(payload, secretKey, options);
     } catch (error) {
-        console.error("토큰 생성 실패:", error);
+        logger.error("토큰 생성 실패:", error);
         throw new Error("Token generation failed");
     }
 };
