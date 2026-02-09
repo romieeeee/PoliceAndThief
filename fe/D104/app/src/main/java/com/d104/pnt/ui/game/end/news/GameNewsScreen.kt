@@ -13,10 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,7 +43,6 @@ fun GameNewsScreen(
     val newsState by viewModel.newsState.collectAsStateWithLifecycle()
     var showSkipDialog by remember { mutableStateOf(false) }
 
-    // 뒤로가기 시 스킵 다이얼로그 표시
     BackHandler { showSkipDialog = true }
 
     when (newsState) {
@@ -85,7 +82,7 @@ fun GameNewsScreen(
                     ) {
                         NewsAnchor(modifier = Modifier.size(250.dp), isSpeaking = true)
 
-                        // 타이핑 효과가 적용된 뉴스 본문
+                        // 뉴스 본문
                         NewsScriptBox(
                             soundPlayer = viewModel.soundPlayer,
                             content = news.content,
@@ -100,7 +97,7 @@ fun GameNewsScreen(
                     NewsTickerBar(text = tickerText)
                 }
 
-                // 우측 상단 스킵 버튼
+                // 스킵 버튼
                 SkipButton(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -122,7 +119,12 @@ fun GameNewsScreen(
 
         is UiState.Error -> {
 
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black),
+                contentAlignment = Alignment.Center
+            ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = "⚠️ 뉴스를 불러오지 못했습니다.", color = Color.White, fontFamily = PixelFont)
                     Text(
@@ -141,7 +143,7 @@ fun GameNewsScreen(
         }
 
         else -> {
-            /* Idle 상태 처리 */
+
         }
     }
 

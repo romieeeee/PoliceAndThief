@@ -18,23 +18,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import com.d104.pnt.domain.model.ChatMessage
-import com.d104.pnt.ui.component.PixelContainer
-import com.d104.pnt.ui.theme.BorderDefault
-import com.d104.pnt.ui.theme.ButtonHighlight
-import com.d104.pnt.ui.theme.DarkBackground
-import com.d104.pnt.ui.theme.NeutralColor
-import com.d104.pnt.ui.theme.TextDisabled
-import com.d104.pnt.ui.theme.TextPrimary
-import com.d104.pnt.ui.theme.TextSecondary
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.d104.pnt.R
+import com.d104.pnt.domain.model.ChatMessage
+import com.d104.pnt.ui.component.PixelContainer
+import com.d104.pnt.ui.theme.TextSecondary
 
 @Composable
 fun ChatBubble(
@@ -48,19 +39,16 @@ fun ChatBubble(
             .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalArrangement = if (isMe) Arrangement.End else Arrangement.Start
     ) {
-        // 내 메시지가 아닐 때만 프로필 + 닉네임 표시
         if (!isMe) {
             Box(
                 modifier = Modifier
                     .size(40.dp)
-//                    .clip(CircleShape) // 원형으로 자르기
                     .background(TextSecondary)
             ) {
                 AsyncImage(
                     model = if (message.avatarUrl.isNullOrEmpty() || message.avatarUrl == "string") {
-                        R.drawable.profile_img_default // URL이 없거나 "string"이면 기본 이미지
+                        R.drawable.profile_img_default
                     } else {
-                        // 만약 상대경로라면 앞부분 붙여주기
                         if (message.avatarUrl.startsWith("http")) message.avatarUrl
                         else "https://i14d104.p.ssafy.io/spring/${message.avatarUrl}"
                     },
@@ -79,7 +67,6 @@ fun ChatBubble(
             modifier = Modifier.widthIn(max = 260.dp),
             horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
         ) {
-            // 상대방 메시지일 때만 닉네임 표시
             if (!isMe) {
                 Text(
                     text = message.senderNickname,

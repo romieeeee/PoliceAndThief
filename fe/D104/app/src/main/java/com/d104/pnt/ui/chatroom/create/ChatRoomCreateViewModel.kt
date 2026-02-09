@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -72,14 +71,10 @@ class ChatRoomCreateViewModel @Inject constructor(
         }
     }
 
-    /**
-     * 위치 정보를 가져오면서 주소도 같이 업데이트
-     */
     fun getLocationInfo(context: Context) {
         viewModelScope.launch {
             val location = context.getSingleLocation()
             if (location != null) {
-                // 좌표 -> 주소 변환 호출
                 val address = locationRepository.getAddressFromLatLng(
                     location.latitude,
                     location.longitude
@@ -126,15 +121,12 @@ class ChatRoomCreateViewModel @Inject constructor(
                 is BaseResult.Success -> {
                     _createChatRoomStats.value = UiState.Success(result.data)
                     val chatRoomId = result.data.chatRoomId
-                    Timber.d("채팅방 생성 성공: $chatRoomId")
 
-                    // 참여 → 연결 → 소켓 입장
                     joinChatRoomSequence(chatRoomId)
                 }
 
                 is BaseResult.Error -> {
                     _createChatRoomStats.value = UiState.Error(result.error.message)
-                    Timber.e("채팅방 생성 실패: ${result.error.message}")
                 }
             }
         }
@@ -147,31 +139,21 @@ class ChatRoomCreateViewModel @Inject constructor(
         viewModelScope.launch {
             _joinRoomState.value = JoinRoomState.Loading
 
-            // HTTP 참여
-            Timber.d("HTTP 참여 시도: $chatRoomId")
             when (val joinResult = chatRepository.joinChatRoom(chatRoomId)) {
                 is BaseResult.Success -> {
-                    Timber.d("HTTP 참여 성공")
 
-                    // HTTP 연결
-                    Timber.d("HTTP 연결 시도: $chatRoomId")
                     when (val connectResult = chatRepository.connectChatRoom(chatRoomId)) {
                         is BaseResult.Success -> {
-                            Timber.d("HTTP 연결 성공")
-
-                            // 소켓 입장
                             joinChatRoomViaSocket(chatRoomId)
                         }
 
                         is BaseResult.Error -> {
-                            Timber.e("HTTP 연결 실패: ${connectResult.error.message}")
                             _joinRoomState.value = JoinRoomState.Error(connectResult.error.message)
                         }
                     }
                 }
 
                 is BaseResult.Error -> {
-                    Timber.e("HTTP 참여 실패: ${joinResult.error.message}")
                     _joinRoomState.value = JoinRoomState.Error(joinResult.error.message)
                 }
             }
@@ -182,20 +164,17 @@ class ChatRoomCreateViewModel @Inject constructor(
      * 소켓을 통한 채팅방 입장
      */
     private fun joinChatRoomViaSocket(chatRoomId: Long) {
-        Timber.d("소켓 입장 시도: $chatRoomId")
 
         viewModelScope.launch {
             // 토큰 확보
             val token = authRepository.getAccessToken().first()
             if (token.isEmpty()) {
-                Timber.e("❌ 토큰 없음")
                 _joinRoomState.value = JoinRoomState.Error("인증 정보가 없습니다.")
                 return@launch
             }
 
             // 소켓 연결 확인 및 대기
             if (!chatSocketManager.isConnected()) {
-                Timber.d("🔌 소켓 연결 시도...")
                 chatSocketManager.connect(token)
 
                 var retryCount = 0
@@ -206,10 +185,8 @@ class ChatRoomCreateViewModel @Inject constructor(
             }
 
             if (chatSocketManager.isConnected()) {
-                Timber.d("✅ 소켓 연결됨. 입장 요청 전송.")
                 joinRoomInternal(chatRoomId)
             } else {
-                Timber.e("❌ 소켓 연결 타임아웃 (5초 초과)")
                 _joinRoomState.value = JoinRoomState.Error("채팅 서버 연결에 실패했습니다.")
             }
         }
@@ -221,10 +198,8 @@ class ChatRoomCreateViewModel @Inject constructor(
     private fun joinRoomInternal(chatRoomId: Long) {
         chatSocketManager.joinRoom(chatRoomId) { success, message ->
             if (success) {
-                Timber.d("소켓 입장 성공: $message")
                 _joinRoomState.value = JoinRoomState.Success(chatRoomId, message)
             } else {
-                Timber.e("소켓 입장 실패: $message")
                 _joinRoomState.value = JoinRoomState.Error(message)
             }
         }
@@ -232,7 +207,5 @@ class ChatRoomCreateViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        // 소켓 연결은 유지 (다음 화면에서 사용할 수 있음)
-        Timber.d("ChatRoomCreateViewModel cleared")
     }
 }

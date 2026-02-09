@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Text
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.d104.pnt.domain.model.WaitingPlayer
+import com.d104.pnt.ui.chatroom.chat.ProfileData
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.UserProfileCard
@@ -33,7 +34,6 @@ import com.d104.pnt.ui.theme.DarkSurface
 import com.d104.pnt.ui.theme.PixelFont
 import com.d104.pnt.ui.theme.RoomBorder
 import com.d104.pnt.ui.theme.RoomContainer
-import com.d104.pnt.ui.chatroom.chat.ProfileData
 
 @Composable
 fun PlayerInfoDialog(

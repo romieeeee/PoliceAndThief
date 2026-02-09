@@ -32,7 +32,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.R
@@ -183,7 +182,7 @@ fun GameCreateScreen(
                                 modifier = Modifier
                                     .padding(10.dp)
                                     .align(Alignment.TopEnd)
-                                    .clickable{
+                                    .clickable {
                                         viewModel.fetchMyMaps()
                                         showMapLoadPopup = true
                                     },
@@ -203,7 +202,9 @@ fun GameCreateScreen(
                         }
 
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -213,7 +214,7 @@ fun GameCreateScreen(
                                     text = if (saveMap) "▣" else "□",
                                     color = if (saveMap) CustomBlue else Color.White,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.clickable{
+                                    modifier = Modifier.clickable {
                                         viewModel.setSaveMap(!saveMap)
                                     }
                                 )
@@ -224,13 +225,14 @@ fun GameCreateScreen(
                                 )
                             }
 
-                            // 저장하기 체크했을 때만 이름 입력 필드 노출
                             if (saveMap) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 CustomTextField(
                                     value = mapName,
                                     onValueChange = { viewModel.setMapName(it) },
-                                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(44.dp),
                                     placeholder = "저장할 맵 이름을 입력하세요",
                                 )
                             }

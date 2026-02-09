@@ -3,16 +3,13 @@ package com.d104.pnt.ui.game.play.walkietalkie
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -37,8 +34,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import timber.log.Timber
-import kotlin.math.exp
 
 object WalkieColor {
     val Panel = Color(0xFF2A2A2A)
@@ -48,7 +43,7 @@ object WalkieColor {
 }
 
 /**
- * 무전기 UI (내부용)
+ * 무전기 UI
  */
 @Composable
 fun WalkieTalkieContent(
@@ -62,7 +57,7 @@ fun WalkieTalkieContent(
     val configuration = LocalConfiguration.current
     val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
 
-    val expandedOffset = screenHeight * 0.15f // 전체가 보이는 높이
+    val expandedOffset = screenHeight * 0.15f
 
 
     Column(

@@ -129,7 +129,9 @@ fun ProfileCardSection(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp)
             ) {
                 Spacer(modifier = Modifier.width(counterBalanceWidth))
 
@@ -161,8 +163,6 @@ fun ProfileCardSection(
                         modifier = Modifier.padding(4.dp)
                     )
                 }
-
-//                Spacer(modifier = Modifier.width(iconSpacing))
 
                 Image(
                     painter = painterResource(id = if (isEditing) R.drawable.check else R.drawable.ic_edit),
@@ -201,7 +201,7 @@ fun ProfileCardSection(
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp)
             ) {
-                // 기존 티어 Row
+                // 티어
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -214,7 +214,6 @@ fun ProfileCardSection(
                         modifier = Modifier.weight(1f)
                     )
 
-                    // 중앙 점선
                     Canvas(
                         modifier = Modifier
                             .width(2.dp)

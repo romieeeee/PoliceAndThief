@@ -12,8 +12,6 @@ import com.d104.pnt.MainActivity
 import com.d104.pnt.R
 import com.d104.pnt.data.repository.GameSessionRepository
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.*
-import timber.log.Timber
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -34,16 +32,12 @@ class GameActiveService : Service() {
         when (intent?.action) {
             ACTION_START -> {
                 startForegroundService()
-                // 레포지토리에게 일 시키기
                 gameSessionRepository.startGameSession()
-                Timber.d("Game Active Service: 게임 세션 시작!")
             }
             ACTION_STOP -> {
-                // 레포지토리에게 일 그만하라고 하기
                 gameSessionRepository.stopGameSession()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
-                Timber.d("Game Active Service: 게임 세션 종료!")
             }
         }
         return START_NOT_STICKY

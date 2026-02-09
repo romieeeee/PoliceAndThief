@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.theme.DarkBackground
-import timber.log.Timber
 
 
 @Composable
@@ -27,7 +26,6 @@ fun RoleCard(role: GameRole, modifier: Modifier, onClick: () -> Unit) {
     PixelContainer(
         modifier = modifier.clickable(onClick = {
             onClick()
-            Timber.d("clicked!")
         }),
         backgroundColor = DarkBackground,
         borderColor = role.color

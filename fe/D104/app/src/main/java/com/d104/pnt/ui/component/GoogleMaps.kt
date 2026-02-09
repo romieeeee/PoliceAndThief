@@ -7,10 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -24,7 +24,6 @@ import com.d104.pnt.R
 import com.d104.pnt.data.remote.model.response.MemberLocationSocketDto
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
-import com.d104.pnt.domain.model.PlayerData
 import com.d104.pnt.ui.theme.AreaBoundary
 import com.d104.pnt.ui.theme.InArea
 import com.d104.pnt.ui.theme.OutOfArea
@@ -45,7 +44,6 @@ import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
-import timber.log.Timber
 
 @Composable
 fun GoogleMaps(
@@ -81,7 +79,7 @@ fun GoogleMaps(
             polygonPoints.forEach { builder.include(it.position) }
             try {
                 val bounds = builder.build()
-                if (!isPreview){
+                if (!isPreview) {
                     cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 100))
                 } else cameraPositionState.move(CameraUpdateFactory.newLatLngBounds(bounds, 50))
             } catch (e: Exception) {
@@ -116,18 +114,15 @@ fun GoogleMaps(
             true
         }
     ) {
-        // =========================
-        //  인게임 미니맵 (미리보기)
-        // =========================
+        // 인게임 미니맵 미리보기
         if (inGameMinimap && isPreview) {
 
-            // 내 위치
             PixelMarker(
                 location = LatLng(currentLocation.latitude, currentLocation.longitude),
                 position = "ME"
             )
 
-            // 구역 밖 마스킹 (holes로 내부만 뚫기)
+            // 구역 밖 마스킹
             Polygon(
                 points = listOf(
                     LatLng(39.0, 130.0),
@@ -156,23 +151,21 @@ fun GoogleMaps(
             if (role == GameRole.POLICE) {
                 playerLocations.forEach { player ->
                     if (player.position == "POLICE" && player.memberId != myMemberId)
-                    PixelMarker(
-                        location = LatLng(player.lat, player.lng),
-                        position = "POLICE"
-                    )
-                    else if (player.status == "TRANSFER"){
+                        PixelMarker(
+                            location = LatLng(player.lat, player.lng),
+                            position = "POLICE"
+                        )
+                    else if (player.status == "TRANSFER") {
                         PixelMarker(
                             location = LatLng(player.lat, player.lng),
                             position = "TRANSFER"
                         )
-                    }
-                    else if (player.status == "PRISON"){
+                    } else if (player.status == "PRISON") {
                         PixelMarker(
                             location = LatLng(player.lat, player.lng),
                             position = "PRISON"
                         )
-                    }
-                    else if (player.status == "CCTV"){
+                    } else if (player.status == "CCTV") {
                         PixelMarker(
                             location = LatLng(player.lat, player.lng),
                             position = "CCTV"
@@ -181,9 +174,7 @@ fun GoogleMaps(
                 }
             }
 
-            // =========================
             //  방장 설정 지도 수정 뷰
-            // =========================
         } else if (!inGameMinimap && !isPreview) {
 
             if (polygonPoints.isNotEmpty() && prisonLocation != null) {
@@ -224,13 +215,14 @@ fun GoogleMaps(
                             anchor = Offset(0.5f, 0.5f),
                             onClick = {
                                 if (!onPointDelete(index)) {
-                                    Toast.makeText(context, "최소 3개의 점이 필요합니다.", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "최소 3개의 점이 필요합니다.", Toast.LENGTH_SHORT)
+                                        .show()
                                 }
                                 true
                             }
                         ) {
                             Box(
-                                modifier = Modifier.size(30.dp), // 터치 영역 48dp 권장
+                                modifier = Modifier.size(30.dp),
                                 contentAlignment = androidx.compose.ui.Alignment.Center
                             ) {
                                 Image(
@@ -247,6 +239,7 @@ fun GoogleMaps(
                                     draggingIndex = index
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                 }
+
                                 DragState.END -> draggingIndex = -1
                                 else -> {}
                             }
@@ -271,6 +264,7 @@ fun GoogleMaps(
                                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                             }
                         }
+
                         DragState.END -> prisonMarkerState.position = prisonLocation
                         else -> {}
                     }
@@ -297,9 +291,7 @@ fun GoogleMaps(
                 }
             }
 
-            // =========================
-            // 미리보기(방 생성/설정 확인)
-            // =========================
+            // 방 생성/설정 확인 미리보기
         } else if (!inGameMinimap && isPreview) {
             if (polygonPoints.isNotEmpty() && prisonLocation != null) {
                 Polygon(

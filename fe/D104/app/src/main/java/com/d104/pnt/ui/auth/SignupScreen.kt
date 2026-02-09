@@ -49,7 +49,6 @@ import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.PixelInputField
 import com.d104.pnt.ui.theme.BorderDefault
 import com.d104.pnt.ui.theme.CheckGreen
-import timber.log.Timber
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -87,13 +86,12 @@ fun SignupScreen(
     LaunchedEffect(signupState) {
         when (signupState) {
             is UiState.Success -> {
-                Timber.d("Signup success - navigating with nickname: ${(signupState as UiState.Success).data.nickname}")
                 onSuccess((signupState as UiState.Success).data.nickname)
                 viewModel.resetSignupState()
             }
 
             is UiState.Error -> {
-                Timber.e("Signup error: ${(signupState as UiState.Error).message}")
+
             }
 
             else -> {}
@@ -153,16 +151,15 @@ fun SignupScreen(
                         PixelContainer(
                             modifier = Modifier.size(45.dp).clickable(
                                 onClick = {
-                                    Timber.d("Duplicate check button clicked - ID: $id, isValid: $isIdValid")
                                     viewModel.checkDuplicate()
                                 }
                             ),
                             innerHorizontalPadding = 12,
                             innerVerticalPadding = 12,
                             backgroundColor = when {
-                                isDuplicateChecked && !isDuplicated -> CheckGreen  // 체크 완료
-                                !isIdValid -> Color.Gray  // 비활성화
-                                else -> Color.White  // 체크 전 또는 중복
+                                isDuplicateChecked && !isDuplicated -> CheckGreen
+                                !isIdValid -> Color.Gray
+                                else -> Color.White
                             },
                         ) {
                             Icon(
@@ -253,7 +250,6 @@ fun SignupScreen(
                 // 확인 버튼
                 PixelIconButton(
                     onClick = {
-                        Timber.d("Signup button clicked - isEnabled: ${viewModel.isSignupEnabled()}")
                         viewModel.signup()
                     },
                     modifier = Modifier.weight(1f),

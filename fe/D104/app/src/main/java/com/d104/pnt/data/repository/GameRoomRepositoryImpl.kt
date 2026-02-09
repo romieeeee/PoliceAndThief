@@ -18,7 +18,6 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import timber.log.Timber
 import javax.inject.Inject
 
 class GameRoomRepositoryImpl @Inject constructor(
@@ -43,7 +42,6 @@ class GameRoomRepositoryImpl @Inject constructor(
         mapName: String?,
         mapDescription: String?
     ): BaseResult<CreateGameRoomResponse> {
-        Timber.d("GameCreateRequest: 인원=$playerCount, 미션=$missionCount, 감옥=${prison.lat},${prison.lng}")
         return safeApiCall(
             onSuccess = { createGameRoomResponse ->
                 updateLocalGameRoom(
@@ -191,7 +189,7 @@ class GameRoomRepositoryImpl @Inject constructor(
     }
 
     /**
-     * 새로운 맵을 저장합니다.
+     * 새로운 맵 저장
      */
     override suspend fun saveMap(request: SaveMapRequest): BaseResult<Long> {
         return safeApiCall {
@@ -200,7 +198,7 @@ class GameRoomRepositoryImpl @Inject constructor(
     }
 
     /**
-     * 내가 생성한 맵 목록을 조회합니다.
+     * 내가 생성한 맵 목록 조회
      */
     override suspend fun getMyMaps(): BaseResult<List<MapData>> {
         return safeApiCall {
@@ -209,7 +207,7 @@ class GameRoomRepositoryImpl @Inject constructor(
     }
 
     /**
-     * 특정 ID의 맵 상세 정보를 조회합니다.
+     * 특정 ID의 맵 상세 정보 조회
      */
     override suspend fun getMap(mapId: Long): BaseResult<MapData> {
         return safeApiCall {
@@ -218,7 +216,7 @@ class GameRoomRepositoryImpl @Inject constructor(
     }
 
     /**
-     * 특정 맵을 삭제합니다.
+     * 특정 맵 삭제
      */
     override suspend fun deleteMap(mapId: Long): BaseResult<Unit> {
         return safeApiCall {

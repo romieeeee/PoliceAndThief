@@ -17,21 +17,18 @@ fun NewsAnchor(
     modifier: Modifier = Modifier,
     isSpeaking: Boolean = true
 ) {
-    // 0: 입 다뭄, 1: 입 벌림
     var currentImageRes by remember { mutableIntStateOf(R.drawable.img_anchor_closed) }
 
     LaunchedEffect(isSpeaking) {
         if (!isSpeaking) {
-            currentImageRes = R.drawable.img_anchor_closed // 말 안 하면 다문 입 고정
+            currentImageRes = R.drawable.img_anchor_closed
             return@LaunchedEffect
         }
 
         while (true) {
-            // 랜덤한 박자로 말하는 느낌 주기
             val talkDuration = (150..250).random().toLong()
             val pauseDuration = (50..150).random().toLong()
 
-            // 길게 쉬기
             val takeBreath = (0..10).random() > 8
 
             if (takeBreath) {

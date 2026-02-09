@@ -1,21 +1,13 @@
 package com.d104.pnt.data.repository
 
-import com.d104.pnt.domain.model.common.ApiError
 import com.d104.pnt.data.remote.model.response.BaseResponse
+import com.d104.pnt.domain.model.common.ApiError
 import com.d104.pnt.domain.model.common.BaseResult
 import com.google.gson.Gson
-import retrofit2.HttpException
 import retrofit2.Response
-import timber.log.Timber
 import java.io.IOException
 import java.net.SocketTimeoutException
 
-/**
- * 모든 Repository의 부모 클래스
- *
- * - safeApiCall 공통 메서드 제공
- * - 모든 Repository가 상속받아 사용
- */
 abstract class BaseRepository {
     protected suspend fun <T> safeApiCall(
         onSuccess: (suspend (T) -> Unit)? = null,
@@ -38,7 +30,6 @@ abstract class BaseRepository {
                         )
                     }
 
-                    // code가 200번대면 성공 (data null 허용)
                     body.code in 200..299 -> {
                         val data = body.data ?: Unit as T
                         onSuccess?.invoke(data)
@@ -46,7 +37,6 @@ abstract class BaseRepository {
                     }
 
                     body.data != null -> {
-                        // 성공 콜백 실행
                         onSuccess?.invoke(body.data)
                         BaseResult.Success(body.data)
                     }
@@ -64,7 +54,6 @@ abstract class BaseRepository {
             } else {
                 val errorBodyString = response.errorBody()?.string()
                 val errorResponse = try {
-                    // 서버가 보낸 에러 JSON을 BaseResponse 형태로 파싱
                     Gson().fromJson(errorBodyString, BaseResponse::class.java)
                 } catch (e: Exception) {
                     null
@@ -82,13 +71,10 @@ abstract class BaseRepository {
                 )
             }
         } catch (e: SocketTimeoutException) {
-            Timber.e(e, "Timeout error")
             BaseResult.Error(ApiError.timeoutError())
         } catch (e: IOException) {
-            Timber.e(e, "Network error")
             BaseResult.Error(ApiError.networkError())
         } catch (e: Exception) {
-            Timber.e(e, "Unknown error")
             BaseResult.Error(ApiError.unknownError(e.message ?: "알 수 없는 오류"))
         }
     }

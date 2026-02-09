@@ -27,11 +27,11 @@ data class MemberData(
     val id: String,
 
     @SerializedName("nickname")
-    val nickname: String?,  // nullable
+    val nickname: String?,
 
     @SerializedName("avatarUrl")
     val avatarUrl: String?,
 
     @SerializedName("role")
-    val role: String?  // nullable
+    val role: String?
 )

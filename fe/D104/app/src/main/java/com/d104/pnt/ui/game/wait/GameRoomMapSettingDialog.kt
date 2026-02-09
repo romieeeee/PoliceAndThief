@@ -112,7 +112,7 @@ fun GameRoomMapSettingDialog(
                     color = TextPrimary,
                 )
                 Text(
-                    modifier = Modifier .fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     text = "- 감옥을 드래그하여 이동시킬 수 있습니다.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextPrimary,

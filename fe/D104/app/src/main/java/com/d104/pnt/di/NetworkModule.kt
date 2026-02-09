@@ -43,11 +43,6 @@ object NetworkModule {
         }
     }
 
-    /**
-     * OkHttpClient 제공
-     *
-     * AuthTokenInterceptor는 DataStore를 주입받아 자동 생성됨
-     */
     @Provides
     @Singleton
     fun provideOkHttpClient(
@@ -94,12 +89,11 @@ object NetworkModule {
         return retrofit.create(ChatApiService::class.java)
     }
 
-    // 역 지오코딩 관련
     @Provides
     @Singleton
     fun provideNaverApiService(): NaverApiService {
         return Retrofit.Builder()
-            // 네이버 클라우드 API 주소
+            // 네이버 클라우드 API
             .baseUrl("https://maps.apigw.ntruss.com/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()

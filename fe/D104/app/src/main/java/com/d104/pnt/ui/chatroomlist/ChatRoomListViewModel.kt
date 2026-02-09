@@ -14,7 +14,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -25,17 +24,14 @@ class ChatRoomListViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val chatSocketManager: ChatSocketManager
 ) : ViewModel() {
-    // 1. 시/도 목록 (변하지 않음)
     val majorList = regionManager.majorRegions
 
-    // 2. 선택된 상태
     private val _selectedMajor = MutableStateFlow("")
     val selectedMajor = _selectedMajor.asStateFlow()
 
     private val _selectedMiddle = MutableStateFlow("")
     val selectedMiddle = _selectedMiddle.asStateFlow()
 
-    // 3. 현재 선택된 시/도에 따른 시/군/구 목록
     private val _middleList = MutableStateFlow<List<String>>(emptyList())
     val middleList = _middleList.asStateFlow()
 
@@ -61,7 +57,6 @@ class ChatRoomListViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.getAccessToken().collect { token ->
                 if (token.isNotEmpty() && !chatSocketManager.isConnected()) {
-                    Timber.d("채팅 소켓 연결 중...")
                     chatSocketManager.connect(token)
                 }
                 return@collect
@@ -69,16 +64,10 @@ class ChatRoomListViewModel @Inject constructor(
         }
     }
 
-    /**
-     * 전역 채팅 콜백 설정 (앱 전체에서 사용)
-     * reconnect 이벤트는 여기서만 처리
-     */
+    // 전역 채팅 콜백 설정
     private fun setupGlobalChatCallbacks() {
-        // 재연결 처리만 여기서
         chatSocketManager.setOnReconnected { chatRoomId ->
-            Timber.d("전역: 재연결됨 chatRoomId=$chatRoomId")
-            // 재연결 시 특별한 처리가 필요하면 여기서
-            // 개별 ViewModel의 콜백도 동작함
+
         }
     }
 
@@ -98,12 +87,11 @@ class ChatRoomListViewModel @Inject constructor(
     // 시/군/구 선택 시 호출
     fun selectMiddle(middle: String) {
         _selectedMiddle.value = middle
-        _viewMode.value = ViewMode.Region // 이제 지역 탭 활성화
+        _viewMode.value = ViewMode.Region
 
         val code = locationRepository.getRegionCode(_selectedMajor.value, middle)
         _searchRegionQuery.value = code
 
-        // 지역 기반 검색 실행
         fetchChatRoomsByRegion(code)
     }
 
@@ -122,19 +110,17 @@ class ChatRoomListViewModel @Inject constructor(
             when (val result = chatRepository.searchChatRoom(title, regionCode)) {
                 is BaseResult.Success -> {
                     _listState.value = UiState.Success(result.data)
-                    Timber.d("chatList: ${result.data}")
                 }
 
                 is BaseResult.Error -> {
                     _listState.value = UiState.Error(result.error.message)
-                    Timber.d("error: ${result.error.message}")
                 }
             }
         }
     }
 
     fun getJoinedChatRoom() {
-        clearSearchState() // 검색어 초기화
+        clearSearchState()
 
         _viewMode.value = ViewMode.Me
         viewModelScope.launch {
@@ -150,13 +136,13 @@ class ChatRoomListViewModel @Inject constructor(
         val code = _searchRegionQuery.value
         if (code != -1) {
             clearSearchState()
-            _viewMode.value = ViewMode.Region // 지역 모드로 복귀
+            _viewMode.value = ViewMode.Region
             fetchChatRoomsByRegion(code)
         }
     }
 
     private fun fetchChatRoomsByRegion(code: Int) {
-        _viewMode.value = ViewMode.Region // 명시적으로 지역 모드 설정
+        _viewMode.value = ViewMode.Region
         viewModelScope.launch {
             _listState.value = UiState.Loading
             when (val result = chatRepository.searchChatRoom(title = null, regionCode = code)) {
@@ -174,7 +160,7 @@ class ChatRoomListViewModel @Inject constructor(
             return
         }
 
-        // 현재 모드 저장 (검색 직전의 모드)
+        // 검색 직전의 모드 저장
         val currentMode = _viewMode.value
 
         viewModelScope.launch {
@@ -225,7 +211,6 @@ class ChatRoomListViewModel @Inject constructor(
 
             when (val joinResult = chatRepository.joinChatRoom(chatRoomId)) {
                 is BaseResult.Success -> {
-                    Timber.d("채팅방[$chatRoomId] 입장 성공 참여 성공")
 
                     when (val connectResult = chatRepository.connectChatRoom(chatRoomId)) {
                         is BaseResult.Success -> {
@@ -244,13 +229,11 @@ class ChatRoomListViewModel @Inject constructor(
                         }
 
                         is BaseResult.Error -> {
-                            Timber.e("HTTP 연결 실패: ${connectResult.error.message}")
                         }
                     }
                 }
 
                 is BaseResult.Error -> {
-                    Timber.e("HTTP 참여 실패: ${joinResult.error.message}")
                 }
             }
         }
@@ -261,12 +244,14 @@ class ChatRoomListViewModel @Inject constructor(
             ViewMode.Me -> {
                 getJoinedChatRoom()
             }
+
             ViewMode.Region -> {
                 val code = _searchRegionQuery.value
                 if (code != -1) {
                     searchChatRoom(title = null, regionCode = code)
                 }
             }
+
             ViewMode.Title -> {
                 val code = if (_searchRegionQuery.value != -1) _searchRegionQuery.value else null
                 searchChatRoom(title = _searchQuery.value.ifEmpty { null }, regionCode = code)

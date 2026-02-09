@@ -1,6 +1,5 @@
 package com.d104.pnt.data.remote.model.response
 
-import com.d104.pnt.domain.model.GameRole
 import org.json.JSONObject
 
 // 도둑 상태

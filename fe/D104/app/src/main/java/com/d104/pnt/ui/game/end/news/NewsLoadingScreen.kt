@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -80,7 +79,6 @@ fun NewsLoadingScreen(
         ) {
             val context = LocalContext.current
 
-            // 아나운서 GIF
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(R.drawable.news_anchor)
@@ -93,8 +91,8 @@ fun NewsLoadingScreen(
                     }
                     .build(),
                 contentDescription = "방송 준비 중인 아나운서",
-                placeholder = painterResource(R.drawable.example_anchor),    // 프리뷰용 임시 이미지
-                error = painterResource(R.drawable.example_anchor),       // 에러 시 보여줄 이미지
+                placeholder = painterResource(R.drawable.example_anchor),
+                error = painterResource(R.drawable.example_anchor),
                 modifier = Modifier.size(280.dp)
             )
 
