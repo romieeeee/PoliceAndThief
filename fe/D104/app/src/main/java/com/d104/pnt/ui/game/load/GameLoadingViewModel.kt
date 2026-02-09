@@ -20,7 +20,7 @@ class GameLoadingViewModel @Inject constructor(
 
     companion object {
         private const val KEY_ROLE = "role"
-        private const val TOTAL_SECONDS = 10
+        private const val TOTAL_SECONDS = 60
     }
 
     val role: GameRole = savedStateHandle.get<String>(KEY_ROLE)?.let {
