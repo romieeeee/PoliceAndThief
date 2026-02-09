@@ -43,6 +43,7 @@ class GameNewsViewModel @Inject constructor(
                 is BaseResult.Success -> {
                     _newsState.value = UiState.Success(result.data)
                 }
+
                 is BaseResult.Error -> {
                     _newsState.value = UiState.Error(result.error.message ?: "뉴스 로딩 실패")
                 }

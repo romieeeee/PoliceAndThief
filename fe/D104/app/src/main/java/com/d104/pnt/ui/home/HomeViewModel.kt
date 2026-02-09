@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -56,7 +55,7 @@ class HomeViewModel @Inject constructor(
                 chatSocketManager.disconnect()
                 delay(200)
             } catch (e: Exception) {
-                Timber.e(e, "소켓 정리 중 오류 (무시)")
+
             }
 
 
@@ -69,7 +68,6 @@ class HomeViewModel @Inject constructor(
             when (val result = gameRoomRepository.joinGameRoom(code)) {
                 is BaseResult.Success -> {
                     val roomId = result.data.roomId
-                    Timber.d("Join Game Success: roomId=$roomId")
 
                     gameRoomRepository.changePosition(roomId, GameRole.ANY.roleNameEn)
 
@@ -79,7 +77,6 @@ class HomeViewModel @Inject constructor(
                 }
 
                 is BaseResult.Error -> {
-                    Timber.e("Join Game Failed: ${result.error.message}")
                     _uiEvent.emit(HomeUiEvent.ShowError(result.error.message))
                 }
             }
@@ -91,7 +88,6 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.clearAuthData()
 
-            Timber.d("Logout completed")
             _uiEvent.emit(HomeUiEvent.ShowMessage("로그아웃되었습니다"))
             _uiEvent.emit(HomeUiEvent.NavigateToIntro)
         }

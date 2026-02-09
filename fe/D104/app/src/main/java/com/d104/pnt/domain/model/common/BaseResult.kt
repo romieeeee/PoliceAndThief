@@ -1,11 +1,5 @@
 package com.d104.pnt.domain.model.common
 
-/**
- * Repository 레이어의 공통 Result 타입
- *
- * Success: 성공 시 데이터 반환
- * Error: 실패 시 에러 정보 반환
- */
 sealed class BaseResult<out T> {
     data class Success<T>(val data: T) : BaseResult<T>()
     data class Error(val error: ApiError) : BaseResult<Nothing>()
@@ -23,7 +17,7 @@ sealed class BaseResult<out T> {
         get() = this is Error
 
     /**
-     * 성공 시 데이터 가져오기 (null 가능)
+     * 성공 시 데이터 가져오기
      */
     fun getOrNull(): T? = when (this) {
         is Success -> data
@@ -31,7 +25,7 @@ sealed class BaseResult<out T> {
     }
 
     /**
-     * 실패 시 에러 가져오기 (null 가능)
+     * 실패 시 에러 가져오기
      */
     fun errorOrNull(): ApiError? = when (this) {
         is Success -> null

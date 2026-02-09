@@ -12,8 +12,8 @@ import javax.inject.Singleton
 class AuthEventBus @Inject constructor() {
 
     sealed class AuthEvent {
-        object TokenExpired : AuthEvent()  // 토큰 만료
-        object Unauthorized : AuthEvent()  // 인증 실패
+        object TokenExpired : AuthEvent()
+        object Unauthorized : AuthEvent()
     }
 
     private val _events = MutableSharedFlow<AuthEvent>()

@@ -1,6 +1,11 @@
 package com.d104.pnt.ui.component
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,7 +25,9 @@ fun KickedNoticeDialog(
 ) {
     Dialog(onDismissRequest = {}) {
         PixelContainer(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             backgroundColor = Color(0xFF2D3242),
             borderColor = Color(0xFF8D90B3),
             borderWidth = 4f,

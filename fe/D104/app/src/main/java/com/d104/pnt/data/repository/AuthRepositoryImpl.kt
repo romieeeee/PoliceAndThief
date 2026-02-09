@@ -27,7 +27,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlin.coroutines.resume
@@ -53,7 +52,6 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun sendFcmToken(active: Boolean): BaseResult<Unit> {
         return safeApiCall {
-            // 현재 기기의 FCM 토큰을 비동기로 가져옴
             val token = suspendCoroutine<String?> { continuation ->
                 FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
                     if (task.isSuccessful) continuation.resume(task.result)
@@ -62,7 +60,6 @@ class AuthRepositoryImpl @Inject constructor(
             }
 
             if (token != null) {
-                // 서버에 토큰과 활성 상태 전송
                 apiService.postFcmToken(FcmTokenRequest(value = token, active = active))
             } else {
                 throw Exception("FCM 토큰을 가져올 수 없습니다.")
@@ -139,7 +136,6 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout(): BaseResult<String> {
-        // 로그아웃 시작 시점에 토큰 비활성화 먼저 시도
         CoroutineScope(Dispatchers.IO).launch {
             sendFcmToken(false)
         }
@@ -173,7 +169,6 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override fun getAccessToken(): Flow<String> {
-        Timber.d("AccessToken request")
         return dataStore.data.transform { preferences ->
             val lastRefresh = preferences[KEY_LAST_REFRESH] ?: 0L
             val currentTime = System.currentTimeMillis()
@@ -193,7 +188,6 @@ class AuthRepositoryImpl @Inject constructor(
                     if (refreshResponse.isSuccessful && refreshResponse.body() != null) {
                         val newTokens = refreshResponse.body()!!
                         refreshTokens(newTokens.data!!.accessToken, newTokens.data.refreshToken)
-                        Timber.d("newTokens = $newTokens")
                         emit(newTokens.data.accessToken)
                     }
                     else {
@@ -239,17 +233,6 @@ class AuthRepositoryImpl @Inject constructor(
             preferences[KEY_IS_LOGGED_IN] = true
             preferences[KEY_LAST_REFRESH] = lastRefresh
         }
-
-        Timber.d("Login data saved for user: $userId")
-        Timber.d(
-            """
-                    accessToken = $accessToken
-                    refreshToken = $refreshToken
-                    userId = $userId
-                    memberId = $memberId
-                    lastRefresh = $lastRefresh
-                """.trimIndent()
-        )
     }
 
     override suspend fun refreshTokens(
@@ -271,16 +254,6 @@ class AuthRepositoryImpl @Inject constructor(
             preferences.remove(KEY_USER_ID)
             preferences.remove(KEY_MEMBER_ID)
             preferences[KEY_IS_LOGGED_IN] = false
-
-            Timber.d(
-                """
-                Auth data cleared
-                - ${preferences[KEY_ACCESS_TOKEN]}
-                - ${preferences[KEY_USER_ID]}
-                - ${preferences[KEY_MEMBER_ID]}
-                - ${preferences[KEY_IS_LOGGED_IN]}
-            """.trimIndent()
-            )
         }
     }
 }

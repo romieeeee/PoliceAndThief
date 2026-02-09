@@ -75,12 +75,11 @@ import com.d104.pnt.ui.game.play.walkietalkie.WalkieTalkieContent
 import com.d104.pnt.ui.theme.BackgroundWhite
 import com.d104.pnt.ui.theme.ButtonDisabled
 import com.d104.pnt.ui.theme.MissionYellow
+import com.d104.pnt.ui.theme.PixelFont
 import com.d104.pnt.util.GameFeedbackManager
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import timber.log.Timber
-import com.d104.pnt.ui.theme.PixelFont
 
 @Composable
 fun GamePlayScreen(
@@ -143,8 +142,6 @@ fun GamePlayScreen(
     var proximityColor by remember { mutableStateOf(Color.Transparent) }
     var proximityAlertJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
-    val TEST_FORCE_BEEP = false
-
     LaunchedEffect(Unit) {
         viewModel.initGame()
 
@@ -154,7 +151,6 @@ fun GamePlayScreen(
             viewModel.connectWalkie()
         }
 
-        // 게임 종료 후 다음 화면으로 이동
         viewModel.uiEvent.collect { event ->
             if (event is GameSessionEvent.NavigateToLoading) {
                 showGameOverOverlay = true
@@ -165,16 +161,6 @@ fun GamePlayScreen(
             }
         }
     }
-
-
-    // 테스트: 화면 진입 후 2초 뒤 1회 비프
-    LaunchedEffect(TEST_FORCE_BEEP, role) {
-        if (!TEST_FORCE_BEEP) return@LaunchedEffect
-        if (role != GameRole.THIEF) return@LaunchedEffect
-        delay(2000)
-        feedbackManager.playBeepAlert(distance = 12.0)
-    }
-
 
     BackHandler {
         if (System.currentTimeMillis() - backPressedTime <= 1500) {
@@ -212,7 +198,6 @@ fun GamePlayScreen(
         if (role != GameRole.THIEF) return@LaunchedEffect
 
         viewModel.beepEvent.collect { beep ->
-            Timber.d("🚨 beepEvent: policeId=${beep.policeId}, thiefId=${beep.thiefId}, distance=${beep.distance}")
 
             if (viewModel.myMemberId.value == beep.thiefId) {
                 feedbackManager.playBeepAlert(distance = beep.distance)
@@ -229,7 +214,6 @@ fun GamePlayScreen(
                     showProximityAlert = true
                 }
 
-                // 3. 메시지 타이머 재설정 (연속 수신 시 유지)
                 if (showProximityAlert) {
                     proximityAlertJob?.cancel()
                     proximityAlertJob = launch {
@@ -271,39 +255,7 @@ fun GamePlayScreen(
 
         Box(modifier = Modifier.fillMaxSize()) {
 
-            // =========================================================
-            // ===== TEST ONLY (BEEP UI) ================================
-            // =========================================================
-            if (TEST_FORCE_BEEP && role == GameRole.THIEF) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .systemBarsPadding()
-                        .padding(top = 10.dp, end = 12.dp)
-                        .clickable {
-                            scope.launch {
-                                Timber.d("🧪 TEST BEEP 버튼 클릭")
-                                feedbackManager.playBeepAlert(distance = 8.0)
-                            }
-                        }
-                ) {
-                    PixelContainer(
-                        modifier = Modifier,
-                        backgroundColor = Color.Transparent,
-                        borderColor = MissionYellow,
-                        borderWidth = 6f
-                    ) {
-                        Text(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            text = "TEST BEEP",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MissionYellow
-                        )
-                    }
-                }
-            }
-
-            // 상단 버튼 영역 (고정)
+            // 상단 버튼
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -313,7 +265,7 @@ fun GamePlayScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 왼쪽: 지도
+                // 지도
                 PixelIconButton(
                     modifier = Modifier
                         .size(50.dp)
@@ -332,7 +284,7 @@ fun GamePlayScreen(
                     )
                 }
 
-                // 오른쪽: 경찰 기능 버튼들
+                // 경찰 기능 버튼들
                 if (role == GameRole.POLICE) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
 
@@ -538,7 +490,6 @@ fun GamePlayScreen(
                         if (walkieConnected && !isSomeoneTalking) {
                             viewModel.startTalking()
                         } else if (isSomeoneTalking) {
-                            Timber.d("📻 다른 경찰이 말하는 중 - PTT 무시")
                         }
                     },
                     onPttUp = { if (walkieConnected) viewModel.stopTalking() },
@@ -602,7 +553,7 @@ fun GamePlayScreen(
     }
 
 
-    // PhoneFrame (NPE 방지)
+    // PhoneFrame
     if (clicked && currentLocation != null && prisonLocation != null) {
         Box(
             modifier = Modifier

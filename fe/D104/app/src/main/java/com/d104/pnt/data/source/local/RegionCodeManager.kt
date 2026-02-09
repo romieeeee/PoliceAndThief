@@ -2,7 +2,6 @@ package com.d104.pnt.data.source.local
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,12 +10,10 @@ import javax.inject.Singleton
 class RegionCodeManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    // 검색표 (Key: "시도 시군구", Value: "지역코드")
     private val regionMap = mutableMapOf<String, String>()
 
     private val hierarchyMap = mutableMapOf<String, MutableList<String>>()
 
-    // 시/도 목록만 가져오기 (가나다순 정렬)
     val majorRegions: List<String>
         get() = hierarchyMap.keys.sorted()
 
@@ -24,12 +21,9 @@ class RegionCodeManager @Inject constructor(
         loadCsvData()
     }
 
-    // 앱 켜질 때 딱 한 번 실행됨 (CSV 읽기)
     private fun loadCsvData() {
         try {
-            // assets 폴더에서 파일 열기
             context.assets.open("region_codes.csv").bufferedReader().useLines { lines ->
-                // drop(1) : 첫 번째 줄(헤더)은 무시하고, 두 번째 줄부터 실행
                 lines.drop(1).forEach { line ->
                     val tokens = line.split(",")
 
@@ -72,16 +66,12 @@ class RegionCodeManager @Inject constructor(
         return shortedMajor
     }
 
-    // 외부에서 코드를 물어볼 때 쓰는 함수
     fun getRegionCode(major: String, middle: String): String? {
-        // 입력받은 주소를 우리 키 형식("시도 시군구")으로 맞춰서 검색
         val key = "$major $middle"
-        Timber.d(regionMap.toString())
 
         return regionMap[key]
     }
 
-    // 시/도를 넣으면 시/군/구 리스트 반환
     fun getMiddleRegions(major: String): List<String> {
         return hierarchyMap[major]?.sorted() ?: emptyList()
     }

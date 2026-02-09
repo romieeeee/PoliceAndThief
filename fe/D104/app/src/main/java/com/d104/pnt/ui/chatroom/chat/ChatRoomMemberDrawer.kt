@@ -30,7 +30,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,19 +46,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.Popup
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelIconButton
 import com.d104.pnt.ui.component.UserProfileCard
 import com.d104.pnt.ui.game.wait.DelegateHostConfirmDialog
 import com.d104.pnt.ui.game.wait.ReasonButtonRow
-import com.d104.pnt.ui.theme.*
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d104.pnt.ui.chatroom.chat.ChatRoomViewModel
-import com.d104.pnt.ui.chatroom.chat.ProfileData
+import com.d104.pnt.ui.theme.AccentYellow
 import com.d104.pnt.ui.theme.ChatBg
 import com.d104.pnt.ui.theme.DarkBackground
-import com.d104.pnt.ui.theme.DarkCard
+import com.d104.pnt.ui.theme.PixelFont
 import com.d104.pnt.ui.theme.TextPrimary
 import com.d104.pnt.ui.theme.TextSecondary
 
@@ -79,7 +81,7 @@ fun ChatRoomMemberDrawer(
 
     val amIHost = members.find { it.memberId == myMemberId }?.isHost == true
 
-    // 스크림(바깥 클릭 시 닫기)
+    // 바깥 클릭 시 닫기
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = tween(160)),
@@ -122,7 +124,7 @@ fun ChatRoomMemberDrawer(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // 상단: 멤버 목록
+                    // 멤버 목록
                     Column {
                         Text(
                             text = "멤버 목록",
@@ -147,8 +149,9 @@ fun ChatRoomMemberDrawer(
                                         when (action) {
                                             "PROFILE" -> {
                                                 profileTarget = member
-                                                viewModel.loadUserProfile(member.memberId)  // ⭐ API 호출 추가
+                                                viewModel.loadUserProfile(member.memberId)
                                             }
+
                                             "DELEGATE" -> delegateTarget = member
                                             "KICK" -> kickTarget = member
                                         }
@@ -158,7 +161,7 @@ fun ChatRoomMemberDrawer(
                         }
                     }
 
-                    // 하단: 나가기 버튼
+                    // 나가기 버튼
                     Column {
                         Spacer(Modifier.height(12.dp))
                         HorizontalDivider(color = TextSecondary)
@@ -312,7 +315,11 @@ private fun ChatMemberActionMenu(
 
             // 내가 방장이고, 대상이 내가 아닐 때만 관리 기능 표시
             if (isAmIHost && !isTargetMe) {
-                ChatMenuButton(text = "방장 위임", textColor = Color.Black, onClick = onDelegateHostClick)
+                ChatMenuButton(
+                    text = "방장 위임",
+                    textColor = Color.Black,
+                    onClick = onDelegateHostClick
+                )
                 ChatMenuButton(text = "강퇴하기", textColor = Color(0xFFFF5252), onClick = onKickClick)
             }
         }
@@ -382,7 +389,11 @@ fun ChatPlayerInfoDialog(
 }
 
 @Composable
-fun ChatKickConfirmDialog(member: ChatRoomMemberUi, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+fun ChatKickConfirmDialog(
+    member: ChatRoomMemberUi,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
     val reasons = listOf("욕설", "폭행", "비매너", "구역 이탈", "기타")
     var selectedReason by remember { mutableStateOf("욕설") }
 
@@ -421,7 +432,12 @@ fun ChatKickConfirmDialog(member: ChatRoomMemberUi, onConfirm: (String) -> Unit,
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(text = "강퇴 사유", fontFamily = PixelFont, color = Color.White, fontSize = 14.sp)
+                    Text(
+                        text = "강퇴 사유",
+                        fontFamily = PixelFont,
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     ReasonButtonRow(reasons.subList(0, 3), selectedReason) { selectedReason = it }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -430,21 +446,46 @@ fun ChatKickConfirmDialog(member: ChatRoomMemberUi, onConfirm: (String) -> Unit,
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                     Box(modifier = Modifier.weight(1f)) {
                         PixelIconButton(
                             onClick = { onConfirm(selectedReason) },
                             modifier = Modifier.fillMaxWidth(),
-                            mainColor = Color.White, borderColor = Color.Black, pixelSize = 3.dp, blockHeight = 12,
-                            content = { Text("강퇴하기", fontFamily = PixelFont, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp) }
+                            mainColor = Color.White,
+                            borderColor = Color.Black,
+                            pixelSize = 3.dp,
+                            blockHeight = 12,
+                            content = {
+                                Text(
+                                    "강퇴하기",
+                                    fontFamily = PixelFont,
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            }
                         )
                     }
                     Box(modifier = Modifier.weight(1f)) {
                         PixelIconButton(
                             onClick = onDismiss,
                             modifier = Modifier.fillMaxWidth(),
-                            mainColor = Color.White, borderColor = Color.Black, pixelSize = 3.dp, blockHeight = 12,
-                            content = { Text("취소", fontFamily = PixelFont, color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp) }
+                            mainColor = Color.White,
+                            borderColor = Color.Black,
+                            pixelSize = 3.dp,
+                            blockHeight = 12,
+                            content = {
+                                Text(
+                                    "취소",
+                                    fontFamily = PixelFont,
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            }
                         )
                     }
                 }

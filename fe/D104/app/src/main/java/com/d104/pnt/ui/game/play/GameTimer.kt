@@ -31,7 +31,7 @@ fun GameTimer(
 
     Text(
         text = String.format("%02d:%02d", minutes, seconds),
-        color = Color(0xFFFFE082), // 살짝 노란 픽셀 숫자
+        color = Color(0xFFFFE082),
         style = MaterialTheme.typography.titleLarge
     )
 }

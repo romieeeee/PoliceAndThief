@@ -4,19 +4,16 @@ import androidx.compose.ui.graphics.Color
 import com.d104.pnt.R
 import com.d104.pnt.ui.theme.CustomBlue
 import com.d104.pnt.ui.theme.CustomRed
-import com.d104.pnt.ui.theme.PoliceBlue
-import com.d104.pnt.ui.theme.ThiefRed
 
 /**
  * 게임 역할 모델
- * 경찰과 도둑의 모든 정보를 포함
  */
 enum class GameRole(
-    val roleName: String,           // 한글 역할명
-    val roleNameEn: String,         // 영문 역할명
-    val description: String,        // 역할 설명
-    val color: Color,               // 테마 색상
-    val emoji: Int,              // 이모지
+    val roleName: String,
+    val roleNameEn: String,
+    val description: String,
+    val color: Color,
+    val emoji: Int,
     val badge: Int
 ) {
     POLICE(
@@ -42,7 +39,7 @@ enum class GameRole(
         roleNameEn = "ANY",
         description = "역할이 자동으로 배정됩니다",
         color = Color.Gray,
-        emoji = R.drawable.ic_thief, // 임시 도둑 아이콘
+        emoji = R.drawable.ic_thief,
         badge = R.drawable.ic_thief_badge
     ),
 
@@ -51,14 +48,11 @@ enum class GameRole(
         roleNameEn = "UNDECIDED",
         description = "역할을 선택하는 중입니다",
         color = Color.Gray,
-        emoji = R.drawable.ic_thief, // 임시 도둑 아이콘
+        emoji = R.drawable.ic_thief,
         badge = R.drawable.ic_thief_badge
     );
 
     companion object {
-        /**
-         * 역할명(문자열)으로 GameRole 찾기
-         */
         fun fromName(name: String): GameRole {
             return values().find {
                 it.name.equals(name, ignoreCase = true) ||
@@ -66,16 +60,10 @@ enum class GameRole(
             } ?: UNDECIDED
         }
 
-        /**
-         * 역할 이름 목록 반환
-         */
         fun getAllRoleNames(): List<String> {
             return values().map { it.roleName }
         }
 
-        /**
-         * 역할별 인원 비율 계산
-         */
         fun calculateTeamSize(totalPlayers: Int, policeRatio: Float = 0.3f): Pair<Int, Int> {
             val policeCount = (totalPlayers * policeRatio).toInt().coerceAtLeast(1)
             val thiefCount = totalPlayers - policeCount
@@ -83,9 +71,6 @@ enum class GameRole(
         }
     }
 
-    /**
-     * 반대 역할 반환
-     */
     fun opposite(): GameRole {
         return when (this) {
             POLICE -> THIEF
@@ -94,16 +79,10 @@ enum class GameRole(
         }
     }
 
-    /**
-     * 팀원 확인
-     */
     fun isTeammate(other: GameRole): Boolean {
         return this == other
     }
 
-    /**
-     * UI 표시용 역할 뱃지 텍스트
-     */
     fun getBadgeText(): String {
         return "$emoji $roleName"
     }

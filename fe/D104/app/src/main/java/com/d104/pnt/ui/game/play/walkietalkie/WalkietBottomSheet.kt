@@ -54,8 +54,8 @@ fun WalkieBottomSheet(
     val configuration = LocalConfiguration.current
     val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
 
-    val collapsedOffset = screenHeight - 400f // 윗부분만 보이는 높이
-    val expandedOffset = screenHeight * 0.28f // 전체가 보이는 높이
+    val collapsedOffset = screenHeight - 400f
+    val expandedOffset = screenHeight * 0.28f
 
     val targetOffset = when (sheetState) {
         BottomSheetState.COLLAPSED -> collapsedOffset
@@ -134,8 +134,6 @@ fun WalkieBottomSheet(
                 contentScale = ContentScale.FillBounds
             )
 
-
-            // Expanded 상태의 전체 컨텐츠
             if (imageHeight > 0) {
                 Box(
                     modifier = Modifier

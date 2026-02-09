@@ -43,8 +43,8 @@ import com.d104.pnt.ui.chatroomlist.ChatRoomListScreen
 import com.d104.pnt.ui.component.KickedNoticeDialog
 import com.d104.pnt.ui.game.create.GameCreateScreen
 import com.d104.pnt.ui.game.end.GameResultScreen
-import com.d104.pnt.ui.game.end.news.NewsLoadingScreen
 import com.d104.pnt.ui.game.end.news.GameNewsScreen
+import com.d104.pnt.ui.game.end.news.NewsLoadingScreen
 import com.d104.pnt.ui.game.load.GameLoadingScreen
 import com.d104.pnt.ui.game.play.GamePlayScreen
 import com.d104.pnt.ui.game.play.GameRoleScreen
@@ -55,7 +55,6 @@ import com.d104.pnt.ui.home.HomeScreen
 import com.d104.pnt.ui.profile.ProfileScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 @Composable
 fun MainScreen(
@@ -69,10 +68,8 @@ fun MainScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // BottomBar 표시 화면
     val bottomBarRoutes = BottomNavItem.items.map { it.route }
 
-    // 뒤로가기 두 번 누르기 처리
     var backPressedTime by remember { mutableLongStateOf(0L) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -81,13 +78,10 @@ fun MainScreen(
 
     LaunchedEffect(pendingChatId) {
         pendingChatId?.let { chatId ->
-            Timber.d("pendingChatId 감지: $chatId, 채팅방으로 이동")
 
-            // navigation이 준비될 때까지 약간의 딜레이
             delay(100)
 
             navController.navigate(Routes.buildChatRoom(chatId)) {
-                // HOME을 포함하여 스택 정리
                 popUpTo(Routes.HOME) {
                     inclusive = false
                     saveState = false
@@ -100,14 +94,11 @@ fun MainScreen(
         }
     }
 
-    // BottomNav 화면에서 뒤로가기 처리
     BackHandler(enabled = currentRoute in bottomBarRoutes) {
 
         if (System.currentTimeMillis() - backPressedTime <= 2000) {
-            // 2초 이내에 다시 누르면 앱 종료
             activity?.finish()
         } else {
-            // 스낵바 메시지 표시
             backPressedTime = System.currentTimeMillis()
             scope.launch {
                 snackbarHostState.showSnackbar("한 번 더 누르면 종료됩니다")
@@ -123,7 +114,7 @@ fun MainScreen(
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.navigationBars)
         ) {
-            // ===== BottomNav 탭 =====
+            // BottomNav 탭
             composable(Routes.HOME) { backStackEntry ->
                 val savedStateHandle = backStackEntry.savedStateHandle
                 val kickMessage = savedStateHandle.get<String>("kick_message")
@@ -163,11 +154,8 @@ fun MainScreen(
                 ChatRoomCreateScreen(
                     onCancel = { navController.popBackStack() },
                     onConfirm = { chatRoomId ->
-                        Timber.d("채팅방 생성 완료, ID: $chatRoomId")
 
-                        // 채팅방 화면으로 이동
                         navController.navigate(Routes.buildChatRoom(chatRoomId)) {
-                            // 생성 화면은 스택에서 제거
                             popUpTo(Routes.CHAT) { inclusive = false }
                         }
                     },
@@ -178,7 +166,7 @@ fun MainScreen(
                 ProfileScreen()
             }
 
-            // ===== 채팅방 =====
+            // 채팅방
             composable(
                 route = "${Routes.CHAT_ROOM}/{${NavArgs.CHAT_ID}}",
                 arguments = listOf(
@@ -201,7 +189,7 @@ fun MainScreen(
                 )
             }
 
-            // ===== 게임 대기방 =====
+            // 게임 대기방
             composable(
                 route = "${Routes.GAME_ROOM}/{${NavArgs.ROOM_ID}}/{${NavArgs.ROLE}}",
                 arguments = listOf(
@@ -242,9 +230,9 @@ fun MainScreen(
                 )
             }
 
-            // ===== 게임 플로우 =====
+            // 게임 플로우
 
-            // 역할 선택 (대기방 내에서)
+            // 역할 선택
             composable(
                 route = "${Routes.ROLE_SELECT}/{${NavArgs.ROOM_ID}}?isEditMode={isEditMode}",
 
@@ -272,7 +260,7 @@ fun MainScreen(
                 )
             }
 
-            // 게임 인트로 (역할 안내)
+            // 역할 안내
             composable(
                 route = "${Routes.GAME_ROLE}/{${NavArgs.ROOM_ID}}/{${NavArgs.ROLE}}?isChief={isChief}",
                 arguments = listOf(
@@ -300,7 +288,7 @@ fun MainScreen(
                 )
             }
 
-            // 게임 로딩 (카운트다운)
+            // 게임 로딩
             composable(
                 route = "${Routes.GAME_LOADING}/{${NavArgs.ROOM_ID}}/{${NavArgs.ROLE}}",
                 arguments = listOf(
@@ -350,9 +338,9 @@ fun MainScreen(
                     onClose = {
                         navController.popBackStack()
                     },
-                    compressionQuality = 80, // 압축 품질 (0-100) - 기본값 80
-                    maxWidth = 1280,         // 최대 가로 해상도 - 기본값 1280px
-                    maxHeight = 720,         // 최대 세로 해상도 - 기본값 720px
+                    compressionQuality = 80,
+                    maxWidth = 1280,
+                    maxHeight = 720,
                     missionId = missionId
                 )
             }
@@ -404,7 +392,6 @@ fun MainScreen(
                 NewsLoadingScreen(
                     gameId = gameId,
                     onNewsReady = { gId, nId ->
-                        // 분석(소켓+HTTP) 완료 시 gameId와 newsId를 가지고 실제 뉴스로 이동
                         navController.navigate(Routes.buildGameNews(gId, nId)) {
                             popUpTo(Routes.GAME_NEWS_LOADING) { inclusive = true }
                         }
@@ -446,7 +433,6 @@ fun MainScreen(
                 GameResultScreen(
                     gameId = gameId,
                     onBackToHome = {
-                        // 홈으로 - DisposableEffect에서 이미 게임 소켓 정리됨
                         navController.navigate(Routes.HOME) {
                             popUpTo(Routes.HOME) { inclusive = true }
                         }
@@ -465,7 +451,7 @@ fun MainScreen(
             }
 
 
-            // ===== 신고 =====
+            // 신고
             composable(
                 route = "${Routes.REPORT}/{${NavArgs.NICKNAME}}",
                 arguments = listOf(
@@ -473,16 +459,10 @@ fun MainScreen(
                 )
             ) { backStackEntry ->
                 val nickname = backStackEntry.arguments?.getString(NavArgs.NICKNAME) ?: ""
-//                ReportScreen(
-//                    reportedNickname = nickname,
-//                    onReportSubmitted = { navController.popBackStack() },
-//                    onBackPressed = { navController.popBackStack() }
-//                )
             }
 
         }
 
-        // BottomBar를 위에 띄우기
         if (currentRoute in bottomBarRoutes) {
             Box(
                 modifier = Modifier
@@ -499,7 +479,7 @@ fun MainScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .systemBarsPadding()
-                .padding(bottom = 80.dp) // BottomBar 높이 + 여유 공간
+                .padding(bottom = 80.dp)
         )
     }
 }

@@ -32,7 +32,6 @@ class ReportRepositoryImpl @Inject constructor(
 
                 BaseResult.Success(data)
             } else {
-                // 서버 에러 메시지 파싱 로직이 BaseRepository에 있으면 거기 패턴대로 바꾸면 됨
                 BaseResult.Error(ApiError(message = "신고 실패: ${response.code()}"))
             }
         } catch (e: Exception) {

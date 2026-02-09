@@ -44,7 +44,6 @@ import com.d104.pnt.util.PermissionHelper.PermissionType.NOTIFICATION
 
 /**
  * 필수 권한 설명 다이얼로그
- * 시스템 권한 요청 전에 사용자에게 이유를 설명
  */
 @Composable
 fun PermissionDialog(
@@ -65,7 +64,6 @@ fun PermissionDialog(
                     .padding(vertical = 30.dp, horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 제목
                 Text(
                     text = "🎮 게임 시작 준비",
                     style = MaterialTheme.typography.titleLarge,
@@ -75,7 +73,6 @@ fun PermissionDialog(
 
                 Spacer(modifier = Modifier.height(30.dp))
 
-                // 권한 목록
                 permissionTypes.forEach { permissionType ->
                     PermissionItem(permissionType = permissionType)
                     Spacer(modifier = Modifier.height(20.dp))
@@ -83,7 +80,6 @@ fun PermissionDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // 필수 안내
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -104,7 +100,6 @@ fun PermissionDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 버튼들
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -144,7 +139,6 @@ private fun PermissionItem(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 아이콘 배경
         Box(
             modifier = Modifier
                 .size(48.dp)
@@ -164,7 +158,6 @@ private fun PermissionItem(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        // 설명
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(

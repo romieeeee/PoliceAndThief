@@ -41,7 +41,6 @@ import com.d104.pnt.ui.theme.DialogBorderColor
 import com.d104.pnt.ui.theme.RoomBorder
 import com.d104.pnt.ui.theme.RoomContainer
 import com.d104.pnt.ui.theme.TextPrimary
-import timber.log.Timber
 
 @Composable
 fun ChatRoomCreateScreen(
@@ -67,12 +66,10 @@ fun ChatRoomCreateScreen(
     LaunchedEffect(joinRoomState) {
         when (val state = joinRoomState) {
             is ChatRoomCreateViewModel.JoinRoomState.Success -> {
-                Timber.d("채팅방 입장 완료: ${state.message}")
-                onConfirm(state.chatRoomId)  // 채팅방 ID 전달!
+                onConfirm(state.chatRoomId)
             }
 
             is ChatRoomCreateViewModel.JoinRoomState.Error -> {
-                Timber.e("채팅방 입장 실패: ${state.message}")
                 Toast.makeText(
                     context,
                     "입장 실패: ${state.message}",
@@ -236,7 +233,6 @@ fun ChatRoomCreateScreen(
                                 text = "확인",
                                 onClick = {
                                     if (viewModel.isValid()) {
-                                        Timber.d("Valid")
                                         viewModel.createChatRoom()
                                     }
                                 },

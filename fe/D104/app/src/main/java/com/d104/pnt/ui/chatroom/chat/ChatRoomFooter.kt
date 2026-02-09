@@ -23,10 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.d104.pnt.R
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.PixelInputField
-import com.d104.pnt.ui.theme.ButtonPrimary
 import com.d104.pnt.ui.theme.DarkBackground
-import com.d104.pnt.ui.theme.TextPrimary
-import com.d104.pnt.ui.theme.TextSecondary
 
 @Composable
 fun ChatRoomFooter(
@@ -35,7 +32,6 @@ fun ChatRoomFooter(
     onSendMessage: (String) -> Unit,
     onValueChange: (String) -> Unit
 ) {
-    // 메시지가 비어있는지 확인 (버튼 활성화 여부)
     val isMessageEmpty = message.isBlank()
 
     Column(

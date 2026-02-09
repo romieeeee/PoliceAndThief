@@ -56,7 +56,6 @@ fun UserProfileCard(
                 .padding(top = 16.dp, bottom = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 아바타 + 닉네임
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // 아바타
                 Box(

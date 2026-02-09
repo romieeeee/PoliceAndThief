@@ -39,18 +39,17 @@ fun NewsScriptBox(
 
         content.forEachIndexed { index, _ ->
             textToDisplay = content.substring(0, index + 1)
-            // 유저가 스크롤을 하면 자동스크롤이 취소
             try {
                 scrollState.animateScrollTo(scrollState.maxValue)
             } catch (e: Exception) {
-            }  // 에러를 무시
+            }
 
             delay(60)
 
         }
 
         soundPlayer.stopBgm("news_speaking")
-        delay(5000L) // content 끝난 후 5초 대기
+        delay(5000L)
 
         onFinish()
     }
@@ -69,7 +68,7 @@ fun NewsScriptBox(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .verticalScroll(scrollState)  // 스크롤
+                .verticalScroll(scrollState)
         ) {
             Text(
                 text = textToDisplay,

@@ -16,9 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.HelpOutline
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -123,14 +121,13 @@ fun RepeatingIconButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    // 꾹 누르고 있을 때 실행될 효과
     LaunchedEffect(isPressed) {
         if (isPressed) {
-            currentOnClick()
-            delay(500) // 초기 지연
+            delay(500)
+
             while (isPressed) {
                 currentOnClick()
-                delay(100) // 연사 속도
+                delay(100)
             }
         }
     }
@@ -140,10 +137,10 @@ fun RepeatingIconButton(
             .size(32.dp)
             .clickable(
                 interactionSource = interactionSource,
-                // [수정된 부분] rememberRipple 대신 ripple() 사용
-                indication = ripple(bounded = false, radius = 16.dp),
+                indication = androidx.compose.material3.ripple(bounded = false, radius = 16.dp),
                 enabled = enabled,
-                onClick = {} // InteractionSource를 통해 롱클릭 감지 중이므로 비워둠
+
+                onClick = onClick
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -151,7 +148,7 @@ fun RepeatingIconButton(
             imageVector = icon,
             contentDescription = null,
             tint = if (enabled) tint else Color.Gray,
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(20.dp)
         )
     }
 }

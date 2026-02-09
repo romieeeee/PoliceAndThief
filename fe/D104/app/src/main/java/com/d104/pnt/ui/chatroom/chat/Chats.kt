@@ -27,7 +27,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.d104.pnt.domain.model.ChatMessage
 import kotlinx.coroutines.flow.distinctUntilChanged
-import timber.log.Timber
 
 @Composable
 fun Chats(
@@ -52,12 +51,10 @@ fun Chats(
         if (chatMessages.isEmpty()) return@LaunchedEffect
 
         if (!hasLoadedInitial) {
-            // 첫 로드
             listState.scrollToItem(chatMessages.size - 1)
             previousMessageCount = chatMessages.size
             hasLoadedInitial = true
         } else if (chatMessages.size > previousMessageCount) {
-            // 메시지가 추가됨
             val newMessagesCount = chatMessages.size - previousMessageCount
 
             val isLoadingOldMessages = shouldMaintainScrollPosition
@@ -73,7 +70,6 @@ fun Chats(
         }
     }
 
-    // 키보드가 올라올 때 자동 스크롤
     LaunchedEffect(imeHeight) {
         if (imeHeight > 0.dp && chatMessages.isNotEmpty()) {
             listState.scrollToItem(chatMessages.size - 1)
@@ -98,8 +94,7 @@ fun Chats(
                 }
 
                 if (messageIndex in 0..3 && hasMessages && !loading) {
-                    Timber.d("🔝 상위 메시지 영역 도달! - 이전 메시지 로드 요청")
-                    shouldMaintainScrollPosition = true // 🔥 이전 메시지 로드임을 표시
+                    shouldMaintainScrollPosition = true
                     onLoadMore()
                 }
             }
@@ -117,7 +112,7 @@ fun Chats(
             ),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // 로딩 인디케이터 (맨 위)
+            // 로딩 인디케이터
             if (isLoading && chatMessages.isNotEmpty()) {
                 item(key = "loading_indicator") {
                     Box(
@@ -131,7 +126,6 @@ fun Chats(
                 }
             }
 
-            // 메시지 리스트
             items(
                 items = chatMessages,
                 key = { it.id }
