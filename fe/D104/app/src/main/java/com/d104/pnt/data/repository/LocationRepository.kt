@@ -39,7 +39,7 @@ interface LocationRepository {
     fun addPointToList(targetList: MutableList<DraggableLatLng>, newPoint: LatLng)
 
     /**
-     * 기준 위치를 받아 기본 사각형(정사각형) 생성 후 저장
+     * 기준 위치를 받아 기본 사각형 생성 후 저장
      */
     fun createDefaultPolygon(center: Location)
 

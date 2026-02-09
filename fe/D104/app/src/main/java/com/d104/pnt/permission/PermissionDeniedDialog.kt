@@ -38,7 +38,7 @@ import com.d104.pnt.util.PermissionHelper
 @Composable
 fun PermissionDeniedDialog(
     deniedPermissions: List<PermissionHelper.PermissionType>,
-    isPermanentlyDenied: Boolean, // "다시 묻지 않음" 체크 여부
+    isPermanentlyDenied: Boolean,
     onGoToSettings: () -> Unit,
     onExitApp: () -> Unit
 ) {
@@ -57,7 +57,6 @@ fun PermissionDeniedDialog(
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 경고 아이콘
                 Icon(
                     imageVector = Icons.Default.Warning,
                     contentDescription = "경고",
@@ -76,9 +75,7 @@ fun PermissionDeniedDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 설명
                 if (isPermanentlyDenied) {
-                    // "다시 묻지 않음" 체크한 경우
                     Text(
                         text = "권한이 영구적으로 거부되었습니다.\n설정에서 직접 권한을 허용해주세요.",
                         fontSize = 14.sp,
@@ -87,7 +84,6 @@ fun PermissionDeniedDialog(
                         lineHeight = 20.sp
                     )
                 } else {
-                    // 일반 거부
                     Text(
                         text = "게임 플레이를 위해서는\n모든 권한이 필수로 필요합니다.",
                         fontSize = 14.sp,
@@ -99,7 +95,6 @@ fun PermissionDeniedDialog(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 거부된 권한 목록
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -130,7 +125,6 @@ fun PermissionDeniedDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 버튼들
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -170,5 +164,5 @@ fun PermissionDeniedDialog(
  * Activity 종료 헬퍼 함수
  */
 fun exitApp(activity: Activity) {
-    activity.finishAffinity() // 모든 Activity 종료
+    activity.finishAffinity()
 }

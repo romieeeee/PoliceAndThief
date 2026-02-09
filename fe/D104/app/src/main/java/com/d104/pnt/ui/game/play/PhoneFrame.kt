@@ -1,6 +1,5 @@
 package com.d104.pnt.ui.game.play
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +32,6 @@ import com.d104.pnt.data.remote.model.response.MemberLocationSocketDto
 import com.d104.pnt.data.remote.model.response.ThiefStatus
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
-import com.d104.pnt.domain.model.PlayerData
 import com.d104.pnt.ui.component.GoogleMaps
 import com.d104.pnt.ui.component.PixelContainer
 import com.d104.pnt.ui.component.QRcodeScanner
@@ -87,6 +85,7 @@ fun PhoneFrame(
                     prisonLocation = prisonLocation,
                     playerLocations = playerLocations
                 )
+
                 CAMERA -> CameraScanScreen(onScanSuccess)
             }
         }

@@ -9,7 +9,6 @@ import com.d104.pnt.data.repository.GameRoomRepository
 import com.d104.pnt.data.repository.GameSessionRepository
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.data.repository.ProfileRepository
-import com.d104.pnt.ui.chatroom.chat.ProfileData
 import com.d104.pnt.domain.model.DraggableLatLng
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.GameRoomInfoState
@@ -19,6 +18,7 @@ import com.d104.pnt.domain.model.WaitingPlayer
 import com.d104.pnt.domain.model.common.BaseResult
 import com.d104.pnt.domain.model.common.UiState
 import com.d104.pnt.navigation.NavArgs
+import com.d104.pnt.ui.chatroom.chat.ProfileData
 import com.d104.pnt.util.socket.RoomSocketManager
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,7 +32,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -83,7 +82,7 @@ class GameRoomViewModel @Inject constructor(
     // 역할 변경 중 상태
     private val _changingRoleMemberIds = MutableStateFlow<Set<Long>>(emptySet())
 
-    private var isJoined = false // 플래그 추가
+    private var isJoined = false
 
     init {
         roomSocketManager.currentRoomId = roomId
@@ -102,7 +101,7 @@ class GameRoomViewModel @Inject constructor(
     }
 
     private fun syncData() {
-        if (isJoined) return // 이미 가입 절차 중이면 무시
+        if (isJoined) return
         isJoined = true
 
         viewModelScope.launch {
@@ -121,11 +120,10 @@ class GameRoomViewModel @Inject constructor(
                 if (roomSocketManager.isConnected()) {
                     roomSocketManager.joinRoom(roomId) { success, _ ->
                         if (success) {
-                            Timber.d("🌐 소켓 연결 및 방 입장 완료")
+
                         }
                     }
                 } else {
-                    Timber.e("❌ 소켓 연결 실패")
                     _uiState.value = UiState.Error("소켓 연결에 실패했습니다.")
                 }
             }
@@ -134,7 +132,6 @@ class GameRoomViewModel @Inject constructor(
 
     fun resetToUndecided() {
         viewModelScope.launch {
-            // 방을 나가지 않고, 역할만 ANY로 바꿈
             val result = gameRoomRepository.changePosition(roomId, "ANY")
             if (result is BaseResult.Success) {
                 roomSocketManager.updatePosition("ANY")
@@ -148,44 +145,37 @@ class GameRoomViewModel @Inject constructor(
     private fun setupRoomCallbacks() {
         // 전체 방 정보 수신
         roomSocketManager.setOnFullRoomInfoReceived { data ->
-            Timber.d("📥 [PRIMARY] 전체 방 정보 수신 - UI 업데이트")
             parseFullRoomInfo(data)
             _uiState.value = UiState.Idle
         }
 
         // 방 설정 업데이트
         roomSocketManager.setOnRoomInfoUpdated { data ->
-            Timber.d("📥 방 설정 업데이트")
             parseRoomSettings(data)
         }
 
         // Ready 상태 업데이트
         roomSocketManager.setOnReadyUpdated { roomId, memberId, isReady ->
-            Timber.d("📥 Ready 업데이트: memberId=$memberId, ready=$isReady")
             updatePlayerReady(memberId, isReady)
         }
 
         // 포지션 업데이트
         roomSocketManager.setOnPositionUpdated { roomId, memberId, position ->
-            Timber.d("📥 포지션 업데이트: memberId=$memberId, position=$position")
             updatePlayerPosition(memberId, position)
         }
 
         // 멤버 강퇴
         roomSocketManager.setOnMemberKicked { memberId ->
-            Timber.d("📥 멤버 강퇴: $memberId")
             if (memberId == _myMemberId.value) {
                 viewModelScope.launch {
                     _uiEvent.emit(GameRoomUiEvent.NavigateToHome("방에서 강퇴되었습니다."))
                 }
             } else {
-                // 다른 사람이 강퇴당함
                 removePlayer(memberId)
             }
         }
 
         roomSocketManager.setOnMemberLeft { memberId ->
-            Timber.d("📥 멤버 퇴장: $memberId")
             if (memberId == _myMemberId.value) {
                 viewModelScope.launch {
                     _uiEvent.emit(GameRoomUiEvent.NavigateToHome("연결이 종료되었습니다."))
@@ -202,7 +192,6 @@ class GameRoomViewModel @Inject constructor(
                 val refreshToken = authRepository.getRefreshToken().first()
                 authRepository.refreshTokens(newToken, refreshToken)
                 roomSocketManager.updateAccessToken(newToken)
-                Timber.d("✅ 토큰 갱신 및 동기화 완료")
             }
         }
 
@@ -217,7 +206,7 @@ class GameRoomViewModel @Inject constructor(
             }
         }
 
-        // 게임 시작: 네임스페이스 교체 및 화면 이동
+        // 게임 시작
         roomSocketManager.setOnGameStarted { data ->
             viewModelScope.launch {
                 try {
@@ -226,12 +215,11 @@ class GameRoomViewModel @Inject constructor(
 
                     val currentNicknames = _players.value.map { it.nickname }
                     gameSessionRepository.setPlayerNicknames(currentNicknames)
-                    Timber.d("📋 게임 시작 멤버 저장 완료: $currentNicknames")
 
-                    // 경찰청장(chiefMemberId) 저장 (0이면 null 처리)
-                    val chiefId = data.optLong("chiefMemberId", 0L).let { if (it == 0L) null else it }
+                    // 경찰청장
+                    val chiefId =
+                        data.optLong("chiefMemberId", 0L).let { if (it == 0L) null else it }
                     gameSessionRepository.setChiefMemberId(chiefId)
-                    Timber.d("👮‍♂️ chiefMemberId 저장: $chiefId")
 
                     val membersArray = data.optJSONArray("members") ?: return@launch
                     val myId = _myMemberId.value
@@ -245,17 +233,24 @@ class GameRoomViewModel @Inject constructor(
                         }
                     }
 
-                    Timber.d("🎮 최종 역할 확정: $myFinalRole (ID: $myId)")
-
                     val amIChief = (chiefId != null && chiefId == myId)
 
-                    // 결정된 정보 저장
                     gameSessionRepository.setFinalRole(myFinalRole)
                     gameSessionRepository.setMemberId(myId)
                     gameSessionRepository.setTotalTime(_roomInfo.value.timeLimit)
                     gameSessionRepository.setCctvInterval(roomInfo.value.cctvCycle)
-                    locationRepository.setPrisonLocation(LatLng(_roomInfo.value.prison!!.lat, _roomInfo.value.prison!!.lng))
-                    locationRepository.setPolygonPoints(_roomInfo.value.polygon!!.map { LatLng(it.lat, it.lng) })
+                    locationRepository.setPrisonLocation(
+                        LatLng(
+                            _roomInfo.value.prison!!.lat,
+                            _roomInfo.value.prison!!.lng
+                        )
+                    )
+                    locationRepository.setPolygonPoints(_roomInfo.value.polygon!!.map {
+                        LatLng(
+                            it.lat,
+                            it.lng
+                        )
+                    })
 
 
                     delay(300)
@@ -269,14 +264,13 @@ class GameRoomViewModel @Inject constructor(
                         )
                     )
                 } catch (e: Exception) {
-                    Timber.e(e, "❌ 게임 시작 데이터 파싱 실패")
+
                 }
             }
         }
 
         // 멤버 퇴장
         roomSocketManager.setOnMemberLeft { memberId ->
-            Timber.d("📥 멤버 퇴장: $memberId")
             removePlayer(memberId)
         }
     }
@@ -297,7 +291,6 @@ class GameRoomViewModel @Inject constructor(
                     }
 
                     val prisonLocation = Location(data.prisonLat, data.prisonLng)
-//                    val polygon = data.boundaryGeo.coordinates.map { Location(it[0][1], it[0][1]) }
 
                     _roomInfo.value = _roomInfo.value.copy(
                         roomCode = finalRoomCode,
@@ -312,11 +305,10 @@ class GameRoomViewModel @Inject constructor(
                         prison = prisonLocation,
                         polygon = _roomInfo.value.polygon
                     )
-                    Timber.d("RoomSettings: 설정 로드 완료 (Code: $finalRoomCode, Polygon: ${_roomInfo.value.polygon})")
                 }
 
                 is BaseResult.Error -> {
-                    Timber.e("RoomSettings: 로드 실패 ${result.error.message}")
+
                 }
             }
         }
@@ -324,7 +316,7 @@ class GameRoomViewModel @Inject constructor(
 
 
     /**
-     * 준비 상태 변경 (HTTP → Socket)
+     * 준비 상태 변경
      */
     fun toggleReady() {
         viewModelScope.launch {
@@ -347,14 +339,10 @@ class GameRoomViewModel @Inject constructor(
      */
     private fun parseFullRoomInfo(data: RoomInfoResponse) {
         try {
-            Timber.d("🔍 전체 방 정보: $data")
-
-            // 1. 소켓 데이터에서 방장 ID를 미리 가져옵니다.
             val hostId = data.room.hostMemberId
             val myId = _myMemberId.value
             val changingMemberIds = _changingRoleMemberIds.value
 
-            // 내 강퇴 여부 체크 (팀원 로직 반영)
             val isMeInList = data.members.any { it.memberId == myId }
             if (myId != 0L && !isMeInList) {
                 viewModelScope.launch { _uiEvent.emit(GameRoomUiEvent.NavigateToHome("강퇴되었습니다!")) }
@@ -362,13 +350,12 @@ class GameRoomViewModel @Inject constructor(
             }
 
             _players.value = data.members.distinctBy { it.memberId }.map { member ->
-                Timber.d("👤 Member: ${member.memberDetail.profile.nickname}, avatarUrl: ${member.memberDetail.profile.avatarUrl}")
 
                 val isMe = member.memberId == myId
 
                 val isThisMemberHost = (member.memberId == hostId)
 
-                // 포지션 결정 (팀원 로직: given 우선)
+                // 포지션 결정
                 val displayRoleString =
                     if (!member.givenPosition.isNullOrEmpty() && member.givenPosition != "ANY") {
                         member.givenPosition
@@ -390,7 +377,6 @@ class GameRoomViewModel @Inject constructor(
                 }
 
                 val avatarUrl = member.memberDetail.profile.avatarUrl
-                Timber.d("👤 Player: ${member.memberDetail.profile.nickname}, avatarUrl: $avatarUrl")
 
 
                 WaitingPlayer(
@@ -408,9 +394,8 @@ class GameRoomViewModel @Inject constructor(
                 viewModelScope.launch {
                     _uiEvent.emit(GameRoomUiEvent.NavigateToHome("방에서 강퇴되었습니다."))
                 }
-                return // 이후 로직 중단
+                return
             }
-            Timber.d("전체 방정보 ${data}")
 
             _roomInfo.value = _roomInfo.value.copy(
                 roomCode = data.room.roomCode,
@@ -429,10 +414,7 @@ class GameRoomViewModel @Inject constructor(
             val currentCode = _roomInfo.value.roomCode
             gameSessionRepository.setRoomCode(currentCode)
 
-            Timber.d("감옥 위치 ${_roomInfo.value.prison}, 폴리곤 ${_roomInfo.value.polygon}")
-
         } catch (e: Exception) {
-            Timber.e(e, "❌ 방 정보 파싱 실패 ${data}")
             _uiState.value = UiState.Error("방 정보 파싱 실패")
         }
     }
@@ -444,7 +426,6 @@ class GameRoomViewModel @Inject constructor(
         try {
             if (data.has("code") && data.getInt("code") != 200) {
                 val msg = data.optString("message", "설정 변경 실패")
-                Timber.e("📥 서버 에러: $msg")
                 return
             }
 
@@ -480,7 +461,7 @@ class GameRoomViewModel @Inject constructor(
 
 
         } catch (e: Exception) {
-            Timber.e(e, "❌ 방 설정 파싱 실패: 데이터 구조 확인 필요")
+
         }
     }
 
@@ -540,7 +521,6 @@ class GameRoomViewModel @Inject constructor(
                 }
 
                 is BaseResult.Error -> {
-                    Timber.e("❌ 게임 시작 실패")
                     _uiState.value = UiState.Error(result.error.message)
                 }
             }
@@ -552,12 +532,11 @@ class GameRoomViewModel @Inject constructor(
      */
     private fun removePlayer(memberId: Long) {
         _players.value = _players.value.filter { it.id != memberId }.toList()
-        Timber.d("👤 플레이어 제거 완료: $memberId, 남은 인원: ${_players.value.size}")
     }
 
 
     /**
-     * 방 설정 변경 (HTTP → Socket)
+     * 방 설정 변경
      */
     fun updateRoomSettings(
         maxCount: Int,
@@ -602,7 +581,6 @@ class GameRoomViewModel @Inject constructor(
                 }
 
                 is BaseResult.Error -> {
-                    Timber.e("RoomSettings: 변경 실패 ${result.error.message}")
                     _uiState.emit(UiState.Error("설정 변경 실패: ${result.error.message}"))
                 }
             }
@@ -642,9 +620,8 @@ class GameRoomViewModel @Inject constructor(
             val result = gameRoomRepository.changePosition(roomId, position)
 
             if (result is BaseResult.Success) {
-                // 연결된 상태일 때만 소켓 신호를 보냅니다.
                 while (!roomSocketManager.isConnected()) {
-                    delay(200) // 소켓 연결 대기
+                    delay(200)
                 }
                 roomSocketManager.updatePosition(position)
             }
@@ -656,7 +633,7 @@ class GameRoomViewModel @Inject constructor(
         if (!_isHost.value) return
 
         viewModelScope.launch {
-            _uiState.value = UiState.Loading // 로딩 상태 표시
+            _uiState.value = UiState.Loading
             roomSocketManager.delegateOwner(targetMemberId)
         }
     }
@@ -691,8 +668,8 @@ class GameRoomViewModel @Inject constructor(
                         thiefGrade = profile.stat.thiefGrade
                     )
                 }
+
                 is BaseResult.Error -> {
-                    Timber.e("프로필 조회 실패: ${result.error.message}")
                     _selectedProfile.value = null
                 }
             }

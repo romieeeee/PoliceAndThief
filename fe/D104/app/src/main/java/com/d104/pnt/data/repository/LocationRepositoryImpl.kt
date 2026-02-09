@@ -15,7 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
-import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -156,7 +155,6 @@ class LocationRepositoryImpl @Inject constructor(
             "세종시" -> "세종특별자치시"
             else -> major
         }
-        Timber.d("major: $major, normalizedMajor: $normalizedMajor")
         val code = regionCodeManager.getRegionCode(normalizedMajor, middle)
         return code?.toInt() ?: 99999999
     }

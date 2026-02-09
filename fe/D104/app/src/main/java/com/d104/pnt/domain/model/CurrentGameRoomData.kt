@@ -9,7 +9,6 @@ data class CurrentGameRoomData(
     // Info
     val status: String,
     val timeLimit: Int,
-//    val timeLeft: Int,
     val cctvFrequency: Int,
     val missionCount: Int,
     val playerCount: Int,
@@ -21,11 +20,9 @@ data class CurrentGameRoomData(
 
     val policeCount: Int,
     val thiefCount: Int,
-//    val survivedThiefCount: Int,
     val missionCompleteCount: Int,
 
     val preferPosition: String,
-//    val position: String,
-    val prison: LatLng, // 저장할 때 LatLng 객체로 저장
+    val prison: LatLng,
     val polygon: List<LatLng>,
     )

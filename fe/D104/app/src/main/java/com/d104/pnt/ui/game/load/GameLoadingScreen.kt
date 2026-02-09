@@ -56,9 +56,9 @@ fun GameLoadingScreen(
     val isWarning = remainingTime in 11..30
 
     val themeColor = when {
-        isDanger -> Color(0xFFFF3B30)  // 빨강
-        isWarning -> Color(0xFFFFCC00) // 주황
-        else -> BackgroundWhite            // 흰색
+        isDanger -> Color(0xFFFF3B30)
+        isWarning -> Color(0xFFFFCC00)
+        else -> BackgroundWhite
     }
 
     LaunchedEffect(isFinished) {
@@ -140,7 +140,7 @@ fun ChaseProgressBar(
     laneWidth: Dp = 300.dp,
     iconSize: Dp = 48.dp,
     gap: Dp = 40.dp,
-    progressBarColor: Color // 상위와 동기화된 색상
+    progressBarColor: Color
 ) {
     Column(
         modifier = modifier.width(laneWidth),
@@ -149,7 +149,7 @@ fun ChaseProgressBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(iconSize + 12.dp) // 높이 최적화
+                .height(iconSize + 12.dp)
         ) {
             // 진행 바 배경 및 테두리
             Box(
@@ -169,7 +169,7 @@ fun ChaseProgressBar(
                 )
             }
 
-            // 위치 계산 (고정형)
+            // 위치 계산
             val maxTravel = laneWidth - iconSize
             val policeX = (maxTravel - gap) * progress
             val thiefX = policeX + gap
@@ -179,7 +179,7 @@ fun ChaseProgressBar(
                 contentDescription = null,
                 modifier = Modifier
                     .size(iconSize)
-                    .offset(x = policeX, y = (-8).dp) // 바 바로 위에 고정
+                    .offset(x = policeX, y = (-8).dp)
             )
 
             Image(

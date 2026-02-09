@@ -7,5 +7,4 @@ data class ChatMessage(
     val senderNickname: String,
     val avatarUrl: String,
     val content: String,
-//    val createdAt: Instant,
 )

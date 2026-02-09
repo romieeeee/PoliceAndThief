@@ -5,12 +5,10 @@ import com.d104.pnt.domain.model.RoomInfoResponse
 import com.google.gson.Gson
 import org.json.JSONArray
 import org.json.JSONObject
-import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Room 네임스페이스 소켓 매니저
  * 게임 로비(대기방) 관련 이벤트 처리
  */
 @Singleton
@@ -68,12 +66,11 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
                 val roomId = root.optLong("roomId", 0L)
 
                 if (roomId != 0L) {
-                    Timber.d("🌐 재연결 성공: roomId=$roomId")
                     currentRoomId = roomId
                     onReconnected?.invoke(roomId)
                 }
             } catch (e: Exception) {
-                Timber.e(e, "재연결 응답 파싱 실패")
+
             }
         }
 
@@ -83,7 +80,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
                 val data = args[0] as JSONObject
                 onRoomInfoUpdated?.invoke(data)
             } catch (e: Exception) {
-                Timber.e(e, "방 설정 업데이트 파싱 실패")
+
             }
         }
 
@@ -104,7 +101,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
                     onReadyUpdated?.invoke(currentRoomId ?: 0L, memberId, isReady)
                 }
             } catch (e: Exception) {
-                Timber.e(e, "❌ Ready 상태 업데이트 파싱 실패: ${e.message}")
+
             }
         }
 
@@ -123,7 +120,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
                     onPositionUpdated?.invoke(roomId, memberId, preferPosition)
                 }
             } catch (e: Exception) {
-                Timber.e(e, "❌ 선호 포지션 업데이트 파싱 실패")
+
             }
         }
 
@@ -133,7 +130,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
                 val data = args[0] as JSONArray
                 onReadyInfoReceived?.invoke(data)
             } catch (e: Exception) {
-                Timber.e(e, "Ready 정보 리스트 파싱 실패")
+
             }
         }
 
@@ -145,7 +142,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
                 val roomInfo = gson.fromJson(jsonString, RoomInfoResponse::class.java)
                 onFullRoomInfoReceived?.invoke(roomInfo)
             } catch (e: Exception) {
-                Timber.e(e, "전체 방 정보 파싱 실패")
+
             }
         }
 
@@ -163,11 +160,10 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
                 }
 
                 if (kickedId != 0L) {
-                    Timber.d("📥 강퇴 이벤트: memberId=$kickedId")
                     onMemberKicked?.invoke(kickedId)
                 }
             } catch (e: Exception) {
-                Timber.e(e, "❌ 강퇴 파싱 실패")
+
             }
         }
 
@@ -177,7 +173,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
                 val data = args[0] as JSONObject
                 onGameStarted?.invoke(data)
             } catch (e: Exception) {
-                Timber.e(e, "❌ 게임 시작 실패")
+
             }
         }
 
@@ -187,7 +183,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
                 val data = args[0] as JSONObject
                 onOwnerDelegated?.invoke(data)
             } catch (e: Exception) {
-                Timber.e(e, "❌ 방장 위임 실패")
+
             }
         }
 
@@ -208,11 +204,10 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
                 val leftMemberId = data.optLong("memberId", 0L)
 
                 if (leftMemberId != 0L) {
-                    Timber.d("📥 멤버 퇴장 이벤트: memberId=$leftMemberId")
                     onMemberLeft?.invoke(leftMemberId)
                 }
             } catch (e: Exception) {
-                Timber.e(e, "❌ 멤버 퇴장 파싱 실패")
+
             }
         }
     }
@@ -226,10 +221,9 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
         }
     }
 
-    // ==================== Request Methods ====================
+    // Request Methods
 
     fun cleanup() {
-        Timber.d("🧹 Room 소켓 완전 정리")
         currentRoomId = null
         clearCallbacks()
         if (isConnected()) {
@@ -248,19 +242,14 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
 
         currentRoomId = roomId
 
-        // 방 입장 요청
         val joinData = JSONObject().apply {
             put("roomId", roomId)
         }
 
         emit(EVENT_POST_JOIN_ROOM, joinData)
 
-        // 방 정보 요청
         requestRoomInfo(roomId)
-
-        //  정보도 요청
         requestReadyInfo(roomId)
-
         onResponse(true, "입장 요청 완료")
     }
 
@@ -269,7 +258,6 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
      */
     fun requestRoomInfo(roomId: Long = currentRoomId ?: 0) {
         if (roomId == 0L) {
-            Timber.e("roomId가 없어서 방 정보 요청 불가")
             return
         }
 
@@ -285,7 +273,6 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
      */
     fun requestReadyInfo(roomId: Long = currentRoomId ?: 0) {
         if (roomId == 0L) {
-            Timber.e("roomId가 없어서 Ready 정보 요청 불가")
             return
         }
 
@@ -297,7 +284,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
     }
 
     /**
-     * 방 설정 업데이트 (호스트만 가능)
+     * 방 설정 업데이트
      */
     fun updateRoomInfo(
         playerCount: Int,
@@ -358,7 +345,6 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
      */
     fun updatePosition(preferPosition: String) {
         val roomId = currentRoomId ?: run {
-            Timber.e("roomId가 없어서 포지션 업데이트 불가")
             return
         }
 
@@ -373,7 +359,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
 
 
     /**
-     * 멤버 강퇴 (호스트만 가능)
+     * 멤버 강퇴
      */
     fun kickMember(targetMemberId: Long, reason: String, onSuccess: (Long) -> Unit) {
         val roomId = currentRoomId ?: return
@@ -389,7 +375,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
     }
 
     /**
-     * 방장이 게임 시작 소켓 신호 발행
+     * 게임 시작 소켓 신호 발행
      */
     fun gameStart(roomId: Long) {
         val data = JSONObject().apply {
@@ -399,7 +385,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
     }
 
     /**
-     * 방장 위임 (호스트만 가능)
+     * 방장 위임
      */
     fun delegateOwner(targetMemberId: Long) {
         val roomId = currentRoomId ?: return
@@ -417,12 +403,11 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
         val data = JSONObject().apply {
             put("accessToken", newToken)
         }
-        Timber.d("📤 서버에 새 토큰 전송")
         emit(EVENT_POST_UPDATE_ACCESS_TOKEN, data)
     }
 
     /**
-     * 방 나가기 (정상 연결 해제)
+     * 방 나가기
      */
     fun leaveRoom() {
         val roomId = currentRoomId ?: return
@@ -433,7 +418,7 @@ class RoomSocketManager @Inject constructor(private val gson: Gson) : BaseSocket
         disconnect()
     }
 
-    // ==================== Callback Setters ====================
+    // Callback Setters
 
     fun setOnRoomInfoUpdated(callback: (JSONObject) -> Unit) {
         onRoomInfoUpdated = callback

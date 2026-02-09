@@ -31,13 +31,15 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,9 +72,6 @@ import com.d104.pnt.ui.theme.RoomContainer
 import com.d104.pnt.ui.theme.TextPrimary
 import com.d104.pnt.ui.theme.TextSecondary
 import com.d104.pnt.ui.theme.WinColor
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 
 data class MvpData(
     val type: String,
@@ -125,7 +124,7 @@ fun GameResultScreen(
                 onBackToHome()
             }
 
-            else -> {  }
+            else -> {}
         }
     }
 
@@ -235,7 +234,8 @@ private fun GameResultContent(
     }
 
     val isRejoinReady = viewModel.remainingSeconds.collectAsStateWithLifecycle().value <= 0
-    val isRejoinLoading = viewModel.rejoinState.collectAsStateWithLifecycle().value is UiState.Loading
+    val isRejoinLoading =
+        viewModel.rejoinState.collectAsStateWithLifecycle().value is UiState.Loading
 
     Box(
         modifier = Modifier
@@ -344,7 +344,6 @@ private fun GameResultContent(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // RANK
                     Column(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -374,7 +373,6 @@ private fun GameResultContent(
                         }
                     }
 
-                    // Stat
                     Column(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -463,7 +461,7 @@ private fun GameResultContent(
                 enabled = isRejoinReady && !isRejoinLoading
             )
 
-            if(viewModel.remainingSeconds.collectAsStateWithLifecycle().value > 0){
+            if (viewModel.remainingSeconds.collectAsStateWithLifecycle().value > 0) {
                 Text(
                     modifier = Modifier.padding(top = 10.dp),
                     text = "${viewModel.remainingSeconds.collectAsStateWithLifecycle().value}초 후에 입장 가능합니다",

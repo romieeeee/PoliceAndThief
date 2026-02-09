@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
@@ -55,7 +54,6 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             memberId.collectLatest { id ->
                 if (id != 0L) {
-                    Timber.d("Member ID 감지됨: $id. 프로필 조회를 시작합니다.")
                     fetchMyProfile(id)
                 }
             }
@@ -74,12 +72,10 @@ class ProfileViewModel @Inject constructor(
             when (result) {
                 is BaseResult.Success -> {
                     _profileState.value = UiState.Success(result.data)
-                    Timber.d("프로필 조회 성공")
                 }
 
                 is BaseResult.Error -> {
                     _profileState.value = UiState.Error(result.error.message)
-                    Timber.e("프로필 조회 실패: ${result.error.message}")
                 }
             }
         }
@@ -97,11 +93,10 @@ class ProfileViewModel @Inject constructor(
             when (result) {
                 is BaseResult.Success -> {
                     _profileState.value = UiState.Success(result.data)
-                    Timber.d("프로필 수정 성공")
                 }
 
                 is BaseResult.Error -> {
-                    Timber.e("프로필 수정 실패: ${result.error.message}")
+
                 }
             }
         }
@@ -118,11 +113,10 @@ class ProfileViewModel @Inject constructor(
             when (result) {
                 is BaseResult.Success -> {
                     _profileState.value = UiState.Success(result.data)
-                    Timber.d("프로필 수정 성공")
                 }
 
                 is BaseResult.Error -> {
-                    Timber.e("프로필 수정 실패: ${result.error.message}")
+
                 }
             }
         }
@@ -147,7 +141,8 @@ class ProfileViewModel @Inject constructor(
                 is AvatarImage.Gallery -> {
                     var fileName: String? = null
                     if (selectedImage.uri.scheme == "content") {
-                        val cursor = context.contentResolver.query(selectedImage.uri, null, null, null, null)
+                        val cursor =
+                            context.contentResolver.query(selectedImage.uri, null, null, null, null)
                         cursor?.use {
                             if (it.moveToFirst()) {
                                 val index = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
@@ -159,35 +154,35 @@ class ProfileViewModel @Inject constructor(
                         fileName = selectedImage.uri.path?.substringAfterLast('/') ?: "unknown.jpg"
                     }
 
-                    // 2. ★ 중요: 실제 데이터 복사 실행 ★
                     createTmpFileFromUri(context, selectedImage.uri, fileName!!)
                 }
             }
 
             if (uploadFile == null || !uploadFile.exists()) {
-                Timber.e("파일 생성 실패: 파일이 존재하지 않음")
                 _uploadState.value = UiState.Error("이미지 파일을 불러오는데 실패했습니다.")
                 return@launch
             }
 
             val finalFileName = uploadFile.name
 
-            when (val result = imageRepository.getPresignedUrlToProfile(memberId.value, finalFileName)) {
+            when (val result =
+                imageRepository.getPresignedUrlToProfile(memberId.value, finalFileName)) {
                 is BaseResult.Success -> {
-                    Timber.d("URL 획득 성공: ${result.data.presignedUrl}")
 
-                    when(val uploadResult = imageRepository.uploadImage(result.data.presignedUrl, uploadFile)) {
+                    when (val uploadResult =
+                        imageRepository.uploadImage(result.data.presignedUrl, uploadFile)) {
                         is BaseResult.Success -> {
                             val imageKey = result.data.imageKey
-                            Timber.d("업로드 성공 Key: $imageKey")
                             _uploadState.value = UiState.Success(result.data)
                             updateProfileImage(imageKey)
                         }
+
                         is BaseResult.Error -> {
                             _uploadState.value = UiState.Error(uploadResult.error.message)
                         }
                     }
                 }
+
                 is BaseResult.Error -> {
                     _uploadState.value = UiState.Error(result.error.message)
                 }
@@ -208,7 +203,6 @@ class ProfileViewModel @Inject constructor(
             }
             file
         } catch (e: Exception) {
-            Timber.e(e, "파일 복사 실패")
             null
         }
     }
@@ -224,7 +218,6 @@ class ProfileViewModel @Inject constructor(
             outputStream.close()
             file
         } catch (e: Exception) {
-            Timber.e(e, "리소스 변환 실패")
             null
         }
     }
@@ -234,7 +227,6 @@ class ProfileViewModel @Inject constructor(
             when (val result = authRepository.logout()) {
                 is BaseResult.Success -> {}
                 is BaseResult.Error -> {
-                    Timber.e("로그아웃 실패: ${result.error.message}")
                 }
             }
         }

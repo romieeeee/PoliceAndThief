@@ -1,8 +1,5 @@
 package com.d104.pnt.domain.model.common
 
-/**
- * UI 상태를 나타내는 Sealed Class
- */
 sealed class UiState<out T> {
     /**
      * 초기 상태

@@ -2,47 +2,27 @@ package com.d104.pnt.ui.game.play
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.d104.pnt.R
-import com.d104.pnt.base.Constants
-import com.d104.pnt.data.remote.model.response.BeepUseResponse
-import com.d104.pnt.data.remote.model.response.GameMemberSocketDto
 import com.d104.pnt.data.repository.AuthRepository
 import com.d104.pnt.data.repository.GameSessionEvent
 import com.d104.pnt.data.repository.GameSessionRepository
 import com.d104.pnt.data.repository.LocationRepository
 import com.d104.pnt.data.repository.WalkieRepository
-import com.d104.pnt.domain.model.PlayerData
-import com.d104.pnt.domain.model.common.BaseResult
-import com.d104.pnt.navigation.NavArgs
 import com.d104.pnt.service.game.GameActiveService
 import com.d104.pnt.util.SoundPlayer
 import com.d104.pnt.util.StepSensorManager
-import com.d104.pnt.util.getSingleLocation
 import com.d104.pnt.util.socket.GameSocketManager
-import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -94,7 +74,7 @@ class GamePlayViewModel @Inject constructor(
     val onBoundaryWarning = gameSessionRepository.onBoundaryWarning
     val beepEvent = gameSessionRepository.beepEvent
 
-    // ===== 무전기 =====
+    // 무전기
     val walkieConnected = walkieRepository.isConnected
     val walkieMicEnabled = walkieRepository.isMicEnabled
     val walkieParticipantCount = walkieRepository.participantCount
@@ -131,7 +111,7 @@ class GamePlayViewModel @Inject constructor(
                     }
 
                     else -> {
-                        Timber.d("기타 이벤트 처리: $event")
+
                     }
                 }
             }
@@ -226,7 +206,6 @@ class GamePlayViewModel @Inject constructor(
 
     fun manualLeaveGame() {
         viewModelScope.launch {
-            Timber.d("🚪 유저가 직접 게임 종료를 선택함")
             startService(GameActiveService.ACTION_STOP)
             gameSessionRepository.leaveGame()
         }

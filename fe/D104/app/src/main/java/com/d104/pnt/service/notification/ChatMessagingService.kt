@@ -6,7 +6,6 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.core.net.toUri
 import com.d104.pnt.MainActivity
 import com.d104.pnt.R
 import com.d104.pnt.base.Constants
@@ -18,7 +17,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -27,18 +25,14 @@ class ChatMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var authRepository: AuthRepository
 
-    // 새로운 토큰이 생성될 때마다 호출
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Timber.d("새로운 FCM 토큰 발급됨: $token")
 
         val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         scope.launch {
             authRepository.isLoggedIn().collect { isLoggedIn ->
                 if (isLoggedIn) {
-                    // 로그인 상태일 때만 active = true로 전송
                     authRepository.sendFcmToken(true)
-                    Timber.d("로그인 상태 확인: 서버에 새 토큰 갱신 완료")
                 }
             }
         }
@@ -50,21 +44,17 @@ class ChatMessagingService : FirebaseMessagingService() {
 
         if (message.data.isNotEmpty()) {
 
-            Timber.d("알림 수신 : ${message.data}")
-
             val title = message.data["title"] ?: "새 메시지"
             val body = message.data["body"] ?: ""
             val roomId = message.data["chatRoomId"] ?: ""
 
-            Timber.d("알림 생성 - title: $title, body: $body, roomId: $roomId")
-
             if (roomId.isNotEmpty()) {
                 sendNotification(title, body, roomId)
             } else {
-                Timber.w("roomId가 비어있어 알림을 표시하지 않습니다")
+
             }
         } else {
-            Timber.w("FCM 데이터가 비어있습니다")
+
         }
     }
 
@@ -85,21 +75,15 @@ class ChatMessagingService : FirebaseMessagingService() {
                     enableLights(true)
                 }
                 notificationManager.createNotificationChannel(channel)
-                Timber.d("알림 채널 생성 완료: $channelId")
             }
         }
 
-        // Intent 생성 - roomId를 Extra로 전달
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
 
-            // roomId를 String으로 전달
             putExtra("roomId", roomId)
 
-            // 알림으로부터 왔다는 표시
             putExtra("from_notification", true)
-
-            Timber.d("Intent 생성 - roomId: $roomId")
         }
 
         val pendingIntent = PendingIntent.getActivity(

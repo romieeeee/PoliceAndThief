@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.d104.pnt.ui.chatroom.chat.ProfileData
 import com.d104.pnt.R
 import com.d104.pnt.domain.model.GameRole
 import com.d104.pnt.domain.model.GameRoomUiEvent
@@ -251,7 +250,7 @@ fun GameRoomScreen(
             Spacer(modifier = Modifier.height(60.dp))
         }
 
-        // ========== 다이얼로그 ==========
+        // 다이얼로그
         if (infoDialogTarget != null && selectedProfile != null) {
             PlayerInfoDialog(
                 profile = selectedProfile!!,

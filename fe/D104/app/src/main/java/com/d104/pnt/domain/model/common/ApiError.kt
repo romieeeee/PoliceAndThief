@@ -2,27 +2,20 @@ package com.d104.pnt.domain.model.common
 
 import com.d104.pnt.data.remote.model.response.ErrorResponse
 
-/**
- * API 에러 정보를 담는 클래스
- *
- * @property message 에러 메시지
- * @property code HTTP 상태 코드
- * @property type 에러 타입 (네트워크, 서버, 알 수 없음 등)
- */
 data class ApiError(
     val message: String,
     val code: Int? = null,
     val type: ErrorType = ErrorType.UNKNOWN
 ) {
     enum class ErrorType {
-        NETWORK,        // 네트워크 연결 오류
-        SERVER,         // 서버 오류 (5xx)
-        CLIENT,         // 클라이언트 오류 (4xx)
-        UNAUTHORIZED,   // 인증 오류 (401)
-        FORBIDDEN,      // 권한 오류 (403)
-        NOT_FOUND,      // 리소스 없음 (404)
-        TIMEOUT,        // 타임아웃
-        UNKNOWN         // 알 수 없는 오류
+        NETWORK,
+        SERVER,
+        CLIENT,
+        UNAUTHORIZED,
+        FORBIDDEN,
+        NOT_FOUND,
+        TIMEOUT,
+        UNKNOWN
     }
 
     companion object {

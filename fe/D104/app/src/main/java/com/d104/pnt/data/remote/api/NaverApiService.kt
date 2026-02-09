@@ -14,7 +14,7 @@ interface NaverApiService {
     suspend fun getAddress(
         @Header("x-ncp-apigw-api-key-id") clientId: String,
         @Header("x-ncp-apigw-api-key") clientSecret: String,
-        @Query("coords") coords: String, // "경도,위도" (문자열)
+        @Query("coords") coords: String,
         @Query("output") output: String = "json",
         @Query("orders") orders: String = "legalcode"
     ): NaverReverseGeocodeResponse

@@ -77,7 +77,6 @@ fun StatSummarySection(
                         else -> (winRate - blockMin) / 10f
                     }
 
-                    // 빈칸 박스
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -86,7 +85,6 @@ fun StatSummarySection(
                             .clip(RoundedCornerShape(2.dp))
                             .background(Color(0xFF5A5A82))
                     ) {
-                        // 채워짐 박스
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight()
@@ -99,7 +97,6 @@ fun StatSummarySection(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 하단 정보
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,

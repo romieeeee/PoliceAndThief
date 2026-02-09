@@ -46,7 +46,7 @@ fun PhotoPreviewScreen(
             contentScale = ContentScale.Fit
         )
 
-        // 하단 버튼들 (취소 / 확인)
+        // 하단 버튼
         Row(
             modifier = Modifier
                 .fillMaxWidth()

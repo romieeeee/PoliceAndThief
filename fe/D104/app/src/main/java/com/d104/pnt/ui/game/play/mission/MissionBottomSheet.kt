@@ -38,8 +38,8 @@ import kotlin.math.roundToInt
 
 
 enum class BottomSheetState {
-    COLLAPSED,  // 윗부분만 보임
-    EXPANDED    // 전체 보임
+    COLLAPSED,
+    EXPANDED
 }
 
 @Composable
@@ -55,9 +55,8 @@ fun MissionBottomSheet(
     val configuration = LocalConfiguration.current
     val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
 
-    // Bottom sheet가 접혔을 때와 펼쳤을 때의 위치
-    val collapsedOffset = screenHeight - 600f // 윗부분만 보이는 높이
-    val expandedOffset = screenHeight * 0.15f // 전체가 보이는 높이
+    val collapsedOffset = screenHeight - 600f
+    val expandedOffset = screenHeight * 0.15f
 
     val targetOffset = when (sheetState) {
         BottomSheetState.COLLAPSED -> collapsedOffset
@@ -118,7 +117,6 @@ fun MissionBottomSheet(
                     }
                 }
         ) {
-            // 배경 이미지 (클립보드)
             Image(
                 painter = painterResource(id = R.drawable.mission_clipboard),
                 contentDescription = "Mission Board",
@@ -131,7 +129,6 @@ fun MissionBottomSheet(
                 contentScale = ContentScale.FillBounds
             )
 
-            // 미션 컨텐츠 - 이미지 크기 기준으로 비율 배치
             if (imageHeight > 0) {
                 Box(
                     modifier = Modifier
@@ -143,7 +140,7 @@ fun MissionBottomSheet(
                             .fillMaxWidth()
                             .align(Alignment.TopCenter)
                             .padding(
-                                top = with(density) { (imageHeight * 0.2f).toDp() }, // 이미지 높이의 25% 지점부터 시작
+                                top = with(density) { (imageHeight * 0.2f).toDp() },
                                 start = 60.dp,
                                 end = 60.dp,
                                 bottom = 32.dp

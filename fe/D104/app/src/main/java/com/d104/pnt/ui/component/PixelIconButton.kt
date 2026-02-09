@@ -50,7 +50,7 @@ fun PixelIconButton(
         modifier = sizeModifier
             .clickable(
                 interactionSource = interactionSource,
-                indication = null // 리플 제거
+                indication = null
             ) { onClick() },
     ) {
         // 그림자 레이어
@@ -61,7 +61,7 @@ fun PixelIconButton(
             modifier = Modifier.offset(x = pixelSize, y = pixelSize)
         )
 
-        // 테두리(배경색) 레이어
+        // 테두리 레이어
         FiveLayerPixelShape(
             color = borderColor,
             pixelUnit = pixelSize,
@@ -88,7 +88,7 @@ fun PixelIconButton(
             modifier = Modifier
                 .fillMaxSize()
                 .offset(x = pressOffset, y = pressOffset),
-            contentAlignment = Alignment.Center // 중앙 정렬
+            contentAlignment = Alignment.Center
         ) {
             content()
         }
