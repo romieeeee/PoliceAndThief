@@ -19,7 +19,6 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DataStoreModule {
 
-    // DataStore 인스턴스 생성 (Extension property)
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
         name = Constants.PREF_NAME
     )

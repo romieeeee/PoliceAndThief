@@ -11,14 +11,11 @@ import android.provider.Settings
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.d104.pnt.base.BaseApplication
-import timber.log.Timber
 
 /**
- * 권한 처리 헬퍼 클래스
- * 앱에서 필요한 모든 권한을 관리합니다.
+ * 앱에서 필요한 모든 권한 관리
  */
 object PermissionHelper {
-
     /**
      * 권한 타입 정의
      */
@@ -79,7 +76,7 @@ object PermissionHelper {
         );
 
         /**
-         * 현재 안드로이드 버전에서 이 권한이 필요한지 확인
+         * 권한이 필요한지 확인
          */
         fun isRequired(): Boolean {
             return permissions.isNotEmpty()
@@ -88,15 +85,11 @@ object PermissionHelper {
 
     /**
      * 특정 권한이 승인되었는지 확인
-     * @param context Context
-     * @param permissionType 확인할 권한 타입
-     * @return 모든 권한이 승인되었으면 true
      */
     fun isPermissionGranted(
         context: Context = BaseApplication.getContext(),
         permissionType: PermissionType
     ): Boolean {
-        // Android 버전에서 필요하지 않은 권한은 true 반환
         if (!permissionType.isRequired()) {
             return true
         }
@@ -119,7 +112,6 @@ object PermissionHelper {
 
     /**
      * 특정 권한이 거부되었고 "다시 묻지 않음"이 선택되었는지 확인
-     * 참고: Activity에서만 확인 가능 (shouldShowRequestPermissionRationale)
      */
     fun shouldShowRationale(
         activity: Activity,
@@ -132,7 +124,6 @@ object PermissionHelper {
 
     /**
      * 앱 설정 화면으로 이동
-     * 사용자가 수동으로 권한을 켜도록 유도
      */
     fun openAppSettings(context: Context = BaseApplication.getContext()) {
         val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -140,19 +131,16 @@ object PermissionHelper {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         context.startActivity(intent)
-        Timber.d("Opening app settings for permissions")
     }
 
     /**
      * 위치 설정 화면으로 이동
-     * GPS가 꺼져있을 때 사용
      */
     fun openLocationSettings(context: Context = BaseApplication.getContext()) {
         val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }
         context.startActivity(intent)
-        Timber.d("Opening location settings")
     }
 
     /**
@@ -170,8 +158,7 @@ object PermissionHelper {
                 PermissionType.NOTIFICATION,
                 PermissionType.STEP_SENSOR
             )
-        }
-        else {
+        } else {
             return arePermissionsGranted(
                 context,
                 PermissionType.LOCATION,
@@ -180,21 +167,6 @@ object PermissionHelper {
                 PermissionType.NOTIFICATION,
             )
         }
-    }
-
-    /**
-     * 권한 상태 로깅 (디버그용)
-     */
-    fun logPermissionStatus(context: Context = BaseApplication.getContext()) {
-        if (Timber.treeCount <= 0) return
-
-        Timber.d("=== Permission Status ===")
-        PermissionType.values().forEach { type ->
-            val granted = isPermissionGranted(context, type)
-            val status = if (granted) "GRANTED" else "DENIED"
-            Timber.d("${type.name}: $status")
-        }
-        Timber.d("========================")
     }
 
     /**
@@ -209,7 +181,7 @@ object PermissionHelper {
     }
 
     /**
-     * 권한 상태를 문자열로 반환 (UI 표시용)
+     * 권한 상태를 문자열로 반환
      */
     fun getPermissionStatusText(
         context: Context = BaseApplication.getContext(),

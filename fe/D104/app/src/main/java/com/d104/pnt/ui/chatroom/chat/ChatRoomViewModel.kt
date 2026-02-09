@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -78,7 +77,7 @@ class ChatRoomViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = chatRepository.getChatRoomInfo(chatRoomId)) {
                 is BaseResult.Success -> _roomInfo.value = result.data
-                is BaseResult.Error -> Timber.e("채팅방 정보 로드 실패: ${result.error.message}")
+                is BaseResult.Error -> {}
             }
         }
     }
@@ -136,7 +135,6 @@ class ChatRoomViewModel @Inject constructor(
     }
 
     private fun setupChatCallbacks() {
-        // 새 메시지 수신
         chatSocketManager.setOnNewMessage { data ->
             val newMessage = parseMessage(data) ?: return@setOnNewMessage
             viewModelScope.launch {
@@ -146,7 +144,7 @@ class ChatRoomViewModel @Inject constructor(
             }
         }
 
-        // 이전 메시지 조회 (초기 로드 + 페이징)
+        // 이전 메시지 조회
         chatSocketManager.setOnPreviousMessages { messages, count ->
             val parsedMessages = messages.mapNotNull { parseMessage(it) }
 
@@ -161,7 +159,7 @@ class ChatRoomViewModel @Inject constructor(
             }
         }
 
-        // 동기화 메시지 (재연결 시)
+        // 동기화 메시지
         chatSocketManager.setOnSyncMessages { messages, count ->
             val parsedMessages = messages.mapNotNull { parseMessage(it) }
 
@@ -244,24 +242,19 @@ class ChatRoomViewModel @Inject constructor(
     }
 
     fun loadMoreMessages() {
-        Timber.d("🔄 loadMoreMessages 호출됨 - 현재 로딩 상태: ${_isLoading.value}")
 
         if (_isLoading.value) {
-            Timber.w("⚠️ 이미 로딩 중이므로 스킵")
             return
         }
 
         val oldestMessageId = _chatMessages.value.firstOrNull()?.id
         val messageCount = _chatMessages.value.size
 
-        Timber.d("📜 이전 메시지 로드 시도 - oldest=$oldestMessageId, count=$messageCount")
-
         if (oldestMessageId != null && oldestMessageId > 0) {
             _isLoading.value = true
-            Timber.d("📤 소켓 요청: post prev chat (cursor=$oldestMessageId)")
             chatSocketManager.loadPreviousMessages(cursor = oldestMessageId, limit = 50)
         } else {
-            Timber.w("❌ 로드 불가: oldestMessageId가 유효하지 않음")
+
         }
     }
 
@@ -278,7 +271,7 @@ class ChatRoomViewModel @Inject constructor(
     }
 
     /**
-     * 우측 드로어에서 호출 (멤버 목록 갱신)
+     * 멤버 목록 갱신
      */
     fun loadMembers() {
         viewModelScope.launch {
@@ -316,11 +309,10 @@ class ChatRoomViewModel @Inject constructor(
     }
 
     fun disconnectRoom() {
-        // viewModelScope가 취소되어도 이 블록은 끝까지 실행됨
         viewModelScope.launch(Dispatchers.IO) {
             withContext(NonCancellable) {
                 chatRepository.disconnectChatRoom(chatRoomId)
-                chatSocketManager.disconnect() // 소켓도 여기서 같이 끊어줘 행님!
+                chatSocketManager.disconnect()
             }
         }
     }
@@ -341,7 +333,6 @@ class ChatRoomViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
 
-            // REST API 호출
             when (val result =
                 chatRepository.kickChatRoomMember(chatRoomId, targetMemberId, reason)) {
                 is BaseResult.Success -> {

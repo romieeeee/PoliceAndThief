@@ -43,7 +43,6 @@ interface AuthApiService {
         @Body request: SocialLoginRequest
     ): Response<BaseResponse<LoginResponse>>
 
-
     /**
      * 아이디 중복 체크 API
      */
@@ -51,7 +50,6 @@ interface AuthApiService {
     suspend fun checkDuplicate(
         @Body request: CheckDuplicateRequest
     ): Response<BaseResponse<DuplicateCheckResponse>>
-
 
     /**
      * 회원가입 API
@@ -70,7 +68,6 @@ interface AuthApiService {
     /**
      * 토큰 재발급 동기 API
      */
-
     @POST("auth/reissue")
     fun refreshTokenCall(
         @Body request: RefreshRequest

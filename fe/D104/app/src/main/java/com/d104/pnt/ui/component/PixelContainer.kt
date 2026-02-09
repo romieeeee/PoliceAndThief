@@ -17,12 +17,12 @@ import com.d104.pnt.ui.theme.TextPrimary
 @Composable
 fun PixelContainer(
     modifier: Modifier = Modifier,
-    borderWidth: Float = 10f, // 테두리 두께
-    cornerSize: Float = 20f, // 모서리 깎이는 정도
+    borderWidth: Float = 10f,
+    cornerSize: Float = 20f,
     backgroundColor: Color = TextPrimary,
     borderColor: Color = BorderDefault,
-    innerHorizontalPadding: Int = 16,      // 내부 좌우 패딩
-    innerVerticalPadding: Int = 12,        // 내부 상하 패딩
+    innerHorizontalPadding: Int = 16,
+    innerVerticalPadding: Int = 12,
     content: @Composable BoxScope.() -> Unit
 ) {
     Box(
@@ -31,7 +31,6 @@ fun PixelContainer(
                 val w = size.width
                 val h = size.height
 
-                // 픽셀 아트 스타일의 '깎인 모서리' 경로 생성
                 val path = Path().apply {
                     moveTo(cornerSize, 0f)
                     lineTo(w - cornerSize, 0f)
@@ -57,10 +56,8 @@ fun PixelContainer(
                     close()
                 }
 
-                // 배경 색칠
                 drawPath(path, color = backgroundColor)
 
-                // 테두리 그리기
                 drawPath(
                     path,
                     color = borderColor,
@@ -70,7 +67,7 @@ fun PixelContainer(
             .padding(
                 horizontal = innerHorizontalPadding.dp,
                 vertical = innerVerticalPadding.dp
-            ) // 내부 콘텐츠와 테두리 간격
+            )
     ) {
         content()
     }

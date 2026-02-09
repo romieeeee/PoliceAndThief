@@ -27,7 +27,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavArgs
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,9 +39,9 @@ fun CameraScreen(
     onPhotoConfirmed: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
-    compressionQuality: Int = 80, // 압축 품질 (0-100)
-    maxWidth: Int = 1280,        // 최대 가로 해상도
-    maxHeight: Int = 720,          // 최대 세로 해상도
+    compressionQuality: Int = 80,
+    maxWidth: Int = 1280,
+    maxHeight: Int = 720,
     missionId: Long,
     viewModel: CameraViewModel = hiltViewModel()
 ) {
@@ -74,7 +73,7 @@ fun CameraScreen(
                 }
             )
 
-            // 좌측 상단 닫기(X) 버튼
+            // 닫기 버튼
             IconButton(
                 onClick = onClose,
                 modifier = Modifier
@@ -93,7 +92,6 @@ fun CameraScreen(
             // 촬영 버튼
             FloatingActionButton(
                 onClick = {
-                    // imageCapture가 준비되었을 때만 촬영
                     imageCapture?.let { capture ->
                         takePicture(
                             imageCapture = capture,
@@ -104,7 +102,6 @@ fun CameraScreen(
 
                                 coroutineScope.launch {
                                     try {
-                                        // 이미지 압축
                                         val compressed = withContext(Dispatchers.IO) {
                                             compressImage(
                                                 originalFile = photoFile,
@@ -115,7 +112,7 @@ fun CameraScreen(
                                         }
 
                                         compressedPhotoFile = compressed
-                                        originalPhotoFile?.delete() // 원본 삭제
+                                        originalPhotoFile?.delete()
 
                                     } catch (e: Exception) {
                                         Toast.makeText(

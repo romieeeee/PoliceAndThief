@@ -35,7 +35,6 @@ import com.d104.pnt.ui.theme.TextPrimary
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.PolyUtil
 import com.google.maps.android.SphericalUtil
-import timber.log.Timber
 
 @Composable
 fun MapSettingDialog(
@@ -161,13 +160,13 @@ fun MapSettingDialog(
                         modifier = Modifier.weight(1f),
                         text = "확인",
                         onClick = {
-                            errorMessage = isValid(prisonLocation, tempPolygonPoints.map{it.position})
+                            errorMessage =
+                                isValid(prisonLocation, tempPolygonPoints.map { it.position })
                             if (errorMessage == null) {
                                 viewModel.setPolygonPoints(tempPolygonPoints.map { it.position })
                                 viewModel.setPrisonLocation(prisonLocation)
                                 onConfirm()
-                            }
-                            else {
+                            } else {
                                 isNotValid = true
                             }
                         },
@@ -189,6 +188,5 @@ private fun isValid(
 ): String? {
     if (!PolyUtil.containsLocation(prison, polygon, false)) return "감옥은 반드시 영역 안에 있어야 합니다."
     if (SphericalUtil.computeArea(polygon) < 5000f) return "설정한 영역이 너무 작습니다"
-    Timber.d(SphericalUtil.computeArea(polygon).toString())
     return null
 }

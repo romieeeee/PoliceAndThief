@@ -33,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -177,7 +176,12 @@ fun ReportDialog(
                                                     .padding(vertical = 8.dp, horizontal = 4.dp),
                                                 textAlign = TextAlign.Center
                                             )
-                                            Spacer(modifier = Modifier.height(1.dp).background(Color.Gray.copy(alpha=0.3f)).fillMaxWidth())
+                                            Spacer(
+                                                modifier = Modifier
+                                                    .height(1.dp)
+                                                    .background(Color.Gray.copy(alpha = 0.3f))
+                                                    .fillMaxWidth()
+                                            )
                                         }
                                     }
                                 }

@@ -12,21 +12,21 @@ data class Status(
 )
 
 data class NaverResult(
-    val name: String, // region type (legalcode, admcode 등)
+    val name: String,
     val region: Region,
     val code: Code
 )
 
 data class Region(
-    val area1: Area, // 시/도
-    val area2: Area, // 시/구/군
-    val area3: Area, // 동/읍/면
-    val area4: Area  // 리 (잘 안씀)
+    val area1: Area,
+    val area2: Area,
+    val area3: Area,
+    val area4: Area
 )
 
 data class Area(
     val name: String,
-    val coords: Coords // 필요하면 사용
+    val coords: Coords
 )
 
 data class Coords(

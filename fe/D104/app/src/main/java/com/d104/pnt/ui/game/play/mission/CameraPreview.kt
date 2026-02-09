@@ -22,15 +22,14 @@ import java.util.concurrent.Executor
 @Composable
 fun CameraPreview(
     modifier: Modifier = Modifier,
-    onImageCaptureReady: (ImageCapture) -> Unit = {} // ImageCapture 객체를 외부로 전달
+    onImageCaptureReady: (ImageCapture) -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // 사진 촬영을 위한 ImageCapture 객체
     val imageCapture = remember {
         ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY) // 빠른 촬영
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
             .build()
     }
 
@@ -46,14 +45,13 @@ fun CameraPreview(
             .build()
     }
 
-    // 카메라 바인딩 (초기 1회 실행)
+    // 카메라 바인딩
     LaunchedEffect(Unit) {
         val cameraProvider = ProcessCameraProvider.getInstance(context).get()
 
         try {
-            cameraProvider.unbindAll() // 기존 카메라 해제
+            cameraProvider.unbindAll()
 
-            // 카메라에 프리뷰와 사진 촬영 기능 연결
             cameraProvider.bindToLifecycle(
                 lifecycleOwner,
                 cameraSelector,
@@ -61,11 +59,10 @@ fun CameraPreview(
                 imageCapture
             )
 
-            // ImageCapture 객체를 외부로 전달
             onImageCaptureReady(imageCapture)
 
         } catch (e: Exception) {
-            Log.e("SimpleCameraPreview", "카메라 바인딩 실패: ${e.message}", e)
+
         }
     }
 
@@ -81,9 +78,6 @@ fun CameraPreview(
     )
 }
 
-/**
- * 사진 촬영 헬퍼 함수
- */
 fun takePicture(
     imageCapture: ImageCapture,
     outputDirectory: File,
@@ -91,7 +85,7 @@ fun takePicture(
     onImageCaptured: (File) -> Unit,
     onError: (ImageCaptureException) -> Unit
 ) {
-    // 파일 이름 생성 (타임스탬프)
+    // 파일 이름 생성
     val photoFile = File(
         outputDirectory,
         SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.KOREA)
@@ -107,12 +101,10 @@ fun takePicture(
         executor,
         object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                Log.d("SimpleCameraPreview", "사진 저장 성공: ${photoFile.absolutePath}")
                 onImageCaptured(photoFile)
             }
 
             override fun onError(exception: ImageCaptureException) {
-                Log.e("SimpleCameraPreview", "사진 촬영 실패: ${exception.message}", exception)
                 onError(exception)
             }
         }

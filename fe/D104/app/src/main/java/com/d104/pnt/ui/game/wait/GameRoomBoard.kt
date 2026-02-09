@@ -390,7 +390,6 @@ fun RoleCountInfo(
     maxPolice: Int,
     maxThief: Int
 ) {
-    // 초과 여부에 따라 색상 결정
     val policeColor = if (policeCount > maxPolice) Color(0xFFFF5252) else Color.White
     val thiefColor = if (thiefCount > maxThief) Color(0xFFFF5252) else Color.White
 
@@ -398,7 +397,7 @@ fun RoleCountInfo(
         horizontalArrangement = Arrangement.spacedBy(32.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 경찰 (현재/최대)
+        // 경찰
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 modifier = Modifier.size(20.dp),
@@ -415,7 +414,7 @@ fun RoleCountInfo(
             )
         }
 
-        // 도둑 (현재/최대)
+        // 도둑
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 modifier = Modifier.size(20.dp),
@@ -432,7 +431,7 @@ fun RoleCountInfo(
             )
         }
 
-        // 미정 (현재 인원만)
+        // 미정
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 modifier = Modifier.size(20.dp),

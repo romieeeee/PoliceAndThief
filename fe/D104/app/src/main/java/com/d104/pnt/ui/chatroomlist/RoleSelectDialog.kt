@@ -28,7 +28,6 @@ import com.d104.pnt.ui.theme.CustomBlue
 import com.d104.pnt.ui.theme.RoomBorder
 import com.d104.pnt.ui.theme.RoomContainer
 import com.d104.pnt.ui.theme.TextPrimary
-import timber.log.Timber
 
 
 @Composable

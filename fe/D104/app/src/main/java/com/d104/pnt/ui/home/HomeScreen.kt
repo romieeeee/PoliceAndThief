@@ -70,11 +70,11 @@ fun HomeScreen(
     val joinCode by viewModel.joinCode.collectAsStateWithLifecycle()
 
     val neonAlpha by rememberInfiniteTransition(label = "neon-flicker").animateFloat(
-        initialValue = 1f,    // 가장 밝을 때 (투명도 100%)
-        targetValue = 0.5f,  // 가장 어두울 때 (투명도 50%)
+        initialValue = 1f,
+        targetValue = 0.5f,
         animationSpec = infiniteRepeatable(
             animation = keyframes {
-                durationMillis = 3000 // 3초 동안 한 주기가 돌아감
+                durationMillis = 3000
                 1.0f at 0
                 1.0f at 2500
                 0.3f at 2600
@@ -119,9 +119,9 @@ fun HomeScreen(
         }
     }
 
-    val policeRed = Color(0xFFB71C1C)   // 묵직한 레드
-    val policeNavy = Color(0xFF1A237E)  // 짙은 남색
-    val amberLight = Color(0xFFFFB300)  // 포인트 호박색
+    val policeRed = Color(0xFFB71C1C)
+    val policeNavy = Color(0xFF1A237E)
+    val amberLight = Color(0xFFFFB300)
 
     val arcadeColors = listOf(
         policeRed,
@@ -173,7 +173,7 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(32.dp)
             ) {
-                // HOST 버튼 (적색)
+                // HOST 버튼
                 PixelButtonCode(
                     modifier = Modifier
                         .weight(1f)
@@ -186,7 +186,7 @@ fun HomeScreen(
                     borderColor = Color.Black
                 )
 
-                // JOIN 버튼 (남색)
+                // JOIN 버튼
                 PixelButtonCode(
                     modifier = Modifier
                         .weight(1f)

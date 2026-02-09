@@ -2,12 +2,10 @@ package com.d104.pnt.util.socket
 
 import org.json.JSONArray
 import org.json.JSONObject
-import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Game 네임스페이스 소켓 매니저
  * 실제 게임 플레이 중 이벤트 처리
  */
 @Singleton
@@ -84,13 +82,11 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
 
                 onJoinedRoom?.invoke(gameId, memberId, message, connectedMembers)
             } catch (e: Exception) {
-                Timber.e(e, "게임 입장 응답 파싱 실패")
+
             }
         }
 
-        // GPS 위치 정보 수신 (1초마다)
-        // payload:
-        // { gameId, sec, cctvThiefId, skillUsedAt, locations:[...] }
+        // GPS 위치 정보 수신
         on(EVENT_GET_GPS) { args ->
             try {
                 val data = args[0] as JSONObject
@@ -98,31 +94,28 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val sec = data.getInt("sec")
                 val locations = data.getJSONArray("locations")
 
-                // cctvThiefId: 없거나 0/음수면 null 처리
                 val cctvThiefIdRaw = data.optLong("cctvThiefId", -1L)
                 val cctvThiefId = cctvThiefIdRaw.takeIf { it > 0L }
 
-                // skillUsedAt: null/"null"/"" -> null 처리
                 val skillUsedAtRaw = data.optString("skillUsedAt", null)
                 val skillUsedAt = skillUsedAtRaw
                     ?.takeIf { it.isNotBlank() && it.lowercase() != "null" }
 
                 onGpsReceived?.invoke(cctvThiefId, skillUsedAt, sec, locations)
             } catch (e: Exception) {
-                Timber.e(e, "GPS 정보 파싱 실패")
+
             }
         }
 
-        // 게임 시작 예정 알림 (5초 카운트다운)
+        // 게임 시작 예정 알림
         on(EVENT_GET_WILL_START_GAME) { args ->
             try {
                 val data = args[0] as JSONObject
                 val gameId = data.getLong("gameId")
                 val willStartAt = data.getString("willStartAt")
-                Timber.d("게임 5초 후 시작: gameId=$gameId, willStartAt=$willStartAt")
                 onWillStartGame?.invoke(gameId, willStartAt)
             } catch (e: Exception) {
-                Timber.e(e, "게임 시작 예정 파싱 실패")
+
             }
         }
 
@@ -132,10 +125,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val data = args[0] as JSONObject
                 val gameId = data.getLong("gameId")
                 val startTime = data.getString("startTime")
-                Timber.d("게임 시작: gameId=$gameId, startTime=$startTime")
                 onGameStarted?.invoke(gameId, startTime)
             } catch (e: Exception) {
-                Timber.e(e, "게임 시작 파싱 실패")
+
             }
         }
 
@@ -146,10 +138,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val gameId = data.getLong("gameId")
                 val thiefId = data.getLong("thiefId")
                 val escapedAt = data.getString("escapedAt")
-                Timber.d("🏃 도둑 탈출 알림: thiefId=$thiefId,  escapedAt=$escapedAt")
                 onThiefEscaped?.invoke(gameId, thiefId, escapedAt)
             } catch (e: Exception) {
-                Timber.e(e, "도둑 탈출 파싱 실패")
+
             }
         }
 
@@ -161,7 +152,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val memberId = data.getLong("memberId")
                 onOutOfBoundary?.invoke(gameId, memberId)
             } catch (e: Exception) {
-                Timber.e(e, "경계 이탈 파싱 실패")
+
             }
         }
 
@@ -174,14 +165,13 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val policeId = data.optLong("policeId", -1L)
                 val thiefId = data.getLong("thiefId")
                 val arrestedAt = data.optString("arrestedAt", null)
-                Timber.d("체포 결과: result=$result, reason=$reason")
                 onArrestResult?.invoke(result, reason, policeId, thiefId, arrestedAt)
             } catch (e: Exception) {
-                Timber.e(e, "체포 결과 파싱 실패")
+
             }
         }
 
-        // 멤버 상태 변경 (교도소 이송 등)
+        // 멤버 상태 변경
         on(EVENT_MODIFY_MEMBER_STATUS) { args ->
             try {
                 val data = args[0] as JSONObject
@@ -189,14 +179,13 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val thiefId = data.getLong("thiefId")
                 val status = data.getString("status")
                 val arrestedAt = data.getString("arrestedAt")
-                Timber.d("멤버 상태 변경: thiefId=$thiefId, status=$status")
                 onMemberStatusChanged?.invoke(gameId, thiefId, status, arrestedAt)
             } catch (e: Exception) {
-                Timber.e(e, "멤버 상태 변경 파싱 실패")
+
             }
         }
 
-        // Beep 알림 (경찰 접근)
+        // Beep 알림
         on(EVENT_GET_BEEP_USE) { args ->
             try {
                 val data = args[0] as JSONObject
@@ -205,7 +194,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val distance = data.getDouble("distance")
                 onBeepReceived?.invoke(policeId, thiefId, distance)
             } catch (e: Exception) {
-                Timber.e(e, "Beep 알림 파싱 실패")
+
             }
         }
 
@@ -213,14 +202,13 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         on(EVENT_GET_SYNC_GAME_INFO) { args ->
             try {
                 val data = args[0] as JSONObject
-                Timber.d("게임 정보 동기화: ${data.optString("gameStatus")}")
                 onGameInfoSynced?.invoke(data)
             } catch (e: Exception) {
-                Timber.e(e, "게임 정보 동기화 파싱 실패")
+
             }
         }
 
-        // 스킬 사용 결과 (헬기)
+        // 스킬 사용 결과
         on(EVENT_GET_SKILL_USE) { args ->
             try {
                 val data = args[0] as JSONObject
@@ -228,10 +216,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val reason = data.optString("reason", null)
                 val policeId = data.getLong("policeId")
                 val startedAt = data.optString("startedAt", null)
-                Timber.d("스킬 사용 결과: result=$result, policeId=$policeId")
                 onSkillResult?.invoke(result, reason, policeId, startedAt)
             } catch (e: Exception) {
-                Timber.e(e, "스킬 사용 결과 파싱 실패")
+
             }
         }
 
@@ -240,10 +227,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val data = args[0] as JSONObject
                 val gameId = data.getLong("gameId")
                 val memberId = data.getLong("memberId")
-                Timber.d("📻 무전 신호 수신: gameId=$gameId, memberId=$memberId (말하는 중)")
                 onRadioReceived?.invoke(gameId, memberId)
             } catch (e: Exception) {
-                Timber.e(e, "📻 Radio 신호 파싱 실패")
+
             }
         }
 
@@ -254,13 +240,10 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val winTeam = data.getString("winTeam")
                 val message = data.optString("message", "게임이 종료되었습니다.")
 
-                Timber.d("🎮 게임 종료 수신: 승리팀=$winTeam, 메시지=$message")
-
                 onGameEnded?.invoke(winTeam, data)
 
             } catch (e: Exception) {
-                Timber.e(e, "❌ 게임 종료 파싱 실패: ${e.message}")
-                Timber.e("받은 데이터: ${args[0]}")
+
             }
         }
 
@@ -268,10 +251,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         on(EVENT_GET_END_GAME_AFTER) { args ->
             try {
                 val data = args[0] as JSONObject
-                Timber.d("$data")
                 onEndGameAfter?.invoke(data)
             } catch (e: Exception) {
-                Timber.e(e, "게임 결과 파싱 실패")
+
             }
         }
 
@@ -282,11 +264,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val gameId = data.getLong("gameId")
                 val newsId = data.getLong("newsId")
 
-                Timber.d("$data")
-                Timber.d("📰 뉴스 생성 완료: gameId=$gameId, newsId=$newsId")
                 onNewsReceived?.invoke(gameId, newsId)
             } catch (e: Exception) {
-                Timber.e(e, "뉴스 수신 파싱 실패")
+
             }
         }
 
@@ -295,12 +275,11 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             try {
                 val data = args[0] as JSONObject
                 val gameId = data.optLong("gameId")
-                Timber.d("🔄 서버로부터 재연결 승인 수신: gameId=$gameId")
 
                 onReconnect(data)
                 onReconnected?.invoke(gameId)
             } catch (e: Exception) {
-                Timber.e(e, "재연결 데이터 파싱 실패")
+
             }
         }
 
@@ -314,10 +293,9 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
                 val reason = data.optString("reason", null)
                 val completedAt = data.optString("completedAt", null)
 
-                Timber.d("미션 결과 수신: result: $success / reason: $reason")
                 onMissionResult?.invoke(gameId, missionId, thiefId, success, reason, completedAt)
             } catch (e: Exception) {
-                Timber.e(e, "미션 결과 파싱 실패")
+
             }
         }
     }
@@ -327,7 +305,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         val gameId = data.optLong("gameId")
         if (gameId > 0) {
             currentGameId = gameId
-            // 재연결 시 게임 정보 동기화
             syncGameInfo()
         }
     }
@@ -337,7 +314,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         clearCallbacks()
     }
 
-    // ==================== Request Methods ====================
+    // Request Methods
 
     /**
      * 게임 입장
@@ -357,7 +334,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
      */
     fun sendGPS(lat: Double, lng: Double, walk: Int, longestSurvived: Int) {
         val gameId = currentGameId ?: run {
-            Timber.e("gameId가 없어서 GPS 전송 불가")
             return
         }
 
@@ -377,7 +353,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
      */
     fun arrestThief(policeId: Long, thiefId: Long) {
         val gameId = currentGameId ?: run {
-            Timber.e("gameId가 없어서 체포 불가")
             return
         }
 
@@ -391,11 +366,10 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     }
 
     /**
-     * 스킬 사용 (헬기)
+     * 스킬 사용
      */
     fun useSkill(policeId: Long) {
         val gameId = currentGameId ?: run {
-            Timber.e("gameId가 없어서 스킬 사용 불가")
             return
         }
 
@@ -412,7 +386,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
      */
     fun submitMissionImage(memberId: Long, gameMissionId: Long, image: String) {
         val gameId = currentGameId ?: run {
-            Timber.e("gameId가 없어서 미션 이미지 제출 불가")
             return
         }
 
@@ -431,7 +404,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
      */
     fun syncGameInfo() {
         val gameId = currentGameId ?: run {
-            Timber.e("gameId가 없어서 게임 정보 동기화 불가")
             return
         }
 
@@ -443,12 +415,11 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     }
 
     /**
-     * 게임 리셋 (개발용 - 사용 금지)
+     * 게임 리셋
      */
     @Deprecated("개발용이므로 프로덕션에서 사용 금지")
     fun resetGame() {
         val gameId = currentGameId ?: run {
-            Timber.e("gameId가 없어서 게임 리셋 불가")
             return
         }
 
@@ -456,7 +427,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
             put("gameId", gameId)
         }
 
-        Timber.w("게임 리셋 요청 (개발용)")
         emit(EVENT_POST_RESET_GAME, data)
     }
 
@@ -465,7 +435,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
      */
     fun leaveGame() {
         val gameId = currentGameId ?: run {
-            Timber.e("gameId가 없어서 게임 나가기 불가")
             return
         }
 
@@ -480,11 +449,10 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     }
 
     /**
-     * ✅ Radio 송신 (PTT 눌렀을 때)
+     * Radio 송신
      */
     fun sendRadio() {
         val gameId = currentGameId ?: run {
-            Timber.e("gameId가 없어서 Radio 전송 불가")
             return
         }
 
@@ -493,7 +461,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         }
 
         emit(EVENT_POST_RADIO, data)
-        Timber.d("📻 Radio 송신: gameId=$gameId")
     }
 
     /**
@@ -510,7 +477,7 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
         onReconnected = callback
     }
 
-    // ==================== Callback Setters ====================
+    // Callback Setters
 
     fun setOnJoinedRoom(callback: (gameId: Long, memberId: Long, message: String, connectedMembers: Int) -> Unit) {
         onJoinedRoom = callback
@@ -577,7 +544,6 @@ class GameSocketManager @Inject constructor() : BaseSocketManager("game") {
     }
 
     fun cleanup() {
-        Timber.d("🧹 Game 소켓 완전 정리")
         clearCallbacks()
         if (isConnected()) {
             disconnect()

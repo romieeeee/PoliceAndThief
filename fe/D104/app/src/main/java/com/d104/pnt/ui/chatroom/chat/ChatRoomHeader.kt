@@ -78,7 +78,7 @@ fun ChatRoomHeader(
                     color = TextSecondary,
                 )
 
-                // 멤버 목록(드로어 열기)
+                // 멤버 목록
                 Icon(
                     modifier = Modifier
                         .size(24.dp)

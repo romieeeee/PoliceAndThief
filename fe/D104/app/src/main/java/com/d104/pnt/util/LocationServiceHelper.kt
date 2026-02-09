@@ -26,7 +26,7 @@ fun Context.changeLocationMode(isGameMode: Boolean) {
 @SuppressLint("MissingPermission")
 fun Context.stopLocationService() {
     val intent = Intent(this, LocationService::class.java)
-    this.stopService(intent) // 서비스 종료 명령
+    this.stopService(intent)
 }
 
 @SuppressLint("MissingPermission")
@@ -34,12 +34,10 @@ suspend fun Context.getSingleLocation(): Location? {
     val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
     return try {
-        // Priority.PRIORITY_HIGH_ACCURACY : 정확도 우선
-        // CancellationTokenSource().token : 필요 시 취소 가능 토큰
         fusedLocationClient.getCurrentLocation(
             Priority.PRIORITY_HIGH_ACCURACY,
             CancellationTokenSource().token
-        ).await() // 결과가 나올 때까지 기다림 (Coroutines)
+        ).await()
     } catch (e: Exception) {
         e.printStackTrace()
         null

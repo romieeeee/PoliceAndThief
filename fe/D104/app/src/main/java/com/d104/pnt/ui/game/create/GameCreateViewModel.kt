@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -80,7 +79,7 @@ class GameCreateViewModel @Inject constructor(
     fun updateTotalPlayers(plus: Boolean) {
         if (plus && _totalPlayers.value < 30) {
             _totalPlayers.value += 1
-        } else if (!plus && _totalPlayers.value > 2) { // TODO: 나중에 5로 수정
+        } else if (!plus && _totalPlayers.value > 5) {
             _totalPlayers.value -= 1
         } else {
             return
@@ -133,7 +132,6 @@ class GameCreateViewModel @Inject constructor(
         locationRepository.dismissCreateGame()
     }
 
-    // 화면 진입 시 호출할 함수
     fun setDefaultSettings(context: Context) {
         viewModelScope.launch {
             val location = context.getSingleLocation()
@@ -147,7 +145,7 @@ class GameCreateViewModel @Inject constructor(
                     )
                 )
             } else {
-                Timber.e("위치를 가져오지 못했습니다.")
+
             }
         }
     }
@@ -181,12 +179,12 @@ class GameCreateViewModel @Inject constructor(
                 )
 
                 if (saveResult is BaseResult.Error) {
-                    Timber.e("맵 저장 중 오류 발생: ${saveResult.error.message}")
+
                 }
             }
 
             roomSocketManager.disconnect()
-            delay(100) // 잠시 대기
+            delay(100)
 
             when (val result = gameRoomRepository.createGameRoom(
                 playerCount,
@@ -260,19 +258,16 @@ class GameCreateViewModel @Inject constructor(
     fun applySelectedMap() {
         val uiState = _mapDetailState.value
         if (uiState !is UiState.Success) {
-            Timber.e("선택된 맵의 상세 정보가 아직 로드되지 않았습니다.")
             return
         }
 
         val mapDetail = uiState.data
 
         mapDetail.prison?.let { p ->
-            Timber.d("적용할 감옥 위치: ${p.lat}, ${p.lng}")
             locationRepository.setPrisonLocation(LatLng(p.lat, p.lng))
         }
 
         mapDetail.polygon?.let { points ->
-            Timber.d("적용할 폴리곤 포인트 수: ${points.size}")
             val latLngList = points.map { LatLng(it.lat, it.lng) }
             locationRepository.setPolygonPoints(latLngList)
         }
